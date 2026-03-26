@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -15,6 +16,8 @@ import {
   Upload,
   Settings,
   LogOut,
+  Menu,
+  X,
   type LucideIcon,
 } from "lucide-react";
 
@@ -34,14 +37,11 @@ const navItems: { href: string; label: string; icon: LucideIcon }[] = [
 
 export function Sidebar({ userName }: { userName: string }) {
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
 
-  return (
-    <aside className="w-64 bg-white border-r border-stone-200 flex flex-col h-full">
-      <div className="px-4 py-6 border-b border-stone-200 flex justify-center">
-        <img src="/bza-logo-new.png" alt="BZA" className="w-52" />
-      </div>
-
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
+  const navContent = (
+    <>
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           const Icon = item.icon;
@@ -49,6 +49,7 @@ export function Sidebar({ userName }: { userName: string }) {
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => setOpen(false)}
               className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
                 isActive
                   ? "bg-stone-100 text-stone-900 font-medium"
@@ -74,6 +75,42 @@ export function Sidebar({ userName }: { userName: string }) {
           </button>
         </div>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile top bar */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-stone-200 px-4 py-3 flex items-center justify-between">
+        <img src="/bza-logo-new.png" alt="BZA" className="h-8" />
+        <button onClick={() => setOpen(!open)} className="text-stone-600">
+          {open ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+      </div>
+
+      {/* Mobile overlay */}
+      {open && (
+        <div className="md:hidden fixed inset-0 z-30 bg-black/30" onClick={() => setOpen(false)} />
+      )}
+
+      {/* Mobile drawer */}
+      <aside className={`md:hidden fixed top-0 left-0 z-40 w-72 h-full bg-white border-r border-stone-200 flex flex-col transform transition-transform duration-200 ${open ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="px-4 py-4 border-b border-stone-200 flex items-center justify-between">
+          <img src="/bza-logo-new.png" alt="BZA" className="h-8" />
+          <button onClick={() => setOpen(false)} className="text-stone-400">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        {navContent}
+      </aside>
+
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex w-64 bg-white border-r border-stone-200 flex-col h-full">
+        <div className="px-4 py-6 border-b border-stone-200 flex justify-center">
+          <img src="/bza-logo-new.png" alt="BZA" className="w-52" />
+        </div>
+        {navContent}
+      </aside>
+    </>
   );
 }
