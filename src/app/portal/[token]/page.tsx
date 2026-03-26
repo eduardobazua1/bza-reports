@@ -2,40 +2,39 @@ import { getClientByToken, getClientInvoices, getShipmentUpdates } from "@/serve
 import { notFound } from "next/navigation";
 import { formatDate, formatNumber, shipmentStatusLabels, transportTypeLabels } from "@/lib/utils";
 
-const statusSteps = ["programado", "en_transito", "en_aduana", "entregado"];
+const statusSteps = [
+  { key: "programado", label: "Scheduled", icon: "📋" },
+  { key: "en_transito", label: "In Transit", icon: "🚂" },
+  { key: "en_aduana", label: "Customs", icon: "🏛" },
+  { key: "entregado", label: "Delivered", icon: "✓" },
+];
 
 function StatusStepper({ currentStatus }: { currentStatus: string }) {
-  const currentIndex = statusSteps.indexOf(currentStatus);
+  const currentIndex = statusSteps.findIndex(s => s.key === currentStatus);
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center justify-between w-full">
       {statusSteps.map((step, i) => (
-        <div key={step} className="flex items-center">
-          <div
-            className={`w-3 h-3 rounded-full ${
-              i <= currentIndex ? "bg-primary" : "bg-gray-200"
-            }`}
-          />
+        <div key={step.key} className="flex items-center flex-1 last:flex-none">
+          <div className="flex flex-col items-center">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+              i <= currentIndex
+                ? i === currentIndex ? "bg-blue-500 text-white" : "bg-emerald-500 text-white"
+                : "bg-stone-200 text-stone-400"
+            }`}>
+              {i < currentIndex ? "✓" : i + 1}
+            </div>
+            <span className={`text-[10px] mt-1 ${i <= currentIndex ? "text-stone-700 font-medium" : "text-stone-400"}`}>
+              {step.label}
+            </span>
+          </div>
           {i < statusSteps.length - 1 && (
-            <div
-              className={`w-8 h-0.5 ${
-                i < currentIndex ? "bg-primary" : "bg-gray-200"
-              }`}
-            />
+            <div className={`flex-1 h-0.5 mx-1 mt-[-16px] ${i < currentIndex ? "bg-emerald-500" : "bg-stone-200"}`} />
           )}
         </div>
       ))}
     </div>
   );
-}
-
-function formatDateTime(date: string | null | undefined): string {
-  if (!date) return "-";
-  const d = new Date(date);
-  return d.toLocaleDateString("en-US", {
-    year: "numeric", month: "short", day: "numeric",
-    hour: "2-digit", minute: "2-digit",
-  });
 }
 
 export default async function PortalPage({
@@ -50,136 +49,82 @@ export default async function PortalPage({
   const invoiceData = await getClientInvoices(client.id);
   const active = invoiceData.filter((d) => d.invoice.shipmentStatus !== "entregado");
   const delivered = invoiceData.filter((d) => d.invoice.shipmentStatus === "entregado");
-
-  // Use tracking table view if any invoice has tracking fields
-  const hasTrackingData = invoiceData.some(
-    (d) => d.invoice.currentLocation || d.invoice.vehicleId || d.invoice.salesDocument
-  );
+  const totalActiveTons = active.reduce((s, d) => s + d.invoice.quantityTons, 0);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">BZA International Services</h1>
-            <p className="text-sm text-gray-500">Shipment Portal</p>
-          </div>
+    <div className="min-h-screen bg-stone-100">
+      {/* Header */}
+      <header className="bg-white shadow-sm sticky top-0 z-10">
+        <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
+          <img src="/bza-logo-new.png" alt="BZA" className="h-7" />
           <div className="text-right">
-            <p className="text-sm font-medium text-gray-900">{client.name}</p>
+            <p className="text-sm font-medium text-stone-800">{client.name}</p>
+            <p className="text-[10px] text-stone-400">Shipment Portal</p>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-8 space-y-8">
-        {/* ---- KC-style Tracking Table ---- */}
-        {hasTrackingData && active.length > 0 && (
-          <section>
-            <h2 className="text-lg font-semibold mb-4">Shipment Tracking Report</h2>
-            <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="text-left p-3 font-medium text-gray-600 whitespace-nowrap">Current Location</th>
-                    <th className="text-left p-3 font-medium text-gray-600 whitespace-nowrap">Last Update</th>
-                    <th className="text-left p-3 font-medium text-gray-600 whitespace-nowrap">Purchase Order</th>
-                    <th className="text-left p-3 font-medium text-gray-600 whitespace-nowrap">Invoice</th>
-                    <th className="text-left p-3 font-medium text-gray-600 whitespace-nowrap">Sales Document</th>
-                    <th className="text-left p-3 font-medium text-gray-600 whitespace-nowrap">Vehicle ID</th>
-                    <th className="text-left p-3 font-medium text-gray-600 whitespace-nowrap">BL Number</th>
-                    <th className="text-right p-3 font-medium text-gray-600 whitespace-nowrap">Transport Qty</th>
-                    <th className="text-right p-3 font-medium text-gray-600 whitespace-nowrap">Net Price</th>
-                    <th className="text-left p-3 font-medium text-gray-600 whitespace-nowrap">Billing Doc.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {active.map((d) => {
-                    const price = d.invoice.sellPriceOverride ?? d.poSellPrice ?? 0;
-                    return (
-                      <tr key={d.invoice.id} className="border-b border-gray-100 hover:bg-gray-50">
-                        <td className="p-3">
-                          <span className={
-                            d.invoice.currentLocation?.toLowerCase().includes("pending")
-                              ? "text-amber-600" : "text-gray-900"
-                          }>
-                            {d.invoice.currentLocation || "-"}
-                          </span>
-                        </td>
-                        <td className="p-3 text-gray-600 whitespace-nowrap">{formatDateTime(d.invoice.lastLocationUpdate)}</td>
-                        <td className="p-3 font-medium">{d.clientPoNumber || d.poNumber}</td>
-                        <td className="p-3">{d.invoice.invoiceNumber}</td>
-                        <td className="p-3">{d.invoice.salesDocument || "-"}</td>
-                        <td className="p-3 font-mono text-xs">{d.invoice.vehicleId || "-"}</td>
-                        <td className="p-3">{d.invoice.blNumber || "-"}</td>
-                        <td className="p-3 text-right font-medium">{formatNumber(d.invoice.quantityTons, 3)}</td>
-                        <td className="p-3 text-right">{price > 0 ? `$${price}` : "-"}</td>
-                        <td className="p-3">{d.invoice.billingDocument || "-"}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-                <tfoot>
-                  <tr className="bg-gray-50 font-medium">
-                    <td className="p-3" colSpan={7}>Total</td>
-                    <td className="p-3 text-right">
-                      {formatNumber(active.reduce((sum, d) => sum + d.invoice.quantityTons, 0), 3)}
-                    </td>
-                    <td className="p-3" colSpan={2}></td>
-                  </tr>
-                </tfoot>
-              </table>
+      <main className="max-w-lg mx-auto px-4 py-5 space-y-5">
+        {/* Summary card */}
+        <div className="bg-white rounded-xl shadow-sm p-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-xs text-stone-500 uppercase tracking-wide">Active Shipments</p>
+              <p className="text-2xl font-bold text-stone-900">{active.length}</p>
             </div>
-          </section>
-        )}
-
-        {/* ---- Card-based view (default) ---- */}
-        {!hasTrackingData && active.length > 0 && (
-          <section>
-            <h2 className="text-lg font-semibold mb-4">Active Shipments</h2>
-            <div className="space-y-4">
-              {active.map((d) => (
-                <ShipmentCard key={d.invoice.id} data={d} />
-              ))}
+            <div className="text-right">
+              <p className="text-xs text-stone-500 uppercase tracking-wide">Total Volume</p>
+              <p className="text-2xl font-bold text-stone-900">{formatNumber(totalActiveTons, 0)} <span className="text-sm font-normal text-stone-400">TN</span></p>
             </div>
-          </section>
-        )}
+          </div>
+        </div>
 
-        {active.length === 0 && (
-          <div className="bg-white rounded-xl p-8 text-center text-gray-500">
-            No active shipments at this time.
+        {/* Active shipments */}
+        {active.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold text-stone-500 uppercase tracking-wide">Active</h2>
+            {active.map((d) => (
+              <ShipmentCard key={d.invoice.id} data={d} />
+            ))}
           </div>
         )}
 
+        {active.length === 0 && (
+          <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+            <p className="text-stone-400">No active shipments</p>
+          </div>
+        )}
+
+        {/* Delivered */}
         {delivered.length > 0 && (
-          <section>
-            <h2 className="text-lg font-semibold mb-4">
-              Completed Shipments
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold text-stone-500 uppercase tracking-wide">
+              Delivered ({delivered.length})
             </h2>
-            <div className="space-y-3">
-              {delivered.map((d) => (
-                <div
-                  key={d.invoice.id}
-                  className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between"
-                >
-                  <div>
-                    <p className="font-medium text-sm">{d.invoice.item || d.product}</p>
-                    <p className="text-xs text-gray-500">
-                      {d.poNumber} &middot; {formatNumber(d.invoice.quantityTons)} TN &middot;{" "}
-                      {formatDate(d.invoice.shipmentDate)}
-                      {d.invoice.vehicleId && ` · ${d.invoice.vehicleId}`}
-                    </p>
-                  </div>
-                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                    Delivered
-                  </span>
+            {delivered.slice(0, 10).map((d) => (
+              <div key={d.invoice.id} className="bg-white rounded-xl shadow-sm p-3 flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-stone-800 truncate">
+                    {d.invoice.item || d.product}
+                  </p>
+                  <p className="text-xs text-stone-400">
+                    {d.invoice.salesDocument || d.clientPoNumber || d.poNumber} · {formatNumber(d.invoice.quantityTons, 1)} TN · {formatDate(d.invoice.shipmentDate)}
+                  </p>
                 </div>
-              ))}
-            </div>
-          </section>
+                <span className="text-xs bg-emerald-50 text-emerald-600 px-2 py-1 rounded-full ml-2 shrink-0">
+                  Delivered
+                </span>
+              </div>
+            ))}
+            {delivered.length > 10 && (
+              <p className="text-xs text-center text-stone-400">and {delivered.length - 10} more...</p>
+            )}
+          </div>
         )}
       </main>
 
-      <footer className="text-center text-xs text-gray-400 py-8">
-        BZA International Services, LLC &middot; McAllen, TX
+      <footer className="text-center text-xs text-stone-300 py-6">
+        BZA International Services, LLC · McAllen, TX
       </footer>
     </div>
   );
@@ -198,7 +143,12 @@ async function ShipmentCard({
       shipmentStatus: string;
       item: string | null;
       currentLocation: string | null;
+      lastLocationUpdate: string | null;
       vehicleId: string | null;
+      blNumber: string | null;
+      salesDocument: string | null;
+      billingDocument: string | null;
+      sellPriceOverride: number | null;
     };
     poNumber: string | null;
     product: string | null;
@@ -212,67 +162,88 @@ async function ShipmentCard({
   const updates = await getShipmentUpdates(invoice.id);
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
-      <div className="flex items-start justify-between">
-        <div>
-          <h3 className="font-semibold">{invoice.item || product}</h3>
-          <p className="text-sm text-gray-500">
-            {poNumber} &middot; {invoice.invoiceNumber}
-          </p>
+    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      {/* Card header */}
+      <div className="p-4 pb-3">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-stone-900 truncate">{invoice.item || product}</p>
+            <p className="text-xs text-stone-400 mt-0.5">
+              {invoice.salesDocument || data.clientPoNumber || poNumber} · {invoice.invoiceNumber}
+            </p>
+          </div>
+          <span className={`text-xs px-2 py-1 rounded-full ml-2 shrink-0 font-medium ${
+            invoice.shipmentStatus === "en_transito" ? "bg-blue-50 text-blue-600" :
+            invoice.shipmentStatus === "en_aduana" ? "bg-amber-50 text-amber-600" :
+            invoice.shipmentStatus === "entregado" ? "bg-emerald-50 text-emerald-600" :
+            "bg-stone-100 text-stone-500"
+          }`}>
+            {shipmentStatusLabels[invoice.shipmentStatus] || invoice.shipmentStatus}
+          </span>
         </div>
-        <span
-          className={`text-xs px-2 py-1 rounded-full ${
-            invoice.shipmentStatus === "en_transito"
-              ? "bg-blue-100 text-blue-700"
-              : invoice.shipmentStatus === "en_aduana"
-              ? "bg-yellow-100 text-yellow-700"
-              : "bg-gray-100 text-gray-700"
-          }`}
-        >
-          {shipmentStatusLabels[invoice.shipmentStatus] || invoice.shipmentStatus}
-        </span>
+
+        {/* Status stepper */}
+        <StatusStepper currentStatus={invoice.shipmentStatus} />
       </div>
 
-      <StatusStepper currentStatus={invoice.shipmentStatus} />
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+      {/* Details grid */}
+      <div className="px-4 py-3 bg-stone-50 grid grid-cols-2 gap-3 text-xs">
         <div>
-          <p className="text-gray-500">Quantity</p>
-          <p className="font-medium">{formatNumber(invoice.quantityTons)} TN</p>
+          <p className="text-stone-400">Quantity</p>
+          <p className="font-semibold text-stone-800">{formatNumber(invoice.quantityTons, 1)} TN</p>
         </div>
         <div>
-          <p className="text-gray-500">Ship Date</p>
-          <p className="font-medium">{formatDate(invoice.shipmentDate)}</p>
+          <p className="text-stone-400">Ship Date</p>
+          <p className="font-semibold text-stone-800">{formatDate(invoice.shipmentDate)}</p>
         </div>
-        <div>
-          <p className="text-gray-500">Transport</p>
-          <p className="font-medium">
-            {transportType ? transportTypeLabels[transportType] || transportType : "-"}
-          </p>
-        </div>
-        <div>
-          <p className="text-gray-500">Terms</p>
-          <p className="font-medium">{terms || "-"}</p>
-        </div>
+        {invoice.vehicleId && (
+          <div>
+            <p className="text-stone-400">Vehicle / Railcar</p>
+            <p className="font-semibold text-stone-800 font-mono text-[11px]">{invoice.vehicleId}</p>
+          </div>
+        )}
+        {invoice.blNumber && (
+          <div>
+            <p className="text-stone-400">BL Number</p>
+            <p className="font-semibold text-stone-800">{invoice.blNumber}</p>
+          </div>
+        )}
+        {invoice.currentLocation && (
+          <div>
+            <p className="text-stone-400">Location</p>
+            <p className="font-semibold text-stone-800">{invoice.currentLocation}</p>
+          </div>
+        )}
+        {invoice.estimatedArrival && (
+          <div>
+            <p className="text-stone-400">ETA</p>
+            <p className="font-semibold text-stone-800">{formatDate(invoice.estimatedArrival)}</p>
+          </div>
+        )}
+        {transportType && (
+          <div>
+            <p className="text-stone-400">Transport</p>
+            <p className="font-semibold text-stone-800">{transportTypeLabels[transportType] || transportType}</p>
+          </div>
+        )}
+        {terms && (
+          <div>
+            <p className="text-stone-400">Terms</p>
+            <p className="font-semibold text-stone-800">{terms}</p>
+          </div>
+        )}
       </div>
 
+      {/* History */}
       {updates.length > 0 && (
-        <div className="border-t border-gray-100 pt-4">
-          <p className="text-xs font-medium text-gray-500 mb-2">History</p>
-          <div className="space-y-2">
-            {updates.map((u) => (
-              <div key={u.id} className="flex items-start gap-2 text-xs">
-                <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                <div>
-                  <span className="text-gray-500">{formatDate(u.createdAt)}</span>
-                  {" — "}
-                  <span className="font-medium">
-                    {shipmentStatusLabels[u.newStatus] || u.newStatus}
-                  </span>
-                  {u.comment && (
-                    <span className="text-gray-500"> &middot; {u.comment}</span>
-                  )}
-                </div>
+        <div className="px-4 py-3 border-t border-stone-100">
+          <p className="text-[10px] font-medium text-stone-400 uppercase tracking-wide mb-2">History</p>
+          <div className="space-y-1.5">
+            {updates.slice(0, 3).map((u) => (
+              <div key={u.id} className="flex items-center gap-2 text-xs">
+                <div className="w-1 h-1 rounded-full bg-blue-400 shrink-0" />
+                <span className="text-stone-400">{formatDate(u.createdAt)}</span>
+                <span className="text-stone-600 font-medium">{shipmentStatusLabels[u.newStatus] || u.newStatus}</span>
               </div>
             ))}
           </div>
