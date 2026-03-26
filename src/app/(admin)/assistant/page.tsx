@@ -71,7 +71,7 @@ export default function AssistantPage() {
         if (uploadData.type === "image") {
           imageUrl = uploadData.imageUrl;
           // Store imageUrl on the user message for the API
-          newMessages[newMessages.length - 1].imageUrl = imageUrl;
+          newMessages[newMessages.length - 1].imageUrl = imageUrl || undefined;
         }
         fileData = uploadData.parsedContent;
       }

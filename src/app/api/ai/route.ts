@@ -351,17 +351,19 @@ When user asks to do something, DO IT immediately using tools. Always confirm wi
 
     let msg = response.choices[0]?.message;
     // For tool loop, use text-only messages (strip images to save tokens)
-    const allMsgs = messages.map((m: { role: string; content: string | object[] }) => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const allMsgs = messages.map((m: any) => ({
       role: typeof m.role === "string" ? m.role : "user",
       content: Array.isArray(m.content)
-        ? (m.content.find((c: { type: string }) => c.type === "text") as { text: string })?.text || ""
+        ? ((m.content as any[]).find((c) => c.type === "text") as { text: string })?.text || ""
         : m.content,
     }));
 
     for (let i = 0; i < 5 && msg?.tool_calls; i++) {
       allMsgs.push(msg);
       for (const tc of msg.tool_calls) {
-        const result = await exec(tc.function.name, JSON.parse(tc.function.arguments));
+        const fn = (tc as any).function;
+        const result = await exec(fn.name, JSON.parse(fn.arguments));
         allMsgs.push({ role: "tool" as const, tool_call_id: tc.id, content: result });
       }
       response = await openai.chat.completions.create({

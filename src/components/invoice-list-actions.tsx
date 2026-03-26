@@ -19,6 +19,7 @@ type Invoice = {
   customerPaymentStatus: "paid" | "unpaid";
   supplierPaymentStatus: "paid" | "unpaid";
   usesFactoring: boolean;
+  freightCost: number | null;
   item: string | null;
   notes: string | null;
 };

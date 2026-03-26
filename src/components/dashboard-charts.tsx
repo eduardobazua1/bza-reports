@@ -55,7 +55,7 @@ export function DashboardCharts({
               <XAxis dataKey="year" fontSize={12} />
               <YAxis tickFormatter={currencyFormatter} fontSize={12} />
               <Tooltip
-                formatter={(value: number) => currencyFormatter(value)}
+                formatter={(value) => currencyFormatter(Number(value))}
                 contentStyle={{
                   backgroundColor: "#fff",
                   border: "1px solid #e5e5e5",
@@ -86,7 +86,7 @@ export function DashboardCharts({
               <XAxis type="number" tickFormatter={currencyFormatter} fontSize={12} />
               <YAxis type="category" dataKey="client" fontSize={12} width={70} />
               <Tooltip
-                formatter={(value: number) => currencyFormatter(value)}
+                formatter={(value) => currencyFormatter(Number(value))}
                 contentStyle={{
                   backgroundColor: "#fff",
                   border: "1px solid #e5e5e5",

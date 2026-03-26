@@ -33,7 +33,7 @@ export function DashboardVisuals({
             <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
             <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#78716c" }} />
             <YAxis tick={{ fontSize: 11, fill: "#78716c" }} />
-            <Tooltip formatter={(v: number) => [`${v.toLocaleString()} TN`, "Volume"]} />
+            <Tooltip formatter={(v) => [`${Number(v).toLocaleString()} TN`, "Volume"]} />
             <Bar dataKey="tons" fill="#2563eb" radius={[3, 3, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
@@ -50,7 +50,7 @@ export function DashboardVisuals({
                   <Cell key={i} fill={COLORS[i % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(v: number) => [`${v.toLocaleString()} TN`, "Volume"]} />
+              <Tooltip formatter={(v) => [`${Number(v).toLocaleString()} TN`, "Volume"]} />
             </PieChart>
           </ResponsiveContainer>
           <div className="flex flex-wrap gap-2 mt-1 justify-center">
@@ -79,7 +79,7 @@ export function DashboardVisuals({
                   return <Cell key={i} fill={statusColors[entry.name] || COLORS[i]} />;
                 })}
               </Pie>
-              <Tooltip formatter={(v: number) => [`${v.toLocaleString()} TN`, "Volume"]} />
+              <Tooltip formatter={(v) => [`${Number(v).toLocaleString()} TN`, "Volume"]} />
             </PieChart>
           </ResponsiveContainer>
           <div className="flex flex-wrap gap-2 mt-1 justify-center">
@@ -106,7 +106,7 @@ export function DashboardVisuals({
               <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
               <XAxis type="number" tick={{ fontSize: 10, fill: "#78716c" }} />
               <YAxis dataKey="name" type="category" width={80} tick={{ fontSize: 10, fill: "#78716c" }} />
-              <Tooltip formatter={(v: number) => [`${v.toLocaleString()} TN`, "Volume"]} />
+              <Tooltip formatter={(v) => [`${Number(v).toLocaleString()} TN`, "Volume"]} />
               <Bar dataKey="value" fill="#2563eb" radius={[0, 3, 3, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -121,7 +121,7 @@ export function DashboardVisuals({
                 <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
                 <XAxis type="number" tick={{ fontSize: 10, fill: "#78716c" }} />
                 <YAxis dataKey="name" type="category" width={80} tick={{ fontSize: 10, fill: "#78716c" }} />
-                <Tooltip formatter={(v: number) => [`${v.toLocaleString()} TN`, "Volume"]} />
+                <Tooltip formatter={(v) => [`${Number(v).toLocaleString()} TN`, "Volume"]} />
                 <Bar dataKey="value" fill="#059669" radius={[0, 3, 3, 0]} />
               </BarChart>
             </ResponsiveContainer>

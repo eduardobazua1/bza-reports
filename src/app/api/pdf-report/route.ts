@@ -158,6 +158,7 @@ async function generatePdf({ clientId, columns: requestedColumns, filter }: { cl
 
   const client = await db.query.clients.findFirst({ where: eq(clients.id, clientId) });
   if (!client) return NextResponse.json({ error: "Client not found" }, { status: 404 });
+  const clientName = client.name;
 
   // Get client invoices with all possible fields
   const rows: Row[] = await db
@@ -277,7 +278,7 @@ async function generatePdf({ clientId, columns: requestedColumns, filter }: { cl
 
     doc.save();
     doc.fillColor(DARK_GREEN).fontSize(10).font("Helvetica-Bold");
-    doc.text(`Shipment Report — ${client.name}`, MARGIN, 75);
+    doc.text(`Shipment Report — ${clientName}`, MARGIN, 75);
     doc.restore();
 
     doc.save();
@@ -351,10 +352,10 @@ async function generatePdf({ clientId, columns: requestedColumns, filter }: { cl
   doc.end();
   const buffer = await pdfReady;
 
-  return new NextResponse(buffer, {
+  return new NextResponse(buffer as unknown as BodyInit, {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="BZA_Report_${client.name.replace(/[^a-zA-Z0-9]/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf"`,
+      "Content-Disposition": `attachment; filename="BZA_Report_${clientName.replace(/[^a-zA-Z0-9]/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf"`,
     },
   });
 }
