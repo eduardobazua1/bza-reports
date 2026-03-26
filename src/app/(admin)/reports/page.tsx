@@ -80,12 +80,12 @@ function KPICard({ e, type }: { e: EntityKPI; type: "client" | "supplier" }) {
       </div>
       <div className="p-4 space-y-4">
         {/* Row 1: Financial summary */}
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
           <div>
             <p className="text-xs text-stone-500 uppercase tracking-wide">
               {type === "client" ? "Revenue" : "Total Cost"}
             </p>
-            <p className="text-lg font-semibold text-stone-900">
+            <p className="text-sm md:text-base font-semibold text-stone-900">
               {formatCurrency(type === "client" ? e.revenue : e.cost)}
             </p>
           </div>
@@ -104,12 +104,12 @@ function KPICard({ e, type }: { e: EntityKPI; type: "client" | "supplier" }) {
           </div>
           <div>
             <p className="text-xs text-stone-500 uppercase tracking-wide">Tons</p>
-            <p className="text-lg font-bold">{formatNumber(e.totalTons, 0)}</p>
+            <p className="text-sm md:text-base font-bold">{formatNumber(e.totalTons, 0)}</p>
             <p className="text-xs text-muted-foreground">{e.totalShipments} shipments</p>
           </div>
           <div>
             <p className="text-xs text-stone-500 uppercase tracking-wide">Avg/Shipment</p>
-            <p className="text-lg font-bold">{formatNumber(e.avgTonsPerShipment, 0)} TN</p>
+            <p className="text-sm md:text-base font-bold">{formatNumber(e.avgTonsPerShipment, 0)} TN</p>
           </div>
           <div>
             <p className="text-xs text-stone-500 uppercase tracking-wide">Receivable</p>
@@ -257,31 +257,31 @@ export default async function ReportsPage() {
   return (
     <div className="space-y-8">
       {/* Global Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-blue-500 p-4">
-          <p className="text-xs font-medium text-stone-500 uppercase tracking-wide">Revenue</p>
-          <p className="text-xl font-semibold text-stone-900 mt-1">{formatCurrency(totals.revenue)}</p>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-blue-500 p-3">
+          <p className="text-[10px] font-medium text-stone-500 uppercase tracking-wide">Revenue</p>
+          <p className="text-sm md:text-lg font-semibold text-stone-900 mt-1">{formatCurrency(totals.revenue)}</p>
         </div>
-        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-blue-500 p-4">
-          <p className="text-xs font-medium text-stone-500 uppercase tracking-wide">Cost</p>
-          <p className="text-xl font-semibold text-stone-900 mt-1">{formatCurrency(totals.cost)}</p>
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-blue-500 p-3">
+          <p className="text-[10px] font-medium text-stone-500 uppercase tracking-wide">Cost</p>
+          <p className="text-sm md:text-lg font-semibold text-stone-900 mt-1">{formatCurrency(totals.cost)}</p>
         </div>
-        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-emerald-500 p-4">
-          <p className="text-xs font-medium text-stone-500 uppercase tracking-wide">Profit</p>
-          <p className="text-xl font-semibold text-emerald-700 mt-1">{formatCurrency(totals.profit)}</p>
-          <p className="text-xs text-stone-400 mt-0.5">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-emerald-500 p-3">
+          <p className="text-[10px] font-medium text-stone-500 uppercase tracking-wide">Profit</p>
+          <p className="text-sm md:text-lg font-semibold text-emerald-700 mt-1">{formatCurrency(totals.profit)}</p>
+          <p className="text-[10px] text-stone-400 mt-0.5">
             {formatPercent(totals.revenue > 0 ? (totals.profit / totals.revenue) * 100 : 0)} margin
           </p>
         </div>
-        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-blue-500 p-4">
-          <p className="text-xs font-medium text-stone-500 uppercase tracking-wide">Tons</p>
-          <p className="text-xl font-semibold text-stone-900 mt-1">{formatNumber(totals.tons, 0)}</p>
-          <p className="text-xs text-stone-400 mt-0.5">{totals.shipments} shipments</p>
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-blue-500 p-3">
+          <p className="text-[10px] font-medium text-stone-500 uppercase tracking-wide">Tons</p>
+          <p className="text-sm md:text-lg font-semibold text-stone-900 mt-1">{formatNumber(totals.tons, 0)}</p>
+          <p className="text-[10px] text-stone-400 mt-0.5">{totals.shipments} shipments</p>
         </div>
-        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-amber-500 p-4">
-          <p className="text-xs font-medium text-stone-500 uppercase tracking-wide">Receivable</p>
-          <p className="text-xl font-semibold text-amber-600 mt-1">{formatCurrency(totals.unpaidRev)}</p>
-          <p className="text-xs text-stone-400 mt-0.5">{totals.unpaid} invoices</p>
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-amber-500 p-3">
+          <p className="text-[10px] font-medium text-stone-500 uppercase tracking-wide">Receivable</p>
+          <p className="text-sm md:text-lg font-semibold text-amber-600 mt-1">{formatCurrency(totals.unpaidRev)}</p>
+          <p className="text-[10px] text-stone-400 mt-0.5">{totals.unpaid} invoices</p>
         </div>
       </div>
 
