@@ -91,14 +91,14 @@ function KPICard({ e, type }: { e: EntityKPI; type: "client" | "supplier" }) {
           </div>
           <div>
             <p className="text-xs text-stone-500 uppercase tracking-wide">Profit</p>
-            <p className={`text-lg font-bold ${e.profit >= 0 ? "text-green-600" : "text-red-600"}`}>
+            <p className={`text-sm md:text-base font-bold ${e.profit >= 0 ? "text-emerald-600" : "text-red-600"}`}>
               {formatCurrency(e.profit)}
             </p>
-            <p className="text-xs text-muted-foreground">Margin: {formatPercent(e.margin)}</p>
+            <p className="text-[10px] text-stone-400">Margin: {formatPercent(e.margin)}</p>
           </div>
           <div>
             <p className="text-xs text-stone-500 uppercase tracking-wide">Margin/TN</p>
-            <p className={`text-lg font-bold ${e.marginPerTon >= 0 ? "text-green-600" : "text-red-600"}`}>
+            <p className={`text-sm md:text-base font-bold ${e.marginPerTon >= 0 ? "text-emerald-600" : "text-red-600"}`}>
               ${formatNumber(e.marginPerTon, 0)}
             </p>
           </div>
@@ -113,7 +113,7 @@ function KPICard({ e, type }: { e: EntityKPI; type: "client" | "supplier" }) {
           </div>
           <div>
             <p className="text-xs text-stone-500 uppercase tracking-wide">Receivable</p>
-            <p className="text-lg font-semibold text-amber-600">
+            <p className="text-sm md:text-base font-semibold text-amber-600">
               {e.unpaidInvoices > 0 ? formatCurrency(e.unpaidRevenue) : "$0"}
             </p>
             <p className="text-xs text-muted-foreground">
