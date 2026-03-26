@@ -1,0 +1,217 @@
+"use server";
+
+import { db } from "@/db";
+import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { v4 as uuidv4 } from "uuid";
+
+// ---- Clients ----
+export async function createClient(data: {
+  name: string;
+  contactName?: string;
+  contactEmail?: string;
+  phone?: string;
+}) {
+  await db.insert(clients).values({
+    ...data,
+    accessToken: uuidv4(),
+  });
+  revalidatePath("/clients");
+}
+
+export async function updateClient(id: number, data: {
+  name: string;
+  contactName?: string;
+  contactEmail?: string;
+  phone?: string;
+  portalEnabled?: boolean;
+  paymentTermsDays?: number | null;
+}) {
+  await db.update(clients).set({ ...data, updatedAt: new Date().toISOString() }).where(eq(clients.id, id));
+  revalidatePath("/clients");
+}
+
+export async function deleteClient(id: number) {
+  await db.delete(clients).where(eq(clients.id, id));
+  revalidatePath("/clients");
+}
+
+// ---- Suppliers ----
+export async function createSupplier(data: {
+  name: string;
+  contactName?: string;
+  contactEmail?: string;
+  phone?: string;
+}) {
+  await db.insert(suppliers).values(data);
+  revalidatePath("/suppliers");
+}
+
+export async function updateSupplier(id: number, data: {
+  name: string;
+  contactName?: string;
+  contactEmail?: string;
+  phone?: string;
+}) {
+  await db.update(suppliers).set({ ...data, updatedAt: new Date().toISOString() }).where(eq(suppliers.id, id));
+  revalidatePath("/suppliers");
+}
+
+export async function deleteSupplier(id: number) {
+  await db.delete(suppliers).where(eq(suppliers.id, id));
+  revalidatePath("/suppliers");
+}
+
+// ---- Purchase Orders ----
+export async function createPurchaseOrder(data: {
+  poNumber: string;
+  poDate?: string;
+  clientId: number;
+  clientPoNumber?: string;
+  supplierId: number;
+  sellPrice: number;
+  buyPrice: number;
+  product: string;
+  terms?: string;
+  transportType?: "ffcc" | "ship" | "truck";
+  licenseFsc?: string;
+  chainOfCustody?: string;
+  inputClaim?: string;
+  outputClaim?: string;
+  notes?: string;
+}) {
+  const result = await db.insert(purchaseOrders).values(data).returning();
+  revalidatePath("/purchase-orders");
+  return result[0];
+}
+
+export async function updatePurchaseOrder(id: number, data: Partial<{
+  poNumber: string;
+  poDate: string;
+  clientId: number;
+  clientPoNumber: string;
+  supplierId: number;
+  sellPrice: number;
+  buyPrice: number;
+  product: string;
+  terms: string;
+  transportType: "ffcc" | "ship" | "truck";
+  licenseFsc: string;
+  chainOfCustody: string;
+  inputClaim: string;
+  outputClaim: string;
+  status: "active" | "completed" | "cancelled";
+  notes: string;
+}>) {
+  await db.update(purchaseOrders).set({ ...data, updatedAt: new Date().toISOString() }).where(eq(purchaseOrders.id, id));
+  revalidatePath("/purchase-orders");
+}
+
+export async function deletePurchaseOrder(id: number) {
+  await db.delete(invoices).where(eq(invoices.purchaseOrderId, id));
+  await db.delete(purchaseOrders).where(eq(purchaseOrders.id, id));
+  revalidatePath("/purchase-orders");
+}
+
+// ---- Helper: auto-calculate due date from shipment date + client payment terms ----
+async function calcDueDate(purchaseOrderId: number, shipmentDate?: string | null): Promise<{ dueDate?: string; paymentTermsDays?: number }> {
+  if (!shipmentDate) return {};
+  const po = await db.query.purchaseOrders.findFirst({ where: eq(purchaseOrders.id, purchaseOrderId) });
+  if (!po) return {};
+  const client = await db.query.clients.findFirst({ where: eq(clients.id, po.clientId) });
+  if (!client?.paymentTermsDays) return {};
+  const parts = shipmentDate.split("-");
+  const ship = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  ship.setDate(ship.getDate() + client.paymentTermsDays);
+  const y = ship.getFullYear();
+  const m = String(ship.getMonth() + 1).padStart(2, "0");
+  const d = String(ship.getDate()).padStart(2, "0");
+  return { dueDate: `${y}-${m}-${d}`, paymentTermsDays: client.paymentTermsDays };
+}
+
+// ---- Invoices ----
+export async function createInvoice(data: {
+  invoiceNumber: string;
+  purchaseOrderId: number;
+  quantityTons: number;
+  unit?: string;
+  sellPriceOverride?: number;
+  buyPriceOverride?: number;
+  shipmentDate?: string;
+  shipmentStatus?: "programado" | "en_transito" | "en_aduana" | "entregado";
+  customerPaymentStatus?: "paid" | "unpaid";
+  supplierPaymentStatus?: "paid" | "unpaid";
+  usesFactoring?: boolean;
+  item?: string;
+  notes?: string;
+}) {
+  // Auto-calculate due date from client payment terms
+  const dueDateCalc = await calcDueDate(data.purchaseOrderId, data.shipmentDate);
+  const result = await db.insert(invoices).values({ ...data, ...dueDateCalc }).returning();
+  revalidatePath("/invoices");
+  revalidatePath("/purchase-orders");
+  return result[0];
+}
+
+export async function updateInvoice(id: number, data: Partial<{
+  invoiceNumber: string;
+  quantityTons: number;
+  sellPriceOverride: number;
+  buyPriceOverride: number;
+  shipmentDate: string;
+  estimatedArrival: string | null;
+  shipmentStatus: "programado" | "en_transito" | "en_aduana" | "entregado";
+  customerPaymentStatus: "paid" | "unpaid";
+  supplierPaymentStatus: "paid" | "unpaid";
+  usesFactoring: boolean;
+  factoringAmount: number;
+  factoringDays: number;
+  factoringCost: number;
+  item: string;
+  notes: string;
+  currentLocation: string | null;
+  vehicleId: string | null;
+  blNumber: string | null;
+}>) {
+  // If shipment status changed, create a shipment update
+  if (data.shipmentStatus) {
+    const current = await db.query.invoices.findFirst({ where: eq(invoices.id, id) });
+    if (current && current.shipmentStatus !== data.shipmentStatus) {
+      await db.insert(shipmentUpdates).values({
+        invoiceId: id,
+        previousStatus: current.shipmentStatus,
+        newStatus: data.shipmentStatus,
+      });
+    }
+  }
+
+  // Auto-set lastLocationUpdate when location changes
+  const updates: Record<string, unknown> = { ...data, updatedAt: new Date().toISOString() };
+  if (data.currentLocation !== undefined) {
+    updates.lastLocationUpdate = new Date().toISOString();
+  }
+
+  // Auto-recalculate due date if shipment date changes
+  if (data.shipmentDate) {
+    const current = await db.query.invoices.findFirst({ where: eq(invoices.id, id) });
+    if (current) {
+      const dueDateCalc = await calcDueDate(current.purchaseOrderId, data.shipmentDate);
+      if (dueDateCalc.dueDate) {
+        updates.dueDate = dueDateCalc.dueDate;
+        updates.paymentTermsDays = dueDateCalc.paymentTermsDays;
+      }
+    }
+  }
+
+  await db.update(invoices).set(updates).where(eq(invoices.id, id));
+  revalidatePath("/invoices");
+  revalidatePath("/purchase-orders");
+}
+
+export async function deleteInvoice(id: number) {
+  await db.delete(shipmentUpdates).where(eq(shipmentUpdates.invoiceId, id));
+  await db.delete(invoices).where(eq(invoices.id, id));
+  revalidatePath("/invoices");
+  revalidatePath("/purchase-orders");
+}

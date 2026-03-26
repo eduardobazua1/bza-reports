@@ -1,0 +1,1 @@
+ALTER TABLE `scheduled_reports` ADD `reminder_email` text;

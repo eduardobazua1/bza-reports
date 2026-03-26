@@ -1,0 +1,1 @@
+ALTER TABLE `report_templates` ADD `is_system` integer DEFAULT false NOT NULL;

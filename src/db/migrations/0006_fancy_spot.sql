@@ -1,0 +1,1 @@
+ALTER TABLE `report_templates` ADD `default_reminder_email` text;
