@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { db } from "@/db";
-import Database from "better-sqlite3";
-import path from "path";
+import { createClient } from "@libsql/client";
 import { invoices, purchaseOrders, clients, suppliers, supplierPayments, scheduledReports, reportTemplates, shipmentUpdates } from "@/db/schema";
 import { eq, sql, count, like, desc } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
@@ -229,10 +228,12 @@ async function exec(name: string, args: Record<string, unknown>): Promise<string
       const query = (args.sql_query as string).trim();
       if (!query.toUpperCase().startsWith("SELECT")) return "Error: Only SELECT queries allowed.";
       try {
-        const rawDb = new Database(path.join(process.cwd(), "sqlite.db"));
-        const result = rawDb.prepare(query).all();
-        rawDb.close();
-        return JSON.stringify(result);
+        const rawDb = createClient({
+          url: process.env.TURSO_DATABASE_URL || "file:sqlite.db",
+          authToken: process.env.TURSO_AUTH_TOKEN,
+        });
+        const result = await rawDb.execute(query);
+        return JSON.stringify(result.rows);
       } catch (sqlErr: unknown) {
         return `SQL Error: ${sqlErr instanceof Error ? sqlErr.message : "unknown"}`;
       }
