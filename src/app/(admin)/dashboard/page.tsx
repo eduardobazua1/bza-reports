@@ -215,7 +215,7 @@ export default async function DashboardPage() {
         <KPIBig label="Total Margin" value={`$${formatNumber(kpis.grossProfit / 1000000, 2)}M`} unit={`${formatPercent(kpis.grossMargin)} margin`} color="green" href="/reports" animatedValue={kpis.grossProfit} />
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        <KPIBig label="Open POs" value={kpis.activePOs.toString()} unit="active orders" color="amber" href="/purchase-orders?status=active" animatedValue={kpis.activePOs} />
+        <KPIBig label="Active PO's" value={kpis.activePOs.toString()} unit="active orders" color="amber" href="/purchase-orders?status=active" animatedValue={kpis.activePOs} />
         <KPIBig label="Open Invoices" value={kpis.unpaidInvoices.toString()} unit="unpaid" color="red" href="/invoices?status=unpaid" animatedValue={kpis.unpaidInvoices} />
         <KPIBig label="Supplier AP" value={formatCurrency(totalSupplierBalance)} unit="balance to suppliers" color="red" href="/suppliers" animatedValue={totalSupplierBalance} />
       </div>

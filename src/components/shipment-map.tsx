@@ -16,6 +16,15 @@ const LOCATIONS: Record<string, { lat: number; lng: number; type: "origin" | "bo
   "Chihuahua": { lat: 28.63, lng: -106.09, type: "destination" },
 };
 
+const displayNames: Record<string, string> = {
+  "El Paso": "El Paso, TX",
+  "Laredo": "Laredo, TX",
+  "Eagle Pass": "Eagle Pass, TX",
+  "Manzanillo": "Manzanillo, MX",
+  "Veracruz": "Veracruz, MX",
+  "Chihuahua": "Chihuahua, MX",
+};
+
 // Each location gets its own color
 const locationColors: Record<string, string> = {
   "Laredo": "#3b82f6",
@@ -62,7 +71,7 @@ export function ShipmentMap({ locationData }: { locationData: Record<string, Loc
             .sort(([, a], [, b]) => b.tons - a.tons)
             .map(([name, data]) => (
               <Link key={name} href={`/invoices?destination=${encodeURIComponent(name)}`} className="text-center p-2 rounded-md hover:shadow-md transition-shadow cursor-pointer block" style={{ background: `${locationColors[name] || "#94a3b8"}10`, borderLeft: `3px solid ${locationColors[name] || "#94a3b8"}` }}>
-                <p className="text-xs font-medium text-stone-700">{name}</p>
+                <p className="text-xs font-medium text-stone-700">{displayNames[name] || name}</p>
                 <p className="text-sm font-bold text-stone-900">{Math.round(data.tons).toLocaleString()} TN</p>
                 <p className="text-xs text-stone-400">{data.shipments} shipments</p>
               </Link>
