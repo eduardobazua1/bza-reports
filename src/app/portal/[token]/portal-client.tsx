@@ -152,7 +152,7 @@ export function PortalClient({ clientName, shipments, purchaseOrders }: {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-stone-800 truncate">{s.product}</p>
                       <p className="text-[11px] text-stone-400">
-                        {s.clientPoNumber || s.poNumber} · {formatNumber(s.quantityTons, 1)} TN · {formatDate(s.shipmentDate)}
+                        {s.clientPoNumber || ""} · {formatNumber(s.quantityTons, 1)} TN · {formatDate(s.shipmentDate)}
                       </p>
                     </div>
                     <span className="text-[10px] bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full ml-2">Delivered</span>
@@ -242,7 +242,7 @@ function ShipmentCard({ shipment: s }: { shipment: Shipment }) {
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-stone-900 truncate text-sm">{s.product}</p>
             <p className="text-[11px] text-stone-400 mt-0.5">
-              {s.clientPoNumber || s.poNumber} · {s.invoiceNumber}
+              {s.clientPoNumber || ""} · {s.invoiceNumber}
             </p>
           </div>
           <span className={`text-[10px] px-2 py-0.5 rounded-full ml-2 shrink-0 font-medium ${

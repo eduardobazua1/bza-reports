@@ -19,8 +19,8 @@ export default async function PortalPage({
     const updates = await getShipmentUpdates(d.invoice.id);
     return {
       id: d.invoice.id,
-      invoiceNumber: d.invoice.invoiceNumber,
-      poNumber: d.poNumber,
+      invoiceNumber: d.invoice.billingDocument || d.invoice.invoiceNumber,
+      poNumber: d.invoice.salesDocument || d.clientPoNumber || d.poNumber,
       clientPoNumber: d.invoice.salesDocument || d.clientPoNumber,
       product: d.invoice.item || d.product,
       quantityTons: d.invoice.quantityTons,
@@ -41,10 +41,10 @@ export default async function PortalPage({
     };
   }));
 
-  // Build PO summary (no cost/margin info)
+  // Build PO summary grouped by CLIENT PO (not internal BZA PO)
   const poMap = new Map<string, { poNumber: string; clientPo: string; product: string; totalTons: number; invoiceCount: number; status: string; shipments: typeof shipments }>();
   for (const s of shipments) {
-    const key = s.poNumber || "unknown";
+    const key = s.clientPoNumber || s.poNumber || "unknown";
     if (!poMap.has(key)) {
       poMap.set(key, {
         poNumber: key,
