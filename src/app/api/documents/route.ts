@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { put, del } from "@vercel/blob";
 import { db } from "@/db";
 import { documents } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
-// Upload a document
+// Upload a document — store as base64 in database (no external storage needed)
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const file = formData.get("file") as File;
@@ -15,27 +14,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing file, invoiceId or type" }, { status: 400 });
   }
 
+  // Limit file size to 5MB
+  if (file.size > 5 * 1024 * 1024) {
+    return NextResponse.json({ error: "File too large. Maximum 5MB." }, { status: 400 });
+  }
+
   try {
-    // Upload to Vercel Blob
-    const token = process.env.BLOB_TOKEN || process.env.BLOB_READ_WRITE_TOKEN;
-    if (!token) {
-      return NextResponse.json({ error: "Blob storage not configured. Add BLOB_TOKEN in Vercel Environment Variables." }, { status: 500 });
-    }
-    const blob = await put(`documents/${invoiceId}/${docType}-${file.name}`, file, {
-      access: "public",
-      token,
-    });
+    // Convert file to base64 data URL
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const base64 = buffer.toString("base64");
+    const mimeType = file.type || "application/pdf";
+    const dataUrl = `data:${mimeType};base64,${base64}`;
 
     // Save to database
     await db.insert(documents).values({
       invoiceId,
       type: docType,
       fileName: file.name,
-      fileUrl: blob.url,
+      fileUrl: dataUrl,
       fileSize: file.size,
     });
 
-    return NextResponse.json({ ok: true, url: blob.url, fileName: file.name });
+    return NextResponse.json({ ok: true, fileName: file.name });
   } catch (error) {
     return NextResponse.json(
       { error: `Upload failed: ${error instanceof Error ? error.message : "Unknown error"}` },
@@ -52,24 +52,39 @@ export async function GET(req: NextRequest) {
   }
 
   const docs = await db
-    .select()
+    .select({
+      id: documents.id,
+      invoiceId: documents.invoiceId,
+      type: documents.type,
+      fileName: documents.fileName,
+      fileSize: documents.fileSize,
+      uploadedAt: documents.uploadedAt,
+      // Don't send base64 data in list — only metadata
+      hasFile: documents.fileUrl,
+    })
     .from(documents)
     .where(eq(documents.invoiceId, Number(invoiceId)))
     .orderBy(documents.type);
 
-  return NextResponse.json(docs);
+  // Map to hide base64 data, just indicate file exists
+  const result = docs.map(d => ({
+    id: d.id,
+    invoiceId: d.invoiceId,
+    type: d.type,
+    fileName: d.fileName,
+    fileSize: d.fileSize,
+    uploadedAt: d.uploadedAt,
+    fileUrl: `/api/documents/download?id=${d.id}`,
+  }));
+
+  return NextResponse.json(result);
 }
 
 // Delete a document
 export async function DELETE(req: NextRequest) {
-  const { id, fileUrl } = await req.json();
+  const { id } = await req.json();
 
   try {
-    // Delete from Vercel Blob
-    if (fileUrl) {
-      await del(fileUrl);
-    }
-    // Delete from database
     await db.delete(documents).where(eq(documents.id, id));
     return NextResponse.json({ ok: true });
   } catch (error) {
