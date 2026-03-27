@@ -1,7 +1,8 @@
-import { getClientByToken, getClientInvoices, getShipmentUpdates } from "@/server/queries";
+import { getClientByToken, getClientInvoices } from "@/server/queries";
 import { notFound } from "next/navigation";
-import { formatDate, formatNumber, shipmentStatusLabels, transportTypeLabels } from "@/lib/utils";
 import { PortalClient } from "./portal-client";
+
+export const dynamic = "force-dynamic";
 
 export default async function PortalPage({
   params,
@@ -14,35 +15,31 @@ export default async function PortalPage({
 
   const invoiceData = await getClientInvoices(client.id);
 
-  // Build shipment data (no sensitive info)
-  const shipments = await Promise.all(invoiceData.map(async (d) => {
-    const updates = await getShipmentUpdates(d.invoice.id);
-    return {
-      id: d.invoice.id,
-      invoiceNumber: d.invoice.billingDocument || d.invoice.invoiceNumber,
-      poNumber: d.invoice.salesDocument || d.clientPoNumber || d.poNumber,
-      clientPoNumber: d.invoice.salesDocument || d.clientPoNumber,
-      product: d.invoice.item || d.product,
-      quantityTons: d.invoice.quantityTons,
-      shipmentDate: d.invoice.shipmentDate,
-      estimatedArrival: d.invoice.estimatedArrival,
-      shipmentStatus: d.invoice.shipmentStatus,
-      currentLocation: d.invoice.currentLocation,
-      lastLocationUpdate: d.invoice.lastLocationUpdate,
-      vehicleId: d.invoice.vehicleId,
-      blNumber: d.invoice.blNumber,
-      transportType: d.transportType,
-      terms: d.terms,
-      updates: updates.map(u => ({
-        id: u.id,
-        date: u.createdAt,
-        status: u.newStatus,
-      })),
-    };
+  // Build shipment data (no sensitive info, no extra queries)
+  const shipments = invoiceData.map((d) => ({
+    id: d.invoice.id,
+    invoiceNumber: d.invoice.billingDocument || d.invoice.invoiceNumber,
+    poNumber: d.invoice.salesDocument || d.clientPoNumber || d.poNumber,
+    clientPoNumber: d.invoice.salesDocument || d.clientPoNumber,
+    product: d.invoice.item || d.product,
+    quantityTons: d.invoice.quantityTons,
+    shipmentDate: d.invoice.shipmentDate,
+    estimatedArrival: d.invoice.estimatedArrival,
+    shipmentStatus: d.invoice.shipmentStatus,
+    currentLocation: d.invoice.currentLocation,
+    vehicleId: d.invoice.vehicleId,
+    blNumber: d.invoice.blNumber,
+    transportType: d.transportType,
+    terms: d.terms,
   }));
 
-  // Build PO summary grouped by CLIENT PO (not internal BZA PO)
-  const poMap = new Map<string, { poNumber: string; clientPo: string; product: string; totalTons: number; invoiceCount: number; status: string; shipments: typeof shipments }>();
+  // Build PO summary grouped by CLIENT PO
+  const poMap = new Map<string, {
+    poNumber: string; clientPo: string; product: string;
+    totalTons: number; invoiceCount: number; status: string;
+    shipments: typeof shipments;
+  }>();
+
   for (const s of shipments) {
     const key = s.clientPoNumber || s.poNumber || "unknown";
     if (!poMap.has(key)) {
@@ -62,13 +59,12 @@ export default async function PortalPage({
     if (s.shipmentStatus !== "entregado") po.status = "active";
     po.shipments.push(s);
   }
-  const purchaseOrders = Array.from(poMap.values());
 
   return (
     <PortalClient
       clientName={client.name}
       shipments={shipments}
-      purchaseOrders={purchaseOrders}
+      purchaseOrders={Array.from(poMap.values())}
     />
   );
 }

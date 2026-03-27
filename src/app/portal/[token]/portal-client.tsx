@@ -15,12 +15,10 @@ type Shipment = {
   estimatedArrival: string | null;
   shipmentStatus: string;
   currentLocation: string | null;
-  lastLocationUpdate: string | null;
   vehicleId: string | null;
   blNumber: string | null;
   transportType: string | null;
   terms: string | null;
-  updates: { id: number; date: string; status: string }[];
 };
 
 type PO = {
@@ -314,18 +312,7 @@ function ShipmentCard({ shipment: s }: { shipment: Shipment }) {
         <DocumentList invoiceId={s.id} />
       </div>
 
-      {s.updates.length > 0 && (
-        <div className="px-4 py-2 border-t border-stone-100">
-          <p className="text-[9px] font-medium text-stone-400 uppercase tracking-wide mb-1">History</p>
-          {s.updates.slice(0, 3).map((u) => (
-            <div key={u.id} className="flex items-center gap-1.5 text-[10px] py-0.5">
-              <div className="w-1 h-1 rounded-full bg-blue-400 shrink-0" />
-              <span className="text-stone-400">{formatDate(u.date)}</span>
-              <span className="text-stone-600 font-medium">{shipmentStatusLabels[u.status] || u.status}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* History section removed for performance */}
     </div>
   );
 }
