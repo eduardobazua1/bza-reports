@@ -210,9 +210,12 @@ export async function getProfitByClient() {
 
 // ---- Portal: Get client by token ----
 export async function getClientByToken(token: string) {
-  return db.query.clients.findFirst({
-    where: and(eq(clients.accessToken, token), eq(clients.portalEnabled, true)),
+  // Find client by token - check portal enabled separately for Turso compatibility
+  const client = await db.query.clients.findFirst({
+    where: eq(clients.accessToken, token),
   });
+  if (!client || !client.portalEnabled) return null;
+  return client;
 }
 
 // ---- Portal: Get client invoices ----

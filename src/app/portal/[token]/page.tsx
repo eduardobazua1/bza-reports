@@ -13,7 +13,12 @@ export default async function PortalPage({
   const client = await getClientByToken(token);
   if (!client) notFound();
 
-  const invoiceData = await getClientInvoices(client.id);
+  let invoiceData;
+  try {
+    invoiceData = await getClientInvoices(client.id);
+  } catch {
+    return <div className="min-h-screen flex items-center justify-center bg-stone-100"><p className="text-stone-500">Loading error. Please try again.</p></div>;
+  }
 
   // Build shipment data (no sensitive info, no extra queries)
   const shipments = invoiceData.map((d) => ({
