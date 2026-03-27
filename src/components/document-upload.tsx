@@ -46,15 +46,22 @@ export function DocumentUpload({ invoiceId, invoiceNumber }: { invoiceId: number
     if (!file) return;
 
     setUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("invoiceId", invoiceId.toString());
-    formData.append("type", selectedType);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("invoiceId", invoiceId.toString());
+      formData.append("type", selectedType);
 
-    const res = await fetch("/api/documents", { method: "POST", body: formData });
-    if (res.ok) {
-      await loadDocs();
-      setShowUpload(false);
+      const res = await fetch("/api/documents", { method: "POST", body: formData });
+      const data = await res.json();
+      if (res.ok) {
+        await loadDocs();
+        setShowUpload(false);
+      } else {
+        alert(`Upload failed: ${data.error || "Unknown error"}`);
+      }
+    } catch (err) {
+      alert(`Upload error: ${err instanceof Error ? err.message : "Connection error"}`);
     }
     setUploading(false);
     e.target.value = "";
