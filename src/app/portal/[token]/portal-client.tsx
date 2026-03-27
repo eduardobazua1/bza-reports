@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { formatDate, formatNumber, shipmentStatusLabels, transportTypeLabels } from "@/lib/utils";
-import { DocumentList } from "@/components/document-upload";
+
+type DocInfo = { id: number; type: string; fileName: string; fileUrl: string };
 
 type Shipment = {
   id: number;
@@ -19,6 +20,7 @@ type Shipment = {
   blNumber: string | null;
   transportType: string | null;
   terms: string | null;
+  documents: DocInfo[];
 };
 
 type PO = {
@@ -32,6 +34,8 @@ type PO = {
 };
 
 const statusSteps = ["programado", "en_transito", "en_aduana", "entregado"];
+const typeLabels: Record<string, string> = { invoice: "Invoice", bl: "Bill of Lading", pl: "Packing List", other: "Other" };
+const typeColors: Record<string, string> = { invoice: "bg-blue-50 text-blue-600", bl: "bg-emerald-50 text-emerald-600", pl: "bg-amber-50 text-amber-600", other: "bg-stone-100 text-stone-500" };
 
 function StatusStepper({ currentStatus }: { currentStatus: string }) {
   const currentIndex = statusSteps.indexOf(currentStatus);
@@ -62,6 +66,25 @@ function StatusStepper({ currentStatus }: { currentStatus: string }) {
   );
 }
 
+function DocBadges({ docs }: { docs: DocInfo[] }) {
+  if (docs.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {docs.map((doc) => (
+        <a
+          key={doc.id}
+          href={doc.fileUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-md font-medium hover:opacity-80 ${typeColors[doc.type] || typeColors.other}`}
+        >
+          {typeLabels[doc.type] || doc.type}
+        </a>
+      ))}
+    </div>
+  );
+}
+
 export function PortalClient({ clientName, shipments, purchaseOrders }: {
   clientName: string;
   shipments: Shipment[];
@@ -76,7 +99,6 @@ export function PortalClient({ clientName, shipments, purchaseOrders }: {
 
   return (
     <div className="min-h-screen bg-stone-100">
-      {/* Header */}
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
           <img src="/bza-logo-new.png" alt="BZA" className="h-7" />
@@ -87,7 +109,6 @@ export function PortalClient({ clientName, shipments, purchaseOrders }: {
         </div>
       </header>
 
-      {/* Tabs */}
       <div className="bg-white border-b border-stone-200">
         <div className="max-w-lg mx-auto flex">
           <button
@@ -110,10 +131,8 @@ export function PortalClient({ clientName, shipments, purchaseOrders }: {
       </div>
 
       <main className="max-w-lg mx-auto px-4 py-5 space-y-4">
-        {/* ====== SHIPMENTS TAB ====== */}
         {tab === "shipments" && (
           <>
-            {/* Summary */}
             <div className="bg-white rounded-xl shadow-sm p-4 flex justify-between items-center">
               <div>
                 <p className="text-[10px] text-stone-400 uppercase tracking-wide">Active</p>
@@ -125,7 +144,6 @@ export function PortalClient({ clientName, shipments, purchaseOrders }: {
               </div>
             </div>
 
-            {/* Active shipments */}
             {active.length > 0 && (
               <div className="space-y-3">
                 {active.map((s) => (
@@ -140,7 +158,6 @@ export function PortalClient({ clientName, shipments, purchaseOrders }: {
               </div>
             )}
 
-            {/* Delivered */}
             {delivered.length > 0 && (
               <div className="space-y-2">
                 <h2 className="text-xs font-medium text-stone-400 uppercase tracking-wide pt-2">
@@ -165,7 +182,6 @@ export function PortalClient({ clientName, shipments, purchaseOrders }: {
           </>
         )}
 
-        {/* ====== PURCHASE ORDERS TAB ====== */}
         {tab === "orders" && (
           <div className="space-y-3">
             {purchaseOrders.map((po) => (
@@ -190,7 +206,6 @@ export function PortalClient({ clientName, shipments, purchaseOrders }: {
                   </svg>
                 </button>
 
-                {/* Expanded: show invoices */}
                 {expandedPO === po.poNumber && (
                   <div className="border-t border-stone-100 px-4 pb-4">
                     <div className="divide-y divide-stone-100">
@@ -215,9 +230,11 @@ export function PortalClient({ clientName, shipments, purchaseOrders }: {
                             {s.currentLocation && <div><span className="text-stone-400">Location:</span> <span className="font-medium">{s.currentLocation}</span></div>}
                             {s.estimatedArrival && <div><span className="text-stone-400">ETA:</span> <span className="font-medium">{formatDate(s.estimatedArrival)}</span></div>}
                           </div>
-                          <div className="mt-1.5">
-                            <DocumentList invoiceId={s.id} />
-                          </div>
+                          {s.documents.length > 0 && (
+                            <div className="mt-1.5">
+                              <DocBadges docs={s.documents} />
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -306,13 +323,12 @@ function ShipmentCard({ shipment: s }: { shipment: Shipment }) {
         )}
       </div>
 
-      {/* Documents */}
-      <div className="px-4 py-2 border-t border-stone-100">
-        <p className="text-[9px] font-medium text-stone-400 uppercase tracking-wide mb-1">Documents</p>
-        <DocumentList invoiceId={s.id} />
-      </div>
-
-      {/* History section removed for performance */}
+      {s.documents.length > 0 && (
+        <div className="px-4 py-2 border-t border-stone-100">
+          <p className="text-[9px] font-medium text-stone-400 uppercase tracking-wide mb-1">Documents</p>
+          <DocBadges docs={s.documents} />
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { clients, invoices, purchaseOrders } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { clients, invoices, purchaseOrders, documents } from "@/db/schema";
+import { eq, desc, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { PortalClient } from "./portal-client";
 
@@ -14,14 +14,12 @@ export default async function PortalPage({
 }) {
   const { token } = await params;
 
-  // Simple direct query - no helper functions
   const client = await db.query.clients.findFirst({
     where: eq(clients.accessToken, token),
   });
 
   if (!client || !client.portalEnabled) notFound();
 
-  // Get only active invoices + last 10 delivered
   const allInvoices = await db
     .select({
       id: invoices.id,
@@ -48,6 +46,25 @@ export default async function PortalPage({
     .orderBy(desc(invoices.shipmentDate))
     .limit(50);
 
+  // Load ALL documents in ONE query instead of N fetches
+  const invoiceIds = allInvoices.map(i => i.id);
+  const allDocs = invoiceIds.length > 0
+    ? await db.select({
+        id: documents.id,
+        invoiceId: documents.invoiceId,
+        type: documents.type,
+        fileName: documents.fileName,
+        fileUrl: documents.fileUrl,
+      }).from(documents).where(inArray(documents.invoiceId, invoiceIds))
+    : [];
+
+  // Group docs by invoiceId
+  const docsByInvoice = new Map<number, typeof allDocs>();
+  for (const doc of allDocs) {
+    if (!docsByInvoice.has(doc.invoiceId)) docsByInvoice.set(doc.invoiceId, []);
+    docsByInvoice.get(doc.invoiceId)!.push(doc);
+  }
+
   const shipments = allInvoices.map((d) => ({
     id: d.id,
     invoiceNumber: d.billingDocument || d.invoiceNumber,
@@ -63,6 +80,12 @@ export default async function PortalPage({
     blNumber: d.blNumber,
     transportType: d.transportType,
     terms: d.terms,
+    documents: (docsByInvoice.get(d.id) || []).map(doc => ({
+      id: doc.id,
+      type: doc.type,
+      fileName: doc.fileName,
+      fileUrl: doc.fileUrl,
+    })),
   }));
 
   const poMap = new Map<string, { poNumber: string; clientPo: string; product: string; totalTons: number; invoiceCount: number; status: string; shipments: typeof shipments }>();
