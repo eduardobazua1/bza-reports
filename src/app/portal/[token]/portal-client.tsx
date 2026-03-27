@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { formatDate, formatNumber, shipmentStatusLabels, transportTypeLabels } from "@/lib/utils";
+import { DocumentList } from "@/components/document-upload";
 
 type Shipment = {
   id: number;
@@ -216,6 +217,9 @@ export function PortalClient({ clientName, shipments, purchaseOrders }: {
                             {s.currentLocation && <div><span className="text-stone-400">Location:</span> <span className="font-medium">{s.currentLocation}</span></div>}
                             {s.estimatedArrival && <div><span className="text-stone-400">ETA:</span> <span className="font-medium">{formatDate(s.estimatedArrival)}</span></div>}
                           </div>
+                          <div className="mt-1.5">
+                            <DocumentList invoiceId={s.id} />
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -302,6 +306,12 @@ function ShipmentCard({ shipment: s }: { shipment: Shipment }) {
             <p className="font-semibold text-stone-800">{s.terms}</p>
           </div>
         )}
+      </div>
+
+      {/* Documents */}
+      <div className="px-4 py-2 border-t border-stone-100">
+        <p className="text-[9px] font-medium text-stone-400 uppercase tracking-wide mb-1">Documents</p>
+        <DocumentList invoiceId={s.id} />
       </div>
 
       {s.updates.length > 0 && (

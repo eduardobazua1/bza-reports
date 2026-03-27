@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getPurchaseOrder, getClients, getSuppliers } from "@/server/queries";
+import { DocumentUpload } from "@/components/document-upload";
 import {
   formatCurrency,
   formatNumber,
@@ -142,6 +143,7 @@ export default async function PurchaseOrderDetailPage({
                 <th className="text-left px-3 py-2 font-medium text-stone-500">Ship Date</th>
                 <th className="text-left px-3 py-2 font-medium text-stone-500">Status</th>
                 <th className="text-left px-3 py-2 font-medium text-stone-500">Payment</th>
+                <th className="text-left px-3 py-2 font-medium text-stone-500">Documents</th>
               </tr>
             </thead>
             <tbody>
@@ -193,6 +195,9 @@ export default async function PurchaseOrderDetailPage({
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${paymentStatusColors[inv.customerPaymentStatus] || ""}`}>
                         {paymentStatusLabels[inv.customerPaymentStatus] || inv.customerPaymentStatus}
                       </span>
+                    </td>
+                    <td className="px-3 py-2 border-t border-stone-100">
+                      <DocumentUpload invoiceId={inv.id} invoiceNumber={inv.invoiceNumber} />
                     </td>
                   </tr>
                 );

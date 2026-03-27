@@ -158,3 +158,14 @@ export const supplierPayments = sqliteTable("supplier_payments", {
   notes: text("notes"),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
+
+// Documents attached to invoices (BL, PL, Invoice PDF, etc.)
+export const documents = sqliteTable("documents", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  invoiceId: integer("invoice_id").notNull().references(() => invoices.id),
+  type: text("type", { enum: ["invoice", "bl", "pl", "other"] }).notNull(),
+  fileName: text("file_name").notNull(),
+  fileUrl: text("file_url").notNull(),
+  fileSize: integer("file_size"),
+  uploadedAt: text("uploaded_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
