@@ -20,8 +20,12 @@ export default async function PortalPage({
     return <div className="min-h-screen flex items-center justify-center bg-stone-100"><p className="text-stone-500">Loading error. Please try again.</p></div>;
   }
 
-  // Build shipment data (no sensitive info, no extra queries)
-  const shipments = invoiceData.map((d) => ({
+  // Limit data: only active + last 20 delivered to avoid timeout
+  const activeData = invoiceData.filter(d => d.invoice.shipmentStatus !== "entregado");
+  const deliveredData = invoiceData.filter(d => d.invoice.shipmentStatus === "entregado").slice(0, 20);
+  const limitedData = [...activeData, ...deliveredData];
+
+  const shipments = limitedData.map((d) => ({
     id: d.invoice.id,
     invoiceNumber: d.invoice.billingDocument || d.invoice.invoiceNumber,
     poNumber: d.invoice.salesDocument || d.clientPoNumber || d.poNumber,
