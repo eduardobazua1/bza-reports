@@ -153,7 +153,7 @@ export function PortalClient({ clientName, shipments, purchaseOrders }: {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-stone-800 truncate">{s.product}</p>
                       <p className="text-[11px] text-stone-400">
-                        {s.clientPoNumber || ""} · {formatNumber(s.quantityTons, 1)} TN · {formatDate(s.shipmentDate)}
+                        {s.clientPoNumber || ""} · {formatNumber(s.quantityTons, 3)} TN · {formatDate(s.shipmentDate)}
                       </p>
                     </div>
                     <span className="text-[10px] bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full ml-2">Delivered</span>
@@ -210,7 +210,7 @@ export function PortalClient({ clientName, shipments, purchaseOrders }: {
                             </span>
                           </div>
                           <div className="grid grid-cols-2 gap-1 text-[11px]">
-                            <div><span className="text-stone-400">Tons:</span> <span className="font-medium">{formatNumber(s.quantityTons, 1)}</span></div>
+                            <div><span className="text-stone-400">Tons:</span> <span className="font-medium">{formatNumber(s.quantityTons, 3)}</span></div>
                             <div><span className="text-stone-400">Date:</span> <span className="font-medium">{formatDate(s.shipmentDate)}</span></div>
                             {s.vehicleId && <div><span className="text-stone-400">Vehicle:</span> <span className="font-medium font-mono text-[10px]">{s.vehicleId}</span></div>}
                             {s.blNumber && <div><span className="text-stone-400">BL#:</span> <span className="font-medium">{s.blNumber}</span></div>}
@@ -264,7 +264,7 @@ function ShipmentCard({ shipment: s }: { shipment: Shipment }) {
       <div className="px-4 py-3 bg-stone-50 grid grid-cols-2 gap-2 text-[11px]">
         <div>
           <p className="text-stone-400">Quantity</p>
-          <p className="font-semibold text-stone-800">{formatNumber(s.quantityTons, 1)} TN</p>
+          <p className="font-semibold text-stone-800">{formatNumber(s.quantityTons, 3)} TN</p>
         </div>
         <div>
           <p className="text-stone-400">Ship Date</p>
