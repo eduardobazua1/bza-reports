@@ -17,9 +17,9 @@ export async function POST(req: NextRequest) {
 
   try {
     // Upload to Vercel Blob
-    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    const token = process.env.BLOB_TOKEN || process.env.BLOB_READ_WRITE_TOKEN;
     if (!token) {
-      return NextResponse.json({ error: "Blob storage not configured. Add BLOB_READ_WRITE_TOKEN in Vercel." }, { status: 500 });
+      return NextResponse.json({ error: "Blob storage not configured. Add BLOB_TOKEN in Vercel Environment Variables." }, { status: 500 });
     }
     const blob = await put(`documents/${invoiceId}/${docType}-${file.name}`, file, {
       access: "public",
