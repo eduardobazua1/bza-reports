@@ -1,8 +1,11 @@
-import { getClientByToken, getClientInvoices } from "@/server/queries";
+import { db } from "@/db";
+import { clients, invoices, purchaseOrders } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { PortalClient } from "./portal-client";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 30;
 
 export default async function PortalPage({
   params,
@@ -10,57 +13,63 @@ export default async function PortalPage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
-  const client = await getClientByToken(token);
-  if (!client) notFound();
 
-  let invoiceData;
-  try {
-    invoiceData = await getClientInvoices(client.id);
-  } catch {
-    return <div className="min-h-screen flex items-center justify-center bg-stone-100"><p className="text-stone-500">Loading error. Please try again.</p></div>;
-  }
+  // Simple direct query - no helper functions
+  const client = await db.query.clients.findFirst({
+    where: eq(clients.accessToken, token),
+  });
 
-  // Limit data: only active + last 20 delivered to avoid timeout
-  const activeData = invoiceData.filter(d => d.invoice.shipmentStatus !== "entregado");
-  const deliveredData = invoiceData.filter(d => d.invoice.shipmentStatus === "entregado").slice(0, 20);
-  const limitedData = [...activeData, ...deliveredData];
+  if (!client || !client.portalEnabled) notFound();
 
-  const shipments = limitedData.map((d) => ({
-    id: d.invoice.id,
-    invoiceNumber: d.invoice.billingDocument || d.invoice.invoiceNumber,
-    poNumber: d.invoice.salesDocument || d.clientPoNumber || d.poNumber,
-    clientPoNumber: d.invoice.salesDocument || d.clientPoNumber,
-    product: d.invoice.item || d.product,
-    quantityTons: d.invoice.quantityTons,
-    shipmentDate: d.invoice.shipmentDate,
-    estimatedArrival: d.invoice.estimatedArrival,
-    shipmentStatus: d.invoice.shipmentStatus,
-    currentLocation: d.invoice.currentLocation,
-    vehicleId: d.invoice.vehicleId,
-    blNumber: d.invoice.blNumber,
+  // Get only active invoices + last 10 delivered
+  const allInvoices = await db
+    .select({
+      id: invoices.id,
+      invoiceNumber: invoices.invoiceNumber,
+      quantityTons: invoices.quantityTons,
+      shipmentDate: invoices.shipmentDate,
+      estimatedArrival: invoices.estimatedArrival,
+      shipmentStatus: invoices.shipmentStatus,
+      currentLocation: invoices.currentLocation,
+      vehicleId: invoices.vehicleId,
+      blNumber: invoices.blNumber,
+      item: invoices.item,
+      salesDocument: invoices.salesDocument,
+      billingDocument: invoices.billingDocument,
+      poNumber: purchaseOrders.poNumber,
+      clientPoNumber: purchaseOrders.clientPoNumber,
+      product: purchaseOrders.product,
+      transportType: purchaseOrders.transportType,
+      terms: purchaseOrders.terms,
+    })
+    .from(invoices)
+    .leftJoin(purchaseOrders, eq(invoices.purchaseOrderId, purchaseOrders.id))
+    .where(eq(purchaseOrders.clientId, client.id))
+    .orderBy(desc(invoices.shipmentDate))
+    .limit(50);
+
+  const shipments = allInvoices.map((d) => ({
+    id: d.id,
+    invoiceNumber: d.billingDocument || d.invoiceNumber,
+    poNumber: d.salesDocument || d.clientPoNumber || d.poNumber,
+    clientPoNumber: d.salesDocument || d.clientPoNumber,
+    product: d.item || d.product,
+    quantityTons: d.quantityTons,
+    shipmentDate: d.shipmentDate,
+    estimatedArrival: d.estimatedArrival,
+    shipmentStatus: d.shipmentStatus,
+    currentLocation: d.currentLocation,
+    vehicleId: d.vehicleId,
+    blNumber: d.blNumber,
     transportType: d.transportType,
     terms: d.terms,
   }));
 
-  // Build PO summary grouped by CLIENT PO
-  const poMap = new Map<string, {
-    poNumber: string; clientPo: string; product: string;
-    totalTons: number; invoiceCount: number; status: string;
-    shipments: typeof shipments;
-  }>();
-
+  const poMap = new Map<string, { poNumber: string; clientPo: string; product: string; totalTons: number; invoiceCount: number; status: string; shipments: typeof shipments }>();
   for (const s of shipments) {
     const key = s.clientPoNumber || s.poNumber || "unknown";
     if (!poMap.has(key)) {
-      poMap.set(key, {
-        poNumber: key,
-        clientPo: s.clientPoNumber || "-",
-        product: s.product || "-",
-        totalTons: 0,
-        invoiceCount: 0,
-        status: s.shipmentStatus === "entregado" ? "delivered" : "active",
-        shipments: [],
-      });
+      poMap.set(key, { poNumber: key, clientPo: s.clientPoNumber || "-", product: s.product || "-", totalTons: 0, invoiceCount: 0, status: "delivered", shipments: [] });
     }
     const po = poMap.get(key)!;
     po.totalTons += s.quantityTons;
