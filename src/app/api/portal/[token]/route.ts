@@ -40,14 +40,14 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
 
   const ids = rows.map(r => r.id);
   const allDocs = ids.length > 0
-    ? await db.select({ id: documents.id, invoiceId: documents.invoiceId, type: documents.type, fileUrl: documents.fileUrl })
+    ? await db.select({ id: documents.id, invoiceId: documents.invoiceId, type: documents.type })
         .from(documents).where(inArray(documents.invoiceId, ids))
     : [];
 
-  const docMap = new Map<number, { id: number; type: string; fileUrl: string }[]>();
+  const docMap = new Map<number, { id: number; type: string }[]>();
   for (const d of allDocs) {
     if (!docMap.has(d.invoiceId)) docMap.set(d.invoiceId, []);
-    docMap.get(d.invoiceId)!.push({ id: d.id, type: d.type, fileUrl: d.fileUrl });
+    docMap.get(d.invoiceId)!.push({ id: d.id, type: d.type });
   }
 
   const shipments = rows.map(r => ({
@@ -63,7 +63,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
     vehicle: r.vehicleId,
     bl: r.blNumber,
     transport: r.transportType,
-    docs: docMap.get(r.id) || [],
+    docs: (docMap.get(r.id) || []).map(d => ({ id: d.id, type: d.type })),
   }));
 
   return NextResponse.json({ name: client.name, shipments });

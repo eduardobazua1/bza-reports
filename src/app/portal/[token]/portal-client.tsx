@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { formatDate, formatNumber, shipmentStatusLabels, transportTypeLabels } from "@/lib/utils";
 
-type DocInfo = { id: number; type: string; fileUrl: string };
+type DocInfo = { id: number; type: string };
 type Shipment = {
   id: number; inv: string; po: string | null; product: string | null;
   tons: number; date: string | null; eta: string | null; status: string;
@@ -141,7 +141,7 @@ export function PortalClient({ token }: { token: string }) {
                   <div className="px-4 py-2 border-t border-stone-100">
                     <div className="flex flex-wrap gap-1.5">
                       {s.docs.map((d) => (
-                        <a key={d.id} href={d.fileUrl} target="_blank" rel="noopener noreferrer"
+                        <a key={d.id} href={`/api/documents/download/${d.id}`} target="_blank" rel="noopener noreferrer"
                           className={`text-[10px] px-2 py-1 rounded-md font-medium ${typeColors[d.type] || typeColors.other}`}>
                           {typeLabels[d.type] || d.type}
                         </a>
