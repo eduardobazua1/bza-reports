@@ -16,7 +16,12 @@ export default async function DashboardPage() {
   ]);
 
   // Market prices for widget
-  const allMarketPrices = await db.select().from(marketPrices).orderBy(desc(marketPrices.month));
+  let allMarketPrices: any[] = [];
+  try {
+    allMarketPrices = await db.select().from(marketPrices).orderBy(desc(marketPrices.month));
+  } catch (e) {
+    console.error("Market prices query failed:", e);
+  }
 
   // Scheduled report reminders
   const pendingSchedules = await db
