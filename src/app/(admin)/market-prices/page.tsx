@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { formatNumber } from "@/lib/utils";
-import { TrendingUp, TrendingDown, Minus, Plus, Trash2 } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 type Price = {
   id: number;
@@ -15,8 +15,6 @@ type Price = {
 };
 
 const GRADES = ["NBSK", "SBSK", "BHK"];
-const SOURCES = ["TTO", "RISI"];
-const PRICE_TYPES = ["net", "list"];
 
 function monthLabel(m: string) {
   const [y, mo] = m.split("-");
@@ -33,8 +31,6 @@ function prevMonth(m: string) {
 export default function MarketPricesPage() {
   const [prices, setPrices] = useState<Price[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ source: "TTO", grade: "NBSK", region: "North America", month: new Date().toISOString().slice(0, 7), price: "", priceType: "net" });
 
   async function load() {
     const res = await fetch("/api/market-prices");
@@ -43,27 +39,6 @@ export default function MarketPricesPage() {
   }
 
   useEffect(() => { load(); }, []);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    await fetch("/api/market-prices", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    setForm({ ...form, price: "" });
-    load();
-  }
-
-  async function handleDelete(id: number) {
-    if (!confirm("Delete this price?")) return;
-    await fetch("/api/market-prices", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
-    load();
-  }
 
   // Get unique months sorted descending
   const months = useMemo(() => [...new Set(prices.map(p => p.month))].sort().reverse(), [prices]);
@@ -107,31 +82,7 @@ export default function MarketPricesPage() {
           <h1 className="text-2xl font-bold text-stone-900">Market Prices</h1>
           <p className="text-sm text-stone-400">TTO & RISI pulp price indices — North America</p>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-1.5 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
-        >
-          <Plus className="w-4 h-4" /> Add Price
-        </button>
       </div>
-
-      {/* Add Price Form */}
-      {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-4 grid grid-cols-2 md:grid-cols-6 gap-3">
-          <select value={form.source} onChange={e => setForm({ ...form, source: e.target.value })} className="border rounded-lg px-3 py-2 text-sm">
-            {SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-          <select value={form.grade} onChange={e => setForm({ ...form, grade: e.target.value })} className="border rounded-lg px-3 py-2 text-sm">
-            {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
-          </select>
-          <select value={form.priceType} onChange={e => setForm({ ...form, priceType: e.target.value })} className="border rounded-lg px-3 py-2 text-sm">
-            {PRICE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
-          <input type="month" value={form.month} onChange={e => setForm({ ...form, month: e.target.value })} className="border rounded-lg px-3 py-2 text-sm" />
-          <input type="number" step="0.01" placeholder="Price USD" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} className="border rounded-lg px-3 py-2 text-sm" required />
-          <button type="submit" className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700">Save</button>
-        </form>
-      )}
 
       {/* Current Month Summary Cards */}
       {currentMonth && (
@@ -250,7 +201,6 @@ export default function MarketPricesPage() {
                 <th className="px-4 py-3 text-left">Type</th>
                 <th className="px-4 py-3 text-right">Price (USD/ADMT)</th>
                 <th className="px-4 py-3 text-right">vs Prev Month</th>
-                <th className="px-4 py-3 text-center w-10"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
@@ -274,11 +224,6 @@ export default function MarketPricesPage() {
                           {change > 0 ? "+" : ""}{formatNumber(change, 2)}
                         </span>
                       )}
-                    </td>
-                    <td className="px-4 py-2.5 text-center">
-                      <button onClick={() => handleDelete(p.id)} className="text-stone-300 hover:text-red-500">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
                     </td>
                   </tr>
                 );
