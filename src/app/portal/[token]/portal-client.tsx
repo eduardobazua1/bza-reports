@@ -1,24 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { formatDate, formatNumber, shipmentStatusLabels, transportTypeLabels } from "@/lib/utils";
 
 type DocInfo = { id: number; type: string; fileUrl: string };
-
 type Shipment = {
-  id: number;
-  inv: string;
-  po: string | null;
-  product: string | null;
-  tons: number;
-  date: string | null;
-  eta: string | null;
-  status: string;
-  loc: string | null;
-  vehicle: string | null;
-  bl: string | null;
-  transport: string | null;
-  docs: DocInfo[];
+  id: number; inv: string; po: string | null; product: string | null;
+  tons: number; date: string | null; eta: string | null; status: string;
+  loc: string | null; vehicle: string | null; bl: string | null;
+  transport: string | null; docs: DocInfo[];
 };
 
 const statusSteps = ["programado", "en_transito", "en_aduana", "entregado"];
@@ -45,20 +35,6 @@ function StatusStepper({ status }: { status: string }) {
   );
 }
 
-function DocBadges({ docs }: { docs: DocInfo[] }) {
-  if (!docs.length) return null;
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {docs.map((d) => (
-        <a key={d.id} href={d.fileUrl} target="_blank" rel="noopener noreferrer"
-          className={`text-[10px] px-2 py-1 rounded-md font-medium ${typeColors[d.type] || typeColors.other}`}>
-          {typeLabels[d.type] || d.type}
-        </a>
-      ))}
-    </div>
-  );
-}
-
 function StatusBadge({ status }: { status: string }) {
   const c = status === "en_transito" ? "bg-blue-50 text-blue-600" :
     status === "en_aduana" ? "bg-amber-50 text-amber-600" :
@@ -66,11 +42,35 @@ function StatusBadge({ status }: { status: string }) {
   return <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${c}`}>{shipmentStatusLabels[status] || status}</span>;
 }
 
-export function PortalClient({ clientName, shipments }: { clientName: string; shipments: Shipment[] }) {
-  const [tab, setTab] = useState<"active" | "all">("active");
+export function PortalClient({ token }: { token: string }) {
+  const [data, setData] = useState<{ name: string; shipments: Shipment[] } | null>(null);
+  const [error, setError] = useState(false);
+  const [tab, setTab] = useState<"active" | "delivered">("active");
 
-  const active = shipments.filter(s => s.status !== "entregado");
-  const delivered = shipments.filter(s => s.status === "entregado");
+  useEffect(() => {
+    fetch(`/api/portal/${token}`)
+      .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+      .then(setData)
+      .catch(() => setError(true));
+  }, [token]);
+
+  if (error) return (
+    <div className="min-h-screen bg-stone-100 flex items-center justify-center">
+      <p className="text-stone-500">Portal not found</p>
+    </div>
+  );
+
+  if (!data) return (
+    <div className="min-h-screen bg-stone-100 flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-stone-400 text-sm">Loading shipments...</p>
+      </div>
+    </div>
+  );
+
+  const active = data.shipments.filter(s => s.status !== "entregado");
+  const delivered = data.shipments.filter(s => s.status === "entregado");
   const totalTons = active.reduce((a, s) => a + s.tons, 0);
 
   return (
@@ -79,7 +79,7 @@ export function PortalClient({ clientName, shipments }: { clientName: string; sh
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
           <img src="/bza-logo-new.png" alt="BZA" className="h-7" />
           <div className="text-right">
-            <p className="text-sm font-medium text-stone-800">{clientName}</p>
+            <p className="text-sm font-medium text-stone-800">{data.name}</p>
             <p className="text-[10px] text-stone-400">Shipment Portal</p>
           </div>
         </div>
@@ -91,8 +91,8 @@ export function PortalClient({ clientName, shipments }: { clientName: string; sh
             className={`flex-1 py-3 text-sm font-medium text-center border-b-2 ${tab === "active" ? "border-blue-500 text-blue-600" : "border-transparent text-stone-400"}`}>
             Active ({active.length})
           </button>
-          <button onClick={() => setTab("all")}
-            className={`flex-1 py-3 text-sm font-medium text-center border-b-2 ${tab === "all" ? "border-blue-500 text-blue-600" : "border-transparent text-stone-400"}`}>
+          <button onClick={() => setTab("delivered")}
+            className={`flex-1 py-3 text-sm font-medium text-center border-b-2 ${tab === "delivered" ? "border-blue-500 text-blue-600" : "border-transparent text-stone-400"}`}>
             Delivered ({delivered.length})
           </button>
         </div>
@@ -139,7 +139,14 @@ export function PortalClient({ clientName, shipments }: { clientName: string; sh
                 </div>
                 {s.docs.length > 0 && (
                   <div className="px-4 py-2 border-t border-stone-100">
-                    <DocBadges docs={s.docs} />
+                    <div className="flex flex-wrap gap-1.5">
+                      {s.docs.map((d) => (
+                        <a key={d.id} href={d.fileUrl} target="_blank" rel="noopener noreferrer"
+                          className={`text-[10px] px-2 py-1 rounded-md font-medium ${typeColors[d.type] || typeColors.other}`}>
+                          {typeLabels[d.type] || d.type}
+                        </a>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -147,7 +154,7 @@ export function PortalClient({ clientName, shipments }: { clientName: string; sh
           </>
         )}
 
-        {tab === "all" && (
+        {tab === "delivered" && (
           <div className="space-y-2">
             {delivered.map((s) => (
               <div key={s.id} className="bg-white rounded-xl shadow-sm p-3 flex items-center justify-between">

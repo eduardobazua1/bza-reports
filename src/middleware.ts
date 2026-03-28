@@ -7,6 +7,7 @@ export function middleware(req: NextRequest) {
   // Allow portal, login, auth API, and static routes
   if (
     pathname.startsWith("/portal") ||
+    pathname.startsWith("/api/portal") ||
     pathname.startsWith("/login") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/_next") ||
