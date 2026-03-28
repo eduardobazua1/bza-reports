@@ -66,8 +66,7 @@ export function ClientActions({ clients }: { clients: Client[] }) {
   }
 
   function handleCopyLink(client: Client) {
-    const base = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
-    const link = `${base}/portal/${client.accessToken}`;
+    const link = `https://bza-reports.vercel.app/portal/${client.accessToken}`;
     navigator.clipboard.writeText(link);
     setCopiedId(client.id);
     setTimeout(() => setCopiedId(null), 2000);
