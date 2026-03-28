@@ -16,6 +16,9 @@ export const clients = sqliteTable("clients", {
   contactName: text("contact_name"),
   contactEmail: text("contact_email"),
   phone: text("phone"),
+  billAddress: text("bill_address"),
+  shipAddress: text("ship_address"),
+  rfc: text("rfc"),
   paymentTermsDays: integer("payment_terms_days"), // e.g. 60 = Net 60
   accessToken: text("access_token").notNull().unique(),
   portalEnabled: integer("portal_enabled", { mode: "boolean" }).notNull().default(false),
