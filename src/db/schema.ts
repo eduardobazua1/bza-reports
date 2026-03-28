@@ -162,6 +162,19 @@ export const supplierPayments = sqliteTable("supplier_payments", {
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
+// Market prices from TTO and RISI
+export const marketPrices = sqliteTable("market_prices", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  source: text("source").notNull(), // TTO, RISI
+  grade: text("grade").notNull(), // NBSK, SBSK, BHK
+  region: text("region").notNull(), // North America, Europe, China
+  month: text("month").notNull(), // 2026-03
+  price: real("price").notNull(),
+  priceType: text("price_type").notNull().default("net"), // list, net, derived
+  unit: text("unit").notNull().default("USD/ADMT"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
 // Documents attached to invoices (BL, PL, Invoice PDF, etc.)
 export const documents = sqliteTable("documents", {
   id: integer("id").primaryKey({ autoIncrement: true }),

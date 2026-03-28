@@ -18,12 +18,14 @@ import {
   LogOut,
   Menu,
   X,
+  TrendingUp,
   type LucideIcon,
 } from "lucide-react";
 
 const navItems: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/assistant", label: "AI Assistant", icon: BotMessageSquare },
+  { href: "/market-prices", label: "Market Prices", icon: TrendingUp },
   { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/purchase-orders", label: "Purchase Orders", icon: ClipboardList },
   { href: "/invoices", label: "Invoices", icon: FileText },

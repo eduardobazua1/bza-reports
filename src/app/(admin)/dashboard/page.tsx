@@ -2,9 +2,10 @@ import { getDashboardKPIs, getInvoices } from "@/server/queries";
 import { formatCurrency, formatNumber, formatPercent } from "@/lib/utils";
 import { DashboardVisuals } from "@/components/dashboard-visuals";
 import { ShipmentMap } from "@/components/shipment-map";
+import { MarketPricesWidget } from "@/components/market-prices-widget";
 import { db } from "@/db";
-import { scheduledReports, clients as clientsTable, reportTemplates, supplierPayments, suppliers, purchaseOrders as posTable, invoices as invTable } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { scheduledReports, clients as clientsTable, reportTemplates, supplierPayments, suppliers, purchaseOrders as posTable, invoices as invTable, marketPrices } from "@/db/schema";
+import { eq, sql, desc } from "drizzle-orm";
 import Link from "next/link";
 import { KPIBig } from "@/components/kpi-card";
 
@@ -13,6 +14,9 @@ export default async function DashboardPage() {
     getDashboardKPIs(),
     getInvoices(),
   ]);
+
+  // Market prices for widget
+  const allMarketPrices = await db.select().from(marketPrices).orderBy(desc(marketPrices.month));
 
   // Scheduled report reminders
   const pendingSchedules = await db
@@ -365,7 +369,10 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Row 3: Map */}
+      {/* Row 3: Market Prices */}
+      <MarketPricesWidget prices={allMarketPrices} />
+
+      {/* Row 4: Map */}
       <ShipmentMap locationData={locationData} />
     </div>
   );
