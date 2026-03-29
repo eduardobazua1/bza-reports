@@ -171,6 +171,7 @@ export const marketPrices = sqliteTable("market_prices", {
   month: text("month").notNull(), // 2026-03
   price: real("price").notNull(),
   priceType: text("price_type").notNull().default("net"), // list, net, derived
+  changeValue: real("change_value"), // +/- from source (TTO/RISI published change)
   unit: text("unit").notNull().default("USD/ADMT"),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
