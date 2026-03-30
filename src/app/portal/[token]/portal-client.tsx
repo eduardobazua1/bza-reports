@@ -102,16 +102,16 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
 
   return (
     <div className="min-h-screen bg-stone-100">
-      <header className="bg-gradient-to-r from-[#0d3d3b] to-[#1a5c58] sticky top-0 z-10">
-        <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
-          <img src="/bza-logo1.png" alt="BZA" className="h-10 object-contain rounded-lg" />
+      <header className="bg-white border-b border-stone-200 sticky top-0 z-10">
+        <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
+          <img src="/bza-logo-dark.jpg" alt="BZA" className="h-8 object-contain" />
           <div className="text-right">
             {userName && (
-              <p className="text-sm font-medium text-white/90">
+              <p className="text-sm font-medium text-stone-800">
                 Welcome, {userName.split(" ")[0]}
               </p>
             )}
-            <p className="text-[11px] text-white/60">{data.name}</p>
+            <p className="text-[11px] text-stone-400">{data.name}</p>
           </div>
         </div>
       </header>
