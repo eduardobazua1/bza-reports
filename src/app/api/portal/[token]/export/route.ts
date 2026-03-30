@@ -39,6 +39,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
       item: invoices.item,
       product: purchaseOrders.product,
       quantityTons: invoices.quantityTons,
+      sellPrice: purchaseOrders.sellPrice,
+      sellPriceOverride: invoices.sellPriceOverride,
       shipmentDate: invoices.shipmentDate,
       estimatedArrival: invoices.estimatedArrival,
       shipmentStatus: invoices.shipmentStatus,
@@ -60,20 +62,26 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
   if (poSearch) rows = rows.filter(r => (r.salesDocument || r.clientPoNumber || "").toLowerCase().includes(poSearch.toLowerCase()));
   if (productSearch) rows = rows.filter(r => (r.item || r.product || "").toLowerCase().includes(productSearch.toLowerCase()));
 
-  // Safe columns only - NO prices, costs, payments, supplier info
-  const data = rows.map(r => ({
-    "Invoice": r.billingDocument || r.invoiceNumber,
-    "PO": r.salesDocument || r.clientPoNumber || "",
-    "Product": r.item || r.product || "",
-    "Quantity (TN)": r.quantityTons,
-    "Ship Date": r.shipmentDate || "",
-    "ETA": r.estimatedArrival || "",
-    "Status": statusLabels[r.shipmentStatus] || r.shipmentStatus,
-    "Location": r.currentLocation || "",
-    "Vehicle": r.vehicleId || "",
-    "BL Number": r.blNumber || "",
-    "Transport": transportLabels[r.transportType || ""] || r.transportType || "",
-  }));
+  // Client-safe columns: includes sell price (their purchase price), NO buy price/cost/supplier
+  const data = rows.map(r => {
+    const price = r.sellPriceOverride ?? r.sellPrice ?? 0;
+    const total = r.quantityTons * price;
+    return {
+      "Invoice": r.billingDocument || r.invoiceNumber,
+      "PO": r.salesDocument || r.clientPoNumber || "",
+      "Product": r.item || r.product || "",
+      "Quantity (TN)": r.quantityTons,
+      "Price (USD/TN)": price,
+      "Total (USD)": Math.round(total * 100) / 100,
+      "Ship Date": r.shipmentDate || "",
+      "ETA": r.estimatedArrival || "",
+      "Status": statusLabels[r.shipmentStatus] || r.shipmentStatus,
+      "Location": r.currentLocation || "",
+      "Vehicle": r.vehicleId || "",
+      "BL Number": r.blNumber || "",
+      "Transport": transportLabels[r.transportType || ""] || r.transportType || "",
+    };
+  });
 
   const safeName = client.name.replace(/[^a-zA-Z0-9]/g, "_").substring(0, 30);
   const dateStr = new Date().toISOString().split("T")[0];
@@ -123,13 +131,13 @@ async function generatePDF(data: Record<string, any>[], clientName: string, safe
   const LIGHT_BG = "#f5f5f4";
 
   // Header
-  doc.fontSize(16).fillColor(DARK).text("BZA International Services, LLC", 40, 40);
-  doc.fontSize(10).fillColor(GRAY).text(`Shipment Report — ${clientName}`, 40, 60);
-  doc.fontSize(8).fillColor(GRAY).text(`Generated ${dateStr}`, 40, 74);
-  doc.moveTo(40, 90).lineTo(732, 90).strokeColor(TEAL).lineWidth(2).stroke();
+  doc.fontSize(14).fillColor(DARK).text("BZA International Services, LLC", 30, 40);
+  doc.fontSize(9).fillColor(GRAY).text(`Shipment Report — ${clientName}`, 30, 58);
+  doc.fontSize(7).fillColor(GRAY).text(`Generated ${dateStr}`, 30, 72);
+  doc.moveTo(30, 88).lineTo(30 + tableW, 88).strokeColor(TEAL).lineWidth(2).stroke();
 
   if (data.length === 0) {
-    doc.fontSize(12).fillColor(GRAY).text("No shipments found.", 40, 120);
+    doc.fontSize(12).fillColor(GRAY).text("No shipments found.", 30, 110);
     doc.end();
     const buffer = await new Promise<Buffer>(resolve => doc.on("end", () => resolve(Buffer.concat(chunks))));
     return new NextResponse(buffer, {
@@ -138,17 +146,19 @@ async function generatePDF(data: Record<string, any>[], clientName: string, safe
   }
 
   const headers = Object.keys(data[0]);
-  const colWidths = [70, 70, 90, 55, 65, 65, 60, 80, 65, 60, 50]; // total ~730
+  // 13 columns: Invoice, PO, Product, Qty, Price, Total, Ship Date, ETA, Status, Location, Vehicle, BL, Transport
+  const colWidths = [55, 55, 70, 42, 48, 52, 52, 52, 52, 60, 55, 50, 42]; // total ~685
+  const tableW = colWidths.reduce((a, b) => a + b, 0);
   const tableTop = 105;
-  const rowH = 18;
-  const pageW = 732;
+  const rowH = 16;
+  const marginL = 30;
   let y = tableTop;
 
   function drawTableHeader() {
-    doc.rect(40, y, pageW - 40, rowH).fill(TEAL);
-    let x = 40;
+    doc.rect(marginL, y, tableW, rowH).fill(TEAL);
+    let x = marginL;
     headers.forEach((h, i) => {
-      doc.fontSize(7).fillColor("white").text(h, x + 3, y + 5, { width: colWidths[i] - 6, ellipsis: true });
+      doc.fontSize(6).fillColor("white").text(h, x + 2, y + 4, { width: colWidths[i] - 4, ellipsis: true });
       x += colWidths[i];
     });
     y += rowH;
@@ -159,32 +169,38 @@ async function generatePDF(data: Record<string, any>[], clientName: string, safe
   // Total tons
   let totalTons = 0;
 
+  let totalAmount = 0;
+
   data.forEach((row, idx) => {
     if (y > 560) {
-      doc.addPage({ size: "LETTER", layout: "landscape", margin: 40 });
+      doc.addPage({ size: "LETTER", layout: "landscape", margin: 30 });
       y = 40;
       drawTableHeader();
     }
 
-    if (idx % 2 === 0) doc.rect(40, y, pageW - 40, rowH).fill(LIGHT_BG);
+    if (idx % 2 === 0) doc.rect(marginL, y, tableW, rowH).fill(LIGHT_BG);
 
-    let x = 40;
+    let x = marginL;
     headers.forEach((h, i) => {
-      const val = String(row[h] ?? "");
-      doc.fontSize(7).fillColor(DARK).text(val, x + 3, y + 5, { width: colWidths[i] - 6, ellipsis: true });
+      let val = row[h];
+      if (typeof val === "number") val = h.includes("Price") || h.includes("Total") ? "$" + val.toFixed(2) : val.toFixed(3);
+      doc.fontSize(6).fillColor(DARK).text(String(val ?? ""), x + 2, y + 4, { width: colWidths[i] - 4, ellipsis: true });
       x += colWidths[i];
     });
 
     if (typeof row["Quantity (TN)"] === "number") totalTons += row["Quantity (TN)"];
+    if (typeof row["Total (USD)"] === "number") totalAmount += row["Total (USD)"];
     y += rowH;
   });
 
   // Totals row
-  doc.rect(40, y, pageW - 40, rowH).fill("#166534");
-  doc.fontSize(7).fillColor("white").text("TOTAL", 43, y + 5);
-  const tonsX = 40 + colWidths[0] + colWidths[1] + colWidths[2];
-  doc.text(totalTons.toFixed(3) + " TN", tonsX + 3, y + 5);
-  doc.text(`${data.length} shipments`, 40 + 400, y + 5);
+  doc.rect(marginL, y, tableW, rowH).fill("#166534");
+  doc.fontSize(6).fillColor("white").text("TOTAL", marginL + 3, y + 4);
+  const tonsX = marginL + colWidths[0] + colWidths[1] + colWidths[2];
+  doc.text(totalTons.toFixed(3) + " TN", tonsX + 2, y + 4);
+  const totalX = tonsX + colWidths[3] + colWidths[4];
+  doc.text("$" + totalAmount.toFixed(2), totalX + 2, y + 4);
+  doc.text(`${data.length} shipments`, marginL + 450, y + 4);
 
   doc.end();
   const buffer = await new Promise<Buffer>(resolve => doc.on("end", () => resolve(Buffer.concat(chunks))));
