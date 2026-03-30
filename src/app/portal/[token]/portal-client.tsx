@@ -106,13 +106,24 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
       <header className="bg-white sticky top-0 z-10 border-b border-stone-100">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
           <BzaLogo size="md" />
-          <div className="text-right">
-            {userName && (
-              <p className="text-sm font-medium text-stone-800">
-                Welcome, {userName.split(" ")[0]}
-              </p>
-            )}
-            <p className="text-[11px] text-stone-400">{data.name}</p>
+          <div className="text-right flex items-center gap-3">
+            <div>
+              {userName && (
+                <p className="text-sm font-medium text-stone-800">
+                  Welcome, {userName.split(" ")[0]}
+                </p>
+              )}
+              <p className="text-[11px] text-stone-400">{data.name}</p>
+            </div>
+            <button
+              onClick={async () => {
+                await fetch("/api/portal/logout", { method: "POST" });
+                window.location.reload();
+              }}
+              className="text-[11px] text-stone-400 hover:text-stone-600 transition-colors border border-stone-200 rounded-lg px-2 py-1"
+            >
+              Log out
+            </button>
           </div>
         </div>
       </header>
