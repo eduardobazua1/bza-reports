@@ -113,23 +113,15 @@ export default function MarketPricesPage() {
                   {list && (
                     <div className="mb-3">
                       <p className="text-[10px] text-stone-400 uppercase">List Price</p>
-                      <p className="text-xl font-bold text-stone-900">${formatNumber(list.price, 0)}</p>
-                      {list.changeValue != null && (
-                        <span className={`text-xs font-medium ${list.changeValue > 0 ? "text-emerald-600" : list.changeValue < 0 ? "text-red-500" : "text-stone-400"}`}>
-                          {list.changeValue > 0 ? "+" : ""}{formatNumber(list.changeValue, 0)}
-                        </span>
-                      )}
+                      <p className="text-2xl font-bold text-stone-900">${formatNumber(list.price, 2)}</p>
+                      {list.changeValue != null && <Change value={list.changeValue} price={list.price} />}
                     </div>
                   )}
                   {net && (
                     <div>
                       <p className="text-[10px] text-stone-400 uppercase">Net Price</p>
-                      <p className="text-xl font-bold text-stone-900">${formatNumber(net.price, 0)}</p>
-                      {net.changeValue != null && (
-                        <span className={`text-xs font-medium ${net.changeValue > 0 ? "text-emerald-600" : net.changeValue < 0 ? "text-red-500" : "text-stone-400"}`}>
-                          {net.changeValue > 0 ? "+" : ""}{formatNumber(net.changeValue, 0)}
-                        </span>
-                      )}
+                      <p className="text-2xl font-bold text-stone-900">${formatNumber(net.price, 2)}</p>
+                      {net.changeValue != null && <Change value={net.changeValue} price={net.price} />}
                     </div>
                   )}
                 </div>
@@ -190,37 +182,37 @@ export default function MarketPricesPage() {
       )}
 
       {/* Full Price Table */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-stone-100">
-          <h2 className="text-sm font-medium text-stone-700">Price History</h2>
+      <div className="bg-white rounded-md shadow-sm overflow-hidden">
+        <div className="p-3 border-b border-border">
+          <h2 className="text-sm font-medium text-muted-foreground">Price History</h2>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-stone-50 text-stone-500 text-xs uppercase">
+          <table className="w-full">
+            <thead className="bg-muted">
               <tr>
-                <th className="px-4 py-3 text-left">Month</th>
-                <th className="px-4 py-3 text-left">Source</th>
-                <th className="px-4 py-3 text-left">Grade</th>
-                <th className="px-4 py-3 text-left">Type</th>
-                <th className="px-4 py-3 text-right">Price (USD/ADMT)</th>
-                <th className="px-4 py-3 text-right">Change</th>
+                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Month</th>
+                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Source</th>
+                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Grade</th>
+                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Type</th>
+                <th className="text-right p-3 text-sm font-medium text-muted-foreground">Price (USD/ADMT)</th>
+                <th className="text-right p-3 text-sm font-medium text-muted-foreground">Change</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-stone-100">
+            <tbody>
               {naPrices.slice(0, 50).map(p => (
-                <tr key={p.id} className="hover:bg-stone-50">
-                  <td className="px-4 py-2.5 font-medium text-stone-800">{monthLabel(p.month)}</td>
-                  <td className="px-4 py-2.5">
+                <tr key={p.id} className="hover:bg-muted/50 transition-colors">
+                  <td className="p-3 text-sm border-t border-border font-medium">{monthLabel(p.month)}</td>
+                  <td className="p-3 text-sm border-t border-border">
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${p.source === "TTO" ? "bg-blue-50 text-blue-600" : "bg-purple-50 text-purple-600"}`}>{p.source}</span>
                   </td>
-                  <td className="px-4 py-2.5 font-medium text-stone-700">{p.grade}</td>
-                  <td className="px-4 py-2.5">
+                  <td className="p-3 text-sm border-t border-border font-medium">{p.grade}</td>
+                  <td className="p-3 text-sm border-t border-border">
                     <span className={`text-xs px-2 py-0.5 rounded-full ${p.priceType === "list" ? "bg-amber-50 text-amber-600" : "bg-stone-100 text-stone-500"}`}>{p.priceType}</span>
                   </td>
-                  <td className="px-4 py-2.5 text-right font-mono font-semibold text-stone-900">${formatNumber(p.price, 2)}</td>
-                  <td className="px-4 py-2.5 text-right">
+                  <td className="p-3 text-sm border-t border-border text-right font-medium">${formatNumber(p.price, 2)}</td>
+                  <td className="p-3 text-sm border-t border-border text-right">
                     {p.changeValue != null && (
-                      <span className={`text-xs font-medium ${p.changeValue > 0 ? "text-emerald-600" : p.changeValue < 0 ? "text-red-500" : "text-stone-400"}`}>
+                      <span className={`text-sm font-medium ${p.changeValue > 0 ? "text-emerald-600" : p.changeValue < 0 ? "text-red-500" : "text-muted-foreground"}`}>
                         {p.changeValue > 0 ? "+" : ""}{formatNumber(p.changeValue, 2)}
                       </span>
                     )}
