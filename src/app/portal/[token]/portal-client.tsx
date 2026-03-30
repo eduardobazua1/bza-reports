@@ -104,7 +104,7 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
     <div className="min-h-screen bg-stone-100">
       <header className="bg-gradient-to-r from-[#0d3d3b] to-[#1a5c58] sticky top-0 z-10">
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
-          <img src="/bza-logo.png" alt="BZA" className="h-10 object-contain rounded-lg" />
+          <img src="/bza-logo1.png" alt="BZA" className="h-10 object-contain rounded-lg" />
           <div className="text-right">
             {userName && (
               <p className="text-sm font-medium text-white/90">
