@@ -101,20 +101,20 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
   );
 
   return (
-    <div className="min-h-screen bg-stone-100">
-      <header className="bg-[#0d3d3b] sticky top-0 z-10">
+    <div className="min-h-screen bg-stone-50">
+      <header className="bg-white sticky top-0 z-10 border-b border-stone-100">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <span className="text-white font-bold text-xl tracking-tight">BZA</span>
+          <div className="flex items-center gap-1">
+            <span className="text-[#0d3d3b] font-bold text-xl tracking-tight">BZA</span>
             <span className="text-[#4fd1c5] font-bold text-xl">.</span>
           </div>
           <div className="text-right">
             {userName && (
-              <p className="text-sm font-medium text-white">
+              <p className="text-sm font-medium text-stone-800">
                 Welcome, {userName.split(" ")[0]}
               </p>
             )}
-            <p className="text-[11px] text-white/50">{data.name}</p>
+            <p className="text-[11px] text-stone-400">{data.name}</p>
           </div>
         </div>
       </header>
