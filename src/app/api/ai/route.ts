@@ -20,20 +20,20 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   { type: "function", function: { name: "delete_record", description: "Delete a PO, invoice, client, supplier, or payment", parameters: { type: "object", properties: { type: { type: "string", enum: ["po", "invoice", "client", "supplier", "payment"] }, identifier: { type: "string", description: "PO number, invoice number, client name, supplier name, or payment ID" } }, required: ["type", "identifier"] } } },
   { type: "function", function: { name: "schedule_report", description: "Schedule a report to be sent to a client", parameters: { type: "object", properties: { clientName: { type: "string" }, templateName: { type: "string" }, sendDate: { type: "string" }, notes: { type: "string" } }, required: ["clientName", "sendDate"] } } },
   { type: "function", function: { name: "generate_report", description: "Generate a PDF or Excel report for a client. Returns a download link. Use when user asks for a report, export, or document.", parameters: { type: "object", properties: { clientName: { type: "string", description: "Client name (fuzzy match)" }, format: { type: "string", enum: ["pdf", "excel"], description: "Report format" }, filter: { type: "string", enum: ["active", "all"], description: "active = only active shipments, all = include delivered" }, columns: { type: "string", description: "Comma-separated column keys. Options: currentLocation,poNumber,invoiceNumber,vehicleId,blNumber,quantityTons,sellPrice,shipmentStatus,shipmentDate,item,terms,transportType,customerPaymentStatus,estimatedArrival,salesDocument,billingDocument,clientPoNumber. Leave empty for defaults." } }, required: ["clientName", "format"] } } },
-  { type: "function", function: { name: "run_calculation", description: "Run a SQL query on the database for exact calculations. Use this for any math: sums, totals, averages, counts, filtering. Tables: invoices (invoice_number, purchase_order_id, quantity_tons, sell_price_override, buy_price_override, shipment_date, due_date, customer_payment_status, supplier_payment_status, shipment_status, item, vehicle_id, current_location), purchase_orders (po_number, po_date, client_id, supplier_id, sell_price, buy_price, product, terms, transport_type, status), clients (id, name), suppliers (id, name), supplier_payments (supplier_id, purchase_order_id, amount_usd, payment_date, estimated_tons, notes). Revenue = quantity_tons * COALESCE(sell_price_override, sell_price). Cost = quantity_tons * COALESCE(buy_price_override, buy_price).", parameters: { type: "object", properties: { sql_query: { type: "string", description: "SELECT SQL query to run. Only SELECT allowed, no INSERT/UPDATE/DELETE." } }, required: ["sql_query"] } } },
+  { type: "function", function: { name: "run_calculation", description: "Run a SQL query on the database for exact calculations. Use this for any math: sums, totals, averages, counts, filtering. Tables: invoices (invoice_number, purchase_order_id, quantity_tons, sell_price_override, buy_price_override, shipment_date, due_date, customer_payment_status, supplier_payment_status, shipment_status, item, vehicle_id, current_location), purchase_orders (po_number, po_date, client_id, supplier_id, sell_price, buy_price, product, terms, transport_type, status), clients (id, name), suppliers (id, name), supplier_payments (supplier_id, purchase_order_id, amount_usd, payment_date, estimated_tons, notes), market_prices (source, grade, region, month, price, price_type, change_value, unit). Revenue = quantity_tons * COALESCE(sell_price_override, sell_price). Cost = quantity_tons * COALESCE(buy_price_override, buy_price).", parameters: { type: "object", properties: { sql_query: { type: "string", description: "SELECT SQL query to run. Only SELECT allowed, no INSERT/UPDATE/DELETE." } }, required: ["sql_query"] } } },
 ];
 
 // Alias map for fuzzy client/supplier matching
 const ALIASES: Record<string, string[]> = {
-  "Kimberly Clark de México": ["kimberly", "kcm", "kc", "kim", "kimberly clark", "kc mexico", "kcm mexico"],
+  "Kimberly-Clark de México, S.A.B. De C.V.": ["kimberly", "kcm", "kc", "kim", "kimberly clark", "kc mexico", "kcm mexico", "kimberly-clark"],
   "Biopappel Scribe, S.A. de C.V.": ["biopappel", "scribe", "biopapel", "bio"],
-  "Copamex Industrias S.A. DE C.V.": ["copamex", "copa"],
-  "GRUPO CORPORATIVO PAPELERA S.A. DE C.V.": ["grupo corporativo", "gcp", "papelera", "corporativo"],
-  "Papelera de Chihuahua S.A. DE C.V.": ["pch", "chihuahua", "papelera chihuahua", "papelera de chihuahua"],
+  "Copamex Industrias, S.A. De C.V.": ["copamex", "copa"],
+  "Grupo Corporativo Papelera, S.A. DE C.V.": ["grupo corporativo", "gcp", "corporativo", "gcptissue"],
+  "Papelera de Chihuahua, S.A. De C.V.": ["pch", "chihuahua", "papelera chihuahua", "papelera de chihuahua"],
   "Sanitate S. De R.L. De C.V.": ["sanitate", "sani"],
   "Arauco": ["arauco"],
   "Cascade Pacific Pulp (CPP)": ["cascade", "cpp", "cascade pacific", "pacific pulp"],
-  "APP of China": ["app", "app china", "app of china"],
+  "APP China Trading Limited": ["app", "app china", "app of china", "app trading"],
 };
 
 async function findClient(input: string) {
@@ -338,12 +338,35 @@ SELECT s.name, ROUND(SUM(sp.amount_usd), 2) as total_paid FROM supplier_payments
 
 Update tons: Use update_invoice with the invoice_number and new quantityTons value.
 
+## MARKET PRICES TABLE
+- market_prices: id, source (TTO/RISI), grade (NBSK/SBSK/BHK), region, month (YYYY-MM), price, price_type (list/net), change_value, unit (USD/ADMT)
+- TTO publishes net prices monthly for NA pulp grades
+- RISI (Fastmarkets) publishes list and net prices
+- Use this data to help with pricing proposals and market analysis
+
+## BUSINESS ANALYSIS & PROPOSALS
+When Eduardo asks for help with proposals or pricing strategy:
+1. First query current market prices: SELECT * FROM market_prices WHERE month = (SELECT MAX(month) FROM market_prices) ORDER BY source, grade
+2. Query historical prices to understand trends: SELECT source, grade, month, price, change_value FROM market_prices WHERE grade = 'NBSK' ORDER BY month DESC
+3. Query what we currently sell/buy at: SELECT c.name, po.product, po.sell_price, po.buy_price, po.sell_price - po.buy_price as margin FROM purchase_orders po JOIN clients c ON po.client_id = c.id WHERE po.status = 'active'
+4. Calculate volumes by client/product to understand leverage
+5. Provide a recommendation with:
+   - Current market price vs our sell/buy price
+   - Margin analysis (current margin, market-based margin)
+   - Volume-based discount suggestions
+   - Competitive positioning based on TTO vs RISI indices
+   - Risk assessment (price trending up/down?)
+
+Example analysis: "KC is buying NBSK at $X. TTO net is $Y. Market is trending [up/down] based on last 3 months. Recommend selling at $Z for a margin of $W/ton."
+
 ## CAPABILITIES
-You can: query/calculate data, create POs/invoices/clients/suppliers, record supplier payments, update any field on invoices or POs, delete records, schedule reports, generate PDF/Excel reports.
+You can: query/calculate data, create POs/invoices/clients/suppliers, record supplier payments, update any field on invoices or POs, delete records, schedule reports, generate PDF/Excel reports, analyze market prices, build pricing proposals.
 
 When user asks for a report or export, use generate_report immediately. CRITICAL: Copy the markdown download link from the tool result EXACTLY as-is. Do NOT add any prefix like "sandbox:" to the URL. The link must start with /api/.
 
-When user asks to do something, DO IT immediately using tools. Always confirm with the exact number from the database.` },
+When user asks to do something, DO IT immediately using tools. Always confirm with the exact number from the database.
+
+When user asks for analysis or proposals, ALWAYS start by querying market prices AND current PO prices, then provide a data-driven recommendation.` },
         ...messages,
       ],
       tools, temperature: 0.3, max_tokens: 4000,
