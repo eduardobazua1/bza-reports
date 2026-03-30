@@ -115,28 +115,6 @@ export function MarketPricesWidget({ prices }: { prices: Price[] }) {
         </div>
       </div>
 
-      {/* Mini TTO trend chart */}
-      {ttoMonths.length > 1 && (
-        <div>
-          <p className="text-[10px] text-stone-400 mb-1">TTO Net Trend</p>
-          <svg viewBox="0 0 600 100" className="w-full h-16">
-            {ttoMonths.map((m, i) => {
-              if (i % Math.max(1, Math.floor(ttoMonths.length / 5)) !== 0 && i !== ttoMonths.length - 1) return null;
-              const x = 30 + (i / (ttoMonths.length - 1)) * 550;
-              return <text key={m} x={x} y={98} textAnchor="middle" fontSize="8" fill="#a8a29e">{monthLabel(m)}</text>;
-            })}
-            {chartData.map(({ grade, data }) => {
-              const points = data.map((p, i) => {
-                if (p === null) return null;
-                const x = 30 + (i / (ttoMonths.length - 1)) * 550;
-                const y = 80 - ((p - minP) / range) * 70;
-                return `${x},${y}`;
-              }).filter(Boolean);
-              return <polyline key={grade} fill="none" stroke={gradeColors[grade]} strokeWidth="2" points={points.join(" ")} />;
-            })}
-          </svg>
-        </div>
-      )}
     </Link>
   );
 }
