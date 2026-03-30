@@ -310,6 +310,9 @@ export default async function DashboardPage() {
             volumeBySupplier={volumeBySupplier}
             volumeByIncoterm={volumeByIncoterm}
           />
+
+          {/* Market Prices - full width under charts */}
+          <MarketPricesWidget prices={allMarketPrices} />
         </div>
 
         {/* KPI Gauges + Stats column */}
@@ -371,9 +374,6 @@ export default async function DashboardPage() {
           </Link>
         </div>
       </div>
-
-      {/* Row 3: Market Prices */}
-      <MarketPricesWidget prices={allMarketPrices} />
 
       {/* Row 4: Map */}
       <ShipmentMap locationData={locationData} />
