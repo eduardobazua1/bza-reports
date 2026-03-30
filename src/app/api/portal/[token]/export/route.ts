@@ -72,7 +72,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
       "Product": r.item || r.product || "",
       "Quantity (TN)": r.quantityTons,
       "Price (USD/TN)": price,
-      "Total (USD)": Math.round(total * 100) / 100,
       "Ship Date": r.shipmentDate || "",
       "ETA": r.estimatedArrival || "",
       "Status": statusLabels[r.shipmentStatus] || r.shipmentStatus,
@@ -146,8 +145,8 @@ async function generatePDF(data: Record<string, any>[], clientName: string, safe
   const headers = Object.keys(data[0]);
   const numCols = headers.length;
   // Distribute page width proportionally
-  // Invoice(55) PO(55) Product(80) Qty(45) Price(50) Total(55) ShipDate(55) ETA(55) Status(55) Location(65) Vehicle(55) BL(50) Transport(40)
-  const rawWidths = [55, 55, 80, 45, 50, 55, 55, 55, 55, 65, 55, 50, 40];
+  // Invoice(55) PO(55) Product(85) Qty(48) Price(52) ShipDate(58) ETA(58) Status(58) Location(75) Vehicle(58) BL(55) Transport(45)
+  const rawWidths = [55, 55, 85, 48, 52, 58, 58, 58, 75, 58, 55, 45];
   const rawTotal = rawWidths.reduce((a, b) => a + b, 0);
   const colWidths = rawWidths.map(w => Math.round((w / rawTotal) * pageW));
   const rowH = 15;
@@ -175,7 +174,6 @@ async function generatePDF(data: Record<string, any>[], clientName: string, safe
   drawTableHeader();
 
   let totalTons = 0;
-  let totalAmount = 0;
 
   data.forEach((row, idx) => {
     if (y > 570) {
@@ -197,7 +195,6 @@ async function generatePDF(data: Record<string, any>[], clientName: string, safe
     });
 
     if (typeof row["Quantity (TN)"] === "number") totalTons += row["Quantity (TN)"];
-    if (typeof row["Total (USD)"] === "number") totalAmount += row["Total (USD)"];
     y += rowH;
   });
 
@@ -206,9 +203,7 @@ async function generatePDF(data: Record<string, any>[], clientName: string, safe
   let tx = M;
   doc.fontSize(6).fillColor("white").text("TOTAL", tx + 2, y + 4);
   tx += colWidths[0] + colWidths[1] + colWidths[2]; // skip to Qty column
-  doc.text(totalTons.toFixed(3), tx + 2, y + 4, { width: colWidths[3] - 4 });
-  tx += colWidths[3] + colWidths[4]; // skip to Total column
-  doc.text("$" + totalAmount.toFixed(2), tx + 2, y + 4, { width: colWidths[5] - 4 });
+  doc.text(totalTons.toFixed(3) + " TN", tx + 2, y + 4, { width: colWidths[3] + colWidths[4] - 4 });
 
   doc.end();
   const buffer = await new Promise<Buffer>(resolve => doc.on("end", () => resolve(Buffer.concat(chunks))));
