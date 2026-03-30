@@ -108,14 +108,31 @@ async function exec(name: string, args: Record<string, unknown>): Promise<string
       if (!cl) return `Client "${args.clientName}" not found. Available clients: ${(await db.select({ name: clients.name }).from(clients)).map(c => c.name).join(", ")}`;
       if (!su) return `Supplier "${args.supplierName}" not found. Available suppliers: ${(await db.select({ name: suppliers.name }).from(suppliers)).map(s => s.name).join(", ")}`;
       await db.insert(purchaseOrders).values({ poNumber: args.poNumber as string, poDate: (args.poDate as string) || null, clientId: cl.id, supplierId: su.id, sellPrice: args.sellPrice as number, buyPrice: args.buyPrice as number, product: args.product as string, terms: (args.terms as string) || null, transportType: (args.transportType as "ffcc"|"ship"|"truck") || null, licenseFsc: (args.licenseFsc as string) || null, chainOfCustody: (args.chainOfCustody as string) || null, inputClaim: (args.inputClaim as string) || null, outputClaim: (args.outputClaim as string) || null });
-      return `PO ${args.poNumber} created: ${cl.name}, ${su.name}, Sell $${args.sellPrice}, Buy $${args.buyPrice}, ${args.product}`;
+      const sell = args.sellPrice as number;
+      const buy = args.buyPrice as number;
+      const fscInfo = [args.inputClaim && `Input: ${args.inputClaim}`, args.outputClaim && `Output: ${args.outputClaim}`].filter(Boolean).join(", ");
+      return `PO ${args.poNumber} created successfully.
+- Client: ${cl.name}
+- Supplier: ${su.name}
+- Product: ${args.product}
+- Sell: $${sell}/TN | Buy: $${buy}/TN | Margin: $${(sell - buy).toFixed(2)}/TN
+- Terms: ${args.terms || "-"} | Transport: ${args.transportType || "-"}
+- FSC License: ${args.licenseFsc || "-"} | Chain of Custody: ${args.chainOfCustody || "-"}
+- FSC Claims: ${fscInfo || "-"}`;
     }
 
     if (name === "create_invoice") {
       const po = await db.query.purchaseOrders.findFirst({ where: eq(purchaseOrders.poNumber, args.poNumber as string) });
       if (!po) return `PO "${args.poNumber}" not found.`;
       await db.insert(invoices).values({ invoiceNumber: args.invoiceNumber as string, purchaseOrderId: po.id, quantityTons: args.quantityTons as number, item: (args.item as string) || null, shipmentDate: (args.shipmentDate as string) || null, vehicleId: (args.vehicleId as string) || null, blNumber: (args.blNumber as string) || null, currentLocation: (args.currentLocation as string) || null });
-      return `Invoice ${args.invoiceNumber} created on ${args.poNumber}: ${args.quantityTons} TN`;
+      const tons = args.quantityTons as number;
+      const totalSell = po.sellPrice ? tons * po.sellPrice : null;
+      const totalBuy = po.buyPrice ? tons * po.buyPrice : null;
+      return `Invoice ${args.invoiceNumber} created on PO ${args.poNumber}:
+- Tons: ${tons} TN
+- Total Revenue: ${totalSell ? `$${totalSell.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "-"} (${tons} × $${po.sellPrice}/TN)
+- Total Cost: ${totalBuy ? `$${totalBuy.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "-"} (${tons} × $${po.buyPrice}/TN)
+- Location: ${(args.currentLocation as string) || "-"}`;
     }
 
     if (name === "update_invoice") {
