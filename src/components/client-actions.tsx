@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { createClient, updateClient, deleteClient } from "@/server/actions";
 import { useRouter } from "next/navigation";
 
@@ -17,12 +17,67 @@ type Client = {
   updatedAt: string;
 };
 
+type PortalUser = {
+  id: number;
+  clientId: number;
+  email: string;
+  name: string;
+  isActive: boolean;
+  lastLogin: string | null;
+};
+
 export function ClientActions({ clients }: { clients: Client[] }) {
   const [showForm, setShowForm] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [isPending, startTransition] = useTransition();
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [portalUsersClientId, setPortalUsersClientId] = useState<number | null>(null);
+  const [portalUsersList, setPortalUsersList] = useState<PortalUser[]>([]);
+  const [newEmail, setNewEmail] = useState("");
+  const [newName, setNewName] = useState("");
+  const [puLoading, setPuLoading] = useState(false);
   const router = useRouter();
+
+  // Load portal users when panel opens
+  useEffect(() => {
+    if (portalUsersClientId) {
+      fetch(`/api/portal-users?clientId=${portalUsersClientId}`)
+        .then(r => r.json())
+        .then(setPortalUsersList)
+        .catch(() => {});
+    }
+  }, [portalUsersClientId]);
+
+  async function handleAddPortalUser(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newEmail || !newName || !portalUsersClientId) return;
+    setPuLoading(true);
+    const res = await fetch("/api/portal-users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clientId: portalUsersClientId, email: newEmail, name: newName }),
+    });
+    if (res.ok) {
+      const user = await res.json();
+      setPortalUsersList(prev => [...prev, user]);
+      setNewEmail("");
+      setNewName("");
+    } else {
+      const data = await res.json();
+      alert(data.error || "Error adding user");
+    }
+    setPuLoading(false);
+  }
+
+  async function handleRemovePortalUser(id: number) {
+    if (!confirm("Remove this user's portal access?")) return;
+    await fetch("/api/portal-users", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    setPortalUsersList(prev => prev.filter(u => u.id !== id));
+  }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -215,12 +270,20 @@ export function ClientActions({ clients }: { clients: Client[] }) {
                   </td>
                   <td className="p-3 text-sm border-t border-border">
                     {client.portalEnabled && (
-                      <button
-                        onClick={() => handleCopyLink(client)}
-                        className="text-primary text-xs hover:underline"
-                      >
-                        {copiedId === client.id ? "Copied!" : "Copy link"}
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleCopyLink(client)}
+                          className="text-primary text-xs hover:underline"
+                        >
+                          {copiedId === client.id ? "Copied!" : "Copy link"}
+                        </button>
+                        <button
+                          onClick={() => setPortalUsersClientId(portalUsersClientId === client.id ? null : client.id)}
+                          className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded hover:bg-blue-100"
+                        >
+                          Users
+                        </button>
+                      </div>
                     )}
                   </td>
                   <td className="p-3 text-sm border-t border-border text-right">
@@ -252,6 +315,70 @@ export function ClientActions({ clients }: { clients: Client[] }) {
           </table>
         </div>
       </div>
+
+      {/* Portal Users Panel */}
+      {portalUsersClientId && (
+        <div className="bg-white rounded-md shadow-sm p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold">
+              Portal Users — {clients.find(c => c.id === portalUsersClientId)?.name}
+            </h3>
+            <button onClick={() => setPortalUsersClientId(null)} className="text-sm text-muted-foreground hover:text-foreground">✕</button>
+          </div>
+
+          {/* Existing users */}
+          {portalUsersList.length === 0 ? (
+            <p className="text-sm text-muted-foreground mb-4">No authorized users yet.</p>
+          ) : (
+            <div className="space-y-2 mb-4">
+              {portalUsersList.map(u => (
+                <div key={u.id} className="flex items-center justify-between bg-muted rounded-lg px-3 py-2">
+                  <div>
+                    <p className="text-sm font-medium">{u.name}</p>
+                    <p className="text-xs text-muted-foreground">{u.email}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {u.lastLogin && <span className="text-[10px] text-muted-foreground">Last login: {new Date(u.lastLogin).toLocaleDateString()}</span>}
+                    <button onClick={() => handleRemovePortalUser(u.id)} className="text-xs text-destructive hover:underline">Remove</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add new user */}
+          <form onSubmit={handleAddPortalUser} className="flex gap-2 items-end">
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Name</label>
+              <input
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+                placeholder="Contact name"
+                required
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Email</label>
+              <input
+                type="email"
+                value={newEmail}
+                onChange={e => setNewEmail(e.target.value)}
+                placeholder="email@company.com"
+                required
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={puLoading}
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
+            >
+              {puLoading ? "..." : "Add"}
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
