@@ -36,7 +36,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
     .leftJoin(purchaseOrders, eq(invoices.purchaseOrderId, purchaseOrders.id))
     .where(eq(purchaseOrders.clientId, client.id))
     .orderBy(desc(invoices.shipmentDate))
-    .limit(30);
+    .limit(200);
 
   const ids = rows.map(r => r.id);
   const allDocs = ids.length > 0
