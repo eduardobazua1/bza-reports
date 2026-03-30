@@ -121,7 +121,10 @@ function generateExcel(data: Record<string, any>[], safeName: string, dateStr: s
 async function generatePDF(data: Record<string, any>[], clientName: string, safeName: string, dateStr: string) {
   const PDFDocument = (await import("pdfkit")).default;
 
-  const doc = new PDFDocument({ size: "LETTER", layout: "landscape", margin: 40 });
+  // LETTER landscape = 792 x 612 pts
+  const M = 20; // margin
+  const pageW = 792 - M * 2; // 752 usable
+  const doc = new PDFDocument({ size: "LETTER", layout: "landscape", margin: M });
   const chunks: Buffer[] = [];
   doc.on("data", (c: Buffer) => chunks.push(c));
 
@@ -130,14 +133,9 @@ async function generatePDF(data: Record<string, any>[], clientName: string, safe
   const GRAY = "#78716c";
   const LIGHT_BG = "#f5f5f4";
 
-  // Header
-  doc.fontSize(14).fillColor(DARK).text("BZA International Services, LLC", 30, 40);
-  doc.fontSize(9).fillColor(GRAY).text(`Shipment Report — ${clientName}`, 30, 58);
-  doc.fontSize(7).fillColor(GRAY).text(`Generated ${dateStr}`, 30, 72);
-  doc.moveTo(30, 88).lineTo(30 + tableW, 88).strokeColor(TEAL).lineWidth(2).stroke();
-
   if (data.length === 0) {
-    doc.fontSize(12).fillColor(GRAY).text("No shipments found.", 30, 110);
+    doc.fontSize(14).fillColor(DARK).text("BZA International Services, LLC", M, 30);
+    doc.fontSize(10).fillColor(GRAY).text("No shipments found.", M, 60);
     doc.end();
     const buffer = await new Promise<Buffer>(resolve => doc.on("end", () => resolve(Buffer.concat(chunks))));
     return new NextResponse(buffer, {
@@ -146,17 +144,26 @@ async function generatePDF(data: Record<string, any>[], clientName: string, safe
   }
 
   const headers = Object.keys(data[0]);
-  // 13 columns: Invoice, PO, Product, Qty, Price, Total, Ship Date, ETA, Status, Location, Vehicle, BL, Transport
-  const colWidths = [55, 55, 70, 42, 48, 52, 52, 52, 52, 60, 55, 50, 42]; // total ~685
-  const tableW = colWidths.reduce((a, b) => a + b, 0);
-  const tableTop = 105;
-  const rowH = 16;
-  const marginL = 30;
-  let y = tableTop;
+  const numCols = headers.length;
+  // Distribute page width proportionally
+  // Invoice(55) PO(55) Product(80) Qty(45) Price(50) Total(55) ShipDate(55) ETA(55) Status(55) Location(65) Vehicle(55) BL(50) Transport(40)
+  const rawWidths = [55, 55, 80, 45, 50, 55, 55, 55, 55, 65, 55, 50, 40];
+  const rawTotal = rawWidths.reduce((a, b) => a + b, 0);
+  const colWidths = rawWidths.map(w => Math.round((w / rawTotal) * pageW));
+  const rowH = 15;
+  let y = 0;
+
+  function drawPageHeader() {
+    doc.fontSize(12).fillColor(DARK).text("BZA International Services, LLC", M, M + 5);
+    doc.fontSize(8).fillColor(GRAY).text(`Shipment Report — ${clientName}`, M, M + 20);
+    doc.fontSize(7).fillColor(GRAY).text(`Generated ${dateStr} · ${data.length} shipments`, M, M + 32);
+    doc.moveTo(M, M + 44).lineTo(M + pageW, M + 44).strokeColor(TEAL).lineWidth(1.5).stroke();
+    y = M + 52;
+  }
 
   function drawTableHeader() {
-    doc.rect(marginL, y, tableW, rowH).fill(TEAL);
-    let x = marginL;
+    doc.rect(M, y, pageW, rowH).fill(TEAL);
+    let x = M;
     headers.forEach((h, i) => {
       doc.fontSize(6).fillColor("white").text(h, x + 2, y + 4, { width: colWidths[i] - 4, ellipsis: true });
       x += colWidths[i];
@@ -164,26 +171,27 @@ async function generatePDF(data: Record<string, any>[], clientName: string, safe
     y += rowH;
   }
 
+  drawPageHeader();
   drawTableHeader();
 
-  // Total tons
   let totalTons = 0;
-
   let totalAmount = 0;
 
   data.forEach((row, idx) => {
-    if (y > 560) {
-      doc.addPage({ size: "LETTER", layout: "landscape", margin: 30 });
-      y = 40;
+    if (y > 570) {
+      doc.addPage({ size: "LETTER", layout: "landscape", margin: M });
+      y = M;
       drawTableHeader();
     }
 
-    if (idx % 2 === 0) doc.rect(marginL, y, tableW, rowH).fill(LIGHT_BG);
+    if (idx % 2 === 0) doc.rect(M, y, pageW, rowH).fill(LIGHT_BG);
 
-    let x = marginL;
+    let x = M;
     headers.forEach((h, i) => {
       let val = row[h];
-      if (typeof val === "number") val = h.includes("Price") || h.includes("Total") ? "$" + val.toFixed(2) : val.toFixed(3);
+      if (typeof val === "number") {
+        val = h.includes("Price") || h.includes("Total") ? "$" + val.toFixed(2) : val.toFixed(3);
+      }
       doc.fontSize(6).fillColor(DARK).text(String(val ?? ""), x + 2, y + 4, { width: colWidths[i] - 4, ellipsis: true });
       x += colWidths[i];
     });
@@ -194,13 +202,13 @@ async function generatePDF(data: Record<string, any>[], clientName: string, safe
   });
 
   // Totals row
-  doc.rect(marginL, y, tableW, rowH).fill("#166534");
-  doc.fontSize(6).fillColor("white").text("TOTAL", marginL + 3, y + 4);
-  const tonsX = marginL + colWidths[0] + colWidths[1] + colWidths[2];
-  doc.text(totalTons.toFixed(3) + " TN", tonsX + 2, y + 4);
-  const totalX = tonsX + colWidths[3] + colWidths[4];
-  doc.text("$" + totalAmount.toFixed(2), totalX + 2, y + 4);
-  doc.text(`${data.length} shipments`, marginL + 450, y + 4);
+  doc.rect(M, y, pageW, rowH).fill("#166534");
+  let tx = M;
+  doc.fontSize(6).fillColor("white").text("TOTAL", tx + 2, y + 4);
+  tx += colWidths[0] + colWidths[1] + colWidths[2]; // skip to Qty column
+  doc.text(totalTons.toFixed(3), tx + 2, y + 4, { width: colWidths[3] - 4 });
+  tx += colWidths[3] + colWidths[4]; // skip to Total column
+  doc.text("$" + totalAmount.toFixed(2), tx + 2, y + 4, { width: colWidths[5] - 4 });
 
   doc.end();
   const buffer = await new Promise<Buffer>(resolve => doc.on("end", () => resolve(Buffer.concat(chunks))));
