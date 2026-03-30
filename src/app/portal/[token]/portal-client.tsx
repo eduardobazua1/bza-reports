@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { BzaLogo } from "@/components/bza-logo";
 import { formatDate, formatNumber, shipmentStatusLabels, transportTypeLabels } from "@/lib/utils";
 
 type DocInfo = { id: number; type: string };
@@ -104,10 +105,7 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
     <div className="min-h-screen bg-stone-50">
       <header className="bg-white sticky top-0 z-10 border-b border-stone-100">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-1">
-            <span className="text-[#0d3d3b] font-bold text-xl tracking-tight">BZA</span>
-            <span className="text-[#4fd1c5] font-bold text-xl">.</span>
-          </div>
+          <BzaLogo size="md" />
           <div className="text-right">
             {userName && (
               <p className="text-sm font-medium text-stone-800">

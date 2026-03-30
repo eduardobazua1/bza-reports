@@ -3,6 +3,7 @@
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { BzaLogo } from "@/components/bza-logo";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -34,7 +35,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-stone-100">
       <div className="w-full max-w-sm bg-white rounded-xl shadow-lg p-8">
         <div className="text-center mb-8">
-          <img src="/bza-logo1.png" alt="BZA" className="h-14 mx-auto mb-3 object-contain" />
+          <div className="flex justify-center mb-3"><BzaLogo size="lg" /></div>
           <p className="text-stone-400 text-sm">
             Sign in to your account
           </p>

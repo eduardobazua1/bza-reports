@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { BzaLogo } from "./bza-logo";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -84,7 +85,7 @@ export function Sidebar({ userName }: { userName: string }) {
     <>
       {/* Mobile top bar */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-stone-200 px-4 py-3 flex items-center justify-between">
-        <img src="/bza-logo1.png" alt="BZA" className="h-8 object-contain" />
+        <BzaLogo size="md" />
         <button onClick={() => setOpen(!open)} className="text-stone-600">
           {open ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
@@ -98,7 +99,7 @@ export function Sidebar({ userName }: { userName: string }) {
       {/* Mobile drawer */}
       <aside className={`md:hidden fixed top-0 left-0 z-40 w-72 h-full bg-white border-r border-stone-200 flex flex-col transform transition-transform duration-200 ${open ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="px-4 py-4 border-b border-stone-200 flex items-center justify-between">
-          <img src="/bza-logo1.png" alt="BZA" className="h-8 object-contain" />
+          <BzaLogo size="md" />
           <button onClick={() => setOpen(false)} className="text-stone-400">
             <X className="w-5 h-5" />
           </button>
@@ -109,7 +110,7 @@ export function Sidebar({ userName }: { userName: string }) {
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-64 bg-white border-r border-stone-200 flex-col h-full">
         <div className="px-4 py-6 border-b border-stone-200 flex justify-center">
-          <img src="/bza-logo1.png" alt="BZA" className="h-8 object-contain" />
+          <BzaLogo size="md" />
         </div>
         {navContent}
       </aside>

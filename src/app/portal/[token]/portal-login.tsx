@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { BzaLogo } from "@/components/bza-logo";
 
 export function PortalLogin({ token }: { token: string }) {
   const [step, setStep] = useState<"email" | "code">("email");
@@ -67,10 +68,7 @@ export function PortalLogin({ token }: { token: string }) {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-1 mb-4">
-            <span className="text-[#0d3d3b] font-bold text-4xl tracking-tight">BZA</span>
-            <span className="text-[#4fd1c5] font-bold text-4xl">.</span>
-          </div>
+          <div className="flex justify-center mb-4"><BzaLogo size="lg" /></div>
           <h1 className="text-xl font-semibold text-stone-800">Shipment Portal</h1>
           <p className="text-sm text-stone-400 mt-1">Secure access to your shipment data</p>
         </div>
