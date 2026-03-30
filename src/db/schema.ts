@@ -176,6 +176,27 @@ export const marketPrices = sqliteTable("market_prices", {
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
+// Portal users - authorized client contacts who can access the portal
+export const portalUsers = sqliteTable("portal_users", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  clientId: integer("client_id").notNull().references(() => clients.id),
+  email: text("email").notNull(),
+  name: text("name").notNull(),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  lastLogin: text("last_login"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Portal verification codes - temporary codes for email login
+export const portalCodes = sqliteTable("portal_codes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  portalUserId: integer("portal_user_id").notNull().references(() => portalUsers.id),
+  code: text("code").notNull(),
+  expiresAt: text("expires_at").notNull(),
+  used: integer("used", { mode: "boolean" }).notNull().default(false),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
 // Documents attached to invoices (BL, PL, Invoice PDF, etc.)
 export const documents = sqliteTable("documents", {
   id: integer("id").primaryKey({ autoIncrement: true }),

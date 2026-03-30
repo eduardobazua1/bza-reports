@@ -42,7 +42,7 @@ function StatusBadge({ status }: { status: string }) {
   return <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${c}`}>{shipmentStatusLabels[status] || status}</span>;
 }
 
-export function PortalClient({ token }: { token: string }) {
+export function PortalClient({ token, userName }: { token: string; userName?: string }) {
   const [data, setData] = useState<{ name: string; shipments: Shipment[] } | null>(null);
   const [error, setError] = useState(false);
   const [filter, setFilter] = useState<"active" | "delivered" | "all">("active");
@@ -106,6 +106,7 @@ export function PortalClient({ token }: { token: string }) {
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
           <img src="/bza-logo-new.png" alt="BZA" className="h-7" />
           <div className="text-right">
+            {userName && <p className="text-xs text-stone-400">Hello, {userName} 👋</p>}
             <p className="text-sm font-medium text-stone-800">{data.name}</p>
             <p className="text-[10px] text-stone-400">Shipment Portal</p>
           </div>
