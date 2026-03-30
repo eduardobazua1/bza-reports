@@ -241,7 +241,9 @@ async function exec(name: string, args: Record<string, unknown>): Promise<string
 
     return "Unknown tool";
   } catch (err: unknown) {
-    return `Error: ${err instanceof Error ? err.message : "unknown"}`;
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[AI tool error] ${name}:`, msg, args);
+    return `Tool error in ${name}: ${msg}. Args used: ${JSON.stringify(args)}`;
   }
 }
 
@@ -310,7 +312,9 @@ Always use the clientName/supplierName as the user provides it — the system wi
 ## CREATING RECORDS
 - Before create_po: if you're unsure about exact client or supplier names, call query_data with client_list and supplier_list first to confirm the exact names.
 - If create_po fails with "not found", immediately retry using the exact name from the available list returned in the error.
-- Never tell the user to contact "technical support" — always report the actual error and fix it automatically.
+- Never tell the user to contact "technical support" — always show the EXACT error message returned by the tool.
+- If a tool returns "Tool error in create_po: UNIQUE constraint failed", it means the PO number already exists — tell the user and ask for a different number.
+- If a tool returns "not found", show the available options from the error and retry with the correct name.
 
 ## KEY SQL PATTERNS (copy these exactly, modify WHERE as needed)
 
