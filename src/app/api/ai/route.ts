@@ -75,11 +75,11 @@ async function exec(name: string, args: Record<string, unknown>): Promise<string
         return JSON.stringify(data);
       }
       if (qt === "active_pos") {
-        const data = await db.select({ poNumber: purchaseOrders.poNumber, clientName: clients.name, supplierName: suppliers.name, sellPrice: purchaseOrders.sellPrice, buyPrice: purchaseOrders.buyPrice, product: purchaseOrders.product }).from(purchaseOrders).leftJoin(clients, eq(purchaseOrders.clientId, clients.id)).leftJoin(suppliers, eq(purchaseOrders.supplierId, suppliers.id)).where(eq(purchaseOrders.status, "active"));
+        const data = await db.select({ poNumber: purchaseOrders.poNumber, clientName: clients.name, supplierName: suppliers.name, sellPrice: purchaseOrders.sellPrice, buyPrice: purchaseOrders.buyPrice, product: purchaseOrders.product, licenseFsc: purchaseOrders.licenseFsc, chainOfCustody: purchaseOrders.chainOfCustody, inputClaim: purchaseOrders.inputClaim, outputClaim: purchaseOrders.outputClaim }).from(purchaseOrders).leftJoin(clients, eq(purchaseOrders.clientId, clients.id)).leftJoin(suppliers, eq(purchaseOrders.supplierId, suppliers.id)).where(eq(purchaseOrders.status, "active"));
         return JSON.stringify(data);
       }
       if (qt === "all_pos") {
-        const data = await db.select({ poNumber: purchaseOrders.poNumber, poDate: purchaseOrders.poDate, clientName: clients.name, product: purchaseOrders.product, status: purchaseOrders.status, sellPrice: purchaseOrders.sellPrice, buyPrice: purchaseOrders.buyPrice }).from(purchaseOrders).leftJoin(clients, eq(purchaseOrders.clientId, clients.id)).orderBy(purchaseOrders.poNumber);
+        const data = await db.select({ poNumber: purchaseOrders.poNumber, poDate: purchaseOrders.poDate, clientName: clients.name, supplierName: suppliers.name, product: purchaseOrders.product, status: purchaseOrders.status, sellPrice: purchaseOrders.sellPrice, buyPrice: purchaseOrders.buyPrice, licenseFsc: purchaseOrders.licenseFsc, chainOfCustody: purchaseOrders.chainOfCustody, inputClaim: purchaseOrders.inputClaim, outputClaim: purchaseOrders.outputClaim }).from(purchaseOrders).leftJoin(clients, eq(purchaseOrders.clientId, clients.id)).leftJoin(suppliers, eq(purchaseOrders.supplierId, suppliers.id)).orderBy(purchaseOrders.poNumber);
         return JSON.stringify(args.filter_name ? data.filter(p => p.clientName?.toLowerCase().includes((args.filter_name as string).toLowerCase())) : data);
       }
       if (qt === "client_list") return JSON.stringify(await db.select({ id: clients.id, name: clients.name, email: clients.contactEmail }).from(clients));
@@ -327,7 +327,8 @@ The system auto-resolves abbreviations. These all work:
 Always use the clientName/supplierName as the user provides it — the system will resolve it.
 
 ## CREATING RECORDS
-- Before create_po: if you're unsure about exact client or supplier names, call query_data with client_list and supplier_list first to confirm the exact names.
+- Before create_po: always call query_data with all_pos (filter by client name) to check existing POs. Use the most recent PO's licenseFsc, chainOfCustody, inputClaim, outputClaim as defaults if the user doesn't specify them — the FSC certification is usually the same for the same client+supplier combination.
+- If the user says "same FSC as before" or doesn't mention FSC, automatically reuse the values from the most recent PO with the same client or supplier.
 - If create_po fails with "not found", immediately retry using the exact name from the available list returned in the error.
 - Never tell the user to contact "technical support" — always show the EXACT error message returned by the tool.
 - If a tool returns "Tool error in create_po: UNIQUE constraint failed", it means the PO number already exists — tell the user and ask for a different number.
