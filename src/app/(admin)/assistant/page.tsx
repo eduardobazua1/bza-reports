@@ -223,14 +223,26 @@ export default function AssistantPage() {
         >
           <Paperclip className="w-4 h-4" />
         </button>
-        <input
-          type="text"
+        <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
-          placeholder={attachedFile ? `Message about ${attachedFile.name}...` : "Type your question..."}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              send();
+            }
+          }}
+          placeholder={attachedFile ? `Message about ${attachedFile.name}...` : "Type your question... (Shift+Enter for new line)"}
           disabled={loading}
-          className="flex-1 border border-border rounded-lg px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+          rows={1}
+          className="flex-1 border border-border rounded-lg px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 resize-none overflow-hidden"
+          style={{ minHeight: "48px", maxHeight: "200px" }}
+          ref={(el) => {
+            if (el) {
+              el.style.height = "auto";
+              el.style.height = Math.min(el.scrollHeight, 200) + "px";
+            }
+          }}
         />
         <button
           onClick={() => send()}
