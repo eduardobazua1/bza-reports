@@ -105,8 +105,8 @@ async function exec(name: string, args: Record<string, unknown>): Promise<string
     if (name === "create_po") {
       const cl = await findClient(args.clientName as string);
       const su = await findSupplier(args.supplierName as string);
-      if (!cl) return `Client "${args.clientName}" not found. Available: ${(await db.select({ name: clients.name }).from(clients)).map(c => c.name).join(", ")}`;
-      if (!su) return `Supplier "${args.supplierName}" not found.`;
+      if (!cl) return `Client "${args.clientName}" not found. Available clients: ${(await db.select({ name: clients.name }).from(clients)).map(c => c.name).join(", ")}`;
+      if (!su) return `Supplier "${args.supplierName}" not found. Available suppliers: ${(await db.select({ name: suppliers.name }).from(suppliers)).map(s => s.name).join(", ")}`;
       await db.insert(purchaseOrders).values({ poNumber: args.poNumber as string, poDate: (args.poDate as string) || null, clientId: cl.id, supplierId: su.id, sellPrice: args.sellPrice as number, buyPrice: args.buyPrice as number, product: args.product as string, terms: (args.terms as string) || null, transportType: (args.transportType as "ffcc"|"ship"|"truck") || null, licenseFsc: (args.licenseFsc as string) || null, chainOfCustody: (args.chainOfCustody as string) || null, inputClaim: (args.inputClaim as string) || null, outputClaim: (args.outputClaim as string) || null });
       return `PO ${args.poNumber} created: ${cl.name}, ${su.name}, Sell $${args.sellPrice}, Buy $${args.buyPrice}, ${args.product}`;
     }
@@ -306,6 +306,11 @@ The system auto-resolves abbreviations. These all work:
 - "arauco" → Arauco
 - "app" → APP of China
 Always use the clientName/supplierName as the user provides it — the system will resolve it.
+
+## CREATING RECORDS
+- Before create_po: if you're unsure about exact client or supplier names, call query_data with client_list and supplier_list first to confirm the exact names.
+- If create_po fails with "not found", immediately retry using the exact name from the available list returned in the error.
+- Never tell the user to contact "technical support" — always report the actual error and fix it automatically.
 
 ## KEY SQL PATTERNS (copy these exactly, modify WHERE as needed)
 
