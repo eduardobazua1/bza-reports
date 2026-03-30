@@ -38,6 +38,7 @@ function Change({ value, price }: { value: number; price: number }) {
 export default function MarketPricesPage() {
   const [prices, setPrices] = useState<Price[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
 
   async function load() {
     const res = await fetch("/api/market-prices");
@@ -143,21 +144,24 @@ export default function MarketPricesPage() {
               </div>
             ))}
           </div>
-          <svg viewBox="0 0 800 300" className="w-full h-64">
+          <svg viewBox="0 0 800 320" className="w-full h-72" onMouseLeave={() => setHoverIdx(null)}>
+            {/* Grid lines */}
             {[0, 0.25, 0.5, 0.75, 1].map(pct => {
               const y = 280 - pct * 250;
               const val = minPrice + pct * range;
               return (
                 <g key={pct}>
                   <line x1="50" y1={y} x2="780" y2={y} stroke="#e7e5e4" strokeWidth="1" />
-                  <text x="45" y={y + 4} textAnchor="end" className="text-[10px]" fill="#a8a29e">${Math.round(val)}</text>
+                  <text x="45" y={y + 4} textAnchor="end" fontSize="10" fill="#a8a29e">${Math.round(val)}</text>
                 </g>
               );
             })}
+            {/* X axis labels */}
             {chartMonths.map((m, i) => {
               const x = 50 + (i / (chartMonths.length - 1)) * 730;
-              return <text key={m} x={x} y={298} textAnchor="middle" className="text-[10px]" fill="#a8a29e">{monthLabel(m)}</text>;
+              return <text key={m} x={x} y={310} textAnchor="middle" fontSize="10" fill={hoverIdx === i ? "#1c1917" : "#a8a29e"} fontWeight={hoverIdx === i ? "bold" : "normal"}>{monthLabel(m)}</text>;
             })}
+            {/* Lines */}
             {chartData.map(({ grade, data }) => {
               const points = data.map((p, i) => {
                 if (p === null) return null;
@@ -172,9 +176,33 @@ export default function MarketPricesPage() {
                     if (p === null) return null;
                     const x = 50 + (i / (chartMonths.length - 1)) * 730;
                     const y = 280 - ((p - minPrice) / range) * 250;
-                    return <circle key={i} cx={x} cy={y} r="3.5" fill={gradeColors[grade]} />;
+                    const isHovered = hoverIdx === i;
+                    return (
+                      <g key={i}>
+                        <circle cx={x} cy={y} r={isHovered ? 6 : 3.5} fill={gradeColors[grade]} stroke={isHovered ? "white" : "none"} strokeWidth={isHovered ? 2 : 0} />
+                        {isHovered && (
+                          <text x={x} y={y - 12} textAnchor="middle" fontSize="11" fontWeight="bold" fill={gradeColors[grade]}>
+                            ${formatNumber(p, 2)}
+                          </text>
+                        )}
+                      </g>
+                    );
                   })}
                 </g>
+              );
+            })}
+            {/* Hover vertical line */}
+            {hoverIdx !== null && (() => {
+              const x = 50 + (hoverIdx / (chartMonths.length - 1)) * 730;
+              return <line x1={x} y1={30} x2={x} y2={280} stroke="#a8a29e" strokeWidth="1" strokeDasharray="4 2" />;
+            })()}
+            {/* Invisible hover zones for each month */}
+            {chartMonths.map((_, i) => {
+              const x = 50 + (i / (chartMonths.length - 1)) * 730;
+              const w = 730 / (chartMonths.length - 1);
+              return (
+                <rect key={i} x={x - w / 2} y={0} width={w} height={300} fill="transparent"
+                  onMouseEnter={() => setHoverIdx(i)} />
               );
             })}
           </svg>
