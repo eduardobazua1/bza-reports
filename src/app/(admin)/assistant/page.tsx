@@ -27,10 +27,19 @@ export default function AssistantPage() {
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight);
   }, [messages]);
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (el) {
+      el.style.height = "auto";
+      el.style.height = Math.min(el.scrollHeight, 200) + "px";
+    }
+  }, [input]);
 
   async function send(text?: string) {
     const msg = text || input.trim();
@@ -237,12 +246,7 @@ export default function AssistantPage() {
           rows={1}
           className="flex-1 border border-border rounded-lg px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 resize-none overflow-hidden"
           style={{ minHeight: "48px", maxHeight: "200px" }}
-          ref={(el) => {
-            if (el) {
-              el.style.height = "auto";
-              el.style.height = Math.min(el.scrollHeight, 200) + "px";
-            }
-          }}
+          ref={textareaRef}
         />
         <button
           onClick={() => send()}
