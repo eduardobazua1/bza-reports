@@ -102,13 +102,16 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
 
   return (
     <div className="min-h-screen bg-stone-100">
-      <header className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-          <img src="/bza-logo-new.png" alt="BZA" className="h-7" />
+      <header className="bg-gradient-to-r from-[#0d3d3b] to-[#1a5c58] sticky top-0 z-10">
+        <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
+          <img src="/bza-logo-new.png" alt="BZA" className="h-7 brightness-0 invert" />
           <div className="text-right">
-            {userName && <p className="text-xs text-stone-400">Hello, {userName} 👋</p>}
-            <p className="text-sm font-medium text-stone-800">{data.name}</p>
-            <p className="text-[10px] text-stone-400">Shipment Portal</p>
+            {userName && (
+              <p className="text-sm font-medium text-white/90">
+                Welcome, {userName.split(" ")[0]}
+              </p>
+            )}
+            <p className="text-[11px] text-white/60">{data.name}</p>
           </div>
         </div>
       </header>
