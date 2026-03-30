@@ -67,7 +67,10 @@ export function PortalLogin({ token }: { token: string }) {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <img src="/bza-logo1.png" alt="BZA International Services" className="h-16 mx-auto mb-4 object-contain rounded-xl" />
+          <div className="flex items-center justify-center gap-1 mb-4">
+            <span className="text-[#0d3d3b] font-bold text-4xl tracking-tight">BZA</span>
+            <span className="text-[#4fd1c5] font-bold text-4xl">.</span>
+          </div>
           <h1 className="text-xl font-semibold text-stone-800">Shipment Portal</h1>
           <p className="text-sm text-stone-400 mt-1">Secure access to your shipment data</p>
         </div>
