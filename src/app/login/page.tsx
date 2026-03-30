@@ -34,7 +34,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-stone-100">
       <div className="w-full max-w-sm bg-white rounded-xl shadow-lg p-8">
         <div className="text-center mb-8">
-          <img src="/bza-logo-new.png" alt="BZA" className="w-64 mx-auto mb-3" />
+          <img src="/bza-logo-dark.jpg" alt="BZA" className="h-14 mx-auto mb-3 object-contain" />
           <p className="text-stone-400 text-sm">
             Sign in to your account
           </p>
