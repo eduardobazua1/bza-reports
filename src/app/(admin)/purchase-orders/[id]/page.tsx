@@ -124,7 +124,13 @@ export default async function PurchaseOrderDetailPage({
       </div>
 
       {/* Client POs Section */}
-      <ClientPOsSection purchaseOrderId={po.id} clientPos={po.clientPos} />
+      <ClientPOsSection
+        purchaseOrderId={po.id}
+        clientPos={po.clientPos}
+        poNumber={po.poNumber}
+        sellPrice={po.sellPrice}
+        product={po.product}
+      />
 
       {/* Supplier Payments Section */}
       {po.payments && po.payments.length > 0 && (
