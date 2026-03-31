@@ -221,10 +221,11 @@ export default async function DashboardPage() {
         <KPIBig label="Total Sales" value={`$${formatNumber(kpis.totalRevenue / 1000000, 2)}M`} unit="USD" color="green" href="/reports" animatedValue={kpis.totalRevenue} />
         <KPIBig label="Total Margin" value={`$${formatNumber(kpis.grossProfit / 1000000, 2)}M`} unit={`${formatPercent(kpis.grossMargin)} margin`} color="green" href="/reports" animatedValue={kpis.grossProfit} />
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KPIBig label="Active PO's" value={kpis.activePOs.toString()} unit="active orders" color="amber" href="/purchase-orders?status=active" animatedValue={kpis.activePOs} />
-        <KPIBig label="Open Invoices" value={kpis.unpaidInvoices.toString()} unit="unpaid" color="red" href="/invoices?status=unpaid" animatedValue={kpis.unpaidInvoices} />
-        <KPIBig label="Supplier AP" value={formatCurrency(totalSupplierBalance)} unit="balance to suppliers" color="red" href="/suppliers" animatedValue={totalSupplierBalance} />
+        <KPIBig label="Open Invoices" value={kpis.unpaidInvoices.toString()} unit="unpaid" color="amber" href="/invoices?status=unpaid" animatedValue={kpis.unpaidInvoices} />
+        <KPIBig label="Accounts Receivable" value={formatCurrency(kpis.accountsReceivable)} unit="clients owe BZA" color="green" href="/invoices?status=unpaid" animatedValue={kpis.accountsReceivable} />
+        <KPIBig label="Accounts Payable" value={formatCurrency(kpis.accountsPayable)} unit="BZA owes suppliers" color="red" href="/suppliers" animatedValue={kpis.accountsPayable} />
       </div>
 
       {/* AR Aging Summary */}

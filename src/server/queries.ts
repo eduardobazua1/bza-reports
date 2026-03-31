@@ -113,6 +113,7 @@ export async function getDashboardKPIs() {
       buyPrice: sql<number>`coalesce(${invoices.buyPriceOverride}, ${purchaseOrders.buyPrice})`,
       freightCost: invoices.freightCost,
       customerPaymentStatus: invoices.customerPaymentStatus,
+      supplierPaymentStatus: invoices.supplierPaymentStatus,
       shipmentStatus: invoices.shipmentStatus,
       shipmentDate: invoices.shipmentDate,
       poNumber: purchaseOrders.poNumber,
@@ -126,6 +127,10 @@ export async function getDashboardKPIs() {
   let totalTons = 0;
   let unpaidCount = 0;
   let inTransitCount = 0;
+  // AR = what clients owe BZA (delivered but not paid)
+  let accountsReceivable = 0;
+  // AP = what BZA owes suppliers (received/shipped but not paid to supplier)
+  let accountsPayable = 0;
 
   for (const inv of allInvoices) {
     const revenue = inv.quantityTons * inv.sellPrice;
@@ -133,7 +138,13 @@ export async function getDashboardKPIs() {
     totalRevenue += revenue;
     totalCost += cost;
     totalTons += inv.quantityTons;
-    if (inv.customerPaymentStatus === "unpaid") unpaidCount++;
+    if (inv.customerPaymentStatus === "unpaid") {
+      unpaidCount++;
+      accountsReceivable += revenue;
+    }
+    if (inv.supplierPaymentStatus === "unpaid") {
+      accountsPayable += cost;
+    }
     if (inv.shipmentStatus === "en_transito" || inv.shipmentStatus === "programado") inTransitCount++;
   }
 
@@ -151,6 +162,8 @@ export async function getDashboardKPIs() {
     unpaidInvoices: unpaidCount,
     pendingShipments: inTransitCount,
     activePOs: activePOs[0]?.count || 0,
+    accountsReceivable,  // clients owe BZA
+    accountsPayable,     // BZA owes suppliers
   };
 }
 
