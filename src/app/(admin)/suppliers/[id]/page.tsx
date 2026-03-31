@@ -60,7 +60,7 @@ export default async function SupplierDetailPage({
         <div className="bg-white rounded-md shadow-sm p-4">
           <p className="text-xs text-stone-500 uppercase tracking-wide">Total Pagado</p>
           <p className="text-xl font-bold text-emerald-600 mt-1">{formatCurrency(totalPaid)}</p>
-          <p className="text-xs text-stone-400">{payments.length} pago(s)</p>
+          <p className="text-xs text-stone-400">{payments.length} pago{payments.length !== 1 ? "s" : ""}</p>
         </div>
         <div className={`bg-white rounded-md shadow-sm p-4 border-l-4 ${balance > 0 ? "border-l-red-400" : balance < 0 ? "border-l-emerald-400" : "border-l-stone-200"}`}>
           <p className="text-xs text-stone-500 uppercase tracking-wide">Balance (desde X0022)</p>
@@ -101,7 +101,7 @@ export default async function SupplierDetailPage({
                   <td className="px-3 py-2 font-medium">
                     <a href={`/purchase-orders/${p.po.id}`} className="text-[#0d3d3b] hover:underline">{p.po.poNumber}</a>
                   </td>
-                  <td className="px-3 py-2 text-stone-600">{p.clientName}</td>
+                  <td className="px-3 py-2 text-stone-600">{p.clientName || "—"}</td>
                   <td className="px-3 py-2 text-right">{formatCurrency(p.po.buyPrice)}</td>
                   <td className="px-3 py-2 text-right">{formatNumber(p.totalTons, 1)}</td>
                   <td className="px-3 py-2 text-right font-medium">{formatCurrency(p.totalCost)}</td>
@@ -123,18 +123,20 @@ export default async function SupplierDetailPage({
 
       {/* Pagos Realizados */}
       <div className="bg-white rounded-md shadow-sm">
-        <div className="p-4 border-b border-stone-200">
-          <h3 className="font-semibold text-stone-800">Pagos Realizados</h3>
-          <p className="text-xs text-stone-400 mt-0.5">Total pagado: {formatCurrency(totalPaid)}</p>
+        <div className="p-4 border-b border-stone-200 flex items-center justify-between">
+          <div>
+            <h3 className="font-semibold text-stone-800">Pagos Realizados</h3>
+            <p className="text-xs text-stone-400 mt-0.5">{payments.length} pago{payments.length !== 1 ? "s" : ""} · Total pagado: {formatCurrency(totalPaid)}</p>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-stone-50">
               <tr>
-                <th className="text-left px-3 py-2 font-medium text-stone-500">Fecha</th>
-                <th className="text-right px-3 py-2 font-medium text-stone-500">Monto</th>
-                <th className="text-left px-3 py-2 font-medium text-stone-500">PO</th>
-                <th className="text-left px-3 py-2 font-medium text-stone-500">Notas</th>
+                <th className="text-left px-4 py-2.5 font-medium text-stone-500">Fecha</th>
+                <th className="text-right px-4 py-2.5 font-medium text-stone-500">Monto</th>
+                <th className="text-left px-4 py-2.5 font-medium text-stone-500">PO</th>
+                <th className="text-left px-4 py-2.5 font-medium text-stone-500">Referencia / Notas</th>
               </tr>
             </thead>
             <tbody>
@@ -145,19 +147,19 @@ export default async function SupplierDetailPage({
               )}
               {payments.map((p) => (
                 <tr key={p.payment.id} className="border-t border-stone-100 hover:bg-stone-50">
-                  <td className="px-3 py-2">{formatDate(p.payment.paymentDate)}</td>
-                  <td className="px-3 py-2 text-right font-semibold">{formatCurrency(p.payment.amountUsd)}</td>
-                  <td className="px-3 py-2 text-xs font-mono text-stone-500">{p.poNumber || "-"}</td>
-                  <td className="px-3 py-2 text-xs text-stone-500">{p.payment.reference || p.payment.notes || "-"}</td>
+                  <td className="px-4 py-2.5 text-stone-700">{formatDate(p.payment.paymentDate)}</td>
+                  <td className="px-4 py-2.5 text-right font-semibold text-stone-900">{formatCurrency(p.payment.amountUsd)}</td>
+                  <td className="px-4 py-2.5 font-mono text-xs font-medium text-[#0d3d3b]">{p.poNumber || "—"}</td>
+                  <td className="px-4 py-2.5 text-xs text-stone-500">{p.payment.reference || p.payment.notes || "—"}</td>
                 </tr>
               ))}
             </tbody>
             {payments.length > 0 && (
               <tfoot>
                 <tr className="bg-stone-50 font-semibold border-t-2 border-stone-200">
-                  <td className="px-3 py-2">TOTAL</td>
-                  <td className="px-3 py-2 text-right">{formatCurrency(totalPaid)}</td>
-                  <td colSpan={2} className="px-3 py-2"></td>
+                  <td className="px-4 py-2.5 text-stone-700">TOTAL</td>
+                  <td className="px-4 py-2.5 text-right text-stone-900">{formatCurrency(totalPaid)}</td>
+                  <td colSpan={2} className="px-4 py-2.5"></td>
                 </tr>
               </tfoot>
             )}
