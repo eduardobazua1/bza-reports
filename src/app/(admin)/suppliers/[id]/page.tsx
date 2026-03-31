@@ -41,11 +41,13 @@ export default async function SupplierDetailPage({
     .where(eq(supplierPayments.supplierId, supplier.id))
     .orderBy(supplierPayments.paymentDate);
 
-  // Calculate totals
+  // Calculate totals — only from X0022 onwards for balance (everything before is settled)
   const totalCost = pos.reduce((s, p) => s + (p.totalCost || 0), 0);
   const totalTons = pos.reduce((s, p) => s + (p.totalTons || 0), 0);
   const totalPaid = payments.reduce((s, p) => s + p.payment.amountUsd, 0);
-  const balance = totalCost - totalPaid;
+  // Balance uses only X0022+ costs
+  const costFromX0022 = pos.filter(p => p.po.poNumber >= "X0022").reduce((s, p) => s + (p.totalCost || 0), 0);
+  const balance = costFromX0022 - totalPaid;
 
   return (
     <div className="space-y-6">
