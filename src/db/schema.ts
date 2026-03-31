@@ -93,7 +93,9 @@ export const invoices = sqliteTable("invoices", {
   factoringDays: integer("factoring_days"),
   factoringCost: real("factoring_cost"),
   item: text("item"), // e.g. "White Gold 316"
-  balesUnit: text("bales_unit"), // e.g. "378/63" (bales/units per bale)
+  destination: text("destination"), // final destination (e.g. "Ecatepec") — separate from currentLocation
+  balesCount: integer("bales_count"), // number of bales (from BOL)
+  unitsPerBale: integer("units_per_bale"), // units per bale (from BOL)
   // Tracking fields (for client reports like KC)
   currentLocation: text("current_location"),
   lastLocationUpdate: text("last_location_update"),

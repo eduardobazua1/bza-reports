@@ -228,9 +228,14 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
               {s.eta && <div><p className="text-stone-400">ETA</p><p className="font-semibold text-stone-800">{formatDate(s.eta)}</p></div>}
               {s.transport && <div><p className="text-stone-400">Transport</p><p className="font-semibold text-stone-800">{transportTypeLabels[s.transport] || s.transport}</p></div>}
             </div>
-            {s.docs.length > 0 && (
+            {(s.docs.length > 0 || s.inv) && (
               <div className="px-4 py-2 border-t border-stone-100">
                 <div className="flex flex-wrap gap-1.5">
+                  {/* Generated invoice PDF */}
+                  <a href={`/api/invoice-pdf?invoice=${s.inv}`} target="_blank" rel="noopener noreferrer"
+                    className="text-[10px] px-2 py-1 rounded-md font-medium bg-orange-50 text-orange-600">
+                    Invoice PDF
+                  </a>
                   {s.docs.map((d) => (
                     <a key={d.id} href={`/api/documents/download/${d.id}`} target="_blank" rel="noopener noreferrer"
                       className={`text-[10px] px-2 py-1 rounded-md font-medium ${typeColors[d.type] || typeColors.other}`}>
