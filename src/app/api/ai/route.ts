@@ -20,6 +20,7 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   { type: "function", function: { name: "create_supplier", description: "Create a new supplier", parameters: { type: "object", properties: { name: { type: "string" }, contactName: { type: "string" }, contactEmail: { type: "string" }, phone: { type: "string" } }, required: ["name"] } } },
   { type: "function", function: { name: "update_supplier", description: "Update supplier info including FSC/PEFC certification fields", parameters: { type: "object", properties: { supplierName: { type: "string" }, fscLicense: { type: "string" }, fscChainOfCustody: { type: "string" }, fscInputClaim: { type: "string" }, fscOutputClaim: { type: "string" }, contactName: { type: "string" }, contactEmail: { type: "string" }, phone: { type: "string" } }, required: ["supplierName"] } } },
   { type: "function", function: { name: "delete_record", description: "Delete a PO, invoice, client, supplier, or payment", parameters: { type: "object", properties: { type: { type: "string", enum: ["po", "invoice", "client", "supplier", "payment"] }, identifier: { type: "string", description: "PO number, invoice number, client name, supplier name, or payment ID" } }, required: ["type", "identifier"] } } },
+  { type: "function", function: { name: "update_shipment_tracking", description: "Update location, ETA, and status for one or more railcars/containers using their vehicle IDs. Use this ALWAYS when processing tracking screenshots, emails, or reports. Pass all vehicles at once in the updates array.", parameters: { type: "object", properties: { updates: { type: "array", description: "List of railcar updates extracted from the document", items: { type: "object", properties: { vehicleId: { type: "string", description: "Railcar or container number exactly as shown (e.g. TBOX636255, SMW608012)" }, currentLocation: { type: "string", description: "Current location city/state as shown" }, estimatedArrival: { type: "string", description: "ETA date in YYYY-MM-DD format" }, shipmentStatus: { type: "string", enum: ["programado", "en_transito", "en_aduana", "entregado"], description: "en_transito for Train Arrived/Departed, en_aduana for customs hold, entregado for delivered" } }, required: ["vehicleId"] } } }, required: ["updates"] } } },
   { type: "function", function: { name: "schedule_report", description: "Schedule a report to be sent to a client", parameters: { type: "object", properties: { clientName: { type: "string" }, templateName: { type: "string" }, sendDate: { type: "string" }, notes: { type: "string" } }, required: ["clientName", "sendDate"] } } },
   { type: "function", function: { name: "generate_report", description: "Generate a PDF or Excel report for a client. Returns a download link. Use when user asks for a report, export, or document.", parameters: { type: "object", properties: { clientName: { type: "string", description: "Client name (fuzzy match)" }, format: { type: "string", enum: ["pdf", "excel"], description: "Report format" }, filter: { type: "string", enum: ["active", "all"], description: "active = only active shipments, all = include delivered" }, columns: { type: "string", description: "Comma-separated column keys. Options: currentLocation,poNumber,invoiceNumber,vehicleId,blNumber,quantityTons,sellPrice,shipmentStatus,shipmentDate,item,terms,transportType,customerPaymentStatus,estimatedArrival,salesDocument,billingDocument,clientPoNumber. Leave empty for defaults." } }, required: ["clientName", "format"] } } },
   { type: "function", function: { name: "run_calculation", description: "Run a SQL query on the database for exact calculations. Use this for any math: sums, totals, averages, counts, filtering. Tables: invoices (invoice_number, purchase_order_id, quantity_tons, sell_price_override, buy_price_override, shipment_date, due_date, customer_payment_status, supplier_payment_status, shipment_status, item, vehicle_id, current_location), purchase_orders (po_number, po_date, client_id, supplier_id, sell_price, buy_price, product, terms, transport_type, status), clients (id, name), suppliers (id, name), supplier_payments (supplier_id, purchase_order_id, amount_usd, payment_date, estimated_tons, notes), market_prices (source, grade, region, month, price, price_type, change_value, unit). Revenue = quantity_tons * COALESCE(sell_price_override, sell_price). Cost = quantity_tons * COALESCE(buy_price_override, buy_price).", parameters: { type: "object", properties: { sql_query: { type: "string", description: "SELECT SQL query to run. Only SELECT allowed, no INSERT/UPDATE/DELETE." } }, required: ["sql_query"] } } },
@@ -315,6 +316,35 @@ async function exec(name: string, args: Record<string, unknown>): Promise<string
       }
     }
 
+    if (name === "update_shipment_tracking") {
+      const updates = args.updates as Array<{ vehicleId: string; currentLocation?: string; estimatedArrival?: string; shipmentStatus?: string }>;
+      const now = new Date().toISOString();
+      const results: string[] = [];
+      for (const u of updates) {
+        const vid = u.vehicleId.replace(/\s+/g, ""); // normalize spaces
+        // Find by vehicleId (exact or space-normalized)
+        const found = await db.select({ id: invoices.id, invoiceNumber: invoices.invoiceNumber, vehicleId: invoices.vehicleId, shipmentStatus: invoices.shipmentStatus })
+          .from(invoices)
+          .where(sql`REPLACE(${invoices.vehicleId}, ' ', '') = ${vid}`)
+          .limit(1);
+        if (found.length === 0) {
+          results.push(`❌ ${u.vehicleId} — not found in active shipments`);
+          continue;
+        }
+        const inv = found[0];
+        const ud: Record<string, unknown> = { updatedAt: now, lastLocationUpdate: now };
+        if (u.currentLocation) ud.currentLocation = u.currentLocation;
+        if (u.estimatedArrival) ud.estimatedArrival = u.estimatedArrival;
+        if (u.shipmentStatus) ud.shipmentStatus = u.shipmentStatus;
+        if (u.shipmentStatus && u.shipmentStatus !== inv.shipmentStatus) {
+          await db.insert(shipmentUpdates).values({ invoiceId: inv.id, previousStatus: inv.shipmentStatus, newStatus: u.shipmentStatus });
+        }
+        await db.update(invoices).set(ud).where(eq(invoices.id, inv.id));
+        results.push(`✅ ${inv.invoiceNumber} (${inv.vehicleId}) → ${u.currentLocation || "-"} | ETA: ${u.estimatedArrival || "-"} | Status: ${u.shipmentStatus || "unchanged"}`);
+      }
+      return results.join("\n");
+    }
+
     if (name === "run_calculation") {
       const query = (args.sql_query as string).trim();
       if (!query.toUpperCase().startsWith("SELECT")) return "Error: Only SELECT queries allowed.";
@@ -387,12 +417,12 @@ When the user uploads or pastes a supplier document (Bill of Lading, packing lis
 - Always confirm every field you extracted and every invoice created/updated.
 - If a field is unclear or missing, ask the user before proceeding.
 - When the user uploads an image, you can SEE it via GPT-4o vision — read all visible text, tables, and numbers.
-- When processing client shipment status updates (tracking reports, status emails, Excel files):
-  1. Extract each vehicle ID (railcar/container number), location, ETA, status
-  2. Use update_invoice with vehicleIdLookup = the railcar/container number (NOT invoiceNumber)
-  3. Set currentLocation, estimatedArrival, shipmentStatus as extracted
-  4. If the tool returns "not found", show the available list from the error to the user so they can verify
-  5. ALWAYS process ALL vehicles in the document, one update_invoice call per vehicle
+- When the user uploads a tracking screenshot, report, or email with railcar/container locations and ETAs:
+  1. Read ALL vehicle IDs and their data from the image/document
+  2. Call update_shipment_tracking ONCE with ALL vehicles in the updates array
+  3. Map status: "Train Arrived" / "Train Departed" → "en_transito", "Hold" → "en_aduana", "Delivered" → "entregado", "Released" → "en_transito"
+  4. ETA: use the "Interchanged Delivered" or "Actual Placed" date as estimatedArrival (format YYYY-MM-DD)
+  5. Report every ✅ success and ❌ not found to the user
 
 ## ABSOLUTE RULES
 1. For ANY number, total, sum, count, or data question — you MUST use run_calculation with a SQL query. NEVER calculate yourself.
