@@ -131,19 +131,18 @@ export default async function PurchaseOrderDetailPage({
           <table className="w-full text-sm">
             <thead className="bg-stone-50">
               <tr>
-                <th className="text-left px-3 py-2 font-medium text-stone-500">Invoice #</th>
-                <th className="text-left px-3 py-2 font-medium text-stone-500">Item</th>
+                <th className="text-left px-3 py-2 font-medium text-stone-500">BZA Invoice #</th>
+                <th className="text-left px-3 py-2 font-medium text-stone-500">Client PO</th>
+                <th className="text-left px-3 py-2 font-medium text-stone-500">Destination</th>
+                <th className="text-left px-3 py-2 font-medium text-stone-500">Vehicle</th>
                 <th className="text-right px-3 py-2 font-medium text-stone-500">Tons</th>
-                <th className="text-right px-3 py-2 font-medium text-stone-500">Sell Price</th>
-                <th className="text-right px-3 py-2 font-medium text-stone-500">Buy Price</th>
                 <th className="text-right px-3 py-2 font-medium text-stone-500">Revenue</th>
                 <th className="text-right px-3 py-2 font-medium text-stone-500">Cost</th>
-                <th className="text-right px-3 py-2 font-medium text-stone-500">Freight</th>
                 <th className="text-right px-3 py-2 font-medium text-stone-500">Profit</th>
                 <th className="text-left px-3 py-2 font-medium text-stone-500">Ship Date</th>
                 <th className="text-left px-3 py-2 font-medium text-stone-500">Status</th>
                 <th className="text-left px-3 py-2 font-medium text-stone-500">Payment</th>
-                <th className="text-left px-3 py-2 font-medium text-stone-500">Documents</th>
+                <th className="text-left px-3 py-2 font-medium text-stone-500">Docs</th>
               </tr>
             </thead>
             <tbody>
@@ -164,22 +163,19 @@ export default async function PurchaseOrderDetailPage({
 
                 return (
                   <tr key={inv.id} className="hover:bg-stone-50">
-                    <td className="px-3 py-2 border-t border-stone-100 font-medium">{inv.invoiceNumber}</td>
-                    <td className="px-3 py-2 border-t border-stone-100 text-stone-500">{inv.item || "-"}</td>
+                    <td className="px-3 py-2 border-t border-stone-100 font-medium">
+                      <div className="flex items-center gap-2">
+                        {inv.invoiceNumber}
+                        <a href={`/api/invoice-pdf?invoice=${inv.invoiceNumber}`} target="_blank" rel="noopener noreferrer"
+                          className="text-[10px] text-orange-500 hover:text-orange-700 font-medium">PDF</a>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2 border-t border-stone-100 text-stone-600 font-mono text-xs">{(inv as any).salesDocument || "-"}</td>
+                    <td className="px-3 py-2 border-t border-stone-100 text-stone-500">{(inv as any).destination || "-"}</td>
+                    <td className="px-3 py-2 border-t border-stone-100 text-stone-500 font-mono text-xs">{inv.vehicleId || "-"}</td>
                     <td className="px-3 py-2 border-t border-stone-100 text-right">{formatNumber(inv.quantityTons, 3)}</td>
-                    <td className="px-3 py-2 border-t border-stone-100 text-right">
-                      {formatCurrency(sellPrice)}
-                      {inv.sellPriceOverride && <span className="text-xs text-amber-500 ml-1">*</span>}
-                    </td>
-                    <td className="px-3 py-2 border-t border-stone-100 text-right">
-                      {formatCurrency(buyPrice)}
-                      {inv.buyPriceOverride && <span className="text-xs text-amber-500 ml-1">*</span>}
-                    </td>
                     <td className="px-3 py-2 border-t border-stone-100 text-right">{formatCurrency(revenue)}</td>
                     <td className="px-3 py-2 border-t border-stone-100 text-right">{formatCurrency(inv.quantityTons * buyPrice)}</td>
-                    <td className="px-3 py-2 border-t border-stone-100 text-right">
-                      {freight > 0 ? formatCurrency(freight) : <span className="text-stone-300">-</span>}
-                    </td>
                     <td className="px-3 py-2 border-t border-stone-100 text-right font-medium">
                       <span className={profit >= 0 ? "text-emerald-600" : "text-red-600"}>
                         {formatCurrency(profit)}
@@ -205,22 +201,16 @@ export default async function PurchaseOrderDetailPage({
               {/* Totals row */}
               {po.invoices.length > 0 && (
                 <tr className="bg-stone-50 font-medium">
-                  <td className="px-3 py-2 border-t border-stone-200">TOTAL</td>
-                  <td className="px-3 py-2 border-t border-stone-200"></td>
-                  <td className="px-3 py-2 border-t border-stone-200 text-right">{formatNumber(totalTons, 3)}</td>
-                  <td className="px-3 py-2 border-t border-stone-200"></td>
-                  <td className="px-3 py-2 border-t border-stone-200"></td>
-                  <td className="px-3 py-2 border-t border-stone-200 text-right">{formatCurrency(totalRevenue)}</td>
-                  <td className="px-3 py-2 border-t border-stone-200 text-right">{formatCurrency(totalCost - totalFreight)}</td>
-                  <td className="px-3 py-2 border-t border-stone-200 text-right">{totalFreight > 0 ? formatCurrency(totalFreight) : "-"}</td>
-                  <td className="px-3 py-2 border-t border-stone-200 text-right">
+                  <td colSpan={4} className="px-3 py-2 border-t border-stone-200 font-semibold">TOTAL</td>
+                  <td className="px-3 py-2 border-t border-stone-200 text-right font-semibold">{formatNumber(totalTons, 3)}</td>
+                  <td className="px-3 py-2 border-t border-stone-200 text-right font-semibold">{formatCurrency(totalRevenue)}</td>
+                  <td className="px-3 py-2 border-t border-stone-200 text-right font-semibold">{formatCurrency(totalCost - totalFreight)}</td>
+                  <td className="px-3 py-2 border-t border-stone-200 text-right font-semibold">
                     <span className={totalProfit >= 0 ? "text-emerald-600" : "text-red-600"}>
                       {formatCurrency(totalProfit)}
                     </span>
                   </td>
-                  <td colSpan={3} className="px-3 py-2 border-t border-stone-200 text-right text-xs text-stone-400">
-                    * = price override
-                  </td>
+                  <td colSpan={4} className="px-3 py-2 border-t border-stone-200"></td>
                 </tr>
               )}
             </tbody>
