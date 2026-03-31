@@ -16,7 +16,9 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   { type: "function", function: { name: "update_po", description: "Update PO: status, prices, dates, certification", parameters: { type: "object", properties: { poNumber: { type: "string" }, status: { type: "string", enum: ["active", "completed", "cancelled"] }, sellPrice: { type: "number" }, buyPrice: { type: "number" }, poDate: { type: "string" }, terms: { type: "string" }, licenseFsc: { type: "string" }, chainOfCustody: { type: "string" }, inputClaim: { type: "string" }, outputClaim: { type: "string" } }, required: ["poNumber"] } } },
   { type: "function", function: { name: "create_supplier_payment", description: "Record a payment to a supplier (advance, wire, deposit)", parameters: { type: "object", properties: { supplierName: { type: "string" }, amountUsd: { type: "number" }, paymentDate: { type: "string" }, estimatedTons: { type: "number" }, pricePerTon: { type: "number" }, poNumber: { type: "string" }, reference: { type: "string" }, notes: { type: "string" } }, required: ["supplierName", "amountUsd", "paymentDate"] } } },
   { type: "function", function: { name: "create_client", description: "Create a new client", parameters: { type: "object", properties: { name: { type: "string" }, contactName: { type: "string" }, contactEmail: { type: "string" }, phone: { type: "string" } }, required: ["name"] } } },
+  { type: "function", function: { name: "update_client", description: "Update client info including FSC/PEFC certification fields", parameters: { type: "object", properties: { clientName: { type: "string" }, fscLicense: { type: "string" }, fscChainOfCustody: { type: "string" }, fscInputClaim: { type: "string" }, fscOutputClaim: { type: "string" }, contactName: { type: "string" }, contactEmail: { type: "string" }, phone: { type: "string" }, paymentTermsDays: { type: "number" } }, required: ["clientName"] } } },
   { type: "function", function: { name: "create_supplier", description: "Create a new supplier", parameters: { type: "object", properties: { name: { type: "string" }, contactName: { type: "string" }, contactEmail: { type: "string" }, phone: { type: "string" } }, required: ["name"] } } },
+  { type: "function", function: { name: "update_supplier", description: "Update supplier info including FSC/PEFC certification fields", parameters: { type: "object", properties: { supplierName: { type: "string" }, fscLicense: { type: "string" }, fscChainOfCustody: { type: "string" }, fscInputClaim: { type: "string" }, fscOutputClaim: { type: "string" }, contactName: { type: "string" }, contactEmail: { type: "string" }, phone: { type: "string" } }, required: ["supplierName"] } } },
   { type: "function", function: { name: "delete_record", description: "Delete a PO, invoice, client, supplier, or payment", parameters: { type: "object", properties: { type: { type: "string", enum: ["po", "invoice", "client", "supplier", "payment"] }, identifier: { type: "string", description: "PO number, invoice number, client name, supplier name, or payment ID" } }, required: ["type", "identifier"] } } },
   { type: "function", function: { name: "schedule_report", description: "Schedule a report to be sent to a client", parameters: { type: "object", properties: { clientName: { type: "string" }, templateName: { type: "string" }, sendDate: { type: "string" }, notes: { type: "string" } }, required: ["clientName", "sendDate"] } } },
   { type: "function", function: { name: "generate_report", description: "Generate a PDF or Excel report for a client. Returns a download link. Use when user asks for a report, export, or document.", parameters: { type: "object", properties: { clientName: { type: "string", description: "Client name (fuzzy match)" }, format: { type: "string", enum: ["pdf", "excel"], description: "Report format" }, filter: { type: "string", enum: ["active", "all"], description: "active = only active shipments, all = include delivered" }, columns: { type: "string", description: "Comma-separated column keys. Options: currentLocation,poNumber,invoiceNumber,vehicleId,blNumber,quantityTons,sellPrice,shipmentStatus,shipmentDate,item,terms,transportType,customerPaymentStatus,estimatedArrival,salesDocument,billingDocument,clientPoNumber. Leave empty for defaults." } }, required: ["clientName", "format"] } } },
@@ -107,17 +109,22 @@ async function exec(name: string, args: Record<string, unknown>): Promise<string
       const su = await findSupplier(args.supplierName as string);
       if (!cl) return `Client "${args.clientName}" not found. Available clients: ${(await db.select({ name: clients.name }).from(clients)).map(c => c.name).join(", ")}`;
       if (!su) return `Supplier "${args.supplierName}" not found. Available suppliers: ${(await db.select({ name: suppliers.name }).from(suppliers)).map(s => s.name).join(", ")}`;
-      await db.insert(purchaseOrders).values({ poNumber: args.poNumber as string, poDate: (args.poDate as string) || null, clientId: cl.id, supplierId: su.id, sellPrice: args.sellPrice as number, buyPrice: args.buyPrice as number, product: args.product as string, terms: (args.terms as string) || null, transportType: (args.transportType as "ffcc"|"ship"|"truck") || null, licenseFsc: (args.licenseFsc as string) || null, chainOfCustody: (args.chainOfCustody as string) || null, inputClaim: (args.inputClaim as string) || null, outputClaim: (args.outputClaim as string) || null });
       const sell = args.sellPrice as number;
       const buy = args.buyPrice as number;
-      const fscInfo = [args.inputClaim && `Input: ${args.inputClaim}`, args.outputClaim && `Output: ${args.outputClaim}`].filter(Boolean).join(", ");
+      // Auto-fill FSC from supplier if not provided
+      const licenseFsc = (args.licenseFsc as string) || su.fscLicense || null;
+      const chainOfCustody = (args.chainOfCustody as string) || su.fscChainOfCustody || null;
+      const inputClaim = (args.inputClaim as string) || su.fscInputClaim || null;
+      const outputClaim = (args.outputClaim as string) || cl.fscOutputClaim || null;
+      await db.insert(purchaseOrders).values({ poNumber: args.poNumber as string, poDate: (args.poDate as string) || null, clientId: cl.id, supplierId: su.id, sellPrice: sell, buyPrice: buy, product: args.product as string, terms: (args.terms as string) || null, transportType: (args.transportType as "ffcc"|"ship"|"truck") || null, licenseFsc, chainOfCustody, inputClaim, outputClaim });
+      const fscInfo = [inputClaim && `Input: ${inputClaim}`, outputClaim && `Output: ${outputClaim}`].filter(Boolean).join(", ");
       return `PO ${args.poNumber} created successfully.
 - Client: ${cl.name}
 - Supplier: ${su.name}
 - Product: ${args.product}
 - Sell: $${sell}/TN | Buy: $${buy}/TN | Margin: $${(sell - buy).toFixed(2)}/TN
 - Terms: ${args.terms || "-"} | Transport: ${args.transportType || "-"}
-- FSC License: ${args.licenseFsc || "-"} | Chain of Custody: ${args.chainOfCustody || "-"}
+- FSC License: ${licenseFsc || "-"} | Chain of Custody: ${chainOfCustody || "-"}
 - FSC Claims: ${fscInfo || "-"}`;
     }
 
@@ -179,11 +186,42 @@ async function exec(name: string, args: Record<string, unknown>): Promise<string
       return `Client "${args.name}" created with portal enabled`;
     }
 
+    if (name === "update_client") {
+      const cl = await findClient(args.clientName as string);
+      if (!cl) return `Client "${args.clientName}" not found.`;
+      const ud: Record<string, unknown> = { updatedAt: new Date().toISOString() };
+      if (args.fscLicense) ud.fscLicense = args.fscLicense;
+      if (args.fscChainOfCustody) ud.fscChainOfCustody = args.fscChainOfCustody;
+      if (args.fscInputClaim) ud.fscInputClaim = args.fscInputClaim;
+      if (args.fscOutputClaim) ud.fscOutputClaim = args.fscOutputClaim;
+      if (args.contactName) ud.contactName = args.contactName;
+      if (args.contactEmail) ud.contactEmail = args.contactEmail;
+      if (args.phone) ud.phone = args.phone;
+      if (args.paymentTermsDays) ud.paymentTermsDays = args.paymentTermsDays;
+      await db.update(clients).set(ud).where(eq(clients.id, cl.id));
+      return `Client "${cl.name}" updated: ${Object.entries(ud).filter(([k]) => k !== "updatedAt").map(([k,v]) => `${k}=${v}`).join(", ")}`;
+    }
+
     if (name === "create_supplier") {
       const existing = await findSupplier(args.name as string);
       if (existing) return `Supplier "${args.name}" already exists as "${existing.name}"`;
       await db.insert(suppliers).values({ name: args.name as string, contactName: (args.contactName as string) || null, contactEmail: (args.contactEmail as string) || null, phone: (args.phone as string) || null });
       return `Supplier "${args.name}" created`;
+    }
+
+    if (name === "update_supplier") {
+      const su = await findSupplier(args.supplierName as string);
+      if (!su) return `Supplier "${args.supplierName}" not found.`;
+      const ud: Record<string, unknown> = { updatedAt: new Date().toISOString() };
+      if (args.fscLicense) ud.fscLicense = args.fscLicense;
+      if (args.fscChainOfCustody) ud.fscChainOfCustody = args.fscChainOfCustody;
+      if (args.fscInputClaim) ud.fscInputClaim = args.fscInputClaim;
+      if (args.fscOutputClaim) ud.fscOutputClaim = args.fscOutputClaim;
+      if (args.contactName) ud.contactName = args.contactName;
+      if (args.contactEmail) ud.contactEmail = args.contactEmail;
+      if (args.phone) ud.phone = args.phone;
+      await db.update(suppliers).set(ud).where(eq(suppliers.id, su.id));
+      return `Supplier "${su.name}" updated: ${Object.entries(ud).filter(([k]) => k !== "updatedAt").map(([k,v]) => `${k}=${v}`).join(", ")}`;
     }
 
     if (name === "delete_record") {
@@ -327,8 +365,9 @@ The system auto-resolves abbreviations. These all work:
 Always use the clientName/supplierName as the user provides it — the system will resolve it.
 
 ## CREATING RECORDS
-- Before create_po: always call query_data with all_pos (filter by client name) to check existing POs. Use the most recent PO's licenseFsc, chainOfCustody, inputClaim, outputClaim as defaults if the user doesn't specify them — the FSC certification is usually the same for the same client+supplier combination.
-- If the user says "same FSC as before" or doesn't mention FSC, automatically reuse the values from the most recent PO with the same client or supplier.
+- Before create_po: the system automatically reads FSC data from the supplier (fscLicense, fscChainOfCustody, fscInputClaim) and client (fscOutputClaim). You do NOT need to query previous POs for FSC — it comes from the client/supplier record directly.
+- If the user says "FSC" or "PEFC" without specifying details, the FSC will be auto-filled from the supplier and client records.
+- To set FSC info on a client or supplier, use update_client or update_supplier with the fsc fields.
 - If create_po fails with "not found", immediately retry using the exact name from the available list returned in the error.
 - Never tell the user to contact "technical support" — always show the EXACT error message returned by the tool.
 - If a tool returns "Tool error in create_po: UNIQUE constraint failed", it means the PO number already exists — tell the user and ask for a different number.

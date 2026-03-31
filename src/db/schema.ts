@@ -20,6 +20,11 @@ export const clients = sqliteTable("clients", {
   shipAddress: text("ship_address"),
   rfc: text("rfc"),
   paymentTermsDays: integer("payment_terms_days"), // e.g. 60 = Net 60
+  // FSC/PEFC certification
+  fscLicense: text("fsc_license"),
+  fscChainOfCustody: text("fsc_chain_of_custody"),
+  fscInputClaim: text("fsc_input_claim"),
+  fscOutputClaim: text("fsc_output_claim"),
   accessToken: text("access_token").notNull().unique(),
   portalEnabled: integer("portal_enabled", { mode: "boolean" }).notNull().default(false),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
@@ -32,6 +37,11 @@ export const suppliers = sqliteTable("suppliers", {
   contactName: text("contact_name"),
   contactEmail: text("contact_email"),
   phone: text("phone"),
+  // FSC/PEFC certification
+  fscLicense: text("fsc_license"),
+  fscChainOfCustody: text("fsc_chain_of_custody"),
+  fscInputClaim: text("fsc_input_claim"),
+  fscOutputClaim: text("fsc_output_claim"),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
