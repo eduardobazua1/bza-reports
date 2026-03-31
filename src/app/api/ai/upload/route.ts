@@ -44,33 +44,37 @@ export async function POST(req: NextRequest) {
 
     // PDF files — extract text
     if (fileName.endsWith(".pdf")) {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { PDFParse } = require("pdf-parse");
-      const uint8 = new Uint8Array(buffer);
-      const parser = new PDFParse(uint8);
-      await parser.load();
-      const result = await parser.getText();
-      const text = (result.text || "").trim();
-      const numPages = result.total || 0;
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const pdfParse = require("pdf-parse");
+        const data = await pdfParse(buffer);
+        const text = (data.text || "").trim();
+        const numPages = data.numpages || 0;
 
-      if (text.length === 0) {
+        if (text.length === 0) {
+          return NextResponse.json({
+            type: "text",
+            parsedContent: `PDF file: ${file.name} (${numPages} pages). No text found — may be a scanned image. Try uploading as image (PNG/JPG) instead.`,
+            fileName: file.name,
+            fileSize: file.size,
+          });
+        }
+
+        const truncated = text.length > 10000 ? text.slice(0, 10000) + "\n... (truncated)" : text;
         return NextResponse.json({
           type: "text",
-          parsedContent: `PDF file: ${file.name} (${numPages} pages). Could not extract text — this PDF may contain only scanned images. Try uploading a screenshot instead so I can read it with vision.`,
+          parsedContent: `PDF: ${file.name} (${numPages} pages)\n\n${truncated}`,
+          fileName: file.name,
+          fileSize: file.size,
+        });
+      } catch (pdfErr) {
+        return NextResponse.json({
+          type: "text",
+          parsedContent: `PDF: ${file.name} — could not parse: ${pdfErr instanceof Error ? pdfErr.message : "unknown error"}. Try converting to image.`,
           fileName: file.name,
           fileSize: file.size,
         });
       }
-
-      // Limit to ~8000 chars to fit in context
-      const truncated = text.length > 8000 ? text.slice(0, 8000) + "\n... (truncated)" : text;
-
-      return NextResponse.json({
-        type: "text",
-        parsedContent: `PDF: ${file.name} (${numPages} pages)\n\n${truncated}`,
-        fileName: file.name,
-        fileSize: file.size,
-      });
     }
 
     // Image files — convert to base64 for GPT-4o vision

@@ -309,14 +309,15 @@ export async function POST(req: NextRequest) {
 
   const { messages: rawMessages } = await req.json();
 
-  // Convert messages with imageUrl to OpenAI vision format
-  const messages = rawMessages.map((m: { role: string; content: string; imageUrl?: string }) => {
-    if (m.imageUrl && m.role === "user") {
+  // Convert messages with imageUrl/imageUrls to OpenAI vision format
+  const messages = rawMessages.map((m: { role: string; content: string; imageUrl?: string; imageUrls?: string[] }) => {
+    const imgUrls: string[] = m.imageUrls?.length ? m.imageUrls : m.imageUrl ? [m.imageUrl] : [];
+    if (imgUrls.length > 0 && m.role === "user") {
       return {
         role: m.role,
         content: [
           { type: "text", text: m.content },
-          { type: "image_url", image_url: { url: m.imageUrl, detail: "high" } },
+          ...imgUrls.map(url => ({ type: "image_url", image_url: { url, detail: "high" } })),
         ],
       };
     }
