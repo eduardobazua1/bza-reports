@@ -5,7 +5,7 @@ import { ShipmentMap } from "@/components/shipment-map";
 import { MarketPricesWidget } from "@/components/market-prices-widget";
 import { db } from "@/db";
 import { scheduledReports, clients as clientsTable, reportTemplates, supplierPayments, suppliers, purchaseOrders as posTable, invoices as invTable, marketPrices } from "@/db/schema";
-import { eq, sql, desc } from "drizzle-orm";
+import { eq, sql, desc, gte } from "drizzle-orm";
 import Link from "next/link";
 import { KPIBig } from "@/components/kpi-card";
 
@@ -56,11 +56,11 @@ export default async function DashboardPage() {
     .from(invTable)
     .leftJoin(posTable, eq(invTable.purchaseOrderId, posTable.id))
     .leftJoin(suppliers, eq(posTable.supplierId, suppliers.id))
-    .where(sql`${posTable.poNumber} >= ${CUTOFF_PO}`)
+    .where(gte(posTable.poNumber, CUTOFF_PO))
     .groupBy(suppliers.id, suppliers.name);
 
   const supplierBalances = supplierCostRows.map((sc) => {
-    const paid = supplierPaymentRows.find((sp) => sp.supplierId === sc.supplierId);
+    const paid = supplierPaymentRows.find((sp) => Number(sp.supplierId) === Number(sc.supplierId));
     const balance = sc.totalCost - (paid?.totalPaid || 0);
     return {
       name: sc.supplierName || "Unknown",
