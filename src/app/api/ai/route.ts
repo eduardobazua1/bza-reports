@@ -149,21 +149,37 @@ async function exec(name: string, args: Record<string, unknown>): Promise<string
       const blLookup = args.blNumberLookup as string | undefined;
       const salesDocLookup = args.salesDocumentLookup as string | undefined;
 
+      // Helper: normalize string for fuzzy matching (remove spaces, uppercase)
+      const norm = (s: string) => s.replace(/\s+/g, "").toUpperCase();
+
       // Try all lookup methods in order
       if (invoiceNum) inv = await db.query.invoices.findFirst({ where: eq(invoices.invoiceNumber, invoiceNum) });
-      if (!inv && vehicleLookup) inv = await db.query.invoices.findFirst({ where: eq(invoices.vehicleId, vehicleLookup) });
+      // Vehicle ID lookup: exact first, then normalize spaces
+      if (!inv && vehicleLookup) {
+        inv = await db.query.invoices.findFirst({ where: eq(invoices.vehicleId, vehicleLookup) });
+        if (!inv) {
+          // Try with/without spaces using LIKE
+          const noSpace = vehicleLookup.replace(/\s+/g, "");
+          inv = await db.query.invoices.findFirst({ where: sql`REPLACE(${invoices.vehicleId}, ' ', '') = ${noSpace}` });
+        }
+      }
       if (!inv && blLookup) inv = await db.query.invoices.findFirst({ where: eq(invoices.blNumber, blLookup) });
       if (!inv && salesDocLookup) inv = await db.query.invoices.findFirst({ where: eq(invoices.salesDocument, salesDocLookup) });
-      // If invoiceNumber doesn't start with IX, try it as a vehicleId too
+      // If invoiceNumber doesn't start with IX, try it as a vehicleId (with space normalization)
       if (!inv && invoiceNum && !invoiceNum.toUpperCase().startsWith("IX")) {
         inv = await db.query.invoices.findFirst({ where: eq(invoices.vehicleId, invoiceNum) });
+        if (!inv) {
+          const noSpace = invoiceNum.replace(/\s+/g, "");
+          inv = await db.query.invoices.findFirst({ where: sql`REPLACE(${invoices.vehicleId}, ' ', '') = ${noSpace}` });
+        }
       }
+      void norm; // used for reference
 
       if (!inv) {
         const tried = [invoiceNum, vehicleLookup, blLookup, salesDocLookup].filter(Boolean).join(", ");
         const available = await db.select({ n: invoices.invoiceNumber, v: invoices.vehicleId, b: invoices.blNumber }).from(invoices).where(sql`${invoices.shipmentStatus} != 'entregado'`).limit(40);
-        const list = available.map(r => `${r.n} | vehicle:${r.v || "-"} | BL:${r.b || "-"}`).join("\n");
-        return `Invoice not found. Tried: ${tried}\n\nActive invoices:\n${list}\n\nRetry with the correct identifier.`;
+        const list = available.map(r => `invoiceNumber="${r.n}" | vehicleIdLookup="${r.v || ""}"`).join("\n");
+        return `Invoice not found. Tried: "${tried}"\n\nIMPORTANT: To update by railcar number, use the vehicleIdLookup field (NOT invoiceNumber).\n\nActive invoices with their vehicle IDs:\n${list}\n\nCall update_invoice again using vehicleIdLookup with the exact vehicle ID shown above.`;
       }
 
       const ud: Record<string, unknown> = { updatedAt: new Date().toISOString() };
