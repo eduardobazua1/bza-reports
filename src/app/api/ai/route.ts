@@ -12,7 +12,7 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   { type: "function", function: { name: "query_data", description: "Query business data: summary, clients, suppliers, POs, invoices, payments, shipments", parameters: { type: "object", properties: { query_type: { type: "string", enum: ["summary", "unpaid_invoices", "active_pos", "all_pos", "client_list", "supplier_list", "supplier_payments", "active_shipments", "templates", "scheduled_reports"] }, filter_name: { type: "string" } }, required: ["query_type"] } } },
   { type: "function", function: { name: "create_po", description: "Create purchase order", parameters: { type: "object", properties: { poNumber: { type: "string" }, clientName: { type: "string" }, supplierName: { type: "string" }, sellPrice: { type: "number" }, buyPrice: { type: "number" }, product: { type: "string" }, poDate: { type: "string" }, terms: { type: "string" }, transportType: { type: "string", enum: ["ffcc", "ship", "truck"] }, licenseFsc: { type: "string" }, chainOfCustody: { type: "string" }, inputClaim: { type: "string" }, outputClaim: { type: "string" } }, required: ["poNumber", "clientName", "supplierName", "sellPrice", "buyPrice", "product"] } } },
   { type: "function", function: { name: "create_invoice", description: "Create invoice/shipment on a PO", parameters: { type: "object", properties: { invoiceNumber: { type: "string" }, poNumber: { type: "string" }, quantityTons: { type: "number" }, item: { type: "string" }, shipmentDate: { type: "string" }, vehicleId: { type: "string", description: "Tracking/railcar number e.g. TBOX640169" }, blNumber: { type: "string" }, currentLocation: { type: "string", description: "Current location for tracking" }, destination: { type: "string", description: "Final destination e.g. Ecatepec, Morelia, Bajio" }, balesCount: { type: "number", description: "Number of bales (from BOL)" }, unitsPerBale: { type: "number", description: "Units per bale (from BOL)" }, invoiceDate: { type: "string" }, salesDocument: { type: "string" }, billingDocument: { type: "string" } }, required: ["invoiceNumber", "poNumber", "quantityTons"] } } },
-  { type: "function", function: { name: "update_invoice", description: "Update invoice: tons, payment status, shipment status, location, dates, vehicle, ETA, BL number, destination, bales. Use this to correct tonnage.", parameters: { type: "object", properties: { invoiceNumber: { type: "string" }, quantityTons: { type: "number" }, customerPaymentStatus: { type: "string", enum: ["paid", "unpaid"] }, supplierPaymentStatus: { type: "string", enum: ["paid", "unpaid"] }, shipmentStatus: { type: "string", enum: ["programado", "en_transito", "en_aduana", "entregado"] }, shipmentDate: { type: "string" }, currentLocation: { type: "string" }, destination: { type: "string", description: "Final destination city" }, vehicleId: { type: "string" }, blNumber: { type: "string" }, estimatedArrival: { type: "string" }, customerPaidDate: { type: "string" }, invoiceDate: { type: "string" }, paymentTermsDays: { type: "number" }, salesDocument: { type: "string" }, billingDocument: { type: "string" }, balesCount: { type: "number" }, unitsPerBale: { type: "number" } }, required: ["invoiceNumber"] } } },
+  { type: "function", function: { name: "update_invoice", description: "Update invoice fields. Can find the invoice by ANY of: invoiceNumber, vehicleIdLookup (railcar/container), blNumberLookup (BL number), or salesDocumentLookup (client PO). When processing shipment status updates from documents, always use vehicleIdLookup with the railcar number.", parameters: { type: "object", properties: { invoiceNumber: { type: "string", description: "Invoice # (e.g. IX0043-1)" }, vehicleIdLookup: { type: "string", description: "Railcar or container # to look up the invoice (e.g. TBOX640169, RAIL123456)" }, blNumberLookup: { type: "string", description: "BL (Bill of Lading) number to look up the invoice" }, salesDocumentLookup: { type: "string", description: "Client PO / sales document number to look up the invoice" }, quantityTons: { type: "number" }, customerPaymentStatus: { type: "string", enum: ["paid", "unpaid"] }, supplierPaymentStatus: { type: "string", enum: ["paid", "unpaid"] }, shipmentStatus: { type: "string", enum: ["programado", "en_transito", "en_aduana", "entregado"] }, shipmentDate: { type: "string" }, currentLocation: { type: "string" }, destination: { type: "string" }, vehicleId: { type: "string" }, blNumber: { type: "string" }, estimatedArrival: { type: "string" }, customerPaidDate: { type: "string" }, invoiceDate: { type: "string" }, paymentTermsDays: { type: "number" }, salesDocument: { type: "string" }, billingDocument: { type: "string" }, balesCount: { type: "number" }, unitsPerBale: { type: "number" } }, required: [] } } },
   { type: "function", function: { name: "update_po", description: "Update PO: status, prices, dates, certification", parameters: { type: "object", properties: { poNumber: { type: "string" }, status: { type: "string", enum: ["active", "completed", "cancelled"] }, sellPrice: { type: "number" }, buyPrice: { type: "number" }, poDate: { type: "string" }, terms: { type: "string" }, licenseFsc: { type: "string" }, chainOfCustody: { type: "string" }, inputClaim: { type: "string" }, outputClaim: { type: "string" } }, required: ["poNumber"] } } },
   { type: "function", function: { name: "create_supplier_payment", description: "Record a payment to a supplier (advance, wire, deposit)", parameters: { type: "object", properties: { supplierName: { type: "string" }, amountUsd: { type: "number" }, paymentDate: { type: "string" }, estimatedTons: { type: "number" }, pricePerTon: { type: "number" }, poNumber: { type: "string" }, reference: { type: "string" }, notes: { type: "string" } }, required: ["supplierName", "amountUsd", "paymentDate"] } } },
   { type: "function", function: { name: "create_client", description: "Create a new client", parameters: { type: "object", properties: { name: { type: "string" }, contactName: { type: "string" }, contactEmail: { type: "string" }, phone: { type: "string" } }, required: ["name"] } } },
@@ -143,18 +143,38 @@ async function exec(name: string, args: Record<string, unknown>): Promise<string
     }
 
     if (name === "update_invoice") {
-      const inv = await db.query.invoices.findFirst({ where: eq(invoices.invoiceNumber, args.invoiceNumber as string) });
-      if (!inv) return `Invoice "${args.invoiceNumber}" not found.`;
+      let inv = null;
+      const invoiceNum = args.invoiceNumber as string | undefined;
+      const vehicleLookup = args.vehicleIdLookup as string | undefined;
+      const blLookup = args.blNumberLookup as string | undefined;
+      const salesDocLookup = args.salesDocumentLookup as string | undefined;
+
+      // Try all lookup methods in order
+      if (invoiceNum) inv = await db.query.invoices.findFirst({ where: eq(invoices.invoiceNumber, invoiceNum) });
+      if (!inv && vehicleLookup) inv = await db.query.invoices.findFirst({ where: eq(invoices.vehicleId, vehicleLookup) });
+      if (!inv && blLookup) inv = await db.query.invoices.findFirst({ where: eq(invoices.blNumber, blLookup) });
+      if (!inv && salesDocLookup) inv = await db.query.invoices.findFirst({ where: eq(invoices.salesDocument, salesDocLookup) });
+      // If invoiceNumber doesn't start with IX, try it as a vehicleId too
+      if (!inv && invoiceNum && !invoiceNum.toUpperCase().startsWith("IX")) {
+        inv = await db.query.invoices.findFirst({ where: eq(invoices.vehicleId, invoiceNum) });
+      }
+
+      if (!inv) {
+        const tried = [invoiceNum, vehicleLookup, blLookup, salesDocLookup].filter(Boolean).join(", ");
+        const available = await db.select({ n: invoices.invoiceNumber, v: invoices.vehicleId, b: invoices.blNumber }).from(invoices).where(sql`${invoices.shipmentStatus} != 'entregado'`).limit(40);
+        const list = available.map(r => `${r.n} | vehicle:${r.v || "-"} | BL:${r.b || "-"}`).join("\n");
+        return `Invoice not found. Tried: ${tried}\n\nActive invoices:\n${list}\n\nRetry with the correct identifier.`;
+      }
+
       const ud: Record<string, unknown> = { updatedAt: new Date().toISOString() };
-      for (const [k, v] of Object.entries(args)) { if (k !== "invoiceNumber" && v) ud[k] = v; }
-      // Auto-set lastLocationUpdate when location changes
+      const skipKeys = new Set(["invoiceNumber", "vehicleIdLookup", "blNumberLookup", "salesDocumentLookup"]);
+      for (const [k, v] of Object.entries(args)) { if (!skipKeys.has(k) && v !== undefined && v !== null && v !== "") ud[k] = v; }
       if (args.currentLocation) { ud.lastLocationUpdate = new Date().toISOString(); }
-      // Track shipment status changes
       if (args.shipmentStatus && args.shipmentStatus !== inv.shipmentStatus) {
         await db.insert(shipmentUpdates).values({ invoiceId: inv.id, previousStatus: inv.shipmentStatus, newStatus: args.shipmentStatus as string });
       }
       await db.update(invoices).set(ud).where(eq(invoices.id, inv.id));
-      return `Invoice ${args.invoiceNumber} updated: ${Object.entries(args).filter(([k]) => k !== "invoiceNumber").map(([k, v]) => `${k}=${v}`).join(", ")}`;
+      return `✓ ${inv.invoiceNumber} (railcar: ${inv.vehicleId || "-"}) updated: ${Object.entries(args).filter(([k]) => !skipKeys.has(k)).map(([k, v]) => `${k}=${v}`).join(", ")}`;
     }
 
     if (name === "update_po") {
@@ -351,7 +371,12 @@ When the user uploads or pastes a supplier document (Bill of Lading, packing lis
 - Always confirm every field you extracted and every invoice created/updated.
 - If a field is unclear or missing, ask the user before proceeding.
 - When the user uploads an image, you can SEE it via GPT-4o vision — read all visible text, tables, and numbers.
-- When processing client shipment status updates: extract vehicle IDs, locations, ETAs, status changes and use update_invoice.
+- When processing client shipment status updates (tracking reports, status emails, Excel files):
+  1. Extract each vehicle ID (railcar/container number), location, ETA, status
+  2. Use update_invoice with vehicleIdLookup = the railcar/container number (NOT invoiceNumber)
+  3. Set currentLocation, estimatedArrival, shipmentStatus as extracted
+  4. If the tool returns "not found", show the available list from the error to the user so they can verify
+  5. ALWAYS process ALL vehicles in the document, one update_invoice call per vehicle
 
 ## ABSOLUTE RULES
 1. For ANY number, total, sum, count, or data question — you MUST use run_calculation with a SQL query. NEVER calculate yourself.
