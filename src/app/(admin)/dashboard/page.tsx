@@ -36,39 +36,41 @@ export default async function DashboardPage() {
   const todayStr = new Date().toISOString().split("T")[0];
   const overdueReports = pendingSchedules.filter((s) => s.sendDate <= todayStr);
 
-  // Supplier payments balance — only count costs after Dec 17 2024 (everything before is settled)
-  const SUPPLIER_CUTOFF = "2024-12-17";
+  // Supplier balance = total cost from X0022+ minus total paid (from supplier_payments table)
+  const CUTOFF_PO = "X0022";
 
   const supplierPaymentRows = await db
     .select({
-      supplierName: suppliers.name,
-      totalPaidToSupplier: sql<number>`coalesce(sum(${supplierPayments.amountUsd}), 0)`,
+      supplierId: supplierPayments.supplierId,
+      totalPaid: sql<number>`coalesce(sum(${supplierPayments.amountUsd}), 0)`,
     })
     .from(supplierPayments)
-    .leftJoin(suppliers, eq(supplierPayments.supplierId, suppliers.id))
-    .groupBy(suppliers.name);
+    .groupBy(supplierPayments.supplierId);
 
   const supplierCostRows = await db
     .select({
+      supplierId: suppliers.id,
       supplierName: suppliers.name,
       totalCost: sql<number>`coalesce(sum(${invTable.quantityTons} * coalesce(${invTable.buyPriceOverride}, ${posTable.buyPrice}) + coalesce(${invTable.freightCost}, 0)), 0)`,
     })
     .from(invTable)
     .leftJoin(posTable, eq(invTable.purchaseOrderId, posTable.id))
     .leftJoin(suppliers, eq(posTable.supplierId, suppliers.id))
-    .where(sql`${invTable.shipmentDate} >= ${SUPPLIER_CUTOFF}`)
-    .groupBy(suppliers.name);
+    .where(sql`${posTable.poNumber} >= ${CUTOFF_PO}`)
+    .groupBy(suppliers.id, suppliers.name);
 
   const supplierBalances = supplierCostRows.map((sc) => {
-    const paid = supplierPaymentRows.find((sp) => sp.supplierName === sc.supplierName);
+    const paid = supplierPaymentRows.find((sp) => sp.supplierId === sc.supplierId);
+    const balance = sc.totalCost - (paid?.totalPaid || 0);
     return {
       name: sc.supplierName || "Unknown",
       cost: sc.totalCost,
-      paid: paid?.totalPaidToSupplier || 0,
-      balance: sc.totalCost - (paid?.totalPaidToSupplier || 0),
+      paid: paid?.totalPaid || 0,
+      balance, // positive = BZA owes supplier, negative = supplier owes BZA
     };
   });
-  const totalSupplierBalance = supplierBalances.reduce((s, b) => s + b.balance, 0);
+  // Only count what BZA owes (positive balances)
+  const totalSupplierBalance = supplierBalances.reduce((s, b) => s + (b.balance > 0 ? b.balance : 0), 0);
 
   // Build chart data
   const byMonth: Record<string, number> = {};
@@ -225,8 +227,47 @@ export default async function DashboardPage() {
         <KPIBig label="Active PO's" value={kpis.activePOs.toString()} unit="active orders" color="amber" href="/purchase-orders?status=active" animatedValue={kpis.activePOs} />
         <KPIBig label="Open Invoices" value={kpis.unpaidInvoices.toString()} unit="unpaid" color="amber" href="/invoices?status=unpaid" animatedValue={kpis.unpaidInvoices} />
         <KPIBig label="Accounts Receivable" value={formatCurrency(kpis.accountsReceivable)} unit="clients owe BZA" color="green" href="/invoices?status=unpaid" animatedValue={kpis.accountsReceivable} />
-        <KPIBig label="Accounts Payable" value={formatCurrency(kpis.accountsPayable)} unit="BZA owes suppliers" color="red" href="/suppliers" animatedValue={kpis.accountsPayable} />
+        <KPIBig label="Accounts Payable" value={formatCurrency(totalSupplierBalance)} unit="BZA owes suppliers" color="red" href="/suppliers" animatedValue={totalSupplierBalance} />
       </div>
+
+      {/* Supplier Balance Table */}
+      {supplierBalances.length > 0 && (
+        <div className="bg-white rounded-md shadow-sm">
+          <div className="p-4 border-b border-stone-200">
+            <h3 className="text-sm font-semibold text-stone-500 uppercase tracking-wide">Supplier Balance (desde X0022)</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-stone-50">
+                <tr>
+                  <th className="text-left px-4 py-2 font-medium text-stone-500">Proveedor</th>
+                  <th className="text-right px-4 py-2 font-medium text-stone-500">Total Real</th>
+                  <th className="text-right px-4 py-2 font-medium text-stone-500">Total Pagado</th>
+                  <th className="text-right px-4 py-2 font-medium text-stone-500">Balance</th>
+                  <th className="text-left px-4 py-2 font-medium text-stone-500">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {supplierBalances.map((b) => (
+                  <tr key={b.name} className="hover:bg-stone-50">
+                    <td className="px-4 py-2 border-t border-stone-100 font-medium">{b.name.split('(')[0].trim()}</td>
+                    <td className="px-4 py-2 border-t border-stone-100 text-right">{formatCurrency(b.cost)}</td>
+                    <td className="px-4 py-2 border-t border-stone-100 text-right">{formatCurrency(b.paid)}</td>
+                    <td className={`px-4 py-2 border-t border-stone-100 text-right font-semibold ${b.balance > 0 ? 'text-red-600' : b.balance < 0 ? 'text-emerald-600' : 'text-stone-500'}`}>
+                      {b.balance > 0 ? `-${formatCurrency(b.balance)}` : b.balance < 0 ? `+${formatCurrency(Math.abs(b.balance))}` : '$0'}
+                    </td>
+                    <td className="px-4 py-2 border-t border-stone-100">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${b.balance > 0 ? 'bg-red-100 text-red-700' : b.balance < 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-100 text-stone-500'}`}>
+                        {b.balance > 0 ? 'Debes pagar' : b.balance < 0 ? 'Te deben' : 'Saldado'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* AR Aging Summary */}
       {(() => {
