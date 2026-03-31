@@ -131,7 +131,7 @@ export default async function PurchaseOrderDetailPage({
           <table className="w-full text-sm">
             <thead className="bg-stone-50">
               <tr>
-                <th className="text-left px-3 py-2 font-medium text-stone-500">BZA Invoice #</th>
+                <th className="text-left px-3 py-2 font-medium text-stone-500">Invoice #</th>
                 <th className="text-left px-3 py-2 font-medium text-stone-500">Client PO</th>
                 <th className="text-left px-3 py-2 font-medium text-stone-500">Destination</th>
                 <th className="text-left px-3 py-2 font-medium text-stone-500">Vehicle</th>
