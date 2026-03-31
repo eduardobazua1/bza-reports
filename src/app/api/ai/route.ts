@@ -420,8 +420,15 @@ When the user uploads or pastes a supplier document (Bill of Lading, packing lis
 - When the user uploads a tracking screenshot, report, or email with railcar/container locations and ETAs:
   1. Read ALL vehicle IDs and their data from the image/document
   2. Call update_shipment_tracking ONCE with ALL vehicles in the updates array
-  3. Map status: "Train Arrived" / "Train Departed" → "en_transito", "Hold" → "en_aduana", "Delivered" → "entregado", "Released" → "en_transito"
-  4. ETA: use the "Interchanged Delivered" or "Actual Placed" date as estimatedArrival (format YYYY-MM-DD)
+  3. Map status (IMPORTANT — read carefully):
+     - "Train Arrived" → en_transito
+     - "Train Departed" → en_transito
+     - "Released" → en_transito
+     - "Hold" → en_aduana
+     - "Actual Placed" → en_transito
+     - ONLY use "entregado" if the user explicitly says the shipment was received/delivered at destination
+     - "Interchanged Delivered [date]" = ETA DATE, NOT delivered status — use as estimatedArrival, keep status as en_transito
+  4. ETA: "Interchanged Delivered [date]" and "Actual Placed [date]" are ETAs → use as estimatedArrival in YYYY-MM-DD format
   5. Report every ✅ success and ❌ not found to the user
 
 ## ABSOLUTE RULES
