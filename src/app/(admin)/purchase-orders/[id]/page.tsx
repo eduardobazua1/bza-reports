@@ -14,6 +14,7 @@ import {
   paymentStatusColors,
 } from "@/lib/utils";
 import { PODetailActions } from "@/components/po-detail-actions";
+import { ClientPOsSection } from "@/components/client-pos-section";
 
 export default async function PurchaseOrderDetailPage({
   params,
@@ -121,6 +122,58 @@ export default async function PurchaseOrderDetailPage({
           </div>
         </div>
       </div>
+
+      {/* Client POs Section */}
+      <ClientPOsSection purchaseOrderId={po.id} clientPos={po.clientPos} />
+
+      {/* Supplier Payments Section */}
+      {po.payments && po.payments.length > 0 && (
+        <div className="bg-white rounded-md shadow-sm">
+          <div className="p-4 border-b border-stone-200 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-stone-500 uppercase tracking-wide">
+              Supplier Payments ({po.payments.length})
+            </h3>
+            <span className="text-sm font-semibold text-stone-700">
+              Total: {formatCurrency(po.payments.reduce((s, p) => s + p.amountUsd, 0))}
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-stone-50">
+                <tr>
+                  <th className="text-left px-3 py-2 font-medium text-stone-500">Date</th>
+                  <th className="text-right px-3 py-2 font-medium text-stone-500">Amount (USD)</th>
+                  <th className="text-right px-3 py-2 font-medium text-stone-500">Est. Tons</th>
+                  <th className="text-right px-3 py-2 font-medium text-stone-500">Price/Ton</th>
+                  <th className="text-left px-3 py-2 font-medium text-stone-500">Status</th>
+                  <th className="text-left px-3 py-2 font-medium text-stone-500">Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {po.payments.map((pmt) => (
+                  <tr key={pmt.id} className="hover:bg-stone-50">
+                    <td className="px-3 py-2 border-t border-stone-100">{formatDate(pmt.paymentDate)}</td>
+                    <td className="px-3 py-2 border-t border-stone-100 text-right font-semibold">{formatCurrency(pmt.amountUsd)}</td>
+                    <td className="px-3 py-2 border-t border-stone-100 text-right">{pmt.estimatedTons ? formatNumber(pmt.estimatedTons, 0) : "-"}</td>
+                    <td className="px-3 py-2 border-t border-stone-100 text-right">{pmt.pricePerTon ? formatCurrency(pmt.pricePerTon) : "-"}</td>
+                    <td className="px-3 py-2 border-t border-stone-100">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                        pmt.adjustmentStatus === "settled" ? "bg-emerald-100 text-emerald-700" :
+                        pmt.adjustmentStatus === "pending" ? "bg-amber-100 text-amber-700" :
+                        "bg-stone-100 text-stone-500"
+                      }`}>
+                        {pmt.adjustmentStatus === "pending" ? "Pendiente ajuste" :
+                         pmt.adjustmentStatus === "settled" ? "Liquidado" : "N/A"}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 border-t border-stone-100 text-stone-500 text-xs">{pmt.notes || "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Invoices Table — full breakdown per invoice */}
       <div className="bg-white rounded-md shadow-sm">

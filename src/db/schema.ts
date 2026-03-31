@@ -101,6 +101,7 @@ export const invoices = sqliteTable("invoices", {
   lastLocationUpdate: text("last_location_update"),
   vehicleId: text("vehicle_id"), // railcar/truck ID (e.g. TBOX666789)
   blNumber: text("bl_number"), // Bill of Lading
+  clientPoId: integer("client_po_id").references(() => clientPurchaseOrders.id), // link to client PO
   salesDocument: text("sales_document"), // client's sales doc number
   billingDocument: text("billing_document"), // client's billing doc number
   // Invoice aging fields (double-check with QuickBooks)
@@ -147,6 +148,19 @@ export const scheduledReports = sqliteTable("scheduled_reports", {
   reminderEmail: text("reminder_email"), // who to remind (email)
   status: text("status", { enum: ["pending", "sent", "cancelled"] }).notNull().default("pending"),
   sentAt: text("sent_at"), // actual send time
+  notes: text("notes"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Client Purchase Orders - sub-orders from client under a BZA PO
+// e.g. BZA PO X0043 → Client PO X189014 (Morelia, 270 TN)
+export const clientPurchaseOrders = sqliteTable("client_purchase_orders", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  purchaseOrderId: integer("purchase_order_id").notNull().references(() => purchaseOrders.id),
+  clientPoNumber: text("client_po_number").notNull(), // e.g. X189014
+  destination: text("destination"), // e.g. "Morelia"
+  plannedTons: real("planned_tons"), // e.g. 270
+  status: text("status", { enum: ["pending", "partial", "complete"] }).notNull().default("pending"),
   notes: text("notes"),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });

@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates } from "@/db/schema";
+import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, clientPurchaseOrders, supplierPayments } from "@/db/schema";
 import { eq, desc, sql, and, count } from "drizzle-orm";
 
 // ---- Clients ----
@@ -54,7 +54,19 @@ export async function getPurchaseOrder(id: number) {
     .where(eq(invoices.purchaseOrderId, id))
     .orderBy(invoices.invoiceNumber);
 
-  return { ...po, client, supplier, invoices: poInvoices };
+  const clientPos = await db
+    .select()
+    .from(clientPurchaseOrders)
+    .where(eq(clientPurchaseOrders.purchaseOrderId, id))
+    .orderBy(clientPurchaseOrders.clientPoNumber);
+
+  const payments = await db
+    .select()
+    .from(supplierPayments)
+    .where(eq(supplierPayments.purchaseOrderId, id))
+    .orderBy(supplierPayments.paymentDate);
+
+  return { ...po, client, supplier, invoices: poInvoices, clientPos, payments };
 }
 
 // ---- Invoices ----
