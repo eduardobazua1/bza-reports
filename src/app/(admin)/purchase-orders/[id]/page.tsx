@@ -131,8 +131,8 @@ export default async function PurchaseOrderDetailPage({
           <table className="w-full text-sm">
             <thead className="bg-stone-50">
               <tr>
-                <th className="text-left px-3 py-2 font-medium text-stone-500">Invoice #</th>
                 <th className="text-left px-3 py-2 font-medium text-stone-500">Client PO</th>
+                <th className="text-left px-3 py-2 font-medium text-stone-500">Invoice #</th>
                 <th className="text-left px-3 py-2 font-medium text-stone-500">Destination</th>
                 <th className="text-left px-3 py-2 font-medium text-stone-500">Vehicle</th>
                 <th className="text-right px-3 py-2 font-medium text-stone-500">Tons</th>
@@ -163,14 +163,18 @@ export default async function PurchaseOrderDetailPage({
 
                 return (
                   <tr key={inv.id} className="hover:bg-stone-50">
-                    <td className="px-3 py-2 border-t border-stone-100 font-medium">
-                      <div className="flex items-center gap-2">
-                        {inv.invoiceNumber}
-                        <a href={`/api/invoice-pdf?invoice=${inv.invoiceNumber}`} target="_blank" rel="noopener noreferrer"
-                          className="text-[10px] text-orange-500 hover:text-orange-700 font-medium">PDF</a>
-                      </div>
+                    <td className="px-3 py-2 border-t border-stone-100 font-medium font-mono text-xs">{(inv as any).salesDocument || "-"}</td>
+                    <td className="px-3 py-2 border-t border-stone-100">
+                      {inv.invoiceNumber.startsWith("PEND-") ? (
+                        <span className="text-xs text-amber-500 italic">Pending docs</span>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">{inv.invoiceNumber}</span>
+                          <a href={`/api/invoice-pdf?invoice=${inv.invoiceNumber}`} target="_blank" rel="noopener noreferrer"
+                            className="text-[10px] text-orange-500 hover:text-orange-700 font-medium">PDF</a>
+                        </div>
+                      )}
                     </td>
-                    <td className="px-3 py-2 border-t border-stone-100 text-stone-600 font-mono text-xs">{(inv as any).salesDocument || "-"}</td>
                     <td className="px-3 py-2 border-t border-stone-100 text-stone-500">{(inv as any).destination || "-"}</td>
                     <td className="px-3 py-2 border-t border-stone-100 text-stone-500 font-mono text-xs">{inv.vehicleId || "-"}</td>
                     <td className="px-3 py-2 border-t border-stone-100 text-right">{formatNumber(inv.quantityTons, 3)}</td>

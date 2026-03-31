@@ -64,8 +64,13 @@ export function InvoiceForm({
     const n = (k: string) => f.get(k) as string || undefined;
     const num = (k: string) => f.get(k) ? Number(f.get(k)) : undefined;
 
+    const rawInvoiceNumber = (f.get("invoiceNumber") as string).trim();
+    const clientPO = (f.get("salesDocument") as string).trim();
+    // Auto-generate temp invoice number if not provided yet
+    const invoiceNumber = rawInvoiceNumber || `PEND-${clientPO}-${Date.now().toString().slice(-5)}`;
+
     const data = {
-      invoiceNumber: f.get("invoiceNumber") as string,
+      invoiceNumber,
       purchaseOrderId: Number(f.get("purchaseOrderId") || effectivePOId),
       quantityTons: Number(f.get("quantityTons")),
       sellPriceOverride: num("sellPriceOverride"),
@@ -113,11 +118,11 @@ export function InvoiceForm({
         <div>
           <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-2">Identification</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Field label="Invoice Number *">
-              <input name="invoiceNumber" required defaultValue={invoice?.invoiceNumber || ""} className={inputCls} placeholder="IX0042-9" />
+            <Field label="Client PO # *">
+              <input name="salesDocument" required defaultValue={invoice?.salesDocument || ""} className={inputCls} placeholder="X189014" />
             </Field>
-            <Field label="Client PO (Sales Document)">
-              <input name="salesDocument" defaultValue={invoice?.salesDocument || ""} className={inputCls} placeholder="X189014" />
+            <Field label="Invoice # (leave empty until documents arrive)">
+              <input name="invoiceNumber" defaultValue={invoice?.invoiceNumber || ""} className={inputCls} placeholder="IX0042-9 — from supplier BOL" />
             </Field>
             <Field label="Billing Document">
               <input name="billingDocument" defaultValue={invoice?.billingDocument || ""} className={inputCls} placeholder="BZA billing ref" />
