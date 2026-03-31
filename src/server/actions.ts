@@ -139,11 +139,23 @@ export async function createInvoice(data: {
   sellPriceOverride?: number;
   buyPriceOverride?: number;
   shipmentDate?: string;
+  invoiceDate?: string;
+  estimatedArrival?: string;
+  dueDate?: string;
+  paymentTermsDays?: number;
   shipmentStatus?: "programado" | "en_transito" | "en_aduana" | "entregado";
   customerPaymentStatus?: "paid" | "unpaid";
   supplierPaymentStatus?: "paid" | "unpaid";
   usesFactoring?: boolean;
   item?: string;
+  vehicleId?: string;
+  blNumber?: string;
+  currentLocation?: string;
+  destination?: string;
+  balesCount?: number;
+  unitsPerBale?: number;
+  salesDocument?: string;
+  billingDocument?: string;
   notes?: string;
 }) {
   // Auto-calculate due date from client payment terms
@@ -160,7 +172,10 @@ export async function updateInvoice(id: number, data: Partial<{
   sellPriceOverride: number;
   buyPriceOverride: number;
   shipmentDate: string;
+  invoiceDate: string;
   estimatedArrival: string | null;
+  dueDate: string;
+  paymentTermsDays: number;
   shipmentStatus: "programado" | "en_transito" | "en_aduana" | "entregado";
   customerPaymentStatus: "paid" | "unpaid";
   supplierPaymentStatus: "paid" | "unpaid";
@@ -173,6 +188,11 @@ export async function updateInvoice(id: number, data: Partial<{
   currentLocation: string | null;
   vehicleId: string | null;
   blNumber: string | null;
+  destination: string | null;
+  balesCount: number | null;
+  unitsPerBale: number | null;
+  salesDocument: string | null;
+  billingDocument: string | null;
 }>) {
   // If shipment status changed, create a shipment update
   if (data.shipmentStatus) {

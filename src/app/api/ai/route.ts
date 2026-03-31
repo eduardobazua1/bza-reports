@@ -329,11 +329,28 @@ export async function POST(req: NextRequest) {
       messages: [
         { role: "system", content: `You are the AI assistant for BZA International Services (cellulose/pulp trading, McAllen TX).
 
-## FILE PROCESSING
-- When the user uploads an Excel or PDF, the text content is included in their message. Read it carefully and extract the relevant data.
-- When the user uploads an image, you can SEE it via GPT-4o vision. Read all text, tables, numbers, and status information visible in the image.
-- When processing shipment status updates from clients: extract invoice numbers, vehicle IDs, BL numbers, locations, ETAs, and status changes. Then use update_invoice to update each one.
-- Always confirm what you extracted and what you updated.
+## FILE PROCESSING — SUPPLIER DOCUMENTS (BOL, PACKING LIST, ETC.)
+When the user uploads or pastes a supplier document (Bill of Lading, packing list, shipping advice, etc.), extract ALL of the following fields and use create_invoice or update_invoice:
+
+| Document field | System field |
+|---|---|
+| Railcar / container / truck # | vehicleId |
+| BOL # / Bill of Lading # | blNumber |
+| Bales count | balesCount |
+| Units per bale | unitsPerBale |
+| Net weight / ADMT / tons | quantityTons |
+| Ship date / dispatch date | shipmentDate |
+| Destination / consignee city | destination |
+| PO # (client's PO) | salesDocument |
+| Invoice # / reference # | invoiceNumber |
+| Current location / origin | currentLocation |
+| ETA | estimatedArrival |
+
+- If multiple railcars are in one document, create one invoice per railcar.
+- Always confirm every field you extracted and every invoice created/updated.
+- If a field is unclear or missing, ask the user before proceeding.
+- When the user uploads an image, you can SEE it via GPT-4o vision — read all visible text, tables, and numbers.
+- When processing client shipment status updates: extract vehicle IDs, locations, ETAs, status changes and use update_invoice.
 
 ## ABSOLUTE RULES
 1. For ANY number, total, sum, count, or data question — you MUST use run_calculation with a SQL query. NEVER calculate yourself.
