@@ -52,7 +52,15 @@ export function InvoiceListActions({ invoice }: { invoice: Invoice }) {
   }
 
   return (
-    <div className="flex gap-2 justify-end">
+    <div className="flex gap-2 justify-end items-center">
+      <a
+        href={`/api/invoice-pdf?invoice=${invoice.invoiceNumber}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-xs text-orange-600 hover:underline font-medium"
+      >
+        PDF
+      </a>
       <button
         onClick={() => setShowEdit(true)}
         className="text-xs text-primary hover:underline"
