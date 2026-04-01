@@ -140,15 +140,6 @@ export function POForm({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Client PO</label>
-            <input
-              name="clientPoNumber"
-              defaultValue={purchaseOrder?.clientPoNumber || ""}
-              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-              placeholder="Client PO number"
-            />
-          </div>
-          <div>
             <label className="block text-sm font-medium mb-1">Client *</label>
             <select
               name="clientId"

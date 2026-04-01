@@ -74,7 +74,6 @@ export default async function PurchaseOrderDetailPage({
         <InfoCard label="Supplier" value={po.supplier?.name || "-"} />
         <InfoCard label="Product" value={po.product} />
         <InfoCard label="Date" value={formatDate(po.poDate)} />
-        <InfoCard label="Client PO" value={po.clientPoNumber || "-"} />
         <InfoCard label="Terms" value={po.terms || "-"} />
         <InfoCard label="Sell Price" value={formatCurrency(po.sellPrice)} />
         <InfoCard label="Buy Price" value={formatCurrency(po.buyPrice)} />
@@ -168,8 +167,8 @@ export default async function PurchaseOrderDetailPage({
                         pmt.adjustmentStatus === "pending" ? "bg-amber-100 text-amber-700" :
                         "bg-stone-100 text-stone-500"
                       }`}>
-                        {pmt.adjustmentStatus === "pending" ? "Pendiente ajuste" :
-                         pmt.adjustmentStatus === "settled" ? "Liquidado" : "N/A"}
+                        {pmt.adjustmentStatus === "pending" ? "Pending adjustment" :
+                         pmt.adjustmentStatus === "settled" ? "Settled" : "N/A"}
                       </span>
                     </td>
                     <td className="px-3 py-2 border-t border-stone-100 text-stone-500 text-xs">{pmt.notes || "-"}</td>

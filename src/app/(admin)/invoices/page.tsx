@@ -81,6 +81,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
                 <th className="text-left p-3 text-sm font-medium text-muted-foreground">Invoice #</th>
                 <th className="text-left p-3 text-sm font-medium text-muted-foreground">PO #</th>
                 <th className="text-left p-3 text-sm font-medium text-muted-foreground">Client</th>
+                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Destination</th>
                 <th className="text-right p-3 text-sm font-medium text-muted-foreground">Tons</th>
                 <th className="text-right p-3 text-sm font-medium text-muted-foreground">Revenue</th>
                 <th className="text-left p-3 text-sm font-medium text-muted-foreground">Ship Date</th>
@@ -94,7 +95,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
             <tbody>
               {invoiceRows.length === 0 && (
                 <tr>
-                  <td colSpan={11} className="p-6 text-center text-sm text-muted-foreground">
+                  <td colSpan={12} className="p-6 text-center text-sm text-muted-foreground">
                     No invoices found.
                   </td>
                 </tr>
@@ -121,6 +122,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
                       </Link>
                     </td>
                     <td className="p-3 text-sm border-t border-border">{row.clientName || "-"}</td>
+                    <td className="p-3 text-sm border-t border-border text-stone-500">{(row.invoice as any).destination || "-"}</td>
                     <td className="p-3 text-sm border-t border-border text-right">
                       {formatNumber(row.invoice.quantityTons, 2)}
                     </td>
