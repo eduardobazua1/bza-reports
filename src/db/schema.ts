@@ -189,6 +189,19 @@ export const supplierPayments = sqliteTable("supplier_payments", {
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
+// Supplier Orders - individual purchase orders sent to supplier under a BZA PO
+// e.g. BZA PO X0043 → Supplier Order 1: 540 TN @ $845/TN DAP Eagle Pass
+export const supplierOrders = sqliteTable("supplier_orders", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  purchaseOrderId: integer("purchase_order_id").notNull().references(() => purchaseOrders.id),
+  orderDate: text("order_date"),
+  tons: real("tons").notNull(),
+  pricePerTon: real("price_per_ton"), // null = use PO buyPrice
+  incoterm: text("incoterm"), // null = use PO terms
+  notes: text("notes"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
 // Market prices from TTO and RISI
 export const marketPrices = sqliteTable("market_prices", {
   id: integer("id").primaryKey({ autoIncrement: true }),

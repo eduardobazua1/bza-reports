@@ -15,6 +15,7 @@ import {
 } from "@/lib/utils";
 import { PODetailActions } from "@/components/po-detail-actions";
 import { ClientPOsSection } from "@/components/client-pos-section";
+import { SupplierOrdersSection } from "@/components/supplier-orders-section";
 
 export default async function PurchaseOrderDetailPage({
   params,
@@ -131,6 +132,15 @@ export default async function PurchaseOrderDetailPage({
           </div>
         </div>
       </div>
+
+      {/* Supplier Orders Section */}
+      <SupplierOrdersSection
+        purchaseOrderId={po.id}
+        supplierOrders={po.supplierOrders}
+        buyPrice={po.buyPrice}
+        poTerms={po.terms}
+        poNumber={po.poNumber}
+      />
 
       {/* Client POs Section */}
       <ClientPOsSection

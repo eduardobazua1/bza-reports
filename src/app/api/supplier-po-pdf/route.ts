@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { purchaseOrders, clients, suppliers, clientPurchaseOrders } from "@/db/schema";
+import { purchaseOrders, clients, suppliers, clientPurchaseOrders, supplierOrders } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +32,7 @@ const SUPPLIER_ADDRESSES: Record<string, string[]> = {
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const poId = sp.get("poId");
+  const soId = sp.get("soId"); // optional: specific supplier order
   if (!poId) return NextResponse.json({ error: "poId required" }, { status: 400 });
 
   const po = await db.query.purchaseOrders.findFirst({ where: eq(purchaseOrders.id, Number(poId)) });
@@ -39,10 +40,6 @@ export async function GET(req: NextRequest) {
 
   const client = await db.query.clients.findFirst({ where: eq(clients.id, po.clientId) });
   const supplier = await db.query.suppliers.findFirst({ where: eq(suppliers.id, po.supplierId) });
-
-  const cpos = await db.select().from(clientPurchaseOrders)
-    .where(eq(clientPurchaseOrders.purchaseOrderId, Number(poId)))
-    .orderBy(clientPurchaseOrders.clientPoNumber);
 
   // Resolve supplier address
   const supplierKey = Object.keys(SUPPLIER_ADDRESSES).find(k =>
@@ -54,15 +51,39 @@ export async function GET(req: NextRequest) {
   const clientAddress = (client?.shipAddress || client?.billAddress || "")
     .split("\n").filter(Boolean);
 
-  const lineItems = cpos.map(cpo => ({
-    description: `${po.product}${cpo.destination ? ` – ${cpo.destination}` : ""}`,
-    qty: cpo.plannedTons ?? 0,
-    rate: po.buyPrice,
-    amount: (cpo.plannedTons ?? 0) * po.buyPrice,
-  }));
+  let lineItems: { description: string; qty: number; rate: number; amount: number }[];
+  let poDate: string;
+  let effectiveIncoterm: string;
+
+  if (soId) {
+    // Single supplier order mode
+    const so = await db.query.supplierOrders.findFirst({ where: eq(supplierOrders.id, Number(soId)) });
+    if (!so) return NextResponse.json({ error: "Supplier order not found" }, { status: 404 });
+    const price = so.pricePerTon ?? po.buyPrice;
+    lineItems = [{
+      description: po.product,
+      qty: so.tons,
+      rate: price,
+      amount: so.tons * price,
+    }];
+    poDate = so.orderDate || po.poDate || new Date().toISOString().split("T")[0];
+    effectiveIncoterm = so.incoterm ?? po.terms ?? "";
+  } else {
+    // Legacy: one line per client PO
+    const cpos = await db.select().from(clientPurchaseOrders)
+      .where(eq(clientPurchaseOrders.purchaseOrderId, Number(poId)))
+      .orderBy(clientPurchaseOrders.clientPoNumber);
+    lineItems = cpos.map(cpo => ({
+      description: `${po.product}${cpo.destination ? ` – ${cpo.destination}` : ""}`,
+      qty: cpo.plannedTons ?? 0,
+      rate: po.buyPrice,
+      amount: (cpo.plannedTons ?? 0) * po.buyPrice,
+    }));
+    poDate = po.poDate || new Date().toISOString().split("T")[0];
+    effectiveIncoterm = po.terms ?? "";
+  }
 
   const total = lineItems.reduce((s, l) => s + l.amount, 0);
-  const poDate = po.poDate || new Date().toISOString().split("T")[0];
 
   const doc = new PDFDocument({ size: "LETTER", margin: 0 });
   const chunks: Buffer[] = [];
@@ -116,7 +137,7 @@ export async function GET(req: NextRequest) {
 
   // Meta: Ship Via + PO + Date
   doc.fontSize(7.5).fillColor(DARK);
-  doc.text(po.terms || "", c3, y, { width: 110 });
+  doc.text(effectiveIncoterm, c3, y, { width: 110 });
   doc.text(po.poNumber, c4, y);
   y += 11;
   doc.fontSize(6.5).fillColor(GRAY).text("DATE", c4, y);
