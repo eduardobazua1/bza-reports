@@ -59,7 +59,7 @@ export default async function PurchaseOrderDetailPage({
       <div className="flex items-center justify-between">
         <div>
           <Link href="/purchase-orders" className="text-sm text-stone-400 hover:text-stone-600">
-            &larr; Purchase Orders
+            &larr; Contratos
           </Link>
           <h1 className="text-2xl font-bold mt-1">PO {po.poNumber}</h1>
         </div>

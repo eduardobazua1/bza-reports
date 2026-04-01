@@ -81,7 +81,7 @@ export default async function SupplierDetailPage({
       {/* Purchase Orders */}
       <div className="bg-white rounded-md shadow-sm">
         <div className="p-4 border-b border-stone-200">
-          <h3 className="font-semibold text-stone-800">Purchase Orders ({pos.length})</h3>
+          <h3 className="font-semibold text-stone-800">Contratos ({pos.length})</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

@@ -5,10 +5,10 @@ import { POListActions } from "@/components/po-form";
 import { POStatusToggle } from "@/components/po-status-toggle";
 
 const tabs = [
-  { key: "", label: "All" },
-  { key: "active", label: "Active" },
-  { key: "completed", label: "Completed" },
-  { key: "cancelled", label: "Cancelled" },
+  { key: "", label: "Todos" },
+  { key: "active", label: "Activos" },
+  { key: "completed", label: "Completados" },
+  { key: "cancelled", label: "Cancelados" },
 ];
 
 export default async function PurchaseOrdersPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
@@ -35,7 +35,7 @@ export default async function PurchaseOrdersPage({ searchParams }: { searchParam
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Purchase Orders</h1>
+      <h1 className="text-2xl font-bold">Contratos</h1>
 
       {/* Status tabs */}
       <div className="flex gap-1 bg-muted p-1 rounded-lg w-fit">
@@ -64,24 +64,24 @@ export default async function PurchaseOrdersPage({ searchParams }: { searchParam
             <thead className="bg-muted">
               <tr>
                 <th className="text-left p-3 text-sm font-medium text-muted-foreground">PO #</th>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Date</th>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Client</th>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Supplier</th>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Product</th>
-                <th className="text-right p-3 text-sm font-medium text-muted-foreground">Sell</th>
-                <th className="text-right p-3 text-sm font-medium text-muted-foreground">Buy</th>
-                <th className="text-right p-3 text-sm font-medium text-muted-foreground">Inv.</th>
+                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Fecha</th>
+                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Cliente</th>
+                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Proveedor</th>
+                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Producto</th>
+                <th className="text-right p-3 text-sm font-medium text-muted-foreground">Venta</th>
+                <th className="text-right p-3 text-sm font-medium text-muted-foreground">Compra</th>
+                <th className="text-right p-3 text-sm font-medium text-muted-foreground">Fact.</th>
                 <th className="text-right p-3 text-sm font-medium text-muted-foreground">Tons</th>
-                <th className="text-right p-3 text-sm font-medium text-muted-foreground">Revenue</th>
-                <th className="text-right p-3 text-sm font-medium text-muted-foreground">Profit</th>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Status</th>
+                <th className="text-right p-3 text-sm font-medium text-muted-foreground">Ingresos</th>
+                <th className="text-right p-3 text-sm font-medium text-muted-foreground">Utilidad</th>
+                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Estado</th>
               </tr>
             </thead>
             <tbody>
               {poRows.length === 0 && (
                 <tr>
                   <td colSpan={12} className="p-6 text-center text-sm text-muted-foreground">
-                    No purchase orders found.
+                    No se encontraron contratos.
                   </td>
                 </tr>
               )}
