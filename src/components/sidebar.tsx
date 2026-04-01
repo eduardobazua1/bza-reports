@@ -28,14 +28,14 @@ const navItems: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/assistant", label: "AI Assistant", icon: BotMessageSquare },
   { href: "/market-prices", label: "Market Prices", icon: TrendingUp },
   { href: "/reports", label: "Reports", icon: BarChart3 },
-  { href: "/purchase-orders", label: "Contratos", icon: ClipboardList },
-  { href: "/invoices", label: "Facturas", icon: FileText },
-  { href: "/clients", label: "Clientes", icon: Users },
-  { href: "/suppliers", label: "Proveedores", icon: Truck },
-  { href: "/shipments", label: "Embarques", icon: Truck },
-  { href: "/export", label: "Exportar Excel", icon: Download },
-  { href: "/import", label: "Importar Datos", icon: Upload },
-  { href: "/settings", label: "Configuración", icon: Settings },
+  { href: "/purchase-orders", label: "Purchase Orders", icon: ClipboardList },
+  { href: "/invoices", label: "Invoices", icon: FileText },
+  { href: "/clients", label: "Clients", icon: Users },
+  { href: "/suppliers", label: "Suppliers", icon: Truck },
+  { href: "/shipments", label: "Shipments", icon: Truck },
+  { href: "/export", label: "Export Excel", icon: Download },
+  { href: "/import", label: "Import Data", icon: Upload },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function Sidebar({ userName }: { userName: string }) {

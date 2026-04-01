@@ -47,7 +47,7 @@ export function DashboardCharts({
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Revenue by Year */}
       <div className="bg-white rounded-md shadow-sm p-4">
-        <h3 className="text-lg font-semibold mb-4">Revenue / Costo / Utilidad por Ano</h3>
+        <h3 className="text-lg font-semibold mb-4">Revenue / Cost / Profit by Year</h3>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={revenueByYear} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
@@ -65,8 +65,8 @@ export function DashboardCharts({
               />
               <Legend fontSize={12} />
               <Bar dataKey="revenue" name="Revenue" fill="#1a56db" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="cost" name="Costo" fill="#94a3b8" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="profit" name="Utilidad" fill="#16a34a" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="cost" name="Cost" fill="#94a3b8" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="profit" name="Profit" fill="#16a34a" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -94,7 +94,7 @@ export function DashboardCharts({
                   fontSize: "12px",
                 }}
               />
-              <Bar dataKey="profit" name="Utilidad" fill="#1a56db" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="profit" name="Profit" fill="#1a56db" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

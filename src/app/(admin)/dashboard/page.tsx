@@ -191,8 +191,8 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KPIBig label="Active PO's" value={kpis.activePOs.toString()} unit="active orders" color="amber" href="/purchase-orders?status=active" animatedValue={kpis.activePOs} />
         <KPIBig label="Open Invoices" value={kpis.unpaidInvoices.toString()} unit="unpaid" color="amber" href="/invoices?status=unpaid" animatedValue={kpis.unpaidInvoices} />
-        <KPIBig label="Por Cobrar" value={formatCurrency(kpis.accountsReceivable)} unit="clientes deben a BZA" color="green" href="/invoices?status=unpaid" animatedValue={kpis.accountsReceivable} />
-        <KPIBig label="Proveedores" value={formatCurrency(0)} unit="ver detalle en proveedores" color="amber" href="/suppliers" animatedValue={0} />
+        <KPIBig label="Accounts Receivable" value={formatCurrency(kpis.accountsReceivable)} unit="clients owe BZA" color="green" href="/invoices?status=unpaid" animatedValue={kpis.accountsReceivable} />
+        <KPIBig label="Suppliers" value={formatCurrency(0)} unit="see supplier details" color="amber" href="/suppliers" animatedValue={0} />
       </div>
 
 

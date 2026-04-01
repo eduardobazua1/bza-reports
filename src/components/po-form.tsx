@@ -116,7 +116,7 @@ export function POForm({
   return (
     <div className="bg-white rounded-md shadow-sm p-4">
       <h3 className="text-lg font-semibold mb-4">
-        {purchaseOrder ? "Editar Contrato" : "Nuevo Contrato"}
+        {purchaseOrder ? "Edit Purchase Order" : "New Purchase Order"}
       </h3>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -131,7 +131,7 @@ export function POForm({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Fecha</label>
+            <label className="block text-sm font-medium mb-1">Date</label>
             <input
               name="poDate"
               type="date"
@@ -145,7 +145,7 @@ export function POForm({
               name="clientPoNumber"
               defaultValue={purchaseOrder?.clientPoNumber || ""}
               className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-              placeholder="PO del cliente"
+              placeholder="Client PO number"
             />
           </div>
           <div>
@@ -183,7 +183,7 @@ export function POForm({
               required
               defaultValue={purchaseOrder?.product || ""}
               className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-              placeholder="Celulosa, Papel, etc."
+              placeholder="Pulp, Paper, etc."
             />
           </div>
           <div>
@@ -211,7 +211,7 @@ export function POForm({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Terminos</label>
+            <label className="block text-sm font-medium mb-1">Terms</label>
             <input
               name="terms"
               defaultValue={purchaseOrder?.terms || ""}
@@ -227,19 +227,19 @@ export function POForm({
               className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
             >
               <option value="">Select</option>
-              <option value="ffcc">Ferrocarril</option>
-              <option value="ship">Maritimo</option>
-              <option value="truck">Camion</option>
+              <option value="ffcc">Railroad</option>
+              <option value="ship">Maritime</option>
+              <option value="truck">Truck</option>
             </select>
           </div>
         </div>
 
         {/* Certification Fields */}
         <div>
-          <h4 className="text-sm font-semibold text-muted-foreground mb-2">Certificacion FSC</h4>
+          <h4 className="text-sm font-semibold text-muted-foreground mb-2">FSC Certification</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Licencia FSC</label>
+              <label className="block text-sm font-medium mb-1">FSC License</label>
               <input
                 name="licenseFsc"
                 defaultValue={purchaseOrder?.licenseFsc || ""}
@@ -275,7 +275,7 @@ export function POForm({
 
         {/* Notes */}
         <div>
-          <label className="block text-sm font-medium mb-1">Notas</label>
+          <label className="block text-sm font-medium mb-1">Notes</label>
           <textarea
             name="notes"
             defaultValue={purchaseOrder?.notes || ""}

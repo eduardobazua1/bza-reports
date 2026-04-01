@@ -53,22 +53,22 @@ export default async function SupplierDetailPage({
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-white rounded-md shadow-sm p-4">
-          <p className="text-xs text-stone-500 uppercase tracking-wide">Total Compras</p>
+          <p className="text-xs text-stone-500 uppercase tracking-wide">Total Purchases</p>
           <p className="text-xl font-bold mt-1">{formatCurrency(totalCost)}</p>
           <p className="text-xs text-stone-400">{formatNumber(totalTons, 0)} TN · {pos.length} POs</p>
         </div>
         <div className="bg-white rounded-md shadow-sm p-4">
-          <p className="text-xs text-stone-500 uppercase tracking-wide">Total Pagado</p>
+          <p className="text-xs text-stone-500 uppercase tracking-wide">Total Paid</p>
           <p className="text-xl font-bold text-emerald-600 mt-1">{formatCurrency(totalPaid)}</p>
-          <p className="text-xs text-stone-400">{payments.length} pago{payments.length !== 1 ? "s" : ""}</p>
+          <p className="text-xs text-stone-400">{payments.length} payment{payments.length !== 1 ? "s" : ""}</p>
         </div>
         <div className={`bg-white rounded-md shadow-sm p-4 border-l-4 ${balance > 0 ? "border-l-red-400" : balance < 0 ? "border-l-emerald-400" : "border-l-stone-200"}`}>
-          <p className="text-xs text-stone-500 uppercase tracking-wide">Balance (desde X0022)</p>
+          <p className="text-xs text-stone-500 uppercase tracking-wide">Balance (from X0022)</p>
           <p className={`text-xl font-bold mt-1 ${balance > 0 ? "text-red-600" : balance < 0 ? "text-emerald-600" : "text-stone-500"}`}>
             {balance > 0 ? "-" : balance < 0 ? "+" : ""}{formatCurrency(Math.abs(balance))}
           </p>
           <p className="text-xs text-stone-400">
-            {balance > 0 ? "Debes pagar" : balance < 0 ? "Te deben" : "Saldado"}
+            {balance > 0 ? "You owe" : balance < 0 ? "They owe you" : "Settled"}
           </p>
         </div>
         <div className="bg-white rounded-md shadow-sm p-4">
@@ -81,18 +81,18 @@ export default async function SupplierDetailPage({
       {/* Purchase Orders */}
       <div className="bg-white rounded-md shadow-sm">
         <div className="p-4 border-b border-stone-200">
-          <h3 className="font-semibold text-stone-800">Contratos ({pos.length})</h3>
+          <h3 className="font-semibold text-stone-800">Purchase Orders ({pos.length})</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-stone-50">
               <tr>
                 <th className="text-left px-3 py-2 font-medium text-stone-500">PO #</th>
-                <th className="text-left px-3 py-2 font-medium text-stone-500">Cliente</th>
-                <th className="text-right px-3 py-2 font-medium text-stone-500">Precio/TN</th>
+                <th className="text-left px-3 py-2 font-medium text-stone-500">Client</th>
+                <th className="text-right px-3 py-2 font-medium text-stone-500">Price/TN</th>
                 <th className="text-right px-3 py-2 font-medium text-stone-500">Tons</th>
-                <th className="text-right px-3 py-2 font-medium text-stone-500">Costo Total</th>
-                <th className="text-right px-3 py-2 font-medium text-stone-500">Facturas</th>
+                <th className="text-right px-3 py-2 font-medium text-stone-500">Total Cost</th>
+                <th className="text-right px-3 py-2 font-medium text-stone-500">Invoices</th>
               </tr>
             </thead>
             <tbody>
@@ -121,28 +121,28 @@ export default async function SupplierDetailPage({
         </div>
       </div>
 
-      {/* Pagos Realizados */}
+      {/* Payments Made */}
       <div className="bg-white rounded-md shadow-sm">
         <div className="p-4 border-b border-stone-200 flex items-center justify-between">
           <div>
-            <h3 className="font-semibold text-stone-800">Pagos Realizados</h3>
-            <p className="text-xs text-stone-400 mt-0.5">{payments.length} pago{payments.length !== 1 ? "s" : ""} · Total pagado: {formatCurrency(totalPaid)}</p>
+            <h3 className="font-semibold text-stone-800">Payments Made</h3>
+            <p className="text-xs text-stone-400 mt-0.5">{payments.length} payment{payments.length !== 1 ? "s" : ""} · Total paid: {formatCurrency(totalPaid)}</p>
           </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-stone-50">
               <tr>
-                <th className="text-left px-4 py-2.5 font-medium text-stone-500">Fecha</th>
-                <th className="text-right px-4 py-2.5 font-medium text-stone-500">Monto</th>
+                <th className="text-left px-4 py-2.5 font-medium text-stone-500">Date</th>
+                <th className="text-right px-4 py-2.5 font-medium text-stone-500">Amount</th>
                 <th className="text-left px-4 py-2.5 font-medium text-stone-500">PO</th>
-                <th className="text-left px-4 py-2.5 font-medium text-stone-500">Referencia / Notas</th>
+                <th className="text-left px-4 py-2.5 font-medium text-stone-500">Reference / Notes</th>
               </tr>
             </thead>
             <tbody>
               {payments.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="p-6 text-center text-stone-400">Sin pagos registrados.</td>
+                  <td colSpan={4} className="p-6 text-center text-stone-400">No payments recorded.</td>
                 </tr>
               )}
               {payments.map((p) => (

@@ -54,7 +54,7 @@ export function SupplierPaymentActions({
   }
 
   function handleDelete(id: number) {
-    if (!confirm("¿Eliminar este pago?")) return;
+    if (!confirm("Delete this payment?")) return;
     startTransition(async () => {
       await deleteSupplierPayment(id);
       router.refresh();
@@ -68,15 +68,15 @@ export function SupplierPaymentActions({
     <div className="bg-white rounded-md shadow-sm">
       <div className="p-4 border-b border-stone-200 flex items-center justify-between">
         <div>
-          <h3 className="font-semibold text-stone-800">Pagos a {shortName}</h3>
-          <p className="text-xs text-stone-400 mt-0.5">Total registrado: {formatCurrency(total)}</p>
+          <h3 className="font-semibold text-stone-800">Payments to {shortName}</h3>
+          <p className="text-xs text-stone-400 mt-0.5">Total recorded: {formatCurrency(total)}</p>
         </div>
         {!showForm && (
           <button
             onClick={() => setShowForm(true)}
             className="bg-[#0d3d3b] text-white px-3 py-1.5 rounded text-xs font-medium hover:bg-[#0a2e2d]"
           >
-            + Registrar pago
+            + Record Payment
           </button>
         )}
       </div>
@@ -85,7 +85,7 @@ export function SupplierPaymentActions({
         <div className="p-4 border-b border-stone-100 bg-stone-50">
           <form onSubmit={handleCreate} className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div>
-              <label className="block text-xs font-medium text-stone-600 mb-1">Monto (USD) *</label>
+              <label className="block text-xs font-medium text-stone-600 mb-1">Amount (USD) *</label>
               <input
                 name="amount" type="number" step="0.01" required
                 placeholder="297,000"
@@ -93,7 +93,7 @@ export function SupplierPaymentActions({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-stone-600 mb-1">Fecha *</label>
+              <label className="block text-xs font-medium text-stone-600 mb-1">Date *</label>
               <input
                 name="date" type="date" required
                 defaultValue={new Date().toISOString().split("T")[0]}
@@ -101,16 +101,16 @@ export function SupplierPaymentActions({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-stone-600 mb-1">PO (opcional)</label>
+              <label className="block text-xs font-medium text-stone-600 mb-1">PO (optional)</label>
               <select name="poId" className="w-full border border-stone-200 rounded px-3 py-2 text-sm">
-                <option value="">Sin PO específico</option>
+                <option value="">No specific PO</option>
                 {pos.map((p) => (
                   <option key={p.id} value={p.id}>{p.poNumber} — {p.clientName}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-stone-600 mb-1">Referencia / Notas</label>
+              <label className="block text-xs font-medium text-stone-600 mb-1">Reference / Notes</label>
               <input
                 name="reference"
                 placeholder="# wire / nota"
@@ -122,13 +122,13 @@ export function SupplierPaymentActions({
                 type="submit" disabled={isPending}
                 className="bg-[#0d3d3b] text-white px-4 py-2 rounded text-sm font-medium disabled:opacity-50"
               >
-                {isPending ? "Guardando..." : "Guardar"}
+                {isPending ? "Saving..." : "Save"}
               </button>
               <button
                 type="button" onClick={() => setShowForm(false)}
                 className="border border-stone-200 px-4 py-2 rounded text-sm text-stone-600 hover:bg-stone-50"
               >
-                Cancelar
+                Cancel
               </button>
             </div>
           </form>
@@ -139,10 +139,10 @@ export function SupplierPaymentActions({
         <table className="w-full text-sm">
           <thead className="bg-stone-50">
             <tr>
-              <th className="text-left px-4 py-2 font-medium text-stone-500">Fecha</th>
-              <th className="text-right px-4 py-2 font-medium text-stone-500">Monto</th>
+              <th className="text-left px-4 py-2 font-medium text-stone-500">Date</th>
+              <th className="text-right px-4 py-2 font-medium text-stone-500">Amount</th>
               <th className="text-left px-4 py-2 font-medium text-stone-500">PO</th>
-              <th className="text-left px-4 py-2 font-medium text-stone-500">Referencia / Notas</th>
+              <th className="text-left px-4 py-2 font-medium text-stone-500">Reference / Notes</th>
               <th className="px-4 py-2"></th>
             </tr>
           </thead>
@@ -150,7 +150,7 @@ export function SupplierPaymentActions({
             {payments.length === 0 && (
               <tr>
                 <td colSpan={5} className="p-6 text-center text-stone-400">
-                  Sin pagos registrados.
+                  No payments recorded.
                 </td>
               </tr>
             )}

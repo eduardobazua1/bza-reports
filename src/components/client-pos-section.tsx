@@ -145,7 +145,7 @@ export function ClientPOsSection({
   }
 
   async function handleDelete(id: number) {
-    if (!confirm("¿Eliminar este Client PO?")) return;
+    if (!confirm("Delete this Client PO?")) return;
     await fetch(`/api/client-pos/${id}`, { method: "DELETE" });
     setList((prev) => prev.filter((p) => p.id !== id));
   }
@@ -156,9 +156,9 @@ export function ClientPOsSection({
     complete: "bg-emerald-100 text-emerald-700",
   };
   const statusLabels: Record<string, string> = {
-    pending: "Pendiente",
-    partial: "Parcial",
-    complete: "Completo",
+    pending: "Pending",
+    partial: "Partial",
+    complete: "Complete",
   };
 
   // Count existing invoices per client PO to suggest next invoice number
@@ -170,12 +170,12 @@ export function ClientPOsSection({
       <div className="p-4 border-b border-stone-200 flex items-center justify-between">
         <div>
           <h3 className="font-semibold text-stone-800">
-            Órdenes del Cliente ({list.length})
+            Client Orders ({list.length})
           </h3>
           {totalPlanned > 0 && (
             <p className="text-xs text-stone-400 mt-0.5">
-              {formatNumber(totalPlanned, 1)} TN planificadas
-              {totalAmount > 0 && ` · ${formatCurrency(totalAmount)} estimado`}
+              {formatNumber(totalPlanned, 1)} TN planned
+              {totalAmount > 0 && ` · ${formatCurrency(totalAmount)} estimated`}
             </p>
           )}
         </div>
@@ -183,13 +183,13 @@ export function ClientPOsSection({
           onClick={() => setAdding(true)}
           className="text-xs bg-[#0d3d3b] text-white px-3 py-1.5 rounded hover:bg-[#0a2e2d] transition"
         >
-          + Agregar Orden
+          + Add Order
         </button>
       </div>
 
       {list.length === 0 && !adding && (
         <p className="p-6 text-center text-stone-400 text-sm">
-          Sin órdenes del cliente. Agrega las órdenes antes de generar facturas.
+          No client orders yet. Add orders before creating invoices.
         </p>
       )}
 
@@ -198,14 +198,14 @@ export function ClientPOsSection({
           <table className="w-full text-sm">
             <thead className="bg-stone-50">
               <tr>
-                <th className="text-left px-4 py-2.5 font-medium text-stone-500">PO Cliente</th>
-                <th className="text-left px-4 py-2.5 font-medium text-stone-500">Destino</th>
+                <th className="text-left px-4 py-2.5 font-medium text-stone-500">Client PO</th>
+                <th className="text-left px-4 py-2.5 font-medium text-stone-500">Destination</th>
                 <th className="text-right px-4 py-2.5 font-medium text-stone-500">Tons</th>
                 {sellPrice && (
-                  <th className="text-right px-4 py-2.5 font-medium text-stone-500">Monto Est.</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-stone-500">Est. Amount</th>
                 )}
-                <th className="text-left px-4 py-2.5 font-medium text-stone-500">Estado</th>
-                <th className="px-4 py-2.5 text-right font-medium text-stone-500">Acción</th>
+                <th className="text-left px-4 py-2.5 font-medium text-stone-500">Status</th>
+                <th className="px-4 py-2.5 text-right font-medium text-stone-500">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -241,7 +241,7 @@ export function ClientPOsSection({
                               onClick={() => openConvert(cpo, invoiceCounter - 1)}
                               className="text-xs bg-emerald-600 text-white px-2.5 py-1 rounded hover:bg-emerald-700 transition font-medium"
                             >
-                              Convertir a Factura →
+                              Convert to Invoice →
                             </button>
                           )}
                           <button
@@ -260,11 +260,11 @@ export function ClientPOsSection({
                         <td colSpan={sellPrice ? 6 : 5} className="p-0">
                           <div className="bg-emerald-50 border-t border-emerald-200 p-4">
                             <p className="text-xs font-semibold text-emerald-800 uppercase mb-3">
-                              Nueva Factura — PO Cliente {cpo.clientPoNumber} · {cpo.destination}
+                              New Invoice — Client PO {cpo.clientPoNumber} · {cpo.destination}
                             </p>
                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                               <div>
-                                <label className="block text-xs text-stone-500 mb-1">Factura # *</label>
+                                <label className="block text-xs text-stone-500 mb-1">Invoice # *</label>
                                 <input
                                   className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm font-mono"
                                   placeholder="IX0043-1"
@@ -284,7 +284,7 @@ export function ClientPOsSection({
                                 />
                               </div>
                               <div>
-                                <label className="block text-xs text-stone-500 mb-1">Vagón #</label>
+                                <label className="block text-xs text-stone-500 mb-1">Railcar #</label>
                                 <input
                                   className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm font-mono"
                                   placeholder="TBOX636255"
@@ -302,7 +302,7 @@ export function ClientPOsSection({
                                 />
                               </div>
                               <div>
-                                <label className="block text-xs text-stone-500 mb-1">Fecha embarque</label>
+                                <label className="block text-xs text-stone-500 mb-1">Ship Date</label>
                                 <input
                                   type="date"
                                   className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
@@ -311,7 +311,7 @@ export function ClientPOsSection({
                                 />
                               </div>
                               <div>
-                                <label className="block text-xs text-stone-500 mb-1">Fecha factura</label>
+                                <label className="block text-xs text-stone-500 mb-1">Invoice Date</label>
                                 <input
                                   type="date"
                                   className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
@@ -324,7 +324,7 @@ export function ClientPOsSection({
                             {/* Amount preview */}
                             {sellPrice && convertForm.quantityTons && (
                               <div className="mt-3 text-sm text-emerald-800 font-medium">
-                                Total factura: {formatCurrency(parseFloat(convertForm.quantityTons) * sellPrice)}
+                                Invoice total: {formatCurrency(parseFloat(convertForm.quantityTons) * sellPrice)}
                                 {" "}({convertForm.quantityTons} TN × ${sellPrice}/TN)
                               </div>
                             )}
@@ -335,13 +335,13 @@ export function ClientPOsSection({
                                 disabled={convertLoading || !convertForm.invoiceNumber || !convertForm.quantityTons}
                                 className="text-sm bg-emerald-600 text-white px-4 py-1.5 rounded hover:bg-emerald-700 disabled:opacity-50 font-medium"
                               >
-                                {convertLoading ? "Creando..." : "Crear Factura"}
+                                {convertLoading ? "Creating..." : "Create Invoice"}
                               </button>
                               <button
                                 onClick={() => setConvertingId(null)}
                                 className="text-sm text-stone-500 hover:text-stone-700 px-3 py-1.5"
                               >
-                                Cancelar
+                                Cancel
                               </button>
                             </div>
                           </div>
@@ -359,10 +359,10 @@ export function ClientPOsSection({
       {/* Add new Client PO form */}
       {adding && (
         <div className="p-4 border-t border-stone-100 bg-stone-50 space-y-3">
-          <p className="text-xs font-semibold text-stone-500 uppercase">Nueva Orden del Cliente</p>
+          <p className="text-xs font-semibold text-stone-500 uppercase">New Client Order</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs text-stone-500 mb-1">PO # del cliente *</label>
+              <label className="block text-xs text-stone-500 mb-1">Client PO # *</label>
               <input
                 className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm font-mono"
                 placeholder="X190165"
@@ -371,7 +371,7 @@ export function ClientPOsSection({
               />
             </div>
             <div>
-              <label className="block text-xs text-stone-500 mb-1">Destino</label>
+              <label className="block text-xs text-stone-500 mb-1">Destination</label>
               <input
                 className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
                 placeholder="Morelia, Ecatepec, Bajio..."
@@ -380,7 +380,7 @@ export function ClientPOsSection({
               />
             </div>
             <div>
-              <label className="block text-xs text-stone-500 mb-1">Tons planificadas</label>
+              <label className="block text-xs text-stone-500 mb-1">Planned Tons</label>
               <input
                 type="number"
                 step="0.1"
@@ -393,7 +393,7 @@ export function ClientPOsSection({
           </div>
           {sellPrice && addForm.plannedTons && (
             <p className="text-xs text-stone-500">
-              Monto estimado: {formatCurrency(parseFloat(addForm.plannedTons) * sellPrice)}
+              Estimated amount: {formatCurrency(parseFloat(addForm.plannedTons) * sellPrice)}
             </p>
           )}
           <div className="flex gap-2">
@@ -402,13 +402,13 @@ export function ClientPOsSection({
               disabled={loading || !addForm.clientPoNumber}
               className="text-xs bg-[#0d3d3b] text-white px-3 py-1.5 rounded hover:bg-[#0a2e2d] disabled:opacity-50"
             >
-              {loading ? "Guardando..." : "Guardar"}
+              {loading ? "Saving..." : "Save"}
             </button>
             <button
               onClick={() => setAdding(false)}
               className="text-xs text-stone-500 hover:text-stone-700 px-3 py-1.5"
             >
-              Cancelar
+              Cancel
             </button>
           </div>
         </div>
