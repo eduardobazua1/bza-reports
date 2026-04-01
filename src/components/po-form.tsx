@@ -202,12 +202,12 @@ export function POForm({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Terms</label>
+            <label className="block text-sm font-medium mb-1">Incoterm</label>
             <input
               name="terms"
               defaultValue={purchaseOrder?.terms || ""}
               className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-              placeholder="CIF, FOB, etc."
+              placeholder="DAP, CIF, FOB..."
             />
           </div>
           <div>

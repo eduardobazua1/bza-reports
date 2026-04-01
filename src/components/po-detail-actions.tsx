@@ -47,7 +47,7 @@ export function PODetailActions({
             onClick={() => { setShowEditPO(true); setShowAddInvoice(false); }}
             className="border border-border px-4 py-2 rounded-lg text-sm font-medium hover:bg-muted transition-colors"
           >
-            Edit OC
+            Edit PO
           </button>
         )}
         {!showAddInvoice && (

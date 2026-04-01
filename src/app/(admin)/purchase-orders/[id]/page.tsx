@@ -74,7 +74,7 @@ export default async function PurchaseOrderDetailPage({
         <InfoCard label="Supplier" value={po.supplier?.name || "-"} />
         <InfoCard label="Product" value={po.product} />
         <InfoCard label="Date" value={formatDate(po.poDate)} />
-        <InfoCard label="Terms" value={po.terms || "-"} />
+        <InfoCard label="Incoterm" value={po.terms || "-"} />
         <InfoCard label="Sell Price" value={formatCurrency(po.sellPrice)} />
         <InfoCard label="Buy Price" value={formatCurrency(po.buyPrice)} />
         <InfoCard label="Transport" value={po.transportType ? transportTypeLabels[po.transportType] || po.transportType : "-"} />
