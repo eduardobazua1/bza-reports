@@ -64,19 +64,9 @@ export default async function PurchaseOrderDetailPage({
           </Link>
           <h1 className="text-2xl font-bold mt-1">PO {po.poNumber}</h1>
         </div>
-        <div className="flex items-center gap-2">
-          <a
-            href={`/api/supplier-po-pdf?poId=${po.id}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="border border-border px-4 py-2 rounded-lg text-sm font-medium hover:bg-muted transition-colors"
-          >
-            Supplier PO PDF
-          </a>
-          <span className={`px-3 py-1 rounded-lg text-sm font-medium ${statusColors[po.status] || ""}`}>
-            {statusLabelsMap[po.status] || po.status}
-          </span>
-        </div>
+        <span className={`px-3 py-1 rounded-lg text-sm font-medium ${statusColors[po.status] || ""}`}>
+          {statusLabelsMap[po.status] || po.status}
+        </span>
       </div>
 
       {/* PO Info Grid */}
@@ -140,6 +130,8 @@ export default async function PurchaseOrderDetailPage({
         buyPrice={po.buyPrice}
         poTerms={po.terms}
         poNumber={po.poNumber}
+        supplierEmail={po.supplier?.contactEmail ?? null}
+        supplierName={po.supplier?.name ?? ""}
       />
 
       {/* Client POs Section */}

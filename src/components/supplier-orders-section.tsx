@@ -20,16 +20,24 @@ export function SupplierOrdersSection({
   buyPrice,
   poTerms,
   poNumber,
+  supplierEmail,
+  supplierName,
 }: {
   purchaseOrderId: number;
   supplierOrders: SupplierOrder[];
   buyPrice: number;
   poTerms: string | null;
   poNumber: string;
+  supplierEmail: string | null;
+  supplierName: string;
 }) {
   const [list, setList] = useState<SupplierOrder[]>(supplierOrders);
   const [adding, setAdding] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [sendingId, setSendingId] = useState<number | null>(null);
+  const [sendEmail, setSendEmail] = useState("");
+  const [sendLoading, setSendLoading] = useState(false);
+  const [sentId, setSentId] = useState<number | null>(null);
   const [form, setForm] = useState({
     orderDate: new Date().toISOString().split("T")[0],
     tons: "",
@@ -68,6 +76,30 @@ export function SupplierOrdersSection({
     if (!confirm("Delete this supplier order?")) return;
     await fetch(`/api/supplier-orders/${id}`, { method: "DELETE" });
     setList((prev) => prev.filter((o) => o.id !== id));
+  }
+
+  function openSend(order: SupplierOrder) {
+    setSendingId(order.id);
+    setSendEmail(supplierEmail || "");
+    setSentId(null);
+  }
+
+  async function handleSend(order: SupplierOrder) {
+    if (!sendEmail) return;
+    setSendLoading(true);
+    const res = await fetch("/api/supplier-po-pdf/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ poId: purchaseOrderId, soId: order.id, to: sendEmail, poNumber }),
+    });
+    if (res.ok) {
+      setSentId(order.id);
+      setSendingId(null);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || "Error sending email");
+    }
+    setSendLoading(false);
   }
 
   function fmtDate(d: string | null) {
@@ -118,33 +150,76 @@ export function SupplierOrdersSection({
                 const price = order.pricePerTon ?? buyPrice;
                 const incoterm = order.incoterm ?? poTerms ?? "";
                 const total = order.tons * price;
+                const isSending = sendingId === order.id;
+                const wasSent = sentId === order.id;
                 return (
-                  <tr key={order.id} className="hover:bg-stone-50">
-                    <td className="px-4 py-3 border-t border-stone-100">{fmtDate(order.orderDate)}</td>
-                    <td className="px-4 py-3 border-t border-stone-100 text-right font-medium">{formatNumber(order.tons, 1)}</td>
-                    <td className="px-4 py-3 border-t border-stone-100 text-right">{formatCurrency(price)}</td>
-                    <td className="px-4 py-3 border-t border-stone-100 text-stone-500">{incoterm || "—"}</td>
-                    <td className="px-4 py-3 border-t border-stone-100 text-right font-semibold">{formatCurrency(total)}</td>
-                    <td className="px-4 py-3 border-t border-stone-100 text-stone-400 text-xs">{order.notes || "—"}</td>
-                    <td className="px-4 py-3 border-t border-stone-100 text-right">
-                      <div className="flex items-center justify-end gap-3">
-                        <a
-                          href={`/api/supplier-po-pdf?poId=${purchaseOrderId}&soId=${order.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-                        >
-                          PDF
-                        </a>
-                        <button
-                          onClick={() => handleDelete(order.id)}
-                          className="text-red-400 hover:text-red-600 text-xs"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                  <>
+                    <tr key={order.id} className="hover:bg-stone-50">
+                      <td className="px-4 py-3 border-t border-stone-100">{fmtDate(order.orderDate)}</td>
+                      <td className="px-4 py-3 border-t border-stone-100 text-right font-medium">{formatNumber(order.tons, 1)}</td>
+                      <td className="px-4 py-3 border-t border-stone-100 text-right">{formatCurrency(price)}</td>
+                      <td className="px-4 py-3 border-t border-stone-100 text-stone-500">{incoterm || "—"}</td>
+                      <td className="px-4 py-3 border-t border-stone-100 text-right font-semibold">{formatCurrency(total)}</td>
+                      <td className="px-4 py-3 border-t border-stone-100 text-stone-400 text-xs">{order.notes || "—"}</td>
+                      <td className="px-4 py-3 border-t border-stone-100 text-right">
+                        <div className="flex items-center justify-end gap-3">
+                          <a
+                            href={`/api/supplier-po-pdf?poId=${purchaseOrderId}&soId=${order.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                          >
+                            PDF
+                          </a>
+                          {wasSent ? (
+                            <span className="text-xs text-emerald-600 font-medium">Sent ✓</span>
+                          ) : (
+                            <button
+                              onClick={() => openSend(order)}
+                              className="text-xs text-stone-500 hover:text-stone-700 font-medium"
+                            >
+                              Send
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDelete(order.id)}
+                            className="text-red-400 hover:text-red-600 text-xs"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    {isSending && (
+                      <tr key={`send-${order.id}`}>
+                        <td colSpan={7} className="p-0">
+                          <div className="bg-blue-50 border-t border-blue-200 px-4 py-3 flex items-center gap-3">
+                            <span className="text-xs text-blue-700 font-medium whitespace-nowrap">Send to:</span>
+                            <input
+                              type="email"
+                              className="border border-blue-200 rounded px-2 py-1 text-sm flex-1 max-w-xs"
+                              placeholder={supplierEmail || "supplier@example.com"}
+                              value={sendEmail}
+                              onChange={(e) => setSendEmail(e.target.value)}
+                            />
+                            <button
+                              onClick={() => handleSend(order)}
+                              disabled={sendLoading || !sendEmail}
+                              className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 disabled:opacity-50 font-medium"
+                            >
+                              {sendLoading ? "Sending..." : "Send PDF"}
+                            </button>
+                            <button
+                              onClick={() => setSendingId(null)}
+                              className="text-xs text-stone-400 hover:text-stone-600"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 );
               })}
             </tbody>
