@@ -21,6 +21,8 @@ type ConvertForm = {
   shipmentDate: string;
   invoiceDate: string;
   quantityTons: string;
+  balesCount: string;
+  unitsPerBale: string;
 };
 
 export function ClientPOsSection({
@@ -48,6 +50,8 @@ export function ClientPOsSection({
     shipmentDate: new Date().toISOString().split("T")[0],
     invoiceDate: new Date().toISOString().split("T")[0],
     quantityTons: "",
+    balesCount: "",
+    unitsPerBale: "",
   });
   const [addForm, setAddForm] = useState({
     clientPoNumber: "",
@@ -78,6 +82,8 @@ export function ClientPOsSection({
       shipmentDate: new Date().toISOString().split("T")[0],
       invoiceDate: new Date().toISOString().split("T")[0],
       quantityTons: cpo.plannedTons?.toString() || "",
+      balesCount: "",
+      unitsPerBale: "",
     });
   }
 
@@ -99,6 +105,8 @@ export function ClientPOsSection({
         quantityTons: parseFloat(convertForm.quantityTons),
         item: product || null,
         shipmentStatus: "programado",
+        balesCount: convertForm.balesCount ? parseInt(convertForm.balesCount) : null,
+        unitsPerBale: convertForm.unitsPerBale ? parseInt(convertForm.unitsPerBale) : null,
       }),
     });
 
@@ -317,6 +325,26 @@ export function ClientPOsSection({
                                   className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
                                   value={convertForm.invoiceDate}
                                   onChange={(e) => setConvertForm((f) => ({ ...f, invoiceDate: e.target.value }))}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-stone-500 mb-1">Bales</label>
+                                <input
+                                  type="number"
+                                  className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
+                                  placeholder="250"
+                                  value={convertForm.balesCount}
+                                  onChange={(e) => setConvertForm((f) => ({ ...f, balesCount: e.target.value }))}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-stone-500 mb-1">Units / Bale</label>
+                                <input
+                                  type="number"
+                                  className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
+                                  placeholder="1"
+                                  value={convertForm.unitsPerBale}
+                                  onChange={(e) => setConvertForm((f) => ({ ...f, unitsPerBale: e.target.value }))}
                                 />
                               </div>
                             </div>
