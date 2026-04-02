@@ -92,14 +92,14 @@ export async function GET(req: NextRequest) {
   const chunks: Buffer[] = [];
   doc.on("data", (c: Buffer) => chunks.push(c));
 
-  const M = 48;
-  const W = 612 - M * 2;
-  const TEAL  = cfg.primaryColor;
-  const CYAN  = cfg.accentColor;
-  const DARK  = "#1c1917";
-  const GRAY  = "#6b7280";
-  const LGRAY = "#f3f4f6";
-  const RULE  = "#d1d5db";
+  const M    = 48;
+  const W    = 612 - M * 2;  // 516
+  const TEAL = cfg.primaryColor;
+  const CYAN = cfg.accentColor;
+  const DARK = "#1c1917";
+  const GRAY = "#6b7280";
+  const LGRY = "#f3f4f6";
+  const RULE = "#d1d5db";
 
   let y = M;
 
@@ -107,87 +107,89 @@ export async function GET(req: NextRequest) {
   doc.rect(0, 0, 612, 3).fill(CYAN);
 
   // ── LOGO ─────────────────────────────────────────────────
-  doc.fontSize(20).font("Helvetica-Bold");
-  const bzaW = doc.widthOfString("BZA");
-  doc.fillColor(TEAL).text("BZA", M, y, { continued: true, lineBreak: false });
+  doc.fontSize(20).font("Helvetica-Bold").fillColor(TEAL)
+    .text("BZA", M, y, { continued: true, lineBreak: false });
   doc.fillColor(CYAN).text(".", { lineBreak: false });
 
-  // ── COMPANY INFO (right-aligned) ──────────────────────────
-  const INFO_X = 380;
-  const INFO_W = 612 - M - INFO_X;
+  // ── COMPANY INFO right side ───────────────────────────────
+  const IX = 360;
+  const IW = 612 - M - IX;
   doc.fontSize(7).font("Helvetica").fillColor(GRAY);
-  doc.text(cfg.companyName,  INFO_X, y,      { width: INFO_W, align: "right" });
-  doc.text(cfg.address1,     INFO_X, y + 10, { width: INFO_W, align: "right" });
-  doc.text(cfg.address2,     INFO_X, y + 19, { width: INFO_W, align: "right" });
-  doc.text(cfg.email,        INFO_X, y + 28, { width: INFO_W, align: "right" });
-  doc.text(cfg.website,      INFO_X, y + 37, { width: INFO_W, align: "right" });
-
+  doc.text(cfg.companyName, IX, y,      { width: IW, align: "right" });
+  doc.text(cfg.address1,    IX, y + 10, { width: IW, align: "right" });
+  doc.text(cfg.address2,    IX, y + 19, { width: IW, align: "right" });
+  doc.text(cfg.email,       IX, y + 28, { width: IW, align: "right" });
+  doc.text(cfg.website,     IX, y + 37, { width: IW, align: "right" });
   y += 56;
 
-  // Hairline rule
   doc.moveTo(M, y).lineTo(M + W, y).strokeColor(RULE).lineWidth(0.5).stroke();
   y += 12;
 
-  // ── PO TITLE ──────────────────────────────────────────────
-  doc.fontSize(22).font("Helvetica-Bold").fillColor(TEAL).text("PURCHASE ORDER", M, y, { lineBreak: false });
+  // ── TITLE + PO # BADGE ────────────────────────────────────
+  doc.fontSize(22).font("Helvetica-Bold").fillColor(TEAL)
+    .text("PURCHASE ORDER", M, y, { lineBreak: false });
 
-  // PO # badge
-  const BADGE_W = 148;
-  const BADGE_X = M + W - BADGE_W;
-  doc.rect(BADGE_X, y - 2, BADGE_W, 32).fill(TEAL);
-  doc.fontSize(6.5).font("Helvetica-Bold").fillColor(CYAN).text("PO NUMBER", BADGE_X + 8, y + 3);
-  doc.fontSize(9).font("Helvetica-Bold").fillColor("white").text(po.poNumber, BADGE_X + 8, y + 13, { width: BADGE_W - 16 });
+  const BW = 150; const BX = M + W - BW;
+  doc.rect(BX, y - 2, BW, 32).fill(TEAL);
+  doc.fontSize(6.5).font("Helvetica-Bold").fillColor(CYAN)
+    .text("PO NUMBER", BX + 8, y + 3, { lineBreak: false });
+  doc.fontSize(9).font("Helvetica-Bold").fillColor("white")
+    .text(po.poNumber, BX + 8, y + 13, { width: BW - 16, lineBreak: false });
+  y += 38;
 
-  y += 40;
+  // ── DATE + INCOTERM (right, below badge) ──────────────────
+  doc.fontSize(6).font("Helvetica-Bold").fillColor(GRAY);
+  doc.text("DATE",     BX, y,      { width: 70, lineBreak: false });
+  doc.text("INCOTERM", BX + 76, y, { lineBreak: false });
+  y += 9;
+  doc.fontSize(7.5).font("Helvetica").fillColor(DARK);
+  doc.text(formatDate(poDate),          BX, y,      { width: 70, lineBreak: false });
+  doc.text(effectiveIncoterm || "—",    BX + 76, y, { width: 74, lineBreak: false });
+  y += 18;
 
-  // Date + Incoterm right of title
-  doc.fontSize(7).font("Helvetica").fillColor(GRAY).text("Date: ", M + W - BADGE_W, y, { continued: true, lineBreak: false });
-  doc.fillColor(DARK).text(formatDate(poDate));
-  if (effectiveIncoterm) {
-    doc.fontSize(7).fillColor(GRAY).text("Incoterm: ", M + W - BADGE_W, y + 10, { continued: true, lineBreak: false });
-    doc.fillColor(DARK).text(effectiveIncoterm);
-  }
-
-  // ── VENDOR / SHIP TO ──────────────────────────────────────
-  const C1 = M, C2 = M + 270;
+  // ── VENDOR / SHIP TO ─────────────────────────────────────
+  // Two wide columns, 240px each
+  const ADDR_W = 240;
+  const CA = M;
+  const CB = M + ADDR_W + 24;
 
   doc.fontSize(6).font("Helvetica-Bold").fillColor(GRAY);
-  doc.text("VENDOR",  C1, y);
-  doc.text("SHIP TO", C2, y);
+  doc.text("VENDOR",  CA, y, { lineBreak: false });
+  doc.text("SHIP TO", CB, y, { lineBreak: false });
   y += 10;
 
+  const vendorLines  = [supplier?.name || "", ...supplierAddress].filter(Boolean);
+  const shipToLines  = [client?.name || "", ...clientAddress].filter(Boolean);
+
   doc.fontSize(7.5).font("Helvetica").fillColor(DARK);
-  let yV = y, yS = y;
+  const maxLines = Math.max(vendorLines.length, shipToLines.length);
+  for (let i = 0; i < maxLines; i++) {
+    if (vendorLines[i]) doc.text(vendorLines[i], CA, y + i * 10, { width: ADDR_W, lineBreak: false });
+    if (shipToLines[i]) doc.text(shipToLines[i], CB, y + i * 10, { width: ADDR_W, lineBreak: false });
+  }
+  y += maxLines * 10 + 18;
 
-  [supplier?.name || "", ...supplierAddress].filter(Boolean).forEach(l => {
-    doc.text(l, C1, yV, { width: 210, lineBreak: false }); yV += 10;
-  });
-  [client?.name || "", ...clientAddress].filter(Boolean).forEach(l => {
-    doc.text(l, C2, yS, { width: 210, lineBreak: false }); yS += 10;
-  });
-
-  y = Math.max(yV, yS) + 16;
-
-  // ── TABLE ─────────────────────────────────────────────────
+  // ── TABLE HEADER ─────────────────────────────────────────
   const TC = { desc: M + 6, qty: M + 355, rate: M + 415, amount: M + 472 };
 
   doc.rect(M, y, W, 17).fill(TEAL);
   doc.fontSize(6.5).font("Helvetica-Bold").fillColor("white");
-  doc.text("DESCRIPTION",  TC.desc,   y + 5);
-  doc.text("QTY (TN)",     TC.qty,    y + 5);
-  doc.text("RATE (USD/TN)", TC.rate,  y + 5);
-  doc.text("AMOUNT",       TC.amount, y + 5);
+  doc.text("DESCRIPTION",   TC.desc,   y + 5, { lineBreak: false });
+  doc.text("QTY (TN)",      TC.qty,    y + 5, { lineBreak: false });
+  doc.text("RATE (USD/TN)", TC.rate,   y + 5, { lineBreak: false });
+  doc.text("AMOUNT",        TC.amount, y + 5, { lineBreak: false });
   y += 17;
 
+  // ── LINE ITEMS ────────────────────────────────────────────
   lineItems.forEach((item, i) => {
-    const descLines = item.description.split("\n").length;
-    const rowH = Math.max(26, descLines * 11 + 10);
-    if (i % 2 === 0) doc.rect(M, y, W, rowH).fill(LGRAY);
+    const descH = doc.heightOfString(item.description, { width: 340 });
+    const rowH = Math.max(26, descH + 14);
+    if (i % 2 === 0) doc.rect(M, y, W, rowH).fill(LGRY);
     doc.fontSize(7.5).font("Helvetica").fillColor(DARK);
-    doc.text(item.description, TC.desc,   y + 7, { width: 340, lineGap: 1.5 });
-    doc.text(item.qty.toFixed(0),   TC.qty,    y + 7);
-    doc.text(item.rate.toFixed(2),  TC.rate,   y + 7);
-    doc.text(fmtCurrency(item.amount), TC.amount, y + 7);
+    doc.text(item.description,        TC.desc,   y + 7, { width: 340, lineGap: 1.5 });
+    doc.text(item.qty.toFixed(0),     TC.qty,    y + 7, { lineBreak: false });
+    doc.text(item.rate.toFixed(2),    TC.rate,   y + 7, { lineBreak: false });
+    doc.text(fmtCurrency(item.amount), TC.amount, y + 7, { lineBreak: false });
     y += rowH;
   });
 
@@ -195,43 +197,39 @@ export async function GET(req: NextRequest) {
   y += 12;
 
   // ── TOTAL ─────────────────────────────────────────────────
-  const TOT_W = 210;
-  const TOT_X = M + W - TOT_W;
-  doc.rect(TOT_X, y, TOT_W, 30).fill(TEAL);
-  doc.fontSize(6.5).font("Helvetica-Bold").fillColor(CYAN).text("TOTAL (USD)", TOT_X + 10, y + 6);
-  doc.fontSize(12).font("Helvetica-Bold").fillColor("white").text(fmtCurrency(total), TOT_X + 10, y + 15, { width: TOT_W - 20, align: "right" });
+  const TW = 210; const TX = M + W - TW;
+  doc.rect(TX, y, TW, 30).fill(TEAL);
+  doc.fontSize(6.5).font("Helvetica-Bold").fillColor(CYAN)
+    .text("TOTAL (USD)", TX + 10, y + 6, { lineBreak: false });
+  doc.fontSize(12).font("Helvetica-Bold").fillColor("white")
+    .text(fmtCurrency(total), TX + 10, y + 16, { width: TW - 20, align: "right", lineBreak: false });
   y += 44;
 
   // ── FSC NOTE ──────────────────────────────────────────────
   if (po.licenseFsc || po.inputClaim) {
     doc.rect(M, y, W * 0.7, 20).fill("#f0fdf4");
     doc.fontSize(7).font("Helvetica").fillColor("#166534")
-      .text("FSC-certified material required. Supplier must include valid FSC certificate on all invoices and shipping documents.", M + 8, y + 6, { width: W * 0.7 - 16 });
+      .text("FSC-certified material required. Supplier must include valid FSC certificate on all invoices and shipping documents.",
+        M + 8, y + 6, { width: W * 0.7 - 16, lineBreak: false });
     y += 28;
   }
 
   // ── SIGNATURE LINES ───────────────────────────────────────
   y += 6;
-  doc.fontSize(7).font("Helvetica").fillColor(GRAY).text("Authorized By", M, y, { lineBreak: false });
-  doc.moveTo(M + 75, y + 8).lineTo(M + 270, y + 8).strokeColor(RULE).lineWidth(0.5).stroke();
-  y += 18;
+  doc.fontSize(7).font("Helvetica").fillColor(GRAY)
+    .text("Authorized By", M, y, { lineBreak: false });
+  doc.moveTo(M + 76, y + 9).lineTo(M + 270, y + 9).strokeColor(RULE).lineWidth(0.5).stroke();
+  y += 20;
   doc.text("Date", M, y, { lineBreak: false });
-  doc.moveTo(M + 75, y + 8).lineTo(M + 270, y + 8).strokeColor(RULE).lineWidth(0.5).stroke();
+  doc.moveTo(M + 76, y + 9).lineTo(M + 270, y + 9).strokeColor(RULE).lineWidth(0.5).stroke();
 
   // ── FOOTER ────────────────────────────────────────────────
-  const FOOTER_Y = 746;
-  doc.rect(0, FOOTER_Y, 612, 46).fill(TEAL);
+  doc.rect(0, 746, 612, 46).fill(TEAL);
   doc.fontSize(7).font("Helvetica").fillColor(CYAN)
-    .text(cfg.companyName, M, FOOTER_Y + 8, { width: W, align: "center" });
-  doc.fontSize(6.5).fillColor("white").opacity(0.6)
-    .text(`${cfg.email}  ·  ${cfg.website}`, M, FOOTER_Y + 20, { width: W, align: "center" });
-  doc.opacity(1);
-  doc.fontSize(6).fillColor("white").opacity(0.4)
-    .text("Page 1 of 1", M, FOOTER_Y + 32, { width: W, align: "center" });
-  doc.opacity(1);
-
-  // Suppress unused variable warning
-  void bzaW;
+    .text(cfg.companyName, M, 754, { width: W, align: "center" });
+  doc.fillColor("white")
+    .text(`${cfg.email}  ·  ${cfg.website}`, M, 764, { width: W, align: "center" });
+  doc.fontSize(6).text("Page 1 of 1", M, 775, { width: W, align: "center" });
 
   doc.end();
   const buffer = await new Promise<Buffer>(resolve => doc.on("end", () => resolve(Buffer.concat(chunks))));

@@ -85,147 +85,157 @@ export async function GET(req: NextRequest) {
   const chunks: Buffer[] = [];
   doc.on("data", (c: Buffer) => chunks.push(c));
 
-  const M = 48;       // margin
-  const W = 612 - M * 2;  // content width = 516
-  const TEAL  = cfg.primaryColor;   // #0d3d3b
-  const CYAN  = cfg.accentColor;    // #4fd1c5
-  const DARK  = "#1c1917";
-  const GRAY  = "#6b7280";
-  const LGRAY = "#f3f4f6";
-  const RULE  = "#d1d5db";
+  const M    = 48;
+  const W    = 612 - M * 2;   // 516
+  const TEAL = cfg.primaryColor;
+  const CYAN = cfg.accentColor;
+  const DARK = "#1c1917";
+  const GRAY = "#6b7280";
+  const LGRY = "#f3f4f6";
+  const RULE = "#d1d5db";
 
-  let y = M;  // current Y cursor (we manage it ourselves)
+  let y = M;
 
   // ── CYAN TOP BAR ─────────────────────────────────────────
   doc.rect(0, 0, 612, 3).fill(CYAN);
 
   // ── LOGO ─────────────────────────────────────────────────
-  // "BZA" in teal, "." in cyan — measure BZA width before drawing
-  doc.fontSize(20).font("Helvetica-Bold");
-  const bzaW = doc.widthOfString("BZA");
-  doc.fillColor(TEAL).text("BZA", M, y, { continued: true, lineBreak: false });
+  doc.fontSize(20).font("Helvetica-Bold").fillColor(TEAL)
+    .text("BZA", M, y, { continued: true, lineBreak: false });
   doc.fillColor(CYAN).text(".", { lineBreak: false });
 
-  // ── COMPANY INFO (right-aligned block) ───────────────────
-  const INFO_X = 380;
-  const INFO_W = 612 - M - INFO_X;
+  // ── COMPANY INFO right side ───────────────────────────────
+  const IX = 360;
+  const IW = 612 - M - IX;
   doc.fontSize(7).font("Helvetica").fillColor(GRAY);
-  doc.text(cfg.companyName,        INFO_X, y,      { width: INFO_W, align: "right" });
-  doc.text(cfg.address1,           INFO_X, y + 10, { width: INFO_W, align: "right" });
-  doc.text(cfg.address2,           INFO_X, y + 19, { width: INFO_W, align: "right" });
-  doc.text(cfg.phone,              INFO_X, y + 28, { width: INFO_W, align: "right" });
-  doc.text(cfg.email,              INFO_X, y + 37, { width: INFO_W, align: "right" });
-  doc.text(`Tax ID: ${cfg.taxId}`, INFO_X, y + 46, { width: INFO_W, align: "right" });
+  doc.text(cfg.companyName,        IX, y,      { width: IW, align: "right" });
+  doc.text(cfg.address1,           IX, y + 10, { width: IW, align: "right" });
+  doc.text(cfg.address2,           IX, y + 19, { width: IW, align: "right" });
+  doc.text(cfg.phone,              IX, y + 28, { width: IW, align: "right" });
+  doc.text(cfg.email,              IX, y + 37, { width: IW, align: "right" });
+  doc.text(`Tax ID: ${cfg.taxId}`, IX, y + 46, { width: IW, align: "right" });
+  y += 62;
 
-  y += 64;
-
-  // Hairline rule
   doc.moveTo(M, y).lineTo(M + W, y).strokeColor(RULE).lineWidth(0.5).stroke();
   y += 12;
 
-  // ── INVOICE TITLE ─────────────────────────────────────────
-  doc.fontSize(22).font("Helvetica-Bold").fillColor(TEAL).text("INVOICE", M, y, { lineBreak: false });
+  // ── TITLE + INVOICE # BADGE ───────────────────────────────
+  doc.fontSize(22).font("Helvetica-Bold").fillColor(TEAL)
+    .text("INVOICE", M, y, { lineBreak: false });
 
-  // Invoice # badge (top-right of title row)
-  const BADGE_W = 148;
-  const BADGE_X = M + W - BADGE_W;
-  const BADGE_H = 32;
-  doc.rect(BADGE_X, y - 2, BADGE_W, BADGE_H).fill(TEAL);
-  doc.fontSize(6.5).font("Helvetica-Bold").fillColor(CYAN).text("INVOICE #", BADGE_X + 8, y + 3);
-  doc.fontSize(9).font("Helvetica-Bold").fillColor("white").text(invoiceNumber, BADGE_X + 8, y + 13, { width: BADGE_W - 16 });
-
+  const BW = 150; const BX = M + W - BW;
+  doc.rect(BX, y - 2, BW, 32).fill(TEAL);
+  doc.fontSize(6.5).font("Helvetica-Bold").fillColor(CYAN)
+    .text("INVOICE #", BX + 8, y + 3, { lineBreak: false });
+  doc.fontSize(9).font("Helvetica-Bold").fillColor("white")
+    .text(invoiceNumber, BX + 8, y + 13, { width: BW - 16, lineBreak: false });
   y += 38;
 
-  // ── ADDRESS + META GRID ───────────────────────────────────
-  const C1 = M;
-  const C2 = M + 160;
-  const C3 = M + 335;
-  const C4 = M + 440;
-
-  // Labels row
+  // ── INVOICE META (right block, below badge) ───────────────
+  // This goes at top-right, below the badge, aligned right
+  const META_X = BX;
+  const META_W = BW;
   doc.fontSize(6).font("Helvetica-Bold").fillColor(GRAY);
-  doc.text("BILL TO",    C1, y);
-  doc.text("SHIP TO",    C2, y);
-  doc.text("SHIP DATE",  C3, y);
-  doc.text("INVOICE DATE", C4, y);
+  doc.text("DATE",     META_X, y,      { width: META_W, align: "left" });
+  doc.text("DUE DATE", META_X + 76, y, { lineBreak: false });
+  y += 9;
+  doc.fontSize(7.5).font("Helvetica").fillColor(DARK);
+  doc.text(formatDate(invoiceDate), META_X, y, { width: 70, lineBreak: false });
+  doc.text(formatDate(dueDate),     META_X + 76, y, { width: 74, lineBreak: false });
+  y += 9;
+  doc.fontSize(6).font("Helvetica-Bold").fillColor(GRAY);
+  doc.text("TERMS",    META_X, y, { lineBreak: false });
+  doc.text("SHIP VIA", META_X + 76, y, { lineBreak: false });
+  y += 9;
+  doc.fontSize(7.5).font("Helvetica").fillColor(DARK);
+  doc.text(`Net ${termsDays}`,    META_X,      y, { width: 70, lineBreak: false });
+  doc.text(po.terms || "—",       META_X + 76, y, { width: 74, lineBreak: false });
+  y += 18;
+
+  // ── BILL TO / SHIP TO ─────────────────────────────────────
+  // Two wide columns: each 240px wide, separated by 24px gap
+  const ADDR_W = 240;
+  const CA = M;          // Bill To starts at left margin
+  const CB = M + ADDR_W + 24;  // Ship To starts 264px in
+
+  doc.fontSize(6).font("Helvetica-Bold").fillColor(GRAY);
+  doc.text("BILL TO", CA, y, { lineBreak: false });
+  doc.text("SHIP TO", CB, y, { lineBreak: false });
   y += 10;
 
-  const billLines = [client?.name || "", ...(client?.billAddress || "").split("\n").filter(Boolean), client?.rfc || ""].filter(Boolean);
-  const shipLines = [client?.name || "", ...(client?.shipAddress || client?.billAddress || "").split("\n").filter(Boolean)].filter(Boolean);
+  const billLines = [
+    client?.name || "",
+    ...(client?.billAddress || "").split("\n").filter(Boolean),
+    client?.rfc || "",
+  ].filter(Boolean);
 
-  // Place address columns
+  const shipLines = [
+    client?.name || "",
+    ...(client?.shipAddress || client?.billAddress || "").split("\n").filter(Boolean),
+  ].filter(Boolean);
+
+  // Draw each address line at explicit position — no `continued` to avoid cursor drift
   doc.fontSize(7.5).font("Helvetica").fillColor(DARK);
-  let yB = y, yS = y;
-  billLines.forEach(l => { doc.text(l, C1, yB, { width: 152, lineBreak: false }); yB += 10; });
-  shipLines.forEach(l => { doc.text(l, C2, yS, { width: 165, lineBreak: false }); yS += 10; });
+  const maxAddrLines = Math.max(billLines.length, shipLines.length);
+  for (let i = 0; i < maxAddrLines; i++) {
+    if (billLines[i]) doc.text(billLines[i], CA, y + i * 10, { width: ADDR_W, lineBreak: false });
+    if (shipLines[i]) doc.text(shipLines[i], CB, y + i * 10, { width: ADDR_W, lineBreak: false });
+  }
+  y += maxAddrLines * 10 + 16;
 
-  // Right meta block
-  doc.text(formatDate(inv.shipmentDate),  C3, y);
-  doc.text(formatDate(invoiceDate),       C4, y);
-  y += 12;
-  doc.fontSize(6).fillColor(GRAY);
-  doc.text("SHIP VIA",     C3, y);
-  doc.text("TERMS",        C4, y);
-  y += 8;
-  doc.fontSize(7.5).fillColor(DARK);
-  doc.text(po.terms || "—",          C3, y, { width: 100 });
-  doc.text(`Net ${termsDays}`,        C4, y);
-  y += 12;
-  doc.fontSize(6).fillColor(GRAY).text("DUE DATE",  C4, y); y += 8;
-  doc.fontSize(7.5).fillColor(DARK).text(formatDate(dueDate), C4, y);
+  // ── PO / BOL / DESTINATION ROW ───────────────────────────
+  const fields: Array<[string, string]> = [
+    ["PURCHASE ORDER", inv.salesDocument || po.clientPoNumber || po.poNumber],
+  ];
+  if (inv.blNumber) fields.push(["BOL #", inv.blNumber]);
+  if (inv.vehicleId) fields.push(["TRACKING", inv.vehicleId]);
+  if (inv.destination) fields.push(["DESTINATION", inv.destination]);
+  if (inv.shipmentDate) fields.push(["SHIP DATE", formatDate(inv.shipmentDate)]);
 
-  y = Math.max(yB, yS) + 16;
-
-  // ── PO / BOL ROW ─────────────────────────────────────────
+  const fieldW = Math.floor(W / fields.length);
   doc.fontSize(6).font("Helvetica-Bold").fillColor(GRAY);
-  doc.text("PURCHASE ORDER", C1, y);
-  if (inv.blNumber) doc.text("BOL #", C2, y);
-  if (inv.vehicleId) doc.text("VEHICLE / TRACKING", C3, y);
-  if (inv.destination) doc.text("DESTINATION", C4, y);
+  fields.forEach(([label], i) => doc.text(label, M + i * fieldW, y, { width: fieldW, lineBreak: false }));
   y += 9;
   doc.fontSize(8).font("Helvetica").fillColor(DARK);
-  doc.text(inv.salesDocument || po.clientPoNumber || po.poNumber, C1, y);
-  if (inv.blNumber) doc.text(inv.blNumber, C2, y);
-  if (inv.vehicleId) doc.text(inv.vehicleId, C3, y);
-  if (inv.destination) doc.text(inv.destination, C4, y);
-  y += 20;
+  fields.forEach(([, val], i) => doc.text(val, M + i * fieldW, y, { width: fieldW, lineBreak: false }));
+  y += 18;
 
-  // ── LINE ITEMS TABLE ──────────────────────────────────────
-  const TC = { date: M + 4, product: M + 70, bales: M + 306, admt: M + 372, price: M + 424, total: M + 482 };
+  // ── TABLE HEADER ─────────────────────────────────────────
+  const TC = { date: M + 4, product: M + 70, bales: M + 308, admt: M + 374, price: M + 426, total: M + 484 };
 
-  // Table header
   doc.rect(M, y, W, 17).fill(TEAL);
   doc.fontSize(6.5).font("Helvetica-Bold").fillColor("white");
-  doc.text("DATE",       TC.date,    y + 5);
-  doc.text("PRODUCT",    TC.product, y + 5);
-  doc.text("BALES/UNIT", TC.bales,   y + 5);
-  doc.text("ADMT",       TC.admt,    y + 5);
-  doc.text("PRICE/TON",  TC.price,   y + 5);
-  doc.text("TOTAL",      TC.total,   y + 5);
+  doc.text("DATE",       TC.date,    y + 5, { lineBreak: false });
+  doc.text("PRODUCT",    TC.product, y + 5, { lineBreak: false });
+  doc.text("BALES/UNIT", TC.bales,   y + 5, { lineBreak: false });
+  doc.text("ADMT",       TC.admt,    y + 5, { lineBreak: false });
+  doc.text("PRICE/TON",  TC.price,   y + 5, { lineBreak: false });
+  doc.text("TOTAL",      TC.total,   y + 5, { lineBreak: false });
   y += 17;
 
-  // Item row
-  const ROW_H = 44;
-  doc.rect(M, y, W, ROW_H).fill(LGRAY);
+  // ── LINE ITEM ─────────────────────────────────────────────
+  const productH = doc.heightOfString(productLine, { width: 228 });
+  const ROW_H = Math.max(36, productH + 18);
+  doc.rect(M, y, W, ROW_H).fill(LGRY);
   doc.fontSize(7.5).font("Helvetica").fillColor(DARK);
-  doc.text(formatDate(inv.shipmentDate || invoiceDate), TC.date,    y + 8);
-  doc.text(productLine,                                  TC.product, y + 8, { width: 228, lineGap: 1.5 });
-  doc.text(balesDisplay,                                 TC.bales,   y + 8);
-  doc.text(inv.quantityTons.toFixed(3),                  TC.admt,    y + 8);
-  doc.text(price.toFixed(2),                             TC.price,   y + 8);
-  doc.text(fmtCurrency(total),                           TC.total,   y + 8);
+  doc.text(formatDate(inv.shipmentDate || invoiceDate), TC.date,    y + 8, { lineBreak: false });
+  doc.text(productLine,                                  TC.product, y + 8, { width: 230, lineGap: 1.5 });
+  doc.text(balesDisplay,                                 TC.bales,   y + 8, { lineBreak: false });
+  doc.text(inv.quantityTons.toFixed(3),                  TC.admt,    y + 8, { lineBreak: false });
+  doc.text(price.toFixed(2),                             TC.price,   y + 8, { lineBreak: false });
+  doc.text(fmtCurrency(total),                           TC.total,   y + 8, { lineBreak: false });
   y += ROW_H;
 
-  // Rule below table
   doc.moveTo(M, y).lineTo(M + W, y).strokeColor(RULE).lineWidth(0.5).stroke();
-  y += 14;
+  y += 12;
 
   // ── BALANCE DUE ───────────────────────────────────────────
-  const BAL_W = 210;
-  const BAL_X = M + W - BAL_W;
-  doc.rect(BAL_X, y, BAL_W, 30).fill(TEAL);
-  doc.fontSize(6.5).font("Helvetica-Bold").fillColor(CYAN).text("BALANCE DUE", BAL_X + 10, y + 6);
-  doc.fontSize(12).font("Helvetica-Bold").fillColor("white").text(`USD ${fmtCurrency(total)}`, BAL_X + 10, y + 15, { width: BAL_W - 20, align: "right" });
+  const BDW = 200; const BDX = M + W - BDW;
+  doc.rect(BDX, y, BDW, 30).fill(TEAL);
+  doc.fontSize(6.5).font("Helvetica-Bold").fillColor(CYAN)
+    .text("BALANCE DUE", BDX + 10, y + 6, { lineBreak: false });
+  doc.fontSize(12).font("Helvetica-Bold").fillColor("white")
+    .text(`USD ${fmtCurrency(total)}`, BDX + 10, y + 16, { width: BDW - 20, align: "right", lineBreak: false });
   y += 42;
 
   // ── PAYMENT INSTRUCTIONS ──────────────────────────────────
@@ -234,42 +244,35 @@ export async function GET(req: NextRequest) {
     y += 10;
     doc.fontSize(7).font("Helvetica").fillColor(DARK);
     const payLines = [
-      `Bank: ${cfg.bankName}`,
-      `Address: ${cfg.bankAddress}`,
+      `Bank: ${cfg.bankName}  ·  ${cfg.bankAddress}`,
       `Beneficiary: ${cfg.bankBeneficiary}`,
-      `Account #: ${cfg.bankAccount}  ·  Routing: ${cfg.bankRouting}`,
-      `SWIFT: ${cfg.bankSwift}`,
+      `Account: ${cfg.bankAccount}   Routing: ${cfg.bankRouting}   SWIFT: ${cfg.bankSwift}`,
     ];
-    payLines.forEach(l => { doc.text(l, M, y); y += 9; });
-    y += 8;
+    payLines.forEach(l => { doc.text(l, M, y, { width: W }); y += 10; });
+    y += 6;
   }
 
   // ── FSC CERTIFICATE ───────────────────────────────────────
   if (cfg.showFscSection !== false) {
     doc.fontSize(6.5).font("Helvetica-Bold").fillColor(GRAY).text("FSC CERTIFICATE", M, y);
-    y += 10;
-    doc.fontSize(7).font("Helvetica").fillColor(DARK);
-    doc.text(`Code: ${cfg.fscCode}   ·   Controlled Wood: ${cfg.fscCw}   ·   Expiration: ${cfg.fscExpiration}`, M, y, { width: W * 0.7 });
+    y += 9;
+    doc.fontSize(7).font("Helvetica").fillColor(DARK)
+      .text(`Code: ${cfg.fscCode}   ·   Controlled Wood: ${cfg.fscCw}   ·   Expiration: ${cfg.fscExpiration}`, M, y, { width: W });
     y += 10;
   }
 
-  // ── NOTES ─────────────────────────────────────────────────
   if (cfg.invoiceNotes) {
-    y += 6;
+    y += 4;
     doc.fontSize(7).font("Helvetica").fillColor(GRAY).text(cfg.invoiceNotes, M, y, { width: W });
   }
 
   // ── FOOTER ────────────────────────────────────────────────
-  const FOOTER_Y = 746;
-  doc.rect(0, FOOTER_Y, 612, 46).fill(TEAL);
+  doc.rect(0, 746, 612, 46).fill(TEAL);
   doc.fontSize(7).font("Helvetica").fillColor(CYAN)
-    .text(cfg.footerNote, M, FOOTER_Y + 8, { width: W, align: "center" });
-  doc.fontSize(6.5).fillColor("white").opacity(0.6)
-    .text(`${cfg.companyName}  ·  ${cfg.email}  ·  ${cfg.website}`, M, FOOTER_Y + 20, { width: W, align: "center" });
-  doc.opacity(1);
-  doc.fontSize(6).fillColor("white").opacity(0.4)
-    .text("Page 1 of 1", M, FOOTER_Y + 32, { width: W, align: "center" });
-  doc.opacity(1);
+    .text(cfg.footerNote, M, 754, { width: W, align: "center" });
+  doc.fillColor("white")
+    .text(`${cfg.companyName}  ·  ${cfg.email}  ·  ${cfg.website}`, M, 764, { width: W, align: "center" });
+  doc.fontSize(6).text("Page 1 of 1", M, 775, { width: W, align: "center" });
 
   doc.end();
   const buffer = await new Promise<Buffer>(resolve => doc.on("end", () => resolve(Buffer.concat(chunks))));
