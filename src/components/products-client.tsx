@@ -105,10 +105,8 @@ function formFromProduct(p: Product): FormState {
 type CertMode = "none" | "fsc" | "pefc";
 
 function certModeFromState(state: FormState): CertMode {
-  const hasFsc = !!(state.fscLicense || state.inputClaim || state.chainOfCustody || state.outputClaim);
-  const hasPefc = !!state.pefc;
-  if (hasFsc) return "fsc";
-  if (hasPefc) return "pefc";
+  if (state.pefc) return "pefc";
+  if (state.fscLicense || state.inputClaim || state.chainOfCustody || state.outputClaim) return "fsc";
   return "none";
 }
 
@@ -137,7 +135,7 @@ function FormRow({
     if (mode === "none") {
       onChange({ fscLicense: "", inputClaim: "", chainOfCustody: "", outputClaim: "", pefc: "" });
     } else if (mode === "pefc") {
-      onChange({ fscLicense: "", inputClaim: "", chainOfCustody: "", outputClaim: "" });
+      onChange({ fscLicense: "" });
     } else if (mode === "fsc") {
       onChange({ pefc: "" });
     }
@@ -197,6 +195,9 @@ function FormRow({
           <div className="flex flex-col gap-1">
             <span className="text-xs font-medium text-muted-foreground">PEFC</span>
             <input value={state.pefc} onChange={(e) => onChange({ pefc: e.target.value })} placeholder="PEFC number (e.g. PEFC-2431400)" className={inp} />
+            <input value={state.inputClaim} onChange={(e) => onChange({ inputClaim: e.target.value })} placeholder="Input claim" className={inp} />
+            <input value={state.chainOfCustody} onChange={(e) => onChange({ chainOfCustody: e.target.value })} placeholder="Chain of custody" className={inp} />
+            <input value={state.outputClaim} onChange={(e) => onChange({ outputClaim: e.target.value })} placeholder="Output claim" className={inp} />
           </div>
         )}
       </td>
