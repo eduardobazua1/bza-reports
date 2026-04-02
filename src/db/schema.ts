@@ -34,6 +34,7 @@ export const clients = sqliteTable("clients", {
 export const suppliers = sqliteTable("suppliers", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
+  address: text("address"),
   contactName: text("contact_name"),
   contactEmail: text("contact_email"),
   phone: text("phone"),

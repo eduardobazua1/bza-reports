@@ -18,10 +18,6 @@ const BZA_DEFAULTS = {
   accentColor: "#4fd1c5",
 };
 
-const SUPPLIER_ADDRESSES: Record<string, string[]> = {
-  "Cascade Pacific Pulp": ["30480 American Drive", "Halsey, Oregon 97348", "United States"],
-  "APP China Trading": ["APP China Trading Limited", "China"],
-};
 
 async function getSettings() {
   const row = await db.query.appSettings.findFirst({ where: eq(appSettings.key, "invoice") });
@@ -54,10 +50,7 @@ export async function GET(req: NextRequest) {
   }
   const effectiveProductName = supplierProductName || po.product;
 
-  const supplierKey = Object.keys(SUPPLIER_ADDRESSES).find(k =>
-    supplier?.name?.toLowerCase().includes(k.toLowerCase())
-  );
-  const supplierAddress = supplierKey ? SUPPLIER_ADDRESSES[supplierKey] : [];
+  const supplierAddress = (supplier?.address || "").split("\n").filter(Boolean);
   const clientAddress = (client?.shipAddress || client?.billAddress || "").split("\n").filter(Boolean);
 
   let lineItems: { description: string; qty: number; rate: number; amount: number }[];
