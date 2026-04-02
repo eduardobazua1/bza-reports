@@ -60,14 +60,29 @@ export async function GET(req: NextRequest) {
     const so = await db.query.supplierOrders.findFirst({ where: eq(supplierOrders.id, Number(soId)) });
     if (!so) return NextResponse.json({ error: "Supplier order not found" }, { status: 404 });
     const price = so.pricePerTon ?? po.buyPrice;
-    lineItems = [{
-      description: po.product,
-      qty: so.tons,
-      rate: price,
-      amount: so.tons * price,
-    }];
     poDate = so.orderDate || po.poDate || new Date().toISOString().split("T")[0];
     effectiveIncoterm = so.incoterm ?? po.terms ?? "";
+
+    // If the order has line items, generate one row per line
+    const parsedLines = so.lines ? JSON.parse(so.lines) as { destination: string; tons: number; notes: string }[] : null;
+    if (parsedLines && parsedLines.length > 0) {
+      lineItems = parsedLines.map(l => {
+        const qty = l.tons;
+        return {
+          description: `${po.product}${l.destination ? ` – ${l.destination}` : ""}${l.notes ? `\n${l.notes}` : ""}`,
+          qty,
+          rate: price,
+          amount: qty * price,
+        };
+      });
+    } else {
+      lineItems = [{
+        description: po.product,
+        qty: so.tons,
+        rate: price,
+        amount: so.tons * price,
+      }];
+    }
   } else {
     // Legacy: one line per client PO
     const cpos = await db.select().from(clientPurchaseOrders)

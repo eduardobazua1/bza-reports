@@ -195,9 +195,10 @@ export const supplierOrders = sqliteTable("supplier_orders", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   purchaseOrderId: integer("purchase_order_id").notNull().references(() => purchaseOrders.id),
   orderDate: text("order_date"),
-  tons: real("tons").notNull(),
+  tons: real("tons").notNull(), // total tons (sum of lines)
   pricePerTon: real("price_per_ton"), // null = use PO buyPrice
   incoterm: text("incoterm"), // null = use PO terms
+  lines: text("lines"), // JSON: [{destination, tons, notes}]
   notes: text("notes"),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });

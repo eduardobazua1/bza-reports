@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { formatNumber, formatCurrency } from "@/lib/utils";
 
+type OrderLine = { destination: string; tons: string; notes: string };
+
 type SupplierOrder = {
   id: number;
   purchaseOrderId: number;
@@ -10,9 +12,14 @@ type SupplierOrder = {
   tons: number;
   pricePerTon: number | null;
   incoterm: string | null;
+  lines: string | null;
   notes: string | null;
   createdAt: string;
 };
+
+function emptyLine(): OrderLine {
+  return { destination: "", tons: "", notes: "" };
+}
 
 export function SupplierOrdersSection({
   purchaseOrderId,
@@ -21,7 +28,6 @@ export function SupplierOrdersSection({
   poTerms,
   poNumber,
   supplierEmail,
-  supplierName,
 }: {
   purchaseOrderId: number;
   supplierOrders: SupplierOrder[];
@@ -38,35 +44,53 @@ export function SupplierOrdersSection({
   const [sendEmail, setSendEmail] = useState("");
   const [sendLoading, setSendLoading] = useState(false);
   const [sentId, setSentId] = useState<number | null>(null);
-  const [form, setForm] = useState({
-    orderDate: new Date().toISOString().split("T")[0],
-    tons: "",
-    pricePerTon: "",
-    incoterm: "",
-    notes: "",
-  });
+
+  // Form state
+  const [orderDate, setOrderDate] = useState(new Date().toISOString().split("T")[0]);
+  const [pricePerTon, setPricePerTon] = useState("");
+  const [incoterm, setIncoterm] = useState("");
+  const [lines, setLines] = useState<OrderLine[]>([emptyLine()]);
 
   const totalTons = list.reduce((s, o) => s + o.tons, 0);
+  const formTotalTons = lines.reduce((s, l) => s + (parseFloat(l.tons) || 0), 0);
+
+  function addLine() {
+    setLines((prev) => [...prev, emptyLine()]);
+  }
+
+  function removeLine(i: number) {
+    setLines((prev) => prev.filter((_, idx) => idx !== i));
+  }
+
+  function updateLine(i: number, field: keyof OrderLine, value: string) {
+    setLines((prev) => prev.map((l, idx) => idx === i ? { ...l, [field]: value } : l));
+  }
 
   async function handleAdd() {
-    if (!form.tons) return;
+    const validLines = lines.filter(l => l.tons && parseFloat(l.tons) > 0);
+    if (validLines.length === 0) return;
+    const totalT = validLines.reduce((s, l) => s + parseFloat(l.tons), 0);
+
     setLoading(true);
     const res = await fetch("/api/supplier-orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         purchaseOrderId,
-        orderDate: form.orderDate || null,
-        tons: parseFloat(form.tons),
-        pricePerTon: form.pricePerTon ? parseFloat(form.pricePerTon) : null,
-        incoterm: form.incoterm || null,
-        notes: form.notes || null,
+        orderDate: orderDate || null,
+        tons: totalT,
+        pricePerTon: pricePerTon ? parseFloat(pricePerTon) : null,
+        incoterm: incoterm || null,
+        lines: validLines.map(l => ({ destination: l.destination, tons: parseFloat(l.tons), notes: l.notes })),
       }),
     });
     if (res.ok) {
       const data = await res.json();
       setList((prev) => [...prev, data]);
-      setForm({ orderDate: new Date().toISOString().split("T")[0], tons: "", pricePerTon: "", incoterm: "", notes: "" });
+      setOrderDate(new Date().toISOString().split("T")[0]);
+      setPricePerTon("");
+      setIncoterm("");
+      setLines([emptyLine()]);
       setAdding(false);
     }
     setLoading(false);
@@ -108,6 +132,12 @@ export function SupplierOrdersSection({
     return dt.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
   }
 
+  function parsedLines(order: SupplierOrder) {
+    if (!order.lines) return null;
+    try { return JSON.parse(order.lines) as { destination: string; tons: number; notes: string }[]; }
+    catch { return null; }
+  }
+
   return (
     <div className="bg-white rounded-md shadow-sm">
       <div className="p-4 border-b border-stone-200 flex items-center justify-between">
@@ -117,18 +147,18 @@ export function SupplierOrdersSection({
             <p className="text-xs text-stone-400 mt-0.5">{formatNumber(totalTons, 1)} TN total ordered</p>
           )}
         </div>
-        <button
-          onClick={() => setAdding(true)}
-          className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition"
-        >
-          + New Order to Supplier
-        </button>
+        {!adding && (
+          <button
+            onClick={() => setAdding(true)}
+            className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition"
+          >
+            + New Order to Supplier
+          </button>
+        )}
       </div>
 
       {list.length === 0 && !adding && (
-        <p className="p-6 text-center text-stone-400 text-sm">
-          No supplier orders yet.
-        </p>
+        <p className="p-6 text-center text-stone-400 text-sm">No supplier orders yet.</p>
       )}
 
       {list.length > 0 && (
@@ -141,26 +171,36 @@ export function SupplierOrdersSection({
                 <th className="text-right px-4 py-2.5 font-medium text-stone-500">Price/TN</th>
                 <th className="text-left px-4 py-2.5 font-medium text-stone-500">Incoterm</th>
                 <th className="text-right px-4 py-2.5 font-medium text-stone-500">Total</th>
-                <th className="text-left px-4 py-2.5 font-medium text-stone-500">Notes</th>
-                <th className="px-4 py-2.5 text-right font-medium text-stone-500">PDF</th>
+                <th className="text-left px-4 py-2.5 font-medium text-stone-500">Lines</th>
+                <th className="px-4 py-2.5 text-right font-medium text-stone-500">Actions</th>
               </tr>
             </thead>
             <tbody>
               {list.map((order) => {
                 const price = order.pricePerTon ?? buyPrice;
-                const incoterm = order.incoterm ?? poTerms ?? "";
+                const inc = order.incoterm ?? poTerms ?? "";
                 const total = order.tons * price;
                 const isSending = sendingId === order.id;
                 const wasSent = sentId === order.id;
+                const ol = parsedLines(order);
+
                 return (
                   <>
-                    <tr key={order.id} className="hover:bg-stone-50">
+                    <tr key={order.id} className="hover:bg-stone-50 align-top">
                       <td className="px-4 py-3 border-t border-stone-100">{fmtDate(order.orderDate)}</td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right font-medium">{formatNumber(order.tons, 1)}</td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right">{formatCurrency(price)}</td>
-                      <td className="px-4 py-3 border-t border-stone-100 text-stone-500">{incoterm || "—"}</td>
+                      <td className="px-4 py-3 border-t border-stone-100 text-stone-500">{inc || "—"}</td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right font-semibold">{formatCurrency(total)}</td>
-                      <td className="px-4 py-3 border-t border-stone-100 text-stone-400 text-xs">{order.notes || "—"}</td>
+                      <td className="px-4 py-3 border-t border-stone-100 text-xs text-stone-500 space-y-0.5">
+                        {ol && ol.length > 0 ? ol.map((l, i) => (
+                          <div key={i}>
+                            <span className="font-medium text-stone-700">{l.destination || "—"}</span>
+                            {" "}{formatNumber(l.tons, 1)} TN
+                            {l.notes && <span className="text-stone-400"> · {l.notes}</span>}
+                          </div>
+                        )) : "—"}
+                      </td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right">
                         <div className="flex items-center justify-end gap-3">
                           <a
@@ -181,15 +221,11 @@ export function SupplierOrdersSection({
                               Send
                             </button>
                           )}
-                          <button
-                            onClick={() => handleDelete(order.id)}
-                            className="text-red-400 hover:text-red-600 text-xs"
-                          >
-                            ✕
-                          </button>
+                          <button onClick={() => handleDelete(order.id)} className="text-red-400 hover:text-red-600 text-xs">✕</button>
                         </div>
                       </td>
                     </tr>
+
                     {isSending && (
                       <tr key={`send-${order.id}`}>
                         <td colSpan={7} className="p-0">
@@ -209,12 +245,7 @@ export function SupplierOrdersSection({
                             >
                               {sendLoading ? "Sending..." : "Send PDF"}
                             </button>
-                            <button
-                              onClick={() => setSendingId(null)}
-                              className="text-xs text-stone-400 hover:text-stone-600"
-                            >
-                              Cancel
-                            </button>
+                            <button onClick={() => setSendingId(null)} className="text-xs text-stone-400 hover:text-stone-600">Cancel</button>
                           </div>
                         </td>
                       </tr>
@@ -227,39 +258,31 @@ export function SupplierOrdersSection({
         </div>
       )}
 
+      {/* Add form */}
       {adding && (
-        <div className="p-4 border-t border-stone-100 bg-stone-50 space-y-3">
+        <div className="p-4 border-t border-stone-100 bg-stone-50 space-y-4">
           <p className="text-xs font-semibold text-stone-500 uppercase">New Supplier Order — {poNumber}</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+
+          {/* Header fields */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs text-stone-500 mb-1">Date</label>
               <input
                 type="date"
                 className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
-                value={form.orderDate}
-                onChange={(e) => setForm((f) => ({ ...f, orderDate: e.target.value }))}
+                value={orderDate}
+                onChange={(e) => setOrderDate(e.target.value)}
               />
             </div>
             <div>
-              <label className="block text-xs text-stone-500 mb-1">Tons *</label>
-              <input
-                type="number"
-                step="0.1"
-                className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
-                placeholder="540"
-                value={form.tons}
-                onChange={(e) => setForm((f) => ({ ...f, tons: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-stone-500 mb-1">Price/TN (USD) — blank = {formatCurrency(buyPrice)}</label>
+              <label className="block text-xs text-stone-500 mb-1">Price/TN — blank = {formatCurrency(buyPrice)}</label>
               <input
                 type="number"
                 step="0.01"
                 className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
                 placeholder={buyPrice.toFixed(2)}
-                value={form.pricePerTon}
-                onChange={(e) => setForm((f) => ({ ...f, pricePerTon: e.target.value }))}
+                value={pricePerTon}
+                onChange={(e) => setPricePerTon(e.target.value)}
               />
             </div>
             <div>
@@ -267,36 +290,69 @@ export function SupplierOrdersSection({
               <input
                 className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
                 placeholder={poTerms || "DAP, CIF, FOB..."}
-                value={form.incoterm}
-                onChange={(e) => setForm((f) => ({ ...f, incoterm: e.target.value }))}
-              />
-            </div>
-            <div className="sm:col-span-2 lg:col-span-4">
-              <label className="block text-xs text-stone-500 mb-1">Notes</label>
-              <input
-                className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
-                placeholder="e.g. Extra order for Ecatepec"
-                value={form.notes}
-                onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                value={incoterm}
+                onChange={(e) => setIncoterm(e.target.value)}
               />
             </div>
           </div>
-          {form.tons && (
-            <p className="text-xs text-stone-500">
-              Total: {formatCurrency(parseFloat(form.tons || "0") * (form.pricePerTon ? parseFloat(form.pricePerTon) : buyPrice))}
-              {" "}({form.tons} TN × ${form.pricePerTon || buyPrice}/TN)
-            </p>
-          )}
+
+          {/* Line items */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-semibold text-stone-500 uppercase">Lines</label>
+              <button
+                onClick={addLine}
+                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+              >
+                + Add line
+              </button>
+            </div>
+            <div className="space-y-2">
+              {lines.map((line, i) => (
+                <div key={i} className="grid grid-cols-[1fr_80px_1fr_24px] gap-2 items-center">
+                  <input
+                    className="border border-stone-200 rounded px-2 py-1.5 text-sm"
+                    placeholder="Destination (e.g. Morelia)"
+                    value={line.destination}
+                    onChange={(e) => updateLine(i, "destination", e.target.value)}
+                  />
+                  <input
+                    type="number"
+                    step="0.1"
+                    className="border border-stone-200 rounded px-2 py-1.5 text-sm"
+                    placeholder="TN"
+                    value={line.tons}
+                    onChange={(e) => updateLine(i, "tons", e.target.value)}
+                  />
+                  <input
+                    className="border border-stone-200 rounded px-2 py-1.5 text-sm"
+                    placeholder="Notes (e.g. 90 tons week 6-12)"
+                    value={line.notes}
+                    onChange={(e) => updateLine(i, "notes", e.target.value)}
+                  />
+                  {lines.length > 1 && (
+                    <button onClick={() => removeLine(i)} className="text-red-400 hover:text-red-600 text-sm text-center">✕</button>
+                  )}
+                </div>
+              ))}
+            </div>
+            {formTotalTons > 0 && (
+              <p className="text-xs text-stone-500 mt-2">
+                Total: {formatNumber(formTotalTons, 1)} TN · {formatCurrency(formTotalTons * (pricePerTon ? parseFloat(pricePerTon) : buyPrice))}
+              </p>
+            )}
+          </div>
+
           <div className="flex gap-2">
             <button
               onClick={handleAdd}
-              disabled={loading || !form.tons}
+              disabled={loading || formTotalTons === 0}
               className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 disabled:opacity-50"
             >
               {loading ? "Saving..." : "Save"}
             </button>
             <button
-              onClick={() => setAdding(false)}
+              onClick={() => { setAdding(false); setLines([emptyLine()]); }}
               className="text-xs text-stone-500 hover:text-stone-700 px-3 py-1.5"
             >
               Cancel
