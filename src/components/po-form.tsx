@@ -1,8 +1,78 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import { createPurchaseOrder, updatePurchaseOrder } from "@/server/actions";
 import { useRouter } from "next/navigation";
+
+function Combobox({
+  name,
+  options,
+  defaultId,
+  placeholder,
+  required,
+  onSelect,
+}: {
+  name: string;
+  options: { id: number; name: string }[];
+  defaultId?: number | string;
+  placeholder?: string;
+  required?: boolean;
+  onSelect?: (id: number) => void;
+}) {
+  const initial = options.find(o => o.id === Number(defaultId));
+  const [query, setQuery] = useState(initial?.name || "");
+  const [selectedId, setSelectedId] = useState<number | "">(initial?.id ?? "");
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const filtered = query
+    ? options.filter(o => o.name.toLowerCase().includes(query.toLowerCase()))
+    : options;
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  function select(option: { id: number; name: string }) {
+    setSelectedId(option.id);
+    setQuery(option.name);
+    setOpen(false);
+    onSelect?.(option.id);
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <input
+        type="text"
+        className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
+        placeholder={placeholder}
+        value={query}
+        required={required}
+        onChange={(e) => { setQuery(e.target.value); setSelectedId(""); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        autoComplete="off"
+      />
+      <input type="hidden" name={name} value={selectedId} required={required} />
+      {open && filtered.length > 0 && (
+        <div className="absolute z-50 mt-1 w-full bg-white border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+          {filtered.map(o => (
+            <div
+              key={o.id}
+              onMouseDown={() => select(o)}
+              className={`px-3 py-2 text-sm cursor-pointer hover:bg-muted ${o.id === selectedId ? "bg-muted font-medium" : ""}`}
+            >
+              {o.name}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 type Client = {
   id: number;
@@ -159,32 +229,24 @@ export function POForm({
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Client *</label>
-            <select
+            <Combobox
               name="clientId"
+              options={clients}
+              defaultId={purchaseOrder?.clientId}
+              placeholder="Search client..."
               required
-              defaultValue={purchaseOrder?.clientId || ""}
-              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-            >
-              <option value="">Select client</option>
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+            />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Supplier *</label>
-            <select
+            <Combobox
               name="supplierId"
+              options={suppliers}
+              defaultId={purchaseOrder?.supplierId}
+              placeholder="Search supplier..."
               required
-              defaultValue={purchaseOrder?.supplierId || ""}
-              onChange={(e) => handleSupplierChange(e.target.value)}
-              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-            >
-              <option value="">Select supplier</option>
-              {suppliers.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
+              onSelect={handleSupplierChange}
+            />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Product *</label>
