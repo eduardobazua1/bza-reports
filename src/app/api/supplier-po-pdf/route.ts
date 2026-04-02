@@ -163,14 +163,14 @@ export async function GET(req: NextRequest) {
   doc.text("SHIP TO", CB, y, { lineBreak: false });
   y += 10;
 
+  const vendorText  = vendorLines.join("\n");
+  const shipToText  = shipToLines.join("\n");
+  const vendorH = doc.heightOfString(vendorText,  { width: ADDR_W });
+  const shipToH = doc.heightOfString(shipToText,  { width: ADDR_W });
   doc.fontSize(7.5).font("Helvetica").fillColor(DARK);
-  const maxLines = Math.max(vendorLines.length, shipToLines.length);
-  for (let i = 0; i < maxLines; i++) {
-    if (vendorLines[i]) doc.text(vendorLines[i], CA, y, { width: ADDR_W, lineBreak: false });
-    if (shipToLines[i]) doc.text(shipToLines[i], CB, y, { width: ADDR_W, lineBreak: false });
-    y += 11;
-  }
-  y += 14;
+  doc.text(vendorText,  CA, y, { width: ADDR_W });
+  doc.text(shipToText,  CB, y, { width: ADDR_W });
+  y += Math.max(vendorH, shipToH) + 14;
 
   // ── TABLE HEADER ─────────────────────────────────────────
   const TC = { desc: M + 6, qty: M + 355, rate: M + 415, amount: M + 472 };

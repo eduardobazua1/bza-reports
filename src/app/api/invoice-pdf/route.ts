@@ -173,15 +173,15 @@ export async function GET(req: NextRequest) {
   doc.text("SHIP TO", CB, y, { lineBreak: false });
   y += 10;
 
-  // Draw each address line at an explicit y position
+  // Draw each column as a single flowing text block — PDFKit handles wrapping internally
+  const billText = billLines.join("\n");
+  const shipText = shipLines.join("\n");
+  const billH = doc.heightOfString(billText, { width: ADDR_W });
+  const shipH = doc.heightOfString(shipText, { width: ADDR_W });
   doc.fontSize(7.5).font("Helvetica").fillColor(DARK);
-  const maxAddrLines = Math.max(billLines.length, shipLines.length);
-  for (let i = 0; i < maxAddrLines; i++) {
-    if (billLines[i]) doc.text(billLines[i], CA, y, { width: ADDR_W, lineBreak: false });
-    if (shipLines[i]) doc.text(shipLines[i], CB, y, { width: ADDR_W, lineBreak: false });
-    y += 11;
-  }
-  y += 14;
+  doc.text(billText, CA, y, { width: ADDR_W });
+  doc.text(shipText, CB, y, { width: ADDR_W });
+  y += Math.max(billH, shipH) + 14;
 
   // ── REFERENCE ROW ────────────────────────────────────────
   // Fixed column positions: PO | BOL | DESTINATION | SHIP DATE
@@ -235,13 +235,13 @@ export async function GET(req: NextRequest) {
   y += 12;
 
   // ── BALANCE DUE ───────────────────────────────────────────
-  const BDW = 200; const BDX = M + W - BDW;
-  doc.rect(BDX, y, BDW, 30).fill(TEAL);
+  const BDW = 240; const BDX = M + W - BDW;
+  doc.rect(BDX, y, BDW, 32).fill(TEAL);
   doc.fontSize(6.5).font("Helvetica-Bold").fillColor(CYAN)
     .text("BALANCE DUE", BDX + 10, y + 6, { lineBreak: false });
-  doc.fontSize(12).font("Helvetica-Bold").fillColor("white")
-    .text(`USD ${fmtCurrency(total)}`, BDX + 10, y + 16, { width: BDW - 20, align: "right", lineBreak: false });
-  y += 42;
+  doc.fontSize(11).font("Helvetica-Bold").fillColor("white")
+    .text(`USD ${fmtCurrency(total)}`, BDX + 10, y + 17, { width: BDW - 20, align: "right", lineBreak: false });
+  y += 44;
 
   // ── PAYMENT INSTRUCTIONS ──────────────────────────────────
   if (cfg.showPaymentInstructions !== false) {
