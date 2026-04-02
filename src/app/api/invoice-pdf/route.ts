@@ -215,7 +215,7 @@ export async function GET(req: NextRequest) {
   doc.text("BALES/UNIT", TC.bales,   y + 5, { lineBreak: false });
   doc.text("ADMT",       TC.admt,    y + 5, { lineBreak: false });
   doc.text("PRICE/TON",  TC.price,   y + 5, { lineBreak: false });
-  doc.text("TOTAL",      TC.total,   y + 5, { lineBreak: false });
+  doc.text("TOTAL", M, y + 5, { width: W - 6, align: "right", lineBreak: false });
   y += 17;
 
   // ── LINE ITEM ─────────────────────────────────────────────
@@ -228,7 +228,7 @@ export async function GET(req: NextRequest) {
   doc.text(balesDisplay,                                 TC.bales,   y + 8, { lineBreak: false });
   doc.text(inv.quantityTons.toFixed(3),                  TC.admt,    y + 8, { lineBreak: false });
   doc.text(price.toFixed(2),                             TC.price,   y + 8, { lineBreak: false });
-  doc.text(fmtCurrency(total),                           TC.total,   y + 8, { lineBreak: false });
+  doc.text(fmtCurrency(total),                           M,          y + 8, { width: W - 6, align: "right", lineBreak: false });
   y += ROW_H;
 
   doc.moveTo(M, y).lineTo(M + W, y).strokeColor(RULE).lineWidth(0.5).stroke();
