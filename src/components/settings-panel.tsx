@@ -46,23 +46,21 @@ const NAV = [
   {
     group: "General",
     items: [
-      { id: "company",      label: "Company Profile",    icon: "🏢", desc: "Name, address, tax ID" },
-      { id: "appearance",   label: "Appearance",         icon: "🎨", desc: "Brand colors" },
+      { id: "company",      label: "Company Profile",  desc: "Name, address, tax ID" },
+      { id: "appearance",   label: "Appearance",       desc: "Brand colors" },
     ],
   },
   {
     group: "Documents",
     items: [
-      { id: "invoice",      label: "Invoice Template",   icon: "🧾", desc: "Layout, sections, notes" },
-      { id: "banking",      label: "Banking Details",    icon: "🏦", desc: "Payment instructions on PDFs" },
-      { id: "fsc",          label: "FSC Certificate",    icon: "🌲", desc: "BZA FSC codes for documents" },
+      { id: "invoice",      label: "Invoice Template", desc: "Colors, banking, FSC, sections" },
     ],
   },
   {
     group: "System",
     items: [
-      { id: "users",        label: "Users & Access",     icon: "👤", desc: "Manage team members" },
-      { id: "integrations", label: "Integrations",       icon: "🔌", desc: "Email, AI assistant" },
+      { id: "users",        label: "Users & Access",   desc: "Manage team members" },
+      { id: "integrations", label: "Integrations",     desc: "Email, AI assistant" },
     ],
   },
 ];
@@ -114,14 +112,13 @@ export function SettingsPanel({
               <button
                 key={item.id}
                 onClick={() => setActive(item.id)}
-                className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left text-sm transition-all ${
+                className={`w-full px-2.5 py-2 rounded-lg text-left text-sm transition-all ${
                   active === item.id
                     ? "bg-[#0d3d3b] text-white font-medium shadow-sm"
                     : "text-stone-600 hover:bg-stone-200"
                 }`}
               >
-                <span className="text-base leading-none">{item.icon}</span>
-                <span className="truncate">{item.label}</span>
+                {item.label}
               </button>
             ))}
           </div>
@@ -136,7 +133,7 @@ export function SettingsPanel({
             <h2 className="font-semibold text-stone-800">{activeItem?.label}</h2>
             <p className="text-xs text-stone-400 mt-0.5">{activeItem?.desc}</p>
           </div>
-          {["company","appearance","invoice","banking","fsc"].includes(active) && (
+          {["company","appearance","invoice"].includes(active) && (
             <div className="flex items-center gap-3">
               {saved && (
                 <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
@@ -166,12 +163,10 @@ export function SettingsPanel({
 
         {/* Section body */}
         <div className="flex-1 overflow-y-auto p-6">
-          {active === "company"     && <SectionCompany     cfg={cfg} set={set} />}
-          {active === "appearance"  && <SectionAppearance  cfg={cfg} set={set} />}
-          {active === "invoice"     && <SectionInvoice     cfg={cfg} set={set} />}
-          {active === "banking"     && <SectionBanking     cfg={cfg} set={set} />}
-          {active === "fsc"         && <SectionFsc         cfg={cfg} set={set} />}
-          {active === "users"       && <SectionUsers       users={users} isAdmin={isAdmin} />}
+          {active === "company"      && <SectionCompany    cfg={cfg} set={set} />}
+          {active === "appearance"   && <SectionAppearance cfg={cfg} set={set} />}
+          {active === "invoice"      && <SectionInvoiceFull cfg={cfg} set={set} />}
+          {active === "users"        && <SectionUsers      users={users} isAdmin={isAdmin} />}
           {active === "integrations" && <SectionIntegrations />}
         </div>
       </main>
@@ -303,7 +298,7 @@ function SectionAppearance({ cfg, set }: { cfg: InvoiceSettings; set: (f: keyof 
   );
 }
 
-function SectionInvoice({ cfg, set }: { cfg: InvoiceSettings; set: (f: keyof InvoiceSettings, v: string | boolean) => void }) {
+function SectionInvoiceFull({ cfg, set }: { cfg: InvoiceSettings; set: (f: keyof InvoiceSettings, v: string | boolean) => void }) {
   return (
     <div>
       <SectionCard title="Sections to show on PDF">
@@ -320,6 +315,23 @@ function SectionInvoice({ cfg, set }: { cfg: InvoiceSettings; set: (f: keyof Inv
             checked={cfg.showFscSection}
             onChange={v => set("showFscSection", v)}
           />
+        </div>
+      </SectionCard>
+      <SectionCard title="Banking / Payment Instructions">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="Bank Name"    value={cfg.bankName}        onChange={v => set("bankName", v)} />
+          <Field label="Beneficiary"  value={cfg.bankBeneficiary} onChange={v => set("bankBeneficiary", v)} />
+          <Field label="Bank Address" value={cfg.bankAddress}     onChange={v => set("bankAddress", v)} />
+          <Field label="Account #"    value={cfg.bankAccount}     onChange={v => set("bankAccount", v)} />
+          <Field label="Routing #"    value={cfg.bankRouting}     onChange={v => set("bankRouting", v)} />
+          <Field label="SWIFT / BIC"  value={cfg.bankSwift}       onChange={v => set("bankSwift", v)} />
+        </div>
+      </SectionCard>
+      <SectionCard title="FSC Certificate (BZA)">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Field label="COC Code"             value={cfg.fscCode}       onChange={v => set("fscCode", v)}       placeholder="CU-COC-000000" />
+          <Field label="Controlled Wood Code" value={cfg.fscCw}         onChange={v => set("fscCw", v)}         placeholder="CU-CW-000000" />
+          <Field label="Expiration Date"      value={cfg.fscExpiration} onChange={v => set("fscExpiration", v)} placeholder="DD-MM-YY" />
         </div>
       </SectionCard>
       <SectionCard title="Footer & Notes">
@@ -344,43 +356,6 @@ function SectionInvoice({ cfg, set }: { cfg: InvoiceSettings; set: (f: keyof Inv
           </div>
         </div>
       </SectionCard>
-    </div>
-  );
-}
-
-function SectionBanking({ cfg, set }: { cfg: InvoiceSettings; set: (f: keyof InvoiceSettings, v: string | boolean) => void }) {
-  return (
-    <div>
-      <SectionCard title="Bank Account">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Bank Name"       value={cfg.bankName}        onChange={v => set("bankName", v)} />
-          <Field label="Beneficiary"     value={cfg.bankBeneficiary} onChange={v => set("bankBeneficiary", v)} />
-          <Field label="Bank Address"    value={cfg.bankAddress}     onChange={v => set("bankAddress", v)} />
-          <Field label="Account #"       value={cfg.bankAccount}     onChange={v => set("bankAccount", v)} />
-          <Field label="Routing #"       value={cfg.bankRouting}     onChange={v => set("bankRouting", v)} />
-          <Field label="SWIFT / BIC"     value={cfg.bankSwift}       onChange={v => set("bankSwift", v)} />
-        </div>
-      </SectionCard>
-      <div className="text-xs text-stone-400 bg-amber-50 border border-amber-100 rounded-lg p-3">
-        These details appear in the "Payment Instructions" section of every invoice PDF. Make sure they are correct before sending documents to clients.
-      </div>
-    </div>
-  );
-}
-
-function SectionFsc({ cfg, set }: { cfg: InvoiceSettings; set: (f: keyof InvoiceSettings, v: string | boolean) => void }) {
-  return (
-    <div>
-      <SectionCard title="BZA FSC Certificate">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Field label="COC Code"             value={cfg.fscCode}       onChange={v => set("fscCode", v)}       placeholder="CU-COC-000000" />
-          <Field label="Controlled Wood Code" value={cfg.fscCw}         onChange={v => set("fscCw", v)}         placeholder="CU-CW-000000" />
-          <Field label="Expiration Date"      value={cfg.fscExpiration} onChange={v => set("fscExpiration", v)} placeholder="DD-MM-YY" />
-        </div>
-      </SectionCard>
-      <div className="text-xs text-stone-400 bg-stone-50 border border-stone-100 rounded-lg p-3">
-        These are BZA's own FSC certification codes, shown on invoice PDFs when the FSC section is enabled. Supplier-specific FSC data is managed on each supplier's detail page.
-      </div>
     </div>
   );
 }
