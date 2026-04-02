@@ -88,7 +88,7 @@ export function POForm({
   const [licenseFsc, setLicenseFsc] = useState(purchaseOrder?.licenseFsc || "");
   const [chainOfCustody, setChainOfCustody] = useState(purchaseOrder?.chainOfCustody || "");
   const [inputClaim, setInputClaim] = useState(purchaseOrder?.inputClaim || "");
-  const [outputClaim, setOutputClaim] = useState(purchaseOrder?.outputClaim || "");
+  const [outputClaim, setOutputClaim] = useState(purchaseOrder?.outputClaim || "FSC Controlled Wood");
 
   function handleSupplierChange(supplierId: string) {
     const supplier = suppliers.find(s => s.id === Number(supplierId));
