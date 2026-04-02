@@ -275,7 +275,7 @@ export function SupplierOrdersSection({
               />
             </div>
             <div>
-              <label className="block text-xs text-stone-500 mb-1">Price/TN — blank = {formatCurrency(buyPrice)}</label>
+              <label className="block text-xs text-stone-500 mb-1">Price/TN (USD)</label>
               <input
                 type="number"
                 step="0.01"
@@ -286,7 +286,7 @@ export function SupplierOrdersSection({
               />
             </div>
             <div>
-              <label className="block text-xs text-stone-500 mb-1">Incoterm — blank = {poTerms || "none"}</label>
+              <label className="block text-xs text-stone-500 mb-1">Incoterm</label>
               <input
                 className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
                 placeholder={poTerms || "DAP, CIF, FOB..."}
