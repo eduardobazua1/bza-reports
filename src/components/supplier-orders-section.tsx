@@ -280,7 +280,7 @@ export function SupplierOrdersSection({
                 type="number"
                 step="0.01"
                 className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
-                placeholder={buyPrice.toFixed(2)}
+                placeholder="0.00"
                 value={pricePerTon}
                 onChange={(e) => setPricePerTon(e.target.value)}
               />
@@ -289,7 +289,7 @@ export function SupplierOrdersSection({
               <label className="block text-xs text-stone-500 mb-1">Incoterm</label>
               <input
                 className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
-                placeholder={poTerms || "DAP, CIF, FOB..."}
+                placeholder="DAP, CIF, FOB..."
                 value={incoterm}
                 onChange={(e) => setIncoterm(e.target.value)}
               />
