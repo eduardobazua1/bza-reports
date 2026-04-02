@@ -226,149 +226,129 @@ function FieldManager({ fields, onChange }: {
   fields: InvoiceField[];
   onChange: (fields: InvoiceField[]) => void;
 }) {
-  const [newLabel, setNewLabel]   = useState("");
-  const [newSection, setNewSection] = useState<"meta" | "reference">("reference");
-  const [newValue, setNewValue]   = useState("");
-
   function updateField(id: string, patch: Partial<InvoiceField>) {
     onChange(fields.map(f => f.id === id ? { ...f, ...patch } : f));
   }
-
   function removeField(id: string) {
     onChange(fields.filter(f => f.id !== id));
   }
-
-  function addField() {
-    if (!newLabel.trim()) return;
-    const newField: InvoiceField = {
+  function addField(section: "meta" | "reference", label: string, staticValue: string) {
+    if (!label.trim()) return;
+    onChange([...fields, {
       id: `custom_${Date.now()}`,
       key: "custom",
-      label: newLabel.trim(),
-      section: newSection,
+      label: label.trim(),
+      section,
       enabled: true,
       isDefault: false,
-      staticValue: newValue.trim(),
-    };
-    onChange([...fields, newField]);
-    setNewLabel("");
-    setNewValue("");
+      staticValue: staticValue.trim(),
+    }]);
   }
-
-  const SECTION_LABELS: Record<string, string> = {
-    meta:      "Header strip",
-    reference: "Reference row",
-  };
-
-  const metaFields = fields.filter(f => f.section === "meta");
-  const refFields  = fields.filter(f => f.section === "reference");
 
   function FieldRow({ f }: { f: InvoiceField }) {
     return (
-      <div className={`flex items-center gap-3 py-2.5 px-3 rounded-lg border ${f.enabled ? "border-stone-200 bg-white" : "border-stone-100 bg-stone-50 opacity-60"}`}>
-        {/* toggle */}
+      <div className={`flex items-center gap-2 py-2 px-3 rounded-lg border ${f.enabled ? "border-stone-200 bg-white" : "border-stone-100 bg-stone-50 opacity-55"}`}>
         <button
           onClick={() => updateField(f.id, { enabled: !f.enabled })}
           className={`w-8 h-5 rounded-full transition-colors shrink-0 relative ${f.enabled ? "bg-[#0d3d3b]" : "bg-stone-300"}`}
         >
           <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${f.enabled ? "translate-x-3" : ""}`} />
         </button>
-
-        {/* label */}
         <input
           className="flex-1 min-w-0 text-sm border border-transparent rounded px-1.5 py-0.5 focus:border-stone-300 focus:outline-none bg-transparent hover:bg-stone-100 transition-colors"
           value={f.label}
           onChange={e => updateField(f.id, { label: e.target.value })}
         />
-
-        {/* custom value */}
         {f.key === "custom" && (
           <input
-            className="w-28 text-xs border border-stone-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#4fd1c5]/40"
+            className="w-24 text-xs border border-stone-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#4fd1c5]/40 text-stone-500"
             value={f.staticValue || ""}
             placeholder="Value…"
             onChange={e => updateField(f.id, { staticValue: e.target.value })}
           />
         )}
-
-        {/* section selector */}
-        <select
-          className="text-xs border border-stone-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#4fd1c5]/40 bg-white"
-          value={f.section}
-          onChange={e => updateField(f.id, { section: e.target.value as "meta" | "reference" })}
-        >
-          <option value="meta">Header strip</option>
-          <option value="reference">Reference row</option>
-        </select>
-
-        {/* delete (custom only) */}
         {!f.isDefault ? (
           <button onClick={() => removeField(f.id)}
-            className="text-stone-400 hover:text-red-500 transition-colors text-lg leading-none shrink-0"
-            title="Remove field">×</button>
+            className="w-6 h-6 flex items-center justify-center rounded text-stone-300 hover:text-red-400 hover:bg-red-50 transition-colors shrink-0 text-base leading-none"
+            title="Remove">×</button>
         ) : (
-          <span className="w-5 shrink-0" />
+          <span className="w-6 shrink-0" />
         )}
       </div>
     );
   }
 
+  function AddRow({ section }: { section: "meta" | "reference" }) {
+    const [open, setOpen]   = useState(false);
+    const [label, setLabel] = useState("");
+    const [val, setVal]     = useState("");
+
+    function commit() {
+      if (!label.trim()) return;
+      addField(section, label, val);
+      setLabel(""); setVal(""); setOpen(false);
+    }
+
+    return open ? (
+      <div className="flex items-center gap-2 mt-1.5 pl-1">
+        <input autoFocus
+          className="flex-1 border border-[#4fd1c5] rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#4fd1c5]/40"
+          placeholder="Field label…"
+          value={label}
+          onChange={e => setLabel(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") commit(); if (e.key === "Escape") setOpen(false); }}
+        />
+        <input
+          className="w-28 border border-stone-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#4fd1c5]/40 text-stone-500"
+          placeholder="Value (opt.)"
+          value={val}
+          onChange={e => setVal(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") commit(); }}
+        />
+        <button onClick={commit} disabled={!label.trim()}
+          className="text-xs bg-[#0d3d3b] text-white px-3 py-1.5 rounded-lg hover:opacity-90 disabled:opacity-40 font-medium">
+          Add
+        </button>
+        <button onClick={() => { setOpen(false); setLabel(""); setVal(""); }}
+          className="text-xs text-stone-400 hover:text-stone-600 px-2 py-1.5">
+          Cancel
+        </button>
+      </div>
+    ) : (
+      <button
+        onClick={() => setOpen(true)}
+        className="mt-1.5 flex items-center gap-1.5 text-xs text-stone-400 hover:text-[#0d3d3b] hover:bg-stone-100 px-2.5 py-1.5 rounded-lg transition-colors w-full"
+      >
+        <span className="text-base leading-none font-light">+</span> Add field
+      </button>
+    );
+  }
+
+  const metaFields = fields.filter(f => f.section === "meta");
+  const refFields  = fields.filter(f => f.section === "reference");
+
   return (
-    <div className="space-y-3">
-      {/* Header strip */}
+    <div className="space-y-5">
       <div>
-        <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider mb-1.5">
-          Header strip <span className="font-normal normal-case">(top row — date, terms, etc.)</span>
+        <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider mb-2">
+          Header strip <span className="font-normal normal-case text-stone-400">— top row (date, terms…)</span>
         </p>
         <div className="space-y-1.5">
           {metaFields.map(f => <FieldRow key={f.id} f={f} />)}
-          {metaFields.length === 0 && <p className="text-xs text-stone-400 italic pl-1">No fields in this section</p>}
+          {metaFields.length === 0 && <p className="text-xs text-stone-400 italic pl-1 py-1">Empty</p>}
         </div>
+        <AddRow section="meta" />
       </div>
 
-      {/* Reference row */}
       <div>
-        <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider mb-1.5">
-          Reference row <span className="font-normal normal-case">(below addresses — PO#, BOL, destination, etc.)</span>
+        <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider mb-2">
+          Reference row <span className="font-normal normal-case text-stone-400">— below addresses (PO#, BOL…)</span>
         </p>
         <div className="space-y-1.5">
           {refFields.map(f => <FieldRow key={f.id} f={f} />)}
-          {refFields.length === 0 && <p className="text-xs text-stone-400 italic pl-1">No fields in this section</p>}
+          {refFields.length === 0 && <p className="text-xs text-stone-400 italic pl-1 py-1">Empty</p>}
         </div>
-      </div>
-
-      {/* Add custom field */}
-      <div className="pt-3 border-t border-stone-200">
-        <p className="text-xs font-medium text-stone-500 mb-2">Add custom field</p>
-        <div className="flex items-center gap-2 flex-wrap">
-          <input
-            className="flex-1 min-w-[120px] border border-stone-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#4fd1c5]/40"
-            placeholder="Label (e.g. Contract #)"
-            value={newLabel}
-            onChange={e => setNewLabel(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && addField()}
-          />
-          <input
-            className="w-32 border border-stone-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#4fd1c5]/40"
-            placeholder="Value (optional)"
-            value={newValue}
-            onChange={e => setNewValue(e.target.value)}
-          />
-          <select
-            className="border border-stone-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#4fd1c5]/40 bg-white"
-            value={newSection}
-            onChange={e => setNewSection(e.target.value as "meta" | "reference")}
-          >
-            <option value="meta">Header strip</option>
-            <option value="reference">Reference row</option>
-          </select>
-          <button
-            onClick={addField}
-            disabled={!newLabel.trim()}
-            className="text-sm bg-[#0d3d3b] text-white px-3 py-1.5 rounded-lg hover:opacity-90 disabled:opacity-40 font-medium"
-          >
-            + Add
-          </button>
-        </div>
+        <AddRow section="reference" />
       </div>
     </div>
   );
