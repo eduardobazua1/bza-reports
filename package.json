@@ -26,6 +26,7 @@
     "@vercel/blob": "^2.3.2",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.8.0",
+    "dotenv": "^17.4.0",
     "drizzle-orm": "^0.45.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.7.0",

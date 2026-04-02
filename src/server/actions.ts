@@ -246,12 +246,32 @@ export async function deleteInvoice(id: number) {
 }
 
 // ---- Products ----
-export async function createProduct(data: { name: string; grade?: string; description?: string; notes?: string }) {
+export async function createProduct(data: {
+  name: string;
+  grade?: string;
+  description?: string;
+  fscLicense?: string;
+  chainOfCustody?: string;
+  inputClaim?: string;
+  outputClaim?: string;
+  pefc?: string;
+  notes?: string;
+}) {
   await db.insert(products).values({ ...data, updatedAt: new Date().toISOString() });
   revalidatePath("/products");
 }
 
-export async function updateProduct(id: number, data: { name: string; grade?: string; description?: string; notes?: string }) {
+export async function updateProduct(id: number, data: {
+  name: string;
+  grade?: string;
+  description?: string;
+  fscLicense?: string;
+  chainOfCustody?: string;
+  inputClaim?: string;
+  outputClaim?: string;
+  pefc?: string;
+  notes?: string;
+}) {
   await db.update(products).set({ ...data, updatedAt: new Date().toISOString() }).where(eq(products.id, id));
   revalidatePath("/products");
 }

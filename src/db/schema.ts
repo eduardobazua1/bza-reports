@@ -52,6 +52,12 @@ export const products = sqliteTable("products", {
   grade: text("grade"), // e.g. NBSK, SBSK, BHK, BCTMP
   description: text("description"),
   notes: text("notes"),
+  // FSC/PEFC certification fields
+  fscLicense: text("fsc_license"),           // e.g. FSC-C005174
+  chainOfCustody: text("chain_of_custody"),  // e.g. SCS-CW-000885
+  inputClaim: text("input_claim"),           // e.g. "FSC Controlled Wood"
+  outputClaim: text("output_claim"),         // e.g. "FSC Controlled Wood"
+  pefc: text("pefc"),                        // e.g. PEFC-2431400 (null if FSC only)
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });

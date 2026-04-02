@@ -58,12 +58,10 @@ export async function GET(req: NextRequest) {
     db.query.suppliers.findFirst({ where: eq(suppliers.id, po.supplierId) }),
   ]);
 
-  // Resolve client product name for PDF
-  let clientProductName: string | null = null;
-  if (po.clientProductId) {
-    const prod = await db.query.products.findFirst({ where: eq(products.id, po.clientProductId) });
-    clientProductName = prod?.name ?? null;
-  }
+  // Resolve client product for PDF (FSC data comes from product if available)
+  const clientProd = po.clientProductId
+    ? await db.query.products.findFirst({ where: eq(products.id, po.clientProductId) })
+    : null;
 
   const price = inv.sellPriceOverride ?? po.sellPrice;
   const total = inv.quantityTons * price;
@@ -75,14 +73,15 @@ export async function GET(req: NextRequest) {
     return d.toISOString().split("T")[0];
   })();
 
-  const productName = clientProductName || inv.item || po.product || "Woodpulp";
+  const productName = clientProd?.name || inv.item || po.product || "Woodpulp";
+  const inputClaim = clientProd?.inputClaim || supplier?.fscInputClaim || po.inputClaim || "";
+  const chainOfCustody = clientProd?.chainOfCustody || "";
   const supplierShortName = (supplier?.name || "").split(" ")[0];
-  const inputClaim = supplier?.fscInputClaim || po.inputClaim || "";
   const productLine = [
     productName,
-    inputClaim ? `${supplierShortName} FSC` : "",
-    inputClaim,
+    inputClaim ? `${supplierShortName} ${inputClaim}` : "",
   ].filter(Boolean).join("\n");
+  void chainOfCustody; // available for future use in PDF
 
   const balesDisplay = inv.balesCount && inv.unitsPerBale
     ? `${inv.balesCount}/${inv.unitsPerBale}`
