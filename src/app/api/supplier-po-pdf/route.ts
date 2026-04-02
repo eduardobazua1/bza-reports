@@ -135,39 +135,42 @@ export async function GET(req: NextRequest) {
     .text("PO NUMBER", BX + 8, y + 3, { lineBreak: false });
   doc.fontSize(9).font("Helvetica-Bold").fillColor("white")
     .text(po.poNumber, BX + 8, y + 13, { width: BW - 16, lineBreak: false });
-  y += 38;
+  y += 40;
 
-  // ── DATE + INCOTERM (right, below badge) ──────────────────
+  // ── 2-COLUMN META STRIP (DATE | INCOTERM, full width) ────
+  const COL2 = Math.floor(W / 2);  // 258px each
   doc.fontSize(6).font("Helvetica-Bold").fillColor(GRAY);
-  doc.text("DATE",     BX, y,      { width: 70, lineBreak: false });
-  doc.text("INCOTERM", BX + 76, y, { lineBreak: false });
-  y += 9;
+  doc.text("DATE",     M,        y, { width: COL2 - 6, lineBreak: false });
+  doc.text("INCOTERM", M + COL2, y, { width: COL2 - 6, lineBreak: false });
   doc.fontSize(7.5).font("Helvetica").fillColor(DARK);
-  doc.text(formatDate(poDate),          BX, y,      { width: 70, lineBreak: false });
-  doc.text(effectiveIncoterm || "—",    BX + 76, y, { width: 74, lineBreak: false });
-  y += 18;
+  doc.text(formatDate(poDate),            M,        y + 9, { width: COL2 - 6, lineBreak: false });
+  doc.text(effectiveIncoterm || "—",      M + COL2, y + 9, { width: COL2 - 6, lineBreak: false });
+  y += 26;
+
+  doc.moveTo(M, y).lineTo(M + W, y).strokeColor(RULE).lineWidth(0.5).stroke();
+  y += 10;
 
   // ── VENDOR / SHIP TO ─────────────────────────────────────
-  // Two wide columns, 240px each
-  const ADDR_W = 240;
+  const ADDR_W = Math.floor((W - 24) / 2);  // 246px each
   const CA = M;
   const CB = M + ADDR_W + 24;
+
+  const vendorLines = [supplier?.name || "", ...supplierAddress].filter(Boolean);
+  const shipToLines = [client?.name || "", ...clientAddress].filter(Boolean);
 
   doc.fontSize(6).font("Helvetica-Bold").fillColor(GRAY);
   doc.text("VENDOR",  CA, y, { lineBreak: false });
   doc.text("SHIP TO", CB, y, { lineBreak: false });
   y += 10;
 
-  const vendorLines  = [supplier?.name || "", ...supplierAddress].filter(Boolean);
-  const shipToLines  = [client?.name || "", ...clientAddress].filter(Boolean);
-
   doc.fontSize(7.5).font("Helvetica").fillColor(DARK);
   const maxLines = Math.max(vendorLines.length, shipToLines.length);
   for (let i = 0; i < maxLines; i++) {
-    if (vendorLines[i]) doc.text(vendorLines[i], CA, y + i * 10, { width: ADDR_W, lineBreak: false });
-    if (shipToLines[i]) doc.text(shipToLines[i], CB, y + i * 10, { width: ADDR_W, lineBreak: false });
+    if (vendorLines[i]) doc.text(vendorLines[i], CA, y, { width: ADDR_W, lineBreak: false });
+    if (shipToLines[i]) doc.text(shipToLines[i], CB, y, { width: ADDR_W, lineBreak: false });
+    y += 11;
   }
-  y += maxLines * 10 + 18;
+  y += 14;
 
   // ── TABLE HEADER ─────────────────────────────────────────
   const TC = { desc: M + 6, qty: M + 355, rate: M + 415, amount: M + 472 };
