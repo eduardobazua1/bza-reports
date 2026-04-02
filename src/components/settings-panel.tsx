@@ -2,46 +2,41 @@
 
 import { useState } from "react";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Field definition ────────────────────────────────────────────────────────
+export type InvoiceField = {
+  id: string;
+  key: string;       // data key ("date" | "dueDate" | "terms" | "shipVia" | "po" | "bol" | "tracking" | "destination" | "shipDate" | "custom")
+  label: string;     // column header on PDF
+  section: "meta" | "reference"; // where it appears on the invoice
+  enabled: boolean;
+  isDefault: boolean;
+  staticValue?: string; // only for custom fields
+};
+
+const DEFAULT_FIELDS: InvoiceField[] = [
+  { id: "date",        key: "date",        label: "Date",            section: "meta",      enabled: true,  isDefault: true },
+  { id: "dueDate",     key: "dueDate",     label: "Due Date",        section: "meta",      enabled: true,  isDefault: true },
+  { id: "terms",       key: "terms",       label: "Terms",           section: "meta",      enabled: true,  isDefault: true },
+  { id: "shipVia",     key: "shipVia",     label: "Ship Via",        section: "meta",      enabled: true,  isDefault: true },
+  { id: "po",          key: "po",          label: "Purchase Order",  section: "reference", enabled: true,  isDefault: true },
+  { id: "bol",         key: "bol",         label: "BOL #",           section: "reference", enabled: true,  isDefault: true },
+  { id: "tracking",    key: "tracking",    label: "Tracking #",      section: "reference", enabled: true,  isDefault: true },
+  { id: "destination", key: "destination", label: "Destination",     section: "reference", enabled: true,  isDefault: true },
+  { id: "shipDate",    key: "shipDate",    label: "Ship Date",       section: "reference", enabled: true,  isDefault: true },
+];
+
+// ─── Settings type ────────────────────────────────────────────────────────────
 type Settings = {
-  // Company
-  companyName: string;
-  address1: string;
-  address2: string;
-  phone: string;
-  email: string;
-  website: string;
-  taxId: string;
-  currency: string;
-  defaultPaymentTerms: number;
-  invoicePrefix: string;
-  // Invoice design
-  primaryColor: string;
-  accentColor: string;
-  logoText: string;
-  // Invoice fields (reference row)
-  showPoField: boolean;
-  showBolField: boolean;
-  showTrackingField: boolean;
-  showDestinationField: boolean;
-  showShipDateField: boolean;
-  // Sections
-  showPaymentInstructions: boolean;
-  showFscSection: boolean;
-  // Banking
-  bankName: string;
-  bankAddress: string;
-  bankBeneficiary: string;
-  bankAccount: string;
-  bankRouting: string;
-  bankSwift: string;
-  // FSC
-  fscCode: string;
-  fscCw: string;
-  fscExpiration: string;
-  // Footer
-  footerNote: string;
-  invoiceNotes: string;
+  companyName: string; address1: string; address2: string;
+  phone: string; email: string; website: string; taxId: string;
+  currency: string; defaultPaymentTerms: number; invoicePrefix: string;
+  primaryColor: string; accentColor: string; logoText: string;
+  invoiceFields: InvoiceField[];
+  showPaymentInstructions: boolean; showFscSection: boolean;
+  bankName: string; bankAddress: string; bankBeneficiary: string;
+  bankAccount: string; bankRouting: string; bankSwift: string;
+  fscCode: string; fscCw: string; fscExpiration: string;
+  footerNote: string; invoiceNotes: string;
 };
 
 const DEFAULTS: Settings = {
@@ -58,11 +53,7 @@ const DEFAULTS: Settings = {
   primaryColor: "#0d3d3b",
   accentColor: "#4fd1c5",
   logoText: "BZA",
-  showPoField: true,
-  showBolField: true,
-  showTrackingField: true,
-  showDestinationField: true,
-  showShipDateField: true,
+  invoiceFields: DEFAULT_FIELDS,
   showPaymentInstructions: true,
   showFscSection: true,
   bankName: "Vantage Bank",
@@ -80,43 +71,33 @@ const DEFAULTS: Settings = {
 
 type UserRow = { id: number; email: string; name: string | null; role: string; isActive: boolean; createdAt: string };
 
-// ─── Nav ─────────────────────────────────────────────────────────────────────
 const NAV = [
-  {
-    group: "General",
-    items: [
-      { id: "company",      label: "Company Profile",  desc: "Legal info, address, billing defaults" },
-    ],
-  },
-  {
-    group: "Documents",
-    items: [
-      { id: "invoice",      label: "Invoice Template", desc: "Design, fields, logo, colors, sections" },
-    ],
-  },
-  {
-    group: "System",
-    items: [
-      { id: "users",        label: "Users & Access",   desc: "Manage team members" },
-      { id: "integrations", label: "Integrations",     desc: "Email, AI assistant" },
-    ],
-  },
+  { group: "General",   items: [{ id: "company",      label: "Company Profile",  desc: "Legal info, address, billing defaults" }] },
+  { group: "Documents", items: [{ id: "invoice",      label: "Invoice Template", desc: "Design, fields, colors, sections" }] },
+  { group: "System",    items: [
+    { id: "users",        label: "Users & Access",   desc: "Manage team members" },
+    { id: "integrations", label: "Integrations",     desc: "Email, AI assistant" },
+  ]},
 ];
 
 // ─── Panel ───────────────────────────────────────────────────────────────────
-export function SettingsPanel({
-  initial, users, isAdmin,
-}: {
+export function SettingsPanel({ initial, users, isAdmin }: {
   initial?: Partial<Settings> | null;
   users: UserRow[];
   isAdmin: boolean;
 }) {
   const [active, setActive] = useState("company");
-  const [cfg, setCfg]       = useState<Settings>({ ...DEFAULTS, ...(initial || {}) });
+  const [cfg, setCfg] = useState<Settings>({
+    ...DEFAULTS,
+    ...(initial || {}),
+    invoiceFields: (initial as Settings)?.invoiceFields?.length
+      ? (initial as Settings).invoiceFields
+      : DEFAULT_FIELDS,
+  });
   const [saving, setSaving] = useState(false);
   const [saved,  setSaved]  = useState(false);
 
-  function set(field: keyof Settings, value: string | boolean | number) {
+  function set(field: keyof Settings, value: unknown) {
     setCfg(prev => ({ ...prev, [field]: value }));
     setSaved(false);
   }
@@ -134,25 +115,19 @@ export function SettingsPanel({
   }
 
   const activeItem = NAV.flatMap(g => g.items).find(i => i.id === active);
-  const showSave   = ["company", "invoice"].includes(active);
 
   return (
-    <div className="flex gap-0 bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden min-h-[640px]">
-      {/* Sidebar */}
+    <div className="flex bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden min-h-[640px]">
       <aside className="w-52 shrink-0 bg-stone-50 border-r border-stone-200 p-3 flex flex-col gap-5">
         {NAV.map(group => (
           <div key={group.group}>
-            <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest px-2 mb-1.5">
-              {group.group}
-            </p>
+            <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest px-2 mb-1.5">{group.group}</p>
             {group.items.map(item => (
               <button
                 key={item.id}
                 onClick={() => setActive(item.id)}
                 className={`w-full px-2.5 py-2 rounded-lg text-left text-sm transition-all ${
-                  active === item.id
-                    ? "bg-[#0d3d3b] text-white font-medium shadow-sm"
-                    : "text-stone-600 hover:bg-stone-200"
+                  active === item.id ? "bg-[#0d3d3b] text-white font-medium shadow-sm" : "text-stone-600 hover:bg-stone-200"
                 }`}
               >
                 {item.label}
@@ -162,15 +137,13 @@ export function SettingsPanel({
         ))}
       </aside>
 
-      {/* Content */}
       <main className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100">
           <div>
             <h2 className="font-semibold text-stone-800">{activeItem?.label}</h2>
             <p className="text-xs text-stone-400 mt-0.5">{activeItem?.desc}</p>
           </div>
-          {showSave && (
+          {["company","invoice"].includes(active) && (
             <div className="flex items-center gap-3">
               {saved && (
                 <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
@@ -181,26 +154,19 @@ export function SettingsPanel({
                 </span>
               )}
               {active === "invoice" && (
-                <a
-                  href="/api/invoice-pdf?invoice=IX0001-1"
-                  target="_blank"
-                  className="text-xs text-stone-400 hover:text-stone-600 border border-stone-200 rounded px-2.5 py-1.5 transition-colors"
-                >
+                <a href="/api/invoice-pdf?invoice=IX0001-1" target="_blank"
+                  className="text-xs text-stone-400 hover:text-stone-600 border border-stone-200 rounded px-2.5 py-1.5">
                   Preview PDF ↗
                 </a>
               )}
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="text-xs bg-[#0d3d3b] text-white px-3.5 py-1.5 rounded-lg hover:opacity-90 disabled:opacity-50 font-medium"
-              >
+              <button onClick={handleSave} disabled={saving}
+                className="text-xs bg-[#0d3d3b] text-white px-3.5 py-1.5 rounded-lg hover:opacity-90 disabled:opacity-50 font-medium">
                 {saving ? "Saving…" : "Save Changes"}
               </button>
             </div>
           )}
         </div>
 
-        {/* Body */}
         <div className="flex-1 overflow-y-auto p-6">
           {active === "company"      && <SectionCompany     cfg={cfg} set={set} />}
           {active === "invoice"      && <SectionInvoice     cfg={cfg} set={set} />}
@@ -212,7 +178,7 @@ export function SettingsPanel({
   );
 }
 
-// ─── Shared helpers ───────────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mb-5">
@@ -222,30 +188,22 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
-function Field({
-  label, value, onChange, type = "text", placeholder, hint, half,
-}: {
+function TF({ label, value, onChange, type = "text", placeholder, hint }: {
   label: string; value: string; onChange: (v: string) => void;
-  type?: string; placeholder?: string; hint?: string; half?: boolean;
+  type?: string; placeholder?: string; hint?: string;
 }) {
   return (
-    <div className={half ? "col-span-1" : ""}>
+    <div>
       <label className="block text-xs font-medium text-stone-500 mb-1">{label}</label>
-      <input
-        type={type}
+      <input type={type}
         className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4fd1c5]/40 focus:border-[#4fd1c5]"
-        value={value}
-        placeholder={placeholder}
-        onChange={e => onChange(e.target.value)}
-      />
+        value={value} placeholder={placeholder} onChange={e => onChange(e.target.value)} />
       {hint && <p className="text-[11px] text-stone-400 mt-1">{hint}</p>}
     </div>
   );
 }
 
-function Toggle({
-  label, checked, onChange, hint,
-}: {
+function Sw({ label, checked, onChange, hint }: {
   label: string; checked: boolean; onChange: (v: boolean) => void; hint?: string;
 }) {
   return (
@@ -263,80 +221,202 @@ function Toggle({
   );
 }
 
-// ─── Company Profile ──────────────────────────────────────────────────────────
-function SectionCompany({ cfg, set }: { cfg: Settings; set: (f: keyof Settings, v: string | boolean | number) => void }) {
+// ─── Field Manager ────────────────────────────────────────────────────────────
+function FieldManager({ fields, onChange }: {
+  fields: InvoiceField[];
+  onChange: (fields: InvoiceField[]) => void;
+}) {
+  const [newLabel, setNewLabel]   = useState("");
+  const [newSection, setNewSection] = useState<"meta" | "reference">("reference");
+  const [newValue, setNewValue]   = useState("");
+
+  function updateField(id: string, patch: Partial<InvoiceField>) {
+    onChange(fields.map(f => f.id === id ? { ...f, ...patch } : f));
+  }
+
+  function removeField(id: string) {
+    onChange(fields.filter(f => f.id !== id));
+  }
+
+  function addField() {
+    if (!newLabel.trim()) return;
+    const newField: InvoiceField = {
+      id: `custom_${Date.now()}`,
+      key: "custom",
+      label: newLabel.trim(),
+      section: newSection,
+      enabled: true,
+      isDefault: false,
+      staticValue: newValue.trim(),
+    };
+    onChange([...fields, newField]);
+    setNewLabel("");
+    setNewValue("");
+  }
+
+  const SECTION_LABELS: Record<string, string> = {
+    meta:      "Header strip",
+    reference: "Reference row",
+  };
+
+  const metaFields = fields.filter(f => f.section === "meta");
+  const refFields  = fields.filter(f => f.section === "reference");
+
+  function FieldRow({ f }: { f: InvoiceField }) {
+    return (
+      <div className={`flex items-center gap-3 py-2.5 px-3 rounded-lg border ${f.enabled ? "border-stone-200 bg-white" : "border-stone-100 bg-stone-50 opacity-60"}`}>
+        {/* toggle */}
+        <button
+          onClick={() => updateField(f.id, { enabled: !f.enabled })}
+          className={`w-8 h-5 rounded-full transition-colors shrink-0 relative ${f.enabled ? "bg-[#0d3d3b]" : "bg-stone-300"}`}
+        >
+          <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${f.enabled ? "translate-x-3" : ""}`} />
+        </button>
+
+        {/* label */}
+        <input
+          className="flex-1 min-w-0 text-sm border border-transparent rounded px-1.5 py-0.5 focus:border-stone-300 focus:outline-none bg-transparent hover:bg-stone-100 transition-colors"
+          value={f.label}
+          onChange={e => updateField(f.id, { label: e.target.value })}
+        />
+
+        {/* custom value */}
+        {f.key === "custom" && (
+          <input
+            className="w-28 text-xs border border-stone-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#4fd1c5]/40"
+            value={f.staticValue || ""}
+            placeholder="Value…"
+            onChange={e => updateField(f.id, { staticValue: e.target.value })}
+          />
+        )}
+
+        {/* section selector */}
+        <select
+          className="text-xs border border-stone-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#4fd1c5]/40 bg-white"
+          value={f.section}
+          onChange={e => updateField(f.id, { section: e.target.value as "meta" | "reference" })}
+        >
+          <option value="meta">Header strip</option>
+          <option value="reference">Reference row</option>
+        </select>
+
+        {/* delete (custom only) */}
+        {!f.isDefault ? (
+          <button onClick={() => removeField(f.id)}
+            className="text-stone-400 hover:text-red-500 transition-colors text-lg leading-none shrink-0"
+            title="Remove field">×</button>
+        ) : (
+          <span className="w-5 shrink-0" />
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* Header strip */}
+      <div>
+        <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider mb-1.5">
+          Header strip <span className="font-normal normal-case">(top row — date, terms, etc.)</span>
+        </p>
+        <div className="space-y-1.5">
+          {metaFields.map(f => <FieldRow key={f.id} f={f} />)}
+          {metaFields.length === 0 && <p className="text-xs text-stone-400 italic pl-1">No fields in this section</p>}
+        </div>
+      </div>
+
+      {/* Reference row */}
+      <div>
+        <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider mb-1.5">
+          Reference row <span className="font-normal normal-case">(below addresses — PO#, BOL, destination, etc.)</span>
+        </p>
+        <div className="space-y-1.5">
+          {refFields.map(f => <FieldRow key={f.id} f={f} />)}
+          {refFields.length === 0 && <p className="text-xs text-stone-400 italic pl-1">No fields in this section</p>}
+        </div>
+      </div>
+
+      {/* Add custom field */}
+      <div className="pt-3 border-t border-stone-200">
+        <p className="text-xs font-medium text-stone-500 mb-2">Add custom field</p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <input
+            className="flex-1 min-w-[120px] border border-stone-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#4fd1c5]/40"
+            placeholder="Label (e.g. Contract #)"
+            value={newLabel}
+            onChange={e => setNewLabel(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && addField()}
+          />
+          <input
+            className="w-32 border border-stone-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#4fd1c5]/40"
+            placeholder="Value (optional)"
+            value={newValue}
+            onChange={e => setNewValue(e.target.value)}
+          />
+          <select
+            className="border border-stone-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#4fd1c5]/40 bg-white"
+            value={newSection}
+            onChange={e => setNewSection(e.target.value as "meta" | "reference")}
+          >
+            <option value="meta">Header strip</option>
+            <option value="reference">Reference row</option>
+          </select>
+          <button
+            onClick={addField}
+            disabled={!newLabel.trim()}
+            className="text-sm bg-[#0d3d3b] text-white px-3 py-1.5 rounded-lg hover:opacity-90 disabled:opacity-40 font-medium"
+          >
+            + Add
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Company ──────────────────────────────────────────────────────────────────
+function SectionCompany({ cfg, set }: { cfg: Settings; set: (f: keyof Settings, v: unknown) => void }) {
   return (
     <>
       <Card title="Legal Entity">
         <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2 sm:col-span-1">
-            <Field label="Company Name" value={cfg.companyName} onChange={v => set("companyName", v)} />
-          </div>
-          <div className="col-span-2 sm:col-span-1">
-            <Field label="Tax ID / EIN" value={cfg.taxId} onChange={v => set("taxId", v)} placeholder="XX-XXXXXXX" />
-          </div>
+          <div className="col-span-2 sm:col-span-1"><TF label="Company Name" value={cfg.companyName} onChange={v => set("companyName", v)} /></div>
+          <div className="col-span-2 sm:col-span-1"><TF label="Tax ID / EIN" value={cfg.taxId} onChange={v => set("taxId", v)} placeholder="XX-XXXXXXX" /></div>
         </div>
       </Card>
-
       <Card title="Address">
         <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2 sm:col-span-1">
-            <Field label="Address Line 1" value={cfg.address1} onChange={v => set("address1", v)} placeholder="Street, Suite" />
-          </div>
-          <div className="col-span-2 sm:col-span-1">
-            <Field label="Address Line 2" value={cfg.address2} onChange={v => set("address2", v)} placeholder="City, State ZIP Country" />
-          </div>
+          <div className="col-span-2 sm:col-span-1"><TF label="Address Line 1" value={cfg.address1} onChange={v => set("address1", v)} /></div>
+          <div className="col-span-2 sm:col-span-1"><TF label="Address Line 2" value={cfg.address2} onChange={v => set("address2", v)} /></div>
         </div>
       </Card>
-
       <Card title="Contact">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2 sm:col-span-1">
-            <Field label="Phone"   value={cfg.phone}   onChange={v => set("phone", v)}   placeholder="+1 000 000 0000" />
-          </div>
-          <div className="col-span-2 sm:col-span-1">
-            <Field label="Email"   value={cfg.email}   onChange={v => set("email", v)}   type="email" />
-          </div>
-          <div className="col-span-2 sm:col-span-1">
-            <Field label="Website" value={cfg.website} onChange={v => set("website", v)} placeholder="www.example.com" />
-          </div>
+        <div className="grid grid-cols-3 gap-4">
+          <TF label="Phone"   value={cfg.phone}   onChange={v => set("phone", v)} />
+          <TF label="Email"   value={cfg.email}   onChange={v => set("email", v)} type="email" />
+          <TF label="Website" value={cfg.website} onChange={v => set("website", v)} />
         </div>
       </Card>
-
       <Card title="Billing Defaults">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2 sm:col-span-1">
+        <div className="grid grid-cols-3 gap-4">
+          <div>
             <label className="block text-xs font-medium text-stone-500 mb-1">Default Payment Terms (days)</label>
-            <input
-              type="number"
+            <input type="number"
               className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4fd1c5]/40"
-              value={cfg.defaultPaymentTerms}
-              onChange={e => set("defaultPaymentTerms", Number(e.target.value))}
-              placeholder="60"
-            />
+              value={cfg.defaultPaymentTerms} onChange={e => set("defaultPaymentTerms", Number(e.target.value))} />
           </div>
-          <div className="col-span-2 sm:col-span-1">
+          <div>
             <label className="block text-xs font-medium text-stone-500 mb-1">Currency</label>
-            <select
-              className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4fd1c5]/40"
-              value={cfg.currency}
-              onChange={e => set("currency", e.target.value)}
-            >
+            <select className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4fd1c5]/40 bg-white"
+              value={cfg.currency} onChange={e => set("currency", e.target.value)}>
               <option value="USD">USD — US Dollar</option>
               <option value="MXN">MXN — Mexican Peso</option>
               <option value="EUR">EUR — Euro</option>
               <option value="CAD">CAD — Canadian Dollar</option>
             </select>
           </div>
-          <div className="col-span-2 sm:col-span-1">
-            <Field
-              label="Invoice Number Prefix"
-              value={cfg.invoicePrefix}
-              onChange={v => set("invoicePrefix", v)}
-              placeholder="IX"
-              hint="e.g. IX → IX0001-1, OC → OC0001-1"
-            />
-          </div>
+          <TF label="Invoice Number Prefix" value={cfg.invoicePrefix} onChange={v => set("invoicePrefix", v)}
+            placeholder="IX" hint="e.g. IX → IX0001-1" />
         </div>
       </Card>
     </>
@@ -344,159 +424,98 @@ function SectionCompany({ cfg, set }: { cfg: Settings; set: (f: keyof Settings, 
 }
 
 // ─── Invoice Template ─────────────────────────────────────────────────────────
-function SectionInvoice({ cfg, set }: { cfg: Settings; set: (f: keyof Settings, v: string | boolean | number) => void }) {
+function SectionInvoice({ cfg, set }: { cfg: Settings; set: (f: keyof Settings, v: unknown) => void }) {
   return (
     <>
-      {/* Design */}
       <Card title="Design">
-        <div>
-          <p className="text-xs text-stone-500 mb-3">Logo text (displayed on PDF header)</p>
-          <div className="flex items-center gap-4 mb-4">
-            <div>
-              <label className="block text-xs font-medium text-stone-500 mb-1">Logo Text</label>
-              <input
-                type="text"
-                className="w-28 border border-stone-200 rounded-lg px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#4fd1c5]/40"
-                value={cfg.logoText}
-                onChange={e => set("logoText", e.target.value)}
-                maxLength={6}
-                placeholder="BZA"
-              />
-            </div>
-            <div>
-              <p className="text-xs text-stone-400 mb-1">Preview</p>
-              <div className="flex items-baseline gap-0.5 px-3 py-1.5 rounded-lg border border-stone-200 bg-white">
+        <div className="flex items-start gap-8 flex-wrap">
+          {/* Logo text */}
+          <div>
+            <label className="block text-xs font-medium text-stone-500 mb-1">Logo Text</label>
+            <div className="flex items-center gap-3">
+              <input type="text" maxLength={6}
+                className="w-24 border border-stone-200 rounded-lg px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#4fd1c5]/40"
+                value={cfg.logoText} placeholder="BZA" onChange={e => set("logoText", e.target.value)} />
+              <div className="flex items-baseline gap-0 px-3 py-1.5 rounded-lg border border-stone-200 bg-white">
                 <span className="text-xl font-bold" style={{ color: cfg.primaryColor }}>{cfg.logoText || "BZA"}</span>
                 <span className="text-xl font-bold" style={{ color: cfg.accentColor }}>.</span>
               </div>
             </div>
           </div>
-          <div className="flex flex-wrap gap-6 items-end">
-            {(["primaryColor", "accentColor"] as const).map(field => (
-              <div key={field}>
-                <label className="block text-xs font-medium text-stone-500 mb-1.5">
-                  {field === "primaryColor" ? "Primary Color" : "Accent Color"}
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={cfg[field]}
-                    onChange={e => set(field, e.target.value)}
-                    className="w-9 h-9 rounded-lg cursor-pointer border border-stone-200 p-0.5"
-                  />
-                  <input
-                    type="text"
-                    value={cfg[field]}
-                    onChange={e => set(field, e.target.value)}
-                    className="w-24 border border-stone-200 rounded-lg px-2 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#4fd1c5]/40"
-                  />
-                  <div className="w-7 h-7 rounded border border-stone-200" style={{ background: cfg[field] }} />
-                </div>
+          {/* Colors */}
+          {(["primaryColor","accentColor"] as const).map(field => (
+            <div key={field}>
+              <label className="block text-xs font-medium text-stone-500 mb-1">
+                {field === "primaryColor" ? "Primary" : "Accent"}
+              </label>
+              <div className="flex items-center gap-2">
+                <input type="color" value={cfg[field]}
+                  onChange={e => set(field, e.target.value)}
+                  className="w-9 h-9 rounded-lg cursor-pointer border border-stone-200 p-0.5" />
+                <input type="text" value={cfg[field]}
+                  onChange={e => set(field, e.target.value)}
+                  className="w-24 border border-stone-200 rounded-lg px-2 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#4fd1c5]/40" />
+                <div className="w-7 h-7 rounded border border-stone-200" style={{ background: cfg[field] }} />
               </div>
-            ))}
-            <button
-              onClick={() => { set("primaryColor", "#0d3d3b"); set("accentColor", "#4fd1c5"); }}
-              className="text-xs text-stone-500 hover:text-[#0d3d3b] border border-stone-200 rounded-lg px-3 py-2 transition-colors"
-            >
-              ↺ Reset to BZA defaults
+            </div>
+          ))}
+          <div className="flex items-end">
+            <button onClick={() => { set("primaryColor", "#0d3d3b"); set("accentColor", "#4fd1c5"); }}
+              className="text-xs text-stone-500 hover:text-[#0d3d3b] border border-stone-200 rounded-lg px-3 py-2 transition-colors">
+              ↺ BZA defaults
             </button>
           </div>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <div className="h-7 rounded-lg flex items-center justify-center text-white text-[11px] font-semibold" style={{ background: cfg.primaryColor }}>
-              Header / background
-            </div>
-            <div className="h-7 rounded-lg flex items-center justify-center text-white text-[11px] font-semibold" style={{ background: cfg.accentColor }}>
-              Accents / highlights
-            </div>
-          </div>
         </div>
       </Card>
 
-      {/* Fields */}
-      <Card title="Reference Fields (shown below addresses)">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Toggle label="Purchase Order #"   checked={cfg.showPoField}          onChange={v => set("showPoField", v)} />
-          <Toggle label="BOL / Bill of Lading" checked={cfg.showBolField}       onChange={v => set("showBolField", v)} />
-          <Toggle label="Tracking / Vehicle"  checked={cfg.showTrackingField}   onChange={v => set("showTrackingField", v)} />
-          <Toggle label="Destination"         checked={cfg.showDestinationField} onChange={v => set("showDestinationField", v)} />
-          <Toggle label="Ship Date"           checked={cfg.showShipDateField}   onChange={v => set("showShipDateField", v)} />
-        </div>
+      <Card title="Fields & Layout">
+        <p className="text-xs text-stone-400 -mt-2 mb-1">
+          Toggle, rename, reposition, or add custom fields. The label shown is the column header on the PDF.
+        </p>
+        <FieldManager
+          fields={cfg.invoiceFields}
+          onChange={fields => set("invoiceFields", fields)}
+        />
       </Card>
 
-      {/* Sections */}
       <Card title="Optional Sections">
-        <Toggle
-          label="Payment Instructions"
-          hint="Includes bank details at the bottom of every invoice"
-          checked={cfg.showPaymentInstructions}
-          onChange={v => set("showPaymentInstructions", v)}
-        />
-        <Toggle
-          label="FSC Certificate"
-          hint="Prints BZA's FSC codes below the payment block"
-          checked={cfg.showFscSection}
-          onChange={v => set("showFscSection", v)}
-        />
+        <Sw label="Payment Instructions" hint="Bank details at the bottom of the invoice"
+          checked={cfg.showPaymentInstructions} onChange={v => set("showPaymentInstructions", v)} />
+        <Sw label="FSC Certificate" hint="BZA FSC codes printed on the invoice"
+          checked={cfg.showFscSection} onChange={v => set("showFscSection", v)} />
       </Card>
 
-      {/* Banking */}
       <Card title="Banking / Payment Details">
         <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2 sm:col-span-1">
-            <Field label="Bank Name"    value={cfg.bankName}        onChange={v => set("bankName", v)} />
-          </div>
-          <div className="col-span-2 sm:col-span-1">
-            <Field label="Beneficiary"  value={cfg.bankBeneficiary} onChange={v => set("bankBeneficiary", v)} />
-          </div>
-          <div className="col-span-2">
-            <Field label="Bank Address" value={cfg.bankAddress}     onChange={v => set("bankAddress", v)} />
-          </div>
-          <div className="col-span-2 sm:col-span-1">
-            <Field label="Account #"    value={cfg.bankAccount}     onChange={v => set("bankAccount", v)} />
-          </div>
-          <div className="col-span-2 sm:col-span-1">
-            <Field label="Routing #"    value={cfg.bankRouting}     onChange={v => set("bankRouting", v)} />
-          </div>
-          <div className="col-span-2 sm:col-span-1">
-            <Field label="SWIFT / BIC"  value={cfg.bankSwift}       onChange={v => set("bankSwift", v)} />
-          </div>
+          <TF label="Bank Name"    value={cfg.bankName}        onChange={v => set("bankName", v)} />
+          <TF label="Beneficiary"  value={cfg.bankBeneficiary} onChange={v => set("bankBeneficiary", v)} />
+          <div className="col-span-2"><TF label="Bank Address" value={cfg.bankAddress} onChange={v => set("bankAddress", v)} /></div>
+          <TF label="Account #"   value={cfg.bankAccount}     onChange={v => set("bankAccount", v)} />
+          <TF label="Routing #"   value={cfg.bankRouting}     onChange={v => set("bankRouting", v)} />
+          <TF label="SWIFT / BIC" value={cfg.bankSwift}       onChange={v => set("bankSwift", v)} />
         </div>
       </Card>
 
-      {/* FSC */}
       <Card title="FSC Certificate (BZA)">
         <div className="grid grid-cols-3 gap-4">
-          <div>
-            <Field label="COC Code"             value={cfg.fscCode}       onChange={v => set("fscCode", v)}       placeholder="CU-COC-000000" />
-          </div>
-          <div>
-            <Field label="Controlled Wood Code" value={cfg.fscCw}         onChange={v => set("fscCw", v)}         placeholder="CU-CW-000000" />
-          </div>
-          <div>
-            <Field label="Expiration"           value={cfg.fscExpiration} onChange={v => set("fscExpiration", v)} placeholder="DD-MM-YY" />
-          </div>
+          <TF label="COC Code"             value={cfg.fscCode}       onChange={v => set("fscCode", v)}       placeholder="CU-COC-000000" />
+          <TF label="Controlled Wood Code" value={cfg.fscCw}         onChange={v => set("fscCw", v)}         placeholder="CU-CW-000000" />
+          <TF label="Expiration"           value={cfg.fscExpiration} onChange={v => set("fscExpiration", v)} placeholder="DD-MM-YY" />
         </div>
       </Card>
 
-      {/* Footer */}
       <Card title="Footer & Notes">
-        <Field
-          label="Footer Note"
-          value={cfg.footerNote}
-          onChange={v => set("footerNote", v)}
-          placeholder="e.g. All invoice amounts are stated in USD."
-        />
+        <TF label="Footer Note" value={cfg.footerNote} onChange={v => set("footerNote", v)}
+          placeholder="e.g. All invoice amounts are stated in USD." />
         <div>
           <label className="block text-xs font-medium text-stone-500 mb-1">
             Additional Notes <span className="font-normal text-stone-400">(bottom of invoice)</span>
           </label>
           <textarea
             className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4fd1c5]/40"
-            rows={3}
-            value={cfg.invoiceNotes}
+            rows={3} value={cfg.invoiceNotes}
             onChange={e => set("invoiceNotes", e.target.value)}
-            placeholder="Additional terms, conditions, or disclaimers…"
-          />
+            placeholder="Additional terms, conditions, or disclaimers…" />
         </div>
       </Card>
     </>
@@ -521,20 +540,14 @@ function SectionUsers({ users, isAdmin }: { users: UserRow[]; isAdmin: boolean }
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${u.role === "admin" ? "bg-[#0d3d3b]/10 text-[#0d3d3b]" : "bg-stone-100 text-stone-500"}`}>
-                  {u.role}
-                </span>
-                <span className={`text-[11px] px-2 py-0.5 rounded-full ${u.isActive ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-500"}`}>
-                  {u.isActive ? "Active" : "Inactive"}
-                </span>
+                <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${u.role === "admin" ? "bg-[#0d3d3b]/10 text-[#0d3d3b]" : "bg-stone-100 text-stone-500"}`}>{u.role}</span>
+                <span className={`text-[11px] px-2 py-0.5 rounded-full ${u.isActive ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-500"}`}>{u.isActive ? "Active" : "Inactive"}</span>
               </div>
             </div>
           ))}
         </div>
       </Card>
-      {isAdmin && (
-        <p className="text-xs text-stone-400">To add or remove users, edit the database directly or contact your system administrator.</p>
-      )}
+      {isAdmin && <p className="text-xs text-stone-400">To add or remove users, edit the database directly or contact your system administrator.</p>}
     </>
   );
 }
@@ -545,23 +558,19 @@ function SectionIntegrations() {
     <>
       <Card title="Email (SMTP)">
         <div className="grid grid-cols-2 gap-4">
-          <div><Field label="SMTP Host"     value="" onChange={() => {}} placeholder="mail.ionos.com" hint="Set via SMTP_HOST in Vercel env vars" /></div>
-          <div><Field label="SMTP Port"     value="" onChange={() => {}} placeholder="587" /></div>
-          <div><Field label="SMTP User"     value="" onChange={() => {}} placeholder="no-reply@bza-is.com" hint="Set via SMTP_USER in Vercel env vars" /></div>
-          <div><Field label="SMTP Password" value="" onChange={() => {}} type="password" placeholder="••••••••" hint="Set via SMTP_PASS in Vercel env vars" /></div>
+          <TF label="SMTP Host"     value="" onChange={() => {}} placeholder="mail.ionos.com"      hint="Set via SMTP_HOST in Vercel env vars" />
+          <TF label="SMTP Port"     value="" onChange={() => {}} placeholder="587" />
+          <TF label="SMTP User"     value="" onChange={() => {}} placeholder="no-reply@bza-is.com" hint="Set via SMTP_USER in Vercel env vars" />
+          <TF label="SMTP Password" value="" onChange={() => {}} type="password" placeholder="••••••••" hint="Set via SMTP_PASS in Vercel env vars" />
         </div>
-        <div className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg p-3">
-          SMTP credentials must be set as environment variables in Vercel → Project → Settings → Environment Variables.
-        </div>
+        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg p-3">
+          Credentials must be set as environment variables in Vercel → Project → Settings → Environment Variables.
+        </p>
       </Card>
       <Card title="AI Assistant (OpenAI)">
         <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2 sm:col-span-1">
-            <Field label="OpenAI API Key" value="" onChange={() => {}} type="password" placeholder="sk-…" hint="Set via OPENAI_API_KEY in Vercel env vars" />
-          </div>
-          <div className="col-span-2 sm:col-span-1">
-            <Field label="Model" value="" onChange={() => {}} placeholder="gpt-4o-mini" />
-          </div>
+          <TF label="API Key" value="" onChange={() => {}} type="password" placeholder="sk-…" hint="Set via OPENAI_API_KEY in Vercel env vars" />
+          <TF label="Model"   value="" onChange={() => {}} placeholder="gpt-4o-mini" />
         </div>
         <p className="text-xs text-stone-400">Requires a funded OpenAI account. Add at least $5 credit at platform.openai.com.</p>
       </Card>
