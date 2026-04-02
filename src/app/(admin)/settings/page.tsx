@@ -2,8 +2,7 @@ import { db } from "@/db";
 import { users, appSettings } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { eq } from "drizzle-orm";
-import { UserManagement } from "@/components/user-management";
-import { InvoiceTemplateEditor } from "@/components/invoice-template-editor";
+import { SettingsPanel } from "@/components/settings-panel";
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -24,10 +23,16 @@ export default async function SettingsPage() {
   try { invoiceSettings = invoiceSettingsRow ? JSON.parse(invoiceSettingsRow.value) : null; } catch { /* use null */ }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Settings</h1>
-      <InvoiceTemplateEditor initial={invoiceSettings} />
-      <UserManagement users={allUsers} isAdmin={currentUserRole === "admin"} />
+    <div className="space-y-4">
+      <div>
+        <h1 className="text-2xl font-bold text-stone-800">Settings</h1>
+        <p className="text-sm text-stone-400 mt-0.5">Manage company info, document templates, and system configuration</p>
+      </div>
+      <SettingsPanel
+        initial={invoiceSettings}
+        users={allUsers}
+        isAdmin={currentUserRole === "admin"}
+      />
     </div>
   );
 }
