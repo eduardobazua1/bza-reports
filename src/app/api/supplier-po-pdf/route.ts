@@ -191,8 +191,8 @@ export async function GET(req: NextRequest) {
     doc.fontSize(7.5).font("Helvetica").fillColor(DARK);
     doc.text(item.description,        TC.desc,   y + 7, { width: 340, lineGap: 1.5 });
     doc.text(item.qty.toFixed(0),     TC.qty,    y + 7, { lineBreak: false });
-    doc.text(item.rate.toFixed(2),    TC.rate,   y + 7, { lineBreak: false });
-    doc.text(fmtCurrency(item.amount), TC.amount, y + 7, { lineBreak: false });
+    doc.text(`$${item.rate.toFixed(2)}`,    TC.rate,   y + 7, { lineBreak: false });
+    doc.text(`$${fmtCurrency(item.amount)}`, TC.amount, y + 7, { lineBreak: false });
     y += rowH;
   });
 
@@ -205,7 +205,7 @@ export async function GET(req: NextRequest) {
   doc.fontSize(6.5).font("Helvetica-Bold").fillColor(CYAN)
     .text("TOTAL (USD)", TX + 10, y + 6, { lineBreak: false });
   doc.fontSize(12).font("Helvetica-Bold").fillColor("white")
-    .text(fmtCurrency(total), TX + 10, y + 16, { width: TW - 20, align: "right", lineBreak: false });
+    .text(`$${fmtCurrency(total)} USD`, TX + 10, y + 16, { width: TW - 28, align: "right", lineBreak: false });
   y += 44;
 
   // ── FSC NOTE ──────────────────────────────────────────────

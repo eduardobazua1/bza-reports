@@ -227,8 +227,8 @@ export async function GET(req: NextRequest) {
   doc.text(productLine,                                  TC.product, y + 8, { width: 230, lineGap: 1.5 });
   doc.text(balesDisplay,                                 TC.bales,   y + 8, { lineBreak: false });
   doc.text(inv.quantityTons.toFixed(3),                  TC.admt,    y + 8, { lineBreak: false });
-  doc.text(price.toFixed(2),                             TC.price,   y + 8, { lineBreak: false });
-  doc.text(fmtCurrency(total),                           M,          y + 8, { width: W - 6, align: "right", lineBreak: false });
+  doc.text(`$${price.toFixed(2)}`,                        TC.price,   y + 8, { lineBreak: false });
+  doc.text(`$${fmtCurrency(total)}`,                     M,          y + 8, { width: W - 6, align: "right", lineBreak: false });
   y += ROW_H;
 
   doc.moveTo(M, y).lineTo(M + W, y).strokeColor(RULE).lineWidth(0.5).stroke();
@@ -240,7 +240,7 @@ export async function GET(req: NextRequest) {
   doc.fontSize(6.5).font("Helvetica-Bold").fillColor(CYAN)
     .text("BALANCE DUE", BDX + 10, y + 6, { lineBreak: false });
   doc.fontSize(11).font("Helvetica-Bold").fillColor("white")
-    .text(`USD ${fmtCurrency(total)}`, BDX + 10, y + 17, { width: BDW - 30, align: "right", lineBreak: false });
+    .text(`$${fmtCurrency(total)} USD`, BDX + 10, y + 17, { width: BDW - 30, align: "right", lineBreak: false });
   y += 44;
 
   // ── PAYMENT INSTRUCTIONS ──────────────────────────────────
