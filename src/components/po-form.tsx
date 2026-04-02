@@ -92,6 +92,13 @@ type Product = {
   id: number;
   name: string;
   grade?: string | null;
+  // FSC
+  fscLicense?: string | null;
+  chainOfCustody?: string | null;
+  inputClaim?: string | null;
+  outputClaim?: string | null;
+  // PEFC
+  pefc?: string | null;
 };
 
 type PurchaseOrder = {
@@ -112,6 +119,8 @@ type PurchaseOrder = {
   chainOfCustody: string | null;
   inputClaim: string | null;
   outputClaim: string | null;
+  certType?: "fsc" | "pefc" | null;
+  pefc?: string | null;
   status: "active" | "completed" | "cancelled";
   notes: string | null;
 };
@@ -171,7 +180,9 @@ export function POForm({
   const [licenseFsc, setLicenseFsc] = useState(purchaseOrder?.licenseFsc || "");
   const [chainOfCustody, setChainOfCustody] = useState(purchaseOrder?.chainOfCustody || "");
   const [inputClaim, setInputClaim] = useState(purchaseOrder?.inputClaim || "");
-  const [outputClaim, setOutputClaim] = useState(purchaseOrder?.outputClaim || "FSC Controlled Wood");
+  const [outputClaim, setOutputClaim] = useState(purchaseOrder?.outputClaim || "");
+  const [certType, setCertType] = useState<"fsc" | "pefc" | "">(purchaseOrder?.certType || "");
+  const [pefc, setPefc] = useState(purchaseOrder?.pefc || "");
 
   // Product selects
   const [supplierProductId, setSupplierProductId] = useState<string>(
@@ -180,6 +191,48 @@ export function POForm({
   const [clientProductId, setClientProductId] = useState<string>(
     purchaseOrder?.clientProductId ? String(purchaseOrder.clientProductId) : ""
   );
+
+  // Derived: which cert options does the selected supplier product have?
+  const selectedSupplierProduct = products.find(p => String(p.id) === supplierProductId);
+  const hasFsc = !!(selectedSupplierProduct?.fscLicense || selectedSupplierProduct?.inputClaim);
+  const hasPefc = !!selectedSupplierProduct?.pefc;
+  const hasBoth = hasFsc && hasPefc;
+
+  function applyCertType(type: "fsc" | "pefc", prod: Product) {
+    if (type === "fsc") {
+      setLicenseFsc(prod.fscLicense || "");
+      setChainOfCustody(prod.chainOfCustody || "");
+      setInputClaim(prod.inputClaim || "");
+      setOutputClaim(prod.outputClaim || "");
+      setPefc("");
+    } else {
+      setLicenseFsc("");
+      setChainOfCustody("");
+      setInputClaim("");
+      setOutputClaim("");
+      setPefc(prod.pefc || "");
+    }
+    setCertType(type);
+  }
+
+  function handleSupplierProductChange(id: string) {
+    setSupplierProductId(id);
+    if (!id) { setCertType(""); return; }
+    const prod = products.find(p => String(p.id) === id);
+    if (!prod) return;
+    const prodHasFsc = !!(prod.fscLicense || prod.inputClaim);
+    const prodHasPefc = !!prod.pefc;
+    // If only one cert type, auto-select it
+    if (prodHasFsc && !prodHasPefc) applyCertType("fsc", prod);
+    else if (prodHasPefc && !prodHasFsc) applyCertType("pefc", prod);
+    else if (prodHasFsc && prodHasPefc) setCertType(""); // user must choose
+    else setCertType("");
+  }
+
+  function handleCertTypeSelect(type: "fsc" | "pefc") {
+    if (!selectedSupplierProduct) return;
+    applyCertType(type, selectedSupplierProduct);
+  }
 
   function handleSupplierChange(supplierId: number) {
     const supplier = suppliers.find(s => s.id === supplierId);
@@ -218,6 +271,8 @@ export function POForm({
       chainOfCustody: (formData.get("chainOfCustody") as string) || undefined,
       inputClaim: (formData.get("inputClaim") as string) || undefined,
       outputClaim: (formData.get("outputClaim") as string) || undefined,
+      certType: (certType as "fsc" | "pefc") || undefined,
+      pefc: pefc || undefined,
       notes: (formData.get("notes") as string) || undefined,
     };
 
@@ -283,7 +338,7 @@ export function POForm({
             <label className="block text-sm font-medium mb-1">Supplier Product</label>
             <select
               value={supplierProductId}
-              onChange={(e) => setSupplierProductId(e.target.value)}
+              onChange={(e) => handleSupplierProductChange(e.target.value)}
               className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
             >
               <option value="">— Select —</option>
@@ -293,6 +348,32 @@ export function POForm({
                 </option>
               ))}
             </select>
+            {/* Cert type selector: only shown when product has both FSC and PEFC */}
+            {hasBoth && (
+              <div className="mt-2 p-2 border border-border rounded-lg bg-muted/40">
+                <p className="text-xs text-muted-foreground mb-1.5">This product has both FSC and PEFC — select which applies to this PO:</p>
+                <div className="flex gap-3">
+                  <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+                    <input
+                      type="radio"
+                      name="certTypeRadio"
+                      checked={certType === "fsc"}
+                      onChange={() => handleCertTypeSelect("fsc")}
+                    />
+                    FSC
+                  </label>
+                  <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+                    <input
+                      type="radio"
+                      name="certTypeRadio"
+                      checked={certType === "pefc"}
+                      onChange={() => handleCertTypeSelect("pefc")}
+                    />
+                    PEFC
+                  </label>
+                </div>
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Client Product</label>
@@ -361,45 +442,77 @@ export function POForm({
 
         {/* Certification Fields */}
         <div>
-          <h4 className="text-sm font-semibold text-muted-foreground mb-2">FSC Certification</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">FSC License</label>
-              <input
-                name="licenseFsc"
-                value={licenseFsc}
-                onChange={(e) => setLicenseFsc(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-              />
+          <h4 className="text-sm font-semibold text-muted-foreground mb-2">
+            Certification
+            {certType && (
+              <span className="ml-2 text-xs font-medium text-foreground border border-border rounded px-1.5 py-0.5">
+                {certType.toUpperCase()}
+              </span>
+            )}
+          </h4>
+          {certType === "pefc" ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">PEFC Number</label>
+                <input
+                  name="pefc"
+                  value={pefc}
+                  onChange={(e) => setPefc(e.target.value)}
+                  className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
+                  placeholder="e.g. PEFC-2431400"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Chain of Custody</label>
-              <input
-                name="chainOfCustody"
-                value={chainOfCustody}
-                onChange={(e) => setChainOfCustody(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-              />
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">FSC License</label>
+                <input
+                  name="licenseFsc"
+                  value={licenseFsc}
+                  onChange={(e) => setLicenseFsc(e.target.value)}
+                  className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Chain of Custody</label>
+                <input
+                  name="chainOfCustody"
+                  value={chainOfCustody}
+                  onChange={(e) => setChainOfCustody(e.target.value)}
+                  className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Input Claim</label>
+                <input
+                  name="inputClaim"
+                  value={inputClaim}
+                  onChange={(e) => setInputClaim(e.target.value)}
+                  className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Output Claim</label>
+                <input
+                  name="outputClaim"
+                  value={outputClaim}
+                  onChange={(e) => setOutputClaim(e.target.value)}
+                  className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Input Claim</label>
-              <input
-                name="inputClaim"
-                value={inputClaim}
-                onChange={(e) => setInputClaim(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Output Claim</label>
-              <input
-                name="outputClaim"
-                value={outputClaim}
-                onChange={(e) => setOutputClaim(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-              />
-            </div>
-          </div>
+          )}
+          {/* Hidden fields so hidden values still submit */}
+          {certType !== "pefc" && <input type="hidden" name="pefc" value="" />}
+          {certType === "pefc" && (
+            <>
+              <input type="hidden" name="licenseFsc" value="" />
+              <input type="hidden" name="chainOfCustody" value="" />
+              <input type="hidden" name="inputClaim" value="" />
+              <input type="hidden" name="outputClaim" value="" />
+            </>
+          )}
         </div>
 
         {/* Notes */}

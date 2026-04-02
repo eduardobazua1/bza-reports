@@ -81,6 +81,8 @@ export const purchaseOrders = sqliteTable("purchase_orders", {
   chainOfCustody: text("chain_of_custody"),
   inputClaim: text("input_claim"),
   outputClaim: text("output_claim"),
+  certType: text("cert_type", { enum: ["fsc", "pefc"] }), // which certification applies to this PO
+  pefc: text("pefc"), // PEFC certificate number (used when certType = 'pefc')
   status: text("status", { enum: ["active", "completed", "cancelled"] }).notNull().default("active"),
   notes: text("notes"),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),

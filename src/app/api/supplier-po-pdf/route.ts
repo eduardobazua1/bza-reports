@@ -209,12 +209,12 @@ export async function GET(req: NextRequest) {
     .text(`$${fmtCurrency(total)} USD`, TX + 10, y + 16, { width: TW - 28, align: "right", lineBreak: false });
   y += 44;
 
-  // ── FSC NOTE ──────────────────────────────────────────────
-  if (po.licenseFsc || po.inputClaim) {
+  // ── CERTIFICATION NOTE ────────────────────────────────────
+  const certNote = getCertNote(po);
+  if (certNote) {
     doc.rect(M, y, W * 0.7, 20).fill("#f0fdf4");
     doc.fontSize(7).font("Helvetica").fillColor("#166534")
-      .text("FSC-certified material required. Supplier must include valid FSC certificate on all invoices and shipping documents.",
-        M + 8, y + 6, { width: W * 0.7 - 16, lineBreak: false });
+      .text(certNote, M + 8, y + 6, { width: W * 0.7 - 16, lineBreak: false });
     y += 28;
   }
 
@@ -244,6 +244,16 @@ export async function GET(req: NextRequest) {
       "Content-Disposition": `inline; filename="SupplierPO_${po.poNumber}_BZA.pdf"`,
     },
   });
+}
+
+function getCertNote(po: { certType?: string | null; licenseFsc?: string | null; inputClaim?: string | null; pefc?: string | null }): string | null {
+  if (po.certType === "pefc" || (!po.certType && po.pefc)) {
+    return `PEFC-certified material required. Supplier must include valid PEFC certificate on all invoices and shipping documents.`;
+  }
+  if (po.certType === "fsc" || (!po.certType && (po.licenseFsc || po.inputClaim))) {
+    return "FSC-certified material required. Supplier must include valid FSC certificate on all invoices and shipping documents.";
+  }
+  return null;
 }
 
 function formatDate(dateStr: string | null | undefined) {

@@ -86,6 +86,8 @@ export async function createPurchaseOrder(data: {
   chainOfCustody?: string;
   inputClaim?: string;
   outputClaim?: string;
+  certType?: "fsc" | "pefc";
+  pefc?: string;
   notes?: string;
 }) {
   const result = await db.insert(purchaseOrders).values(data).returning();
@@ -110,6 +112,8 @@ export async function updatePurchaseOrder(id: number, data: Partial<{
   chainOfCustody: string;
   inputClaim: string;
   outputClaim: string;
+  certType: "fsc" | "pefc";
+  pefc: string;
   status: "active" | "completed" | "cancelled";
   notes: string;
 }>) {

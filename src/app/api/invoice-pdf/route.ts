@@ -267,13 +267,20 @@ export async function GET(req: NextRequest) {
     y += 6;
   }
 
-  // ── FSC CERTIFICATE ───────────────────────────────────────
+  // ── CERTIFICATION SECTION ─────────────────────────────────
   if (cfg.showFscSection !== false) {
+    const isPefc = po.certType === "pefc";
     doc.fontSize(6.5).font("Helvetica-Bold").fillColor(GRAY)
-      .text("FSC CERTIFICATE", M, y, { lineBreak: false });
+      .text(isPefc ? "PEFC CERTIFICATE" : "FSC CERTIFICATE", M, y, { lineBreak: false });
     y += 9;
-    doc.fontSize(7).font("Helvetica").fillColor(DARK)
-      .text(`Code: ${cfg.fscCode}   ·   Controlled Wood: ${cfg.fscCw}   ·   Expiration: ${cfg.fscExpiration}`, M, y, { width: W, lineBreak: false });
+    if (isPefc) {
+      const pefcNum = po.pefc || "";
+      doc.fontSize(7).font("Helvetica").fillColor(DARK)
+        .text(`PEFC Number: ${pefcNum || "—"}`, M, y, { width: W, lineBreak: false });
+    } else {
+      doc.fontSize(7).font("Helvetica").fillColor(DARK)
+        .text(`Code: ${cfg.fscCode}   ·   Controlled Wood: ${cfg.fscCw}   ·   Expiration: ${cfg.fscExpiration}`, M, y, { width: W, lineBreak: false });
+    }
     y += 10;
   }
 

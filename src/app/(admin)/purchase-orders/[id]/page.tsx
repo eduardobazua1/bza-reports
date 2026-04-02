@@ -29,7 +29,7 @@ export default async function PurchaseOrderDetailPage({
     getPurchaseOrder(Number(id)),
     getClients(),
     getSuppliers(),
-    db.select({ id: products.id, name: products.name, grade: products.grade }).from(products).orderBy(products.name),
+    db.select({ id: products.id, name: products.name, grade: products.grade, fscLicense: products.fscLicense, chainOfCustody: products.chainOfCustody, inputClaim: products.inputClaim, outputClaim: products.outputClaim, pefc: products.pefc }).from(products).orderBy(products.name),
   ]);
 
   if (!po) notFound();

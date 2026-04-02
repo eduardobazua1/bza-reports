@@ -22,6 +22,33 @@ type Product = {
 
 const GRADES = ["NBSK", "SBSK", "BHK", "BCTMP", "UKP", "Other"];
 
+function CertBadges({ product: p }: { product: Product }) {
+  const hasFsc = !!(p.fscLicense || p.inputClaim || p.chainOfCustody || p.outputClaim);
+  const hasPefc = !!p.pefc;
+
+  if (!hasFsc && !hasPefc) return <span className="text-muted-foreground text-sm">—</span>;
+
+  if (hasFsc) return (
+    <div className="flex flex-col gap-0.5 text-sm">
+      <span className="font-medium text-foreground">FSC</span>
+      <div className="flex flex-col gap-0.5 pl-1">
+        {p.inputClaim && <span className="text-xs text-muted-foreground">{p.inputClaim}</span>}
+        {p.fscLicense && <span className="text-xs font-mono text-muted-foreground">{p.fscLicense}</span>}
+        {p.chainOfCustody && <span className="text-xs font-mono text-muted-foreground">{p.chainOfCustody}</span>}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col gap-0.5 text-sm">
+      <span className="font-medium text-foreground">PEFC</span>
+      <div className="pl-1">
+        <span className="text-xs font-mono text-muted-foreground">{p.pefc}</span>
+      </div>
+    </div>
+  );
+}
+
 function GradeSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <select
@@ -75,6 +102,16 @@ function formFromProduct(p: Product): FormState {
   };
 }
 
+type CertMode = "none" | "fsc" | "pefc";
+
+function certModeFromState(state: FormState): CertMode {
+  const hasFsc = !!(state.fscLicense || state.inputClaim || state.chainOfCustody || state.outputClaim);
+  const hasPefc = !!state.pefc;
+  if (hasFsc) return "fsc";
+  if (hasPefc) return "pefc";
+  return "none";
+}
+
 function FormRow({
   state,
   onChange,
@@ -92,102 +129,96 @@ function FormRow({
   autoFocus?: boolean;
   rowClass?: string;
 }) {
+  const [certMode, setCertMode] = useState<CertMode>(() => certModeFromState(state));
   const inp = "w-full border border-border rounded-lg px-2 py-1.5 text-sm bg-background";
+
+  function handleCertMode(mode: CertMode) {
+    setCertMode(mode);
+    if (mode === "none") {
+      onChange({ fscLicense: "", inputClaim: "", chainOfCustody: "", outputClaim: "", pefc: "" });
+    } else if (mode === "pefc") {
+      onChange({ fscLicense: "", inputClaim: "", chainOfCustody: "", outputClaim: "" });
+    } else if (mode === "fsc") {
+      onChange({ pefc: "" });
+    }
+  }
+
+  const showFsc = certMode === "fsc" || certMode === "both";
+  const showPefc = certMode === "pefc" || certMode === "both";
+
   return (
-    <>
-      {/* Row 1: main fields */}
-      <tr className={rowClass ?? "bg-teal-50/40 border-t border-border"}>
-        <td className="p-2">
-          <input
-            autoFocus={autoFocus}
-            value={state.name}
-            onChange={(e) => onChange({ name: e.target.value })}
-            placeholder="Product name *"
-            className={inp}
-            onKeyDown={(e) => { if (e.key === "Enter") onSave(); if (e.key === "Escape") onCancel(); }}
-          />
-        </td>
-        <td className="p-2">
-          <GradeSelect value={state.grade} onChange={(v) => onChange({ grade: v })} />
-        </td>
-        <td className="p-2">
-          <input
-            value={state.inputClaim}
-            onChange={(e) => onChange({ inputClaim: e.target.value })}
-            placeholder="Input claim"
-            className={inp}
-          />
-        </td>
-        <td className="p-2">
-          <input
-            value={state.chainOfCustody}
-            onChange={(e) => onChange({ chainOfCustody: e.target.value })}
-            placeholder="Chain of custody"
-            className={inp}
-          />
-        </td>
-        <td className="p-2">
-          <input
-            value={state.fscLicense}
-            onChange={(e) => onChange({ fscLicense: e.target.value })}
-            placeholder="FSC license"
-            className={inp}
-          />
-        </td>
-        <td className="p-2">
-          <input
-            value={state.pefc}
-            onChange={(e) => onChange({ pefc: e.target.value })}
-            placeholder="PEFC (optional)"
-            className={inp}
-          />
-        </td>
-        <td className="p-2 text-right" rowSpan={2}>
-          <div className="flex gap-2 justify-end h-full items-start pt-1">
+    <tr className={rowClass ?? "bg-teal-50/40 border-t border-b border-border"}>
+      {/* Name */}
+      <td className="p-2 align-top">
+        <input
+          autoFocus={autoFocus}
+          value={state.name}
+          onChange={(e) => onChange({ name: e.target.value })}
+          placeholder="Product name *"
+          className={inp}
+          onKeyDown={(e) => { if (e.key === "Enter") onSave(); if (e.key === "Escape") onCancel(); }}
+        />
+      </td>
+      {/* Grade */}
+      <td className="p-2 align-top">
+        <GradeSelect value={state.grade} onChange={(v) => onChange({ grade: v })} />
+      </td>
+      {/* Certifications */}
+      <td className="p-2 align-top">
+        {/* Cert type selector */}
+        <div className="flex gap-1 mb-2">
+          {(["none", "fsc", "pefc"] as CertMode[]).map((m) => (
             <button
-              onClick={onSave}
-              disabled={isPending || !state.name.trim()}
-              className="bg-primary text-primary-foreground px-3 py-1.5 rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-50"
+              key={m}
+              type="button"
+              onClick={() => handleCertMode(m)}
+              className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${
+                certMode === m
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "border-border text-muted-foreground hover:bg-muted"
+              }`}
             >
-              {isPending ? "Saving..." : "Save"}
+              {m === "none" ? "None" : m.toUpperCase()}
             </button>
-            <button
-              onClick={onCancel}
-              className="border border-border px-3 py-1.5 rounded-md text-sm hover:bg-muted transition-colors"
-            >
-              Cancel
-            </button>
+          ))}
+        </div>
+        {/* FSC fields */}
+        {showFsc && (
+          <div className="flex flex-col gap-1 mb-2">
+            <span className="text-xs font-medium text-muted-foreground">FSC</span>
+            <input value={state.fscLicense} onChange={(e) => onChange({ fscLicense: e.target.value })} placeholder="License (e.g. FSC-C005174)" className={inp} />
+            <input value={state.inputClaim} onChange={(e) => onChange({ inputClaim: e.target.value })} placeholder="Input claim" className={inp} />
+            <input value={state.chainOfCustody} onChange={(e) => onChange({ chainOfCustody: e.target.value })} placeholder="Chain of custody" className={inp} />
+            <input value={state.outputClaim} onChange={(e) => onChange({ outputClaim: e.target.value })} placeholder="Output claim" className={inp} />
           </div>
-        </td>
-      </tr>
-      {/* Row 2: secondary fields */}
-      <tr className={rowClass ?? "bg-teal-50/40 border-b border-border"}>
-        <td className="p-2" colSpan={2}>
-          <input
-            value={state.description}
-            onChange={(e) => onChange({ description: e.target.value })}
-            placeholder="Description"
-            className={inp}
-          />
-        </td>
-        <td className="p-2">
-          <input
-            value={state.outputClaim}
-            onChange={(e) => onChange({ outputClaim: e.target.value })}
-            placeholder="Output claim"
-            className={inp}
-          />
-        </td>
-        <td className="p-2" colSpan={2}>
-          <input
-            value={state.notes}
-            onChange={(e) => onChange({ notes: e.target.value })}
-            placeholder="Notes"
-            className={inp}
-          />
-        </td>
-      </tr>
-    </>
+        )}
+        {/* PEFC fields */}
+        {showPefc && (
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-muted-foreground">PEFC</span>
+            <input value={state.pefc} onChange={(e) => onChange({ pefc: e.target.value })} placeholder="PEFC number (e.g. PEFC-2431400)" className={inp} />
+          </div>
+        )}
+      </td>
+      {/* Actions */}
+      <td className="p-2 text-right align-top">
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={onSave}
+            disabled={isPending || !state.name.trim()}
+            className="bg-primary text-primary-foreground px-3 py-1.5 rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-50"
+          >
+            {isPending ? "Saving..." : "Save"}
+          </button>
+          <button
+            onClick={onCancel}
+            className="border border-border px-3 py-1.5 rounded-md text-sm hover:bg-muted transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </td>
+    </tr>
   );
 }
 
@@ -277,10 +308,7 @@ export function ProductsClient({ products }: { products: Product[] }) {
             <tr>
               <th className="text-left p-3 text-sm font-medium text-muted-foreground">Name</th>
               <th className="text-left p-3 text-sm font-medium text-muted-foreground">Grade</th>
-              <th className="text-left p-3 text-sm font-medium text-muted-foreground">Input Claim</th>
-              <th className="text-left p-3 text-sm font-medium text-muted-foreground">Chain of Custody</th>
-              <th className="text-left p-3 text-sm font-medium text-muted-foreground">FSC License</th>
-              <th className="text-left p-3 text-sm font-medium text-muted-foreground">PEFC</th>
+              <th className="text-left p-3 text-sm font-medium text-muted-foreground">Certifications</th>
               <th className="text-right p-3 text-sm font-medium text-muted-foreground">Actions</th>
             </tr>
           </thead>
@@ -300,7 +328,7 @@ export function ProductsClient({ products }: { products: Product[] }) {
             {/* Empty state */}
             {products.length === 0 && !showAddRow && (
               <tr>
-                <td colSpan={7} className="p-8 text-center text-sm text-muted-foreground">
+                <td colSpan={4} className="p-8 text-center text-sm text-muted-foreground">
                   No products yet. Click &ldquo;+ Add Product&rdquo; to create one.
                 </td>
               </tr>
@@ -335,10 +363,9 @@ export function ProductsClient({ products }: { products: Product[] }) {
                       <span className="text-muted-foreground">—</span>
                     )}
                   </td>
-                  <td className="p-3 text-sm text-muted-foreground">{p.inputClaim || "—"}</td>
-                  <td className="p-3 text-sm font-mono text-xs text-muted-foreground">{p.chainOfCustody || "—"}</td>
-                  <td className="p-3 text-sm font-mono text-xs text-muted-foreground">{p.fscLicense || "—"}</td>
-                  <td className="p-3 text-sm font-mono text-xs text-muted-foreground">{p.pefc || "—"}</td>
+                  <td className="p-3">
+                    <CertBadges product={p} />
+                  </td>
                   <td className="p-3 text-right">
                     <div className="flex gap-2 justify-end">
                       <button
