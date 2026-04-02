@@ -238,6 +238,13 @@ export const portalCodes = sqliteTable("portal_codes", {
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
+// App settings - key-value store for configurable settings
+export const appSettings = sqliteTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(), // JSON
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
 // Documents attached to invoices (BL, PL, Invoice PDF, etc.)
 export const documents = sqliteTable("documents", {
   id: integer("id").primaryKey({ autoIncrement: true }),

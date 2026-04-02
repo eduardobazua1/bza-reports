@@ -53,9 +53,14 @@ export async function updateSupplier(id: number, data: {
   contactName?: string;
   contactEmail?: string;
   phone?: string;
+  fscLicense?: string;
+  fscChainOfCustody?: string;
+  fscInputClaim?: string;
+  fscOutputClaim?: string;
 }) {
   await db.update(suppliers).set({ ...data, updatedAt: new Date().toISOString() }).where(eq(suppliers.id, id));
   revalidatePath("/suppliers");
+  revalidatePath(`/suppliers/${id}`);
 }
 
 export async function deleteSupplier(id: number) {

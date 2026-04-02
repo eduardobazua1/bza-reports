@@ -3,6 +3,7 @@ import { suppliers, supplierPayments, purchaseOrders, invoices, clients } from "
 import { eq, sql, count } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { formatCurrency, formatNumber, formatDate } from "@/lib/utils";
+import { SupplierFscEdit } from "@/components/supplier-fsc-edit";
 
 export default async function SupplierDetailPage({
   params,
@@ -73,10 +74,12 @@ export default async function SupplierDetailPage({
         </div>
         <div className="bg-white rounded-md shadow-sm p-4">
           <p className="text-xs text-stone-500 uppercase tracking-wide">FSC License</p>
-          <p className="text-sm font-medium mt-1">{supplier.fscLicense || "-"}</p>
-          <p className="text-xs text-stone-400">{supplier.fscInputClaim || "-"}</p>
+          <p className="text-sm font-medium mt-1">{supplier.fscLicense || "—"}</p>
+          <p className="text-xs text-stone-400">{supplier.fscInputClaim || "—"}</p>
         </div>
       </div>
+
+      <SupplierFscEdit supplier={supplier} />
 
       {/* Purchase Orders */}
       <div className="bg-white rounded-md shadow-sm">

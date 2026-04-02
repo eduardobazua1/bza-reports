@@ -1,49 +1,62 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { invoices, purchaseOrders, clients, suppliers } from "@/db/schema";
+import { invoices, purchaseOrders, clients, suppliers, appSettings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
-const BZA = {
-  name: "BZA International Services, LLC",
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const PDFDocument = require("pdfkit");
+
+const DEFAULTS = {
+  companyName: "BZA International Services, LLC",
   address1: "1209 S. 10th St. Suite A #583",
   address2: "McAllen, TX 78501 US",
   phone: "+15203317869",
   email: "accounting@bza-is.com",
   website: "www.bza-is.com",
   taxId: "32-0655438",
-  bank: {
-    name: "Vantage Bank",
-    address: "1705 N. 23rd St. McAllen, TX 78501",
-    beneficiary: "BZA International Services, LLC",
-    account: "107945161",
-    routing: "114915272",
-    swift: "ITNBUS44",
-  },
-  fsc: {
-    code: "CU-COC-892954",
-    cw: "CU-CW-892954",
-    expiration: "29-01-28",
-  },
+  primaryColor: "#0d3d3b",
+  accentColor: "#4fd1c5",
+  bankName: "Vantage Bank",
+  bankAddress: "1705 N. 23rd St. McAllen, TX 78501",
+  bankBeneficiary: "BZA International Services, LLC",
+  bankAccount: "107945161",
+  bankRouting: "114915272",
+  bankSwift: "ITNBUS44",
+  fscCode: "CU-COC-892954",
+  fscCw: "CU-CW-892954",
+  fscExpiration: "29-01-28",
+  footerNote: "All invoice amounts are stated in USD.",
+  showPaymentInstructions: true,
+  showFscSection: true,
+  invoiceNotes: "",
 };
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const PDFDocument = require("pdfkit");
+async function getSettings() {
+  const row = await db.query.appSettings.findFirst({ where: eq(appSettings.key, "invoice") });
+  if (!row) return DEFAULTS;
+  try { return { ...DEFAULTS, ...JSON.parse(row.value) }; } catch { return DEFAULTS; }
+}
 
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const invoiceNumber = sp.get("invoice");
   if (!invoiceNumber) return NextResponse.json({ error: "invoice param required" }, { status: 400 });
 
-  const inv = await db.query.invoices.findFirst({ where: eq(invoices.invoiceNumber, invoiceNumber) });
+  const [inv, cfg] = await Promise.all([
+    db.query.invoices.findFirst({ where: eq(invoices.invoiceNumber, invoiceNumber) }),
+    getSettings(),
+  ]);
   if (!inv) return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
 
   const po = await db.query.purchaseOrders.findFirst({ where: eq(purchaseOrders.id, inv.purchaseOrderId) });
   if (!po) return NextResponse.json({ error: "PO not found" }, { status: 404 });
 
-  const client = await db.query.clients.findFirst({ where: eq(clients.id, po.clientId) });
-  const supplier = await db.query.suppliers.findFirst({ where: eq(suppliers.id, po.supplierId) });
+  const [client, supplier] = await Promise.all([
+    db.query.clients.findFirst({ where: eq(clients.id, po.clientId) }),
+    db.query.suppliers.findFirst({ where: eq(suppliers.id, po.supplierId) }),
+  ]);
 
   const price = inv.sellPriceOverride ?? po.sellPrice;
   const total = inv.quantityTons * price;
@@ -55,7 +68,6 @@ export async function GET(req: NextRequest) {
     return d.toISOString().split("T")[0];
   })();
 
-  // Product line: e.g. "Woodpulp - Softwood\nCascade FSC\nControlled Wood"
   const productName = inv.item || po.product || "Woodpulp";
   const supplierShortName = (supplier?.name || "").split(" ")[0];
   const inputClaim = supplier?.fscInputClaim || po.inputClaim || "";
@@ -65,7 +77,6 @@ export async function GET(req: NextRequest) {
     inputClaim,
   ].filter(Boolean).join("\n");
 
-  // Bales display
   const balesDisplay = inv.balesCount && inv.unitsPerBale
     ? `${inv.balesCount}/${inv.unitsPerBale}`
     : inv.balesCount ? String(inv.balesCount) : "";
@@ -74,153 +85,191 @@ export async function GET(req: NextRequest) {
   const chunks: Buffer[] = [];
   doc.on("data", (c: Buffer) => chunks.push(c));
 
-  const M = 45;
-  const W = 612 - M * 2;
-  const ORANGE = "#E8622A";
-  const DARK = "#1a1a1a";
-  const GRAY = "#777777";
-  const LIGHT = "#f5f5f4";
+  const M = 48;       // margin
+  const W = 612 - M * 2;  // content width = 516
+  const TEAL  = cfg.primaryColor;   // #0d3d3b
+  const CYAN  = cfg.accentColor;    // #4fd1c5
+  const DARK  = "#1c1917";
+  const GRAY  = "#6b7280";
+  const LGRAY = "#f3f4f6";
+  const RULE  = "#d1d5db";
 
-  // ── TOP HEADER ───────────────────────────────────────────
-  let y = M;
+  let y = M;  // current Y cursor (we manage it ourselves)
 
-  // Logo circle top-right
-  doc.circle(612 - M - 20, M + 20, 22).fill(ORANGE);
-  doc.fontSize(22).font("Helvetica-Bold").fillColor("white").text("B", 612 - M - 33, M + 9);
+  // ── CYAN TOP BAR ─────────────────────────────────────────
+  doc.rect(0, 0, 612, 3).fill(CYAN);
 
-  // BZA info top-left
-  doc.fontSize(11).font("Helvetica-Bold").fillColor(DARK).text(BZA.name, M, y);
-  y += 13;
-  doc.fontSize(7.5).font("Helvetica").fillColor(GRAY);
-  const headerLines = [BZA.address1, BZA.address2, BZA.phone, BZA.email, BZA.website, `TAX ID: ${BZA.taxId}`];
-  headerLines.forEach(line => { doc.text(line, M, y); y += 10; });
+  // ── LOGO ─────────────────────────────────────────────────
+  // "BZA" in teal, "." in cyan — measure BZA width before drawing
+  doc.fontSize(20).font("Helvetica-Bold");
+  const bzaW = doc.widthOfString("BZA");
+  doc.fillColor(TEAL).text("BZA", M, y, { continued: true, lineBreak: false });
+  doc.fillColor(CYAN).text(".", { lineBreak: false });
 
-  y = M + 90;
+  // ── COMPANY INFO (right-aligned block) ───────────────────
+  const INFO_X = 380;
+  const INFO_W = 612 - M - INFO_X;
+  doc.fontSize(7).font("Helvetica").fillColor(GRAY);
+  doc.text(cfg.companyName,        INFO_X, y,      { width: INFO_W, align: "right" });
+  doc.text(cfg.address1,           INFO_X, y + 10, { width: INFO_W, align: "right" });
+  doc.text(cfg.address2,           INFO_X, y + 19, { width: INFO_W, align: "right" });
+  doc.text(cfg.phone,              INFO_X, y + 28, { width: INFO_W, align: "right" });
+  doc.text(cfg.email,              INFO_X, y + 37, { width: INFO_W, align: "right" });
+  doc.text(`Tax ID: ${cfg.taxId}`, INFO_X, y + 46, { width: INFO_W, align: "right" });
 
-  // ── INVOICE TITLE ────────────────────────────────────────
-  doc.fontSize(22).font("Helvetica-Bold").fillColor(ORANGE).text("INVOICE", M, y);
-  y += 30;
+  y += 64;
 
-  // ── BILL TO / SHIP TO + INVOICE META ────────────────────
-  const c1 = M, c2 = M + 165, c3 = M + 330, c4 = M + 430;
+  // Hairline rule
+  doc.moveTo(M, y).lineTo(M + W, y).strokeColor(RULE).lineWidth(0.5).stroke();
+  y += 12;
 
-  // Column labels
-  doc.fontSize(6.5).font("Helvetica").fillColor(GRAY);
-  doc.text("BILL TO", c1, y);
-  doc.text("SHIP TO", c2, y);
-  doc.text("SHIP DATE", c3, y);
-  doc.text("INVOICE", c4, y);
+  // ── INVOICE TITLE ─────────────────────────────────────────
+  doc.fontSize(22).font("Helvetica-Bold").fillColor(TEAL).text("INVOICE", M, y, { lineBreak: false });
+
+  // Invoice # badge (top-right of title row)
+  const BADGE_W = 148;
+  const BADGE_X = M + W - BADGE_W;
+  const BADGE_H = 32;
+  doc.rect(BADGE_X, y - 2, BADGE_W, BADGE_H).fill(TEAL);
+  doc.fontSize(6.5).font("Helvetica-Bold").fillColor(CYAN).text("INVOICE #", BADGE_X + 8, y + 3);
+  doc.fontSize(9).font("Helvetica-Bold").fillColor("white").text(invoiceNumber, BADGE_X + 8, y + 13, { width: BADGE_W - 16 });
+
+  y += 38;
+
+  // ── ADDRESS + META GRID ───────────────────────────────────
+  const C1 = M;
+  const C2 = M + 160;
+  const C3 = M + 335;
+  const C4 = M + 440;
+
+  // Labels row
+  doc.fontSize(6).font("Helvetica-Bold").fillColor(GRAY);
+  doc.text("BILL TO",    C1, y);
+  doc.text("SHIP TO",    C2, y);
+  doc.text("SHIP DATE",  C3, y);
+  doc.text("INVOICE DATE", C4, y);
   y += 10;
 
-  const billLines = [
-    client?.name || "",
-    ...(client?.billAddress || "").split("\n").filter(Boolean),
-    client?.rfc || "",
-  ].filter(Boolean);
+  const billLines = [client?.name || "", ...(client?.billAddress || "").split("\n").filter(Boolean), client?.rfc || ""].filter(Boolean);
+  const shipLines = [client?.name || "", ...(client?.shipAddress || client?.billAddress || "").split("\n").filter(Boolean)].filter(Boolean);
 
-  const shipLines = [
-    client?.name || "",
-    ...(client?.shipAddress || client?.billAddress || "").split("\n").filter(Boolean),
-  ].filter(Boolean);
-
+  // Place address columns
   doc.fontSize(7.5).font("Helvetica").fillColor(DARK);
-  let yBill = y, yShip = y;
-  billLines.forEach(l => { doc.text(l, c1, yBill, { width: 155 }); yBill += 9; });
-  shipLines.forEach(l => { doc.text(l, c2, yShip, { width: 155 }); yShip += 9; });
+  let yB = y, yS = y;
+  billLines.forEach(l => { doc.text(l, C1, yB, { width: 152, lineBreak: false }); yB += 10; });
+  shipLines.forEach(l => { doc.text(l, C2, yS, { width: 165, lineBreak: false }); yS += 10; });
 
-  // Meta right block
-  const metaRows: [string, string, string, string][] = [
-    ["SHIP DATE", formatDate(inv.shipmentDate), "INVOICE", invoiceNumber],
-    ["SHIP VIA", po.terms || "", "DATE", formatDate(invoiceDate)],
-    ["TRACKING#", inv.vehicleId || "", "TERMS", `Net ${termsDays}`],
-    ["", "", "DUE DATE", formatDate(dueDate)],
-  ];
-  let yMeta = y;
-  metaRows.forEach(([l1, v1, l2, v2]) => {
-    doc.fontSize(6.5).fillColor(GRAY).text(l1, c3, yMeta);
-    doc.fontSize(7.5).fillColor(DARK).text(v1, c3 + 55, yMeta, { width: 75 });
-    doc.fontSize(6.5).fillColor(GRAY).text(l2, c4, yMeta);
-    doc.fontSize(7.5).fillColor(DARK).text(v2, c4 + 55, yMeta, { width: 612 - M - c4 - 55 });
-    yMeta += 10;
-  });
+  // Right meta block
+  doc.text(formatDate(inv.shipmentDate),  C3, y);
+  doc.text(formatDate(invoiceDate),       C4, y);
+  y += 12;
+  doc.fontSize(6).fillColor(GRAY);
+  doc.text("SHIP VIA",     C3, y);
+  doc.text("TERMS",        C4, y);
+  y += 8;
+  doc.fontSize(7.5).fillColor(DARK);
+  doc.text(po.terms || "—",          C3, y, { width: 100 });
+  doc.text(`Net ${termsDays}`,        C4, y);
+  y += 12;
+  doc.fontSize(6).fillColor(GRAY).text("DUE DATE",  C4, y); y += 8;
+  doc.fontSize(7.5).fillColor(DARK).text(formatDate(dueDate), C4, y);
 
-  y = Math.max(yBill, yShip, yMeta) + 14;
+  y = Math.max(yB, yS) + 16;
 
-  // ── PO / BOL / DESTINATION ───────────────────────────────
-  doc.fontSize(6.5).fillColor(GRAY);
-  doc.text("PURCHASE ORDER", c1, y);
-  doc.text("BOL #", c2, y);
-  doc.text("DESTINATION", c4, y);
-  y += 10;
+  // ── PO / BOL ROW ─────────────────────────────────────────
+  doc.fontSize(6).font("Helvetica-Bold").fillColor(GRAY);
+  doc.text("PURCHASE ORDER", C1, y);
+  if (inv.blNumber) doc.text("BOL #", C2, y);
+  if (inv.vehicleId) doc.text("VEHICLE / TRACKING", C3, y);
+  if (inv.destination) doc.text("DESTINATION", C4, y);
+  y += 9;
   doc.fontSize(8).font("Helvetica").fillColor(DARK);
-  doc.text(inv.salesDocument || po.clientPoNumber || po.poNumber, c1, y);
-  doc.text(inv.blNumber || "", c2, y);
-  doc.text(inv.destination || "", c4, y);
+  doc.text(inv.salesDocument || po.clientPoNumber || po.poNumber, C1, y);
+  if (inv.blNumber) doc.text(inv.blNumber, C2, y);
+  if (inv.vehicleId) doc.text(inv.vehicleId, C3, y);
+  if (inv.destination) doc.text(inv.destination, C4, y);
   y += 20;
 
-  // ── TABLE HEADER ─────────────────────────────────────────
-  doc.rect(M, y, W, 14).fill(ORANGE);
-  doc.fontSize(7).font("Helvetica-Bold").fillColor("white");
-  const tc = { date: M + 3, product: M + 72, bales: M + 302, admt: M + 370, price: M + 420, total: M + 488 };
-  doc.text("DATE", tc.date, y + 4);
-  doc.text("PRODUCT", tc.product, y + 4);
-  doc.text("BALES/UNIT", tc.bales, y + 4);
-  doc.text("ADMT", tc.admt, y + 4);
-  doc.text("PRICE/TON", tc.price, y + 4);
-  doc.text("TOTAL", tc.total, y + 4);
-  y += 14;
+  // ── LINE ITEMS TABLE ──────────────────────────────────────
+  const TC = { date: M + 4, product: M + 70, bales: M + 306, admt: M + 372, price: M + 424, total: M + 482 };
 
-  // ── LINE ITEM ────────────────────────────────────────────
-  const rowH = 42;
-  doc.rect(M, y, W, rowH).fill(LIGHT);
+  // Table header
+  doc.rect(M, y, W, 17).fill(TEAL);
+  doc.fontSize(6.5).font("Helvetica-Bold").fillColor("white");
+  doc.text("DATE",       TC.date,    y + 5);
+  doc.text("PRODUCT",    TC.product, y + 5);
+  doc.text("BALES/UNIT", TC.bales,   y + 5);
+  doc.text("ADMT",       TC.admt,    y + 5);
+  doc.text("PRICE/TON",  TC.price,   y + 5);
+  doc.text("TOTAL",      TC.total,   y + 5);
+  y += 17;
+
+  // Item row
+  const ROW_H = 44;
+  doc.rect(M, y, W, ROW_H).fill(LGRAY);
   doc.fontSize(7.5).font("Helvetica").fillColor(DARK);
-  doc.text(formatDate(inv.shipmentDate || invoiceDate), tc.date, y + 6);
-  doc.text(productLine, tc.product, y + 6, { width: 222, lineGap: 2 });
-  doc.text(balesDisplay, tc.bales, y + 6);
-  doc.text(inv.quantityTons.toFixed(3), tc.admt, y + 6);
-  doc.text(price.toFixed(2), tc.price, y + 6);
-  doc.text(total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }), tc.total, y + 6);
-  y += rowH + 2;
+  doc.text(formatDate(inv.shipmentDate || invoiceDate), TC.date,    y + 8);
+  doc.text(productLine,                                  TC.product, y + 8, { width: 228, lineGap: 1.5 });
+  doc.text(balesDisplay,                                 TC.bales,   y + 8);
+  doc.text(inv.quantityTons.toFixed(3),                  TC.admt,    y + 8);
+  doc.text(price.toFixed(2),                             TC.price,   y + 8);
+  doc.text(fmtCurrency(total),                           TC.total,   y + 8);
+  y += ROW_H;
 
-  // Divider
-  doc.moveTo(M, y).lineTo(M + W, y).strokeColor("#dddddd").lineWidth(0.5).stroke();
+  // Rule below table
+  doc.moveTo(M, y).lineTo(M + W, y).strokeColor(RULE).lineWidth(0.5).stroke();
   y += 14;
 
-  // ── PAYMENT INSTRUCTIONS (left) + BALANCE DUE (right) ───
-  const rightX = M + 310;
+  // ── BALANCE DUE ───────────────────────────────────────────
+  const BAL_W = 210;
+  const BAL_X = M + W - BAL_W;
+  doc.rect(BAL_X, y, BAL_W, 30).fill(TEAL);
+  doc.fontSize(6.5).font("Helvetica-Bold").fillColor(CYAN).text("BALANCE DUE", BAL_X + 10, y + 6);
+  doc.fontSize(12).font("Helvetica-Bold").fillColor("white").text(`USD ${fmtCurrency(total)}`, BAL_X + 10, y + 15, { width: BAL_W - 20, align: "right" });
+  y += 42;
 
-  // Balance Due box
-  doc.fontSize(6.5).font("Helvetica").fillColor(GRAY).text("BALANCE DUE", rightX, y);
-  doc.fontSize(14).font("Helvetica-Bold").fillColor(DARK)
-    .text(`USD ${total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, rightX, y + 12);
+  // ── PAYMENT INSTRUCTIONS ──────────────────────────────────
+  if (cfg.showPaymentInstructions !== false) {
+    doc.fontSize(6.5).font("Helvetica-Bold").fillColor(GRAY).text("PAYMENT INSTRUCTIONS", M, y);
+    y += 10;
+    doc.fontSize(7).font("Helvetica").fillColor(DARK);
+    const payLines = [
+      `Bank: ${cfg.bankName}`,
+      `Address: ${cfg.bankAddress}`,
+      `Beneficiary: ${cfg.bankBeneficiary}`,
+      `Account #: ${cfg.bankAccount}  ·  Routing: ${cfg.bankRouting}`,
+      `SWIFT: ${cfg.bankSwift}`,
+    ];
+    payLines.forEach(l => { doc.text(l, M, y); y += 9; });
+    y += 8;
+  }
 
-  doc.fontSize(7).font("Helvetica-Bold").fillColor(GRAY).text("PAYMENT INSTRUCTIONS", M, y);
-  y += 11;
-  doc.font("Helvetica").fillColor(DARK).fontSize(7);
-  const payLines = [
-    `Bank Name: ${BZA.bank.name}`,
-    `Bank Address: ${BZA.bank.address}`,
-    `Beneficiary: ${BZA.bank.beneficiary}`,
-    `Account: ${BZA.bank.account}`,
-    `Routing: ${BZA.bank.routing}`,
-    `SWIFT Code: ${BZA.bank.swift}`,
-  ];
-  payLines.forEach(l => { doc.text(l, M, y); y += 10; });
+  // ── FSC CERTIFICATE ───────────────────────────────────────
+  if (cfg.showFscSection !== false) {
+    doc.fontSize(6.5).font("Helvetica-Bold").fillColor(GRAY).text("FSC CERTIFICATE", M, y);
+    y += 10;
+    doc.fontSize(7).font("Helvetica").fillColor(DARK);
+    doc.text(`Code: ${cfg.fscCode}   ·   Controlled Wood: ${cfg.fscCw}   ·   Expiration: ${cfg.fscExpiration}`, M, y, { width: W * 0.7 });
+    y += 10;
+  }
 
-  y += 10;
+  // ── NOTES ─────────────────────────────────────────────────
+  if (cfg.invoiceNotes) {
+    y += 6;
+    doc.fontSize(7).font("Helvetica").fillColor(GRAY).text(cfg.invoiceNotes, M, y, { width: W });
+  }
 
-  // ── FSC CERTIFICATE INFO ─────────────────────────────────
-  doc.fontSize(7).font("Helvetica-Bold").fillColor(GRAY).text("Certificate Information FSC:", M, y);
-  y += 10;
-  doc.font("Helvetica").fillColor(DARK);
-  doc.text(`Certificate Code: ${BZA.fsc.code}`, M, y); y += 10;
-  doc.text(`Controlled Wood Certification: ${BZA.fsc.cw}`, M, y); y += 10;
-  doc.text(`Expiration Date: ${BZA.fsc.expiration}`, M, y);
-
-  // ── FOOTER ───────────────────────────────────────────────
-  doc.fontSize(7).fillColor(GRAY)
-    .text("All invoice amounts are stated in USD.", M, 755)
-    .text("Page 1 of 1", M, 765);
+  // ── FOOTER ────────────────────────────────────────────────
+  const FOOTER_Y = 746;
+  doc.rect(0, FOOTER_Y, 612, 46).fill(TEAL);
+  doc.fontSize(7).font("Helvetica").fillColor(CYAN)
+    .text(cfg.footerNote, M, FOOTER_Y + 8, { width: W, align: "center" });
+  doc.fontSize(6.5).fillColor("white").opacity(0.6)
+    .text(`${cfg.companyName}  ·  ${cfg.email}  ·  ${cfg.website}`, M, FOOTER_Y + 20, { width: W, align: "center" });
+  doc.opacity(1);
+  doc.fontSize(6).fillColor("white").opacity(0.4)
+    .text("Page 1 of 1", M, FOOTER_Y + 32, { width: W, align: "center" });
+  doc.opacity(1);
 
   doc.end();
   const buffer = await new Promise<Buffer>(resolve => doc.on("end", () => resolve(Buffer.concat(chunks))));
@@ -237,4 +286,8 @@ function formatDate(dateStr: string | null | undefined) {
   if (!dateStr) return "";
   const d = new Date(dateStr + "T12:00:00");
   return d.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
+}
+
+function fmtCurrency(n: number) {
+  return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
