@@ -5,7 +5,14 @@ import { POForm } from "@/components/po-form";
 import { InvoiceForm } from "@/components/invoice-form";
 
 type Client = { id: number; name: string };
-type Supplier = { id: number; name: string };
+type Supplier = {
+  id: number;
+  name: string;
+  fscLicense?: string | null;
+  fscChainOfCustody?: string | null;
+  fscInputClaim?: string | null;
+  fscOutputClaim?: string | null;
+};
 
 type PurchaseOrder = {
   id: number;

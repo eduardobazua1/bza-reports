@@ -12,6 +12,10 @@ type Client = {
 type Supplier = {
   id: number;
   name: string;
+  fscLicense?: string | null;
+  fscChainOfCustody?: string | null;
+  fscInputClaim?: string | null;
+  fscOutputClaim?: string | null;
 };
 
 type PurchaseOrder = {
@@ -79,6 +83,20 @@ export function POForm({
 }) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+
+  // Controlled FSC fields for auto-fill
+  const [licenseFsc, setLicenseFsc] = useState(purchaseOrder?.licenseFsc || "");
+  const [chainOfCustody, setChainOfCustody] = useState(purchaseOrder?.chainOfCustody || "");
+  const [inputClaim, setInputClaim] = useState(purchaseOrder?.inputClaim || "");
+  const [outputClaim, setOutputClaim] = useState(purchaseOrder?.outputClaim || "");
+
+  function handleSupplierChange(supplierId: string) {
+    const supplier = suppliers.find(s => s.id === Number(supplierId));
+    if (supplier?.fscLicense) setLicenseFsc(supplier.fscLicense);
+    if (supplier?.fscChainOfCustody) setChainOfCustody(supplier.fscChainOfCustody);
+    if (supplier?.fscInputClaim) setInputClaim(supplier.fscInputClaim);
+    if (supplier?.fscOutputClaim) setOutputClaim(supplier.fscOutputClaim);
+  }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -159,6 +177,7 @@ export function POForm({
               name="supplierId"
               required
               defaultValue={purchaseOrder?.supplierId || ""}
+              onChange={(e) => handleSupplierChange(e.target.value)}
               className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
             >
               <option value="">Select supplier</option>
@@ -233,7 +252,8 @@ export function POForm({
               <label className="block text-sm font-medium mb-1">FSC License</label>
               <input
                 name="licenseFsc"
-                defaultValue={purchaseOrder?.licenseFsc || ""}
+                value={licenseFsc}
+                onChange={(e) => setLicenseFsc(e.target.value)}
                 className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
               />
             </div>
@@ -241,7 +261,8 @@ export function POForm({
               <label className="block text-sm font-medium mb-1">Chain of Custody</label>
               <input
                 name="chainOfCustody"
-                defaultValue={purchaseOrder?.chainOfCustody || ""}
+                value={chainOfCustody}
+                onChange={(e) => setChainOfCustody(e.target.value)}
                 className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
               />
             </div>
@@ -249,7 +270,8 @@ export function POForm({
               <label className="block text-sm font-medium mb-1">Input Claim</label>
               <input
                 name="inputClaim"
-                defaultValue={purchaseOrder?.inputClaim || ""}
+                value={inputClaim}
+                onChange={(e) => setInputClaim(e.target.value)}
                 className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
               />
             </div>
@@ -257,7 +279,8 @@ export function POForm({
               <label className="block text-sm font-medium mb-1">Output Claim</label>
               <input
                 name="outputClaim"
-                defaultValue={purchaseOrder?.outputClaim || ""}
+                value={outputClaim}
+                onChange={(e) => setOutputClaim(e.target.value)}
                 className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
               />
             </div>
