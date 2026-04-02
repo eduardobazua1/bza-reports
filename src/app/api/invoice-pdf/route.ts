@@ -240,7 +240,7 @@ export async function GET(req: NextRequest) {
   doc.fontSize(6.5).font("Helvetica-Bold").fillColor(CYAN)
     .text("BALANCE DUE", BDX + 10, y + 6, { lineBreak: false });
   doc.fontSize(11).font("Helvetica-Bold").fillColor("white")
-    .text(`USD ${fmtCurrency(total)}`, BDX + 10, y + 17, { width: BDW - 20, align: "right", lineBreak: false });
+    .text(`USD ${fmtCurrency(total)}`, BDX + 10, y + 17, { width: BDW - 30, align: "right", lineBreak: false });
   y += 44;
 
   // ── PAYMENT INSTRUCTIONS ──────────────────────────────────
