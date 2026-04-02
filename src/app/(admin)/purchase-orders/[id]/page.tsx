@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getPurchaseOrder, getClients, getSuppliers } from "@/server/queries";
 import { DocumentUpload } from "@/components/document-upload";
+import { db } from "@/db";
+import { products } from "@/db/schema";
 import {
   formatCurrency,
   formatNumber,
@@ -23,10 +25,11 @@ export default async function PurchaseOrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [po, clients, suppliers] = await Promise.all([
+  const [po, clients, suppliers, productsList] = await Promise.all([
     getPurchaseOrder(Number(id)),
     getClients(),
     getSuppliers(),
+    db.select({ id: products.id, name: products.name, grade: products.grade }).from(products).orderBy(products.name),
   ]);
 
   if (!po) notFound();
@@ -248,6 +251,7 @@ export default async function PurchaseOrderDetailPage({
         purchaseOrder={po}
         clients={clients}
         suppliers={suppliers}
+        products={productsList}
       />
     </div>
   );

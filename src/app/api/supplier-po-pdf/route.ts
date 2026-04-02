@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { purchaseOrders, clients, suppliers, clientPurchaseOrders, supplierOrders, appSettings } from "@/db/schema";
+import { purchaseOrders, clients, suppliers, clientPurchaseOrders, supplierOrders, appSettings, products } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -46,6 +46,14 @@ export async function GET(req: NextRequest) {
     db.query.suppliers.findFirst({ where: eq(suppliers.id, po.supplierId) }),
   ]);
 
+  // Resolve supplier product name for PDF
+  let supplierProductName: string | null = null;
+  if (po.supplierProductId) {
+    const prod = await db.query.products.findFirst({ where: eq(products.id, po.supplierProductId) });
+    supplierProductName = prod?.name ?? null;
+  }
+  const effectiveProductName = supplierProductName || po.product;
+
   const supplierKey = Object.keys(SUPPLIER_ADDRESSES).find(k =>
     supplier?.name?.toLowerCase().includes(k.toLowerCase())
   );
@@ -65,22 +73,22 @@ export async function GET(req: NextRequest) {
     const parsedLines = so.lines ? JSON.parse(so.lines) as { destination: string; tons: number; notes: string }[] : null;
     if (parsedLines && parsedLines.length > 0) {
       lineItems = parsedLines.map(l => ({
-        description: `${po.product}${l.destination ? ` – ${l.destination}` : ""}${l.notes ? `\n${l.notes}` : ""}`,
+        description: `${effectiveProductName}${l.destination ? ` – ${l.destination}` : ""}${l.notes ? `\n${l.notes}` : ""}`,
         qty: l.tons, rate: price, amount: l.tons * price,
       }));
     } else {
-      lineItems = [{ description: po.product, qty: so.tons, rate: price, amount: so.tons * price }];
+      lineItems = [{ description: effectiveProductName, qty: so.tons, rate: price, amount: so.tons * price }];
     }
   } else {
     const cpos = await db.select().from(clientPurchaseOrders)
       .where(eq(clientPurchaseOrders.purchaseOrderId, Number(poId)))
       .orderBy(clientPurchaseOrders.clientPoNumber);
     lineItems = cpos.map(cpo => ({
-      description: `${po.product}${cpo.destination ? ` – ${cpo.destination}` : ""}`,
+      description: `${effectiveProductName}${cpo.destination ? ` – ${cpo.destination}` : ""}`,
       qty: cpo.plannedTons ?? 0, rate: po.buyPrice, amount: (cpo.plannedTons ?? 0) * po.buyPrice,
     }));
     if (lineItems.length === 0) {
-      lineItems = [{ description: po.product, qty: 0, rate: po.buyPrice, amount: 0 }];
+      lineItems = [{ description: effectiveProductName, qty: 0, rate: po.buyPrice, amount: 0 }];
     }
     poDate = po.poDate || new Date().toISOString().split("T")[0];
     effectiveIncoterm = po.terms ?? "";

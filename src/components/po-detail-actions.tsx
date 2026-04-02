@@ -13,6 +13,7 @@ type Supplier = {
   fscInputClaim?: string | null;
   fscOutputClaim?: string | null;
 };
+type Product = { id: number; name: string; grade?: string | null };
 
 type PurchaseOrder = {
   id: number;
@@ -24,6 +25,8 @@ type PurchaseOrder = {
   sellPrice: number;
   buyPrice: number;
   product: string;
+  supplierProductId?: number | null;
+  clientProductId?: number | null;
   terms: string | null;
   transportType: "ffcc" | "ship" | "truck" | null;
   licenseFsc: string | null;
@@ -38,10 +41,12 @@ export function PODetailActions({
   purchaseOrder,
   clients,
   suppliers,
+  products,
 }: {
   purchaseOrder: PurchaseOrder;
   clients: Client[];
   suppliers: Supplier[];
+  products: Product[];
 }) {
   const [showEditPO, setShowEditPO] = useState(false);
   const [showAddInvoice, setShowAddInvoice] = useState(false);
@@ -72,6 +77,7 @@ export function PODetailActions({
           purchaseOrder={purchaseOrder}
           clients={clients}
           suppliers={suppliers}
+          products={products}
           onCancel={() => setShowEditPO(false)}
         />
       )}

@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates } from "@/db/schema";
+import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, products } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { v4 as uuidv4 } from "uuid";
@@ -78,6 +78,8 @@ export async function createPurchaseOrder(data: {
   sellPrice: number;
   buyPrice: number;
   product: string;
+  supplierProductId?: number;
+  clientProductId?: number;
   terms?: string;
   transportType?: "ffcc" | "ship" | "truck";
   licenseFsc?: string;
@@ -100,6 +102,8 @@ export async function updatePurchaseOrder(id: number, data: Partial<{
   sellPrice: number;
   buyPrice: number;
   product: string;
+  supplierProductId: number | null;
+  clientProductId: number | null;
   terms: string;
   transportType: "ffcc" | "ship" | "truck";
   licenseFsc: string;
@@ -239,4 +243,20 @@ export async function deleteInvoice(id: number) {
   await db.delete(invoices).where(eq(invoices.id, id));
   revalidatePath("/invoices");
   revalidatePath("/purchase-orders");
+}
+
+// ---- Products ----
+export async function createProduct(data: { name: string; grade?: string; description?: string; notes?: string }) {
+  await db.insert(products).values({ ...data, updatedAt: new Date().toISOString() });
+  revalidatePath("/products");
+}
+
+export async function updateProduct(id: number, data: { name: string; grade?: string; description?: string; notes?: string }) {
+  await db.update(products).set({ ...data, updatedAt: new Date().toISOString() }).where(eq(products.id, id));
+  revalidatePath("/products");
+}
+
+export async function deleteProduct(id: number) {
+  await db.delete(products).where(eq(products.id, id));
+  revalidatePath("/products");
 }

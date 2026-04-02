@@ -88,6 +88,12 @@ type Supplier = {
   fscOutputClaim?: string | null;
 };
 
+type Product = {
+  id: number;
+  name: string;
+  grade?: string | null;
+};
+
 type PurchaseOrder = {
   id: number;
   poNumber: string;
@@ -98,6 +104,8 @@ type PurchaseOrder = {
   sellPrice: number;
   buyPrice: number;
   product: string;
+  supplierProductId?: number | null;
+  clientProductId?: number | null;
   terms: string | null;
   transportType: "ffcc" | "ship" | "truck" | null;
   licenseFsc: string | null;
@@ -112,9 +120,11 @@ type PurchaseOrder = {
 export function POListActions({
   clients,
   suppliers,
+  products,
 }: {
   clients: Client[];
   suppliers: Supplier[];
+  products: Product[];
 }) {
   const [showForm, setShowForm] = useState(false);
 
@@ -132,6 +142,7 @@ export function POListActions({
         <POForm
           clients={clients}
           suppliers={suppliers}
+          products={products}
           onCancel={() => setShowForm(false)}
         />
       )}
@@ -144,11 +155,13 @@ export function POForm({
   purchaseOrder,
   clients,
   suppliers,
+  products,
   onCancel,
 }: {
   purchaseOrder?: PurchaseOrder;
   clients: Client[];
   suppliers: Supplier[];
+  products: Product[];
   onCancel?: () => void;
 }) {
   const [isPending, startTransition] = useTransition();
@@ -160,8 +173,16 @@ export function POForm({
   const [inputClaim, setInputClaim] = useState(purchaseOrder?.inputClaim || "");
   const [outputClaim, setOutputClaim] = useState(purchaseOrder?.outputClaim || "FSC Controlled Wood");
 
-  function handleSupplierChange(supplierId: string) {
-    const supplier = suppliers.find(s => s.id === Number(supplierId));
+  // Product selects
+  const [supplierProductId, setSupplierProductId] = useState<string>(
+    purchaseOrder?.supplierProductId ? String(purchaseOrder.supplierProductId) : ""
+  );
+  const [clientProductId, setClientProductId] = useState<string>(
+    purchaseOrder?.clientProductId ? String(purchaseOrder.clientProductId) : ""
+  );
+
+  function handleSupplierChange(supplierId: number) {
+    const supplier = suppliers.find(s => s.id === supplierId);
     if (supplier?.fscLicense) setLicenseFsc(supplier.fscLicense);
     if (supplier?.fscChainOfCustody) setChainOfCustody(supplier.fscChainOfCustody);
     if (supplier?.fscInputClaim) setInputClaim(supplier.fscInputClaim);
@@ -172,6 +193,14 @@ export function POForm({
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
 
+    const supplierProdId = supplierProductId ? Number(supplierProductId) : undefined;
+    const clientProdId = clientProductId ? Number(clientProductId) : undefined;
+    // Fallback product text: prefer supplier product name, else keep existing
+    const supplierProdName = supplierProdId
+      ? (products.find(p => p.id === supplierProdId)?.name || "")
+      : "";
+    const productText = supplierProdName || (formData.get("productFallback") as string) || "";
+
     const data = {
       poNumber: formData.get("poNumber") as string,
       poDate: (formData.get("poDate") as string) || undefined,
@@ -180,7 +209,9 @@ export function POForm({
       clientPoNumber: (formData.get("clientPoNumber") as string) || undefined,
       sellPrice: Number(formData.get("sellPrice")),
       buyPrice: Number(formData.get("buyPrice")),
-      product: formData.get("product") as string,
+      product: productText || "—",
+      supplierProductId: supplierProdId,
+      clientProductId: clientProdId,
       terms: (formData.get("terms") as string) || undefined,
       transportType: (formData.get("transportType") as "ffcc" | "ship" | "truck") || undefined,
       licenseFsc: (formData.get("licenseFsc") as string) || undefined,
@@ -249,15 +280,37 @@ export function POForm({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Product *</label>
-            <input
-              name="product"
-              required
-              defaultValue={purchaseOrder?.product || ""}
+            <label className="block text-sm font-medium mb-1">Supplier Product</label>
+            <select
+              value={supplierProductId}
+              onChange={(e) => setSupplierProductId(e.target.value)}
               className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-              placeholder="Pulp, Paper, etc."
-            />
+            >
+              <option value="">— Select —</option>
+              {products.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}{p.grade ? ` (${p.grade})` : ""}
+                </option>
+              ))}
+            </select>
           </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Client Product</label>
+            <select
+              value={clientProductId}
+              onChange={(e) => setClientProductId(e.target.value)}
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
+            >
+              <option value="">— Same as supplier —</option>
+              {products.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}{p.grade ? ` (${p.grade})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+          {/* Hidden fallback: keeps existing product text for backward compat */}
+          <input type="hidden" name="productFallback" value={purchaseOrder?.product || ""} />
           <div>
             <label className="block text-sm font-medium mb-1">Sell Price (USD/Ton) *</label>
             <input

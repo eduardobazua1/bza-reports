@@ -46,6 +46,16 @@ export const suppliers = sqliteTable("suppliers", {
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
+export const products = sqliteTable("products", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  grade: text("grade"), // e.g. NBSK, SBSK, BHK, BCTMP
+  description: text("description"),
+  notes: text("notes"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
 export const purchaseOrders = sqliteTable("purchase_orders", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   poNumber: text("po_number").notNull().unique(),
@@ -56,6 +66,8 @@ export const purchaseOrders = sqliteTable("purchase_orders", {
   sellPrice: real("sell_price").notNull(), // USD per ton
   buyPrice: real("buy_price").notNull(), // USD per ton
   product: text("product").notNull(),
+  supplierProductId: integer("supplier_product_id").references(() => products.id),
+  clientProductId: integer("client_product_id").references(() => products.id),
   terms: text("terms"),
   transportType: text("transport_type", { enum: ["ffcc", "ship", "truck"] }),
   licenseFsc: text("license_fsc"),

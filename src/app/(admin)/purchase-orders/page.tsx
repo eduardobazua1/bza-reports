@@ -3,6 +3,8 @@ import { getPurchaseOrders, getClients, getSuppliers } from "@/server/queries";
 import { formatCurrency, formatNumber, formatDate } from "@/lib/utils";
 import { POListActions } from "@/components/po-form";
 import { POStatusToggle } from "@/components/po-status-toggle";
+import { db } from "@/db";
+import { products } from "@/db/schema";
 
 const tabs = [
   { key: "", label: "All" },
@@ -13,10 +15,11 @@ const tabs = [
 
 export default async function PurchaseOrdersPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   const params = await searchParams;
-  const [allPOs, clientsList, suppliersList] = await Promise.all([
+  const [allPOs, clientsList, suppliersList, productsList] = await Promise.all([
     getPurchaseOrders(),
     getClients(),
     getSuppliers(),
+    db.select({ id: products.id, name: products.name, grade: products.grade }).from(products).orderBy(products.name),
   ]);
 
   const filterStatus = params.status || "";
@@ -56,7 +59,7 @@ export default async function PurchaseOrdersPage({ searchParams }: { searchParam
         })}
       </div>
 
-      <POListActions clients={clientsList} suppliers={suppliersList} />
+      <POListActions clients={clientsList} suppliers={suppliersList} products={productsList} />
 
       <div className="bg-white rounded-md shadow-sm overflow-hidden">
         <div className="overflow-x-auto">

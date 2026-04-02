@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { invoices, purchaseOrders, clients, suppliers, appSettings } from "@/db/schema";
+import { invoices, purchaseOrders, clients, suppliers, appSettings, products } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -58,6 +58,13 @@ export async function GET(req: NextRequest) {
     db.query.suppliers.findFirst({ where: eq(suppliers.id, po.supplierId) }),
   ]);
 
+  // Resolve client product name for PDF
+  let clientProductName: string | null = null;
+  if (po.clientProductId) {
+    const prod = await db.query.products.findFirst({ where: eq(products.id, po.clientProductId) });
+    clientProductName = prod?.name ?? null;
+  }
+
   const price = inv.sellPriceOverride ?? po.sellPrice;
   const total = inv.quantityTons * price;
   const invoiceDate = inv.invoiceDate || inv.shipmentDate || new Date().toISOString().split("T")[0];
@@ -68,7 +75,7 @@ export async function GET(req: NextRequest) {
     return d.toISOString().split("T")[0];
   })();
 
-  const productName = inv.item || po.product || "Woodpulp";
+  const productName = clientProductName || inv.item || po.product || "Woodpulp";
   const supplierShortName = (supplier?.name || "").split(" ")[0];
   const inputClaim = supplier?.fscInputClaim || po.inputClaim || "";
   const productLine = [
