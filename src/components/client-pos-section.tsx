@@ -37,6 +37,7 @@ export function ClientPOsSection({
   clientPos,
   poNumber,
   sellPrice,
+  poTerms,
   product,
   products,
 }: {
@@ -44,6 +45,7 @@ export function ClientPOsSection({
   clientPos: ClientPO[];
   poNumber?: string;
   sellPrice?: number;
+  poTerms?: string | null;
   product?: string;
   products?: Product[];
 }) {
@@ -81,8 +83,8 @@ export function ClientPOsSection({
     destination: "",
     plannedTons: "",
     item: product || "",
-    incoterm: "",
-    sellPriceOverride: "",
+    incoterm: poTerms || "",
+    sellPriceOverride: sellPrice ? String(sellPrice) : "",
   });
 
   const totalPlanned = list.reduce((s, p) => s + (p.plannedTons || 0), 0);
@@ -173,7 +175,7 @@ export function ClientPOsSection({
     if (res.ok) {
       const data = await res.json();
       setList((prev) => [...prev, data]);
-      setAddForm({ clientPoNumber: "", destination: "", plannedTons: "", item: product || "", incoterm: "", sellPriceOverride: "" });
+      setAddForm({ clientPoNumber: "", destination: "", plannedTons: "", item: product || "", incoterm: poTerms || "", sellPriceOverride: sellPrice ? String(sellPrice) : "" });
       setAdding(false);
     }
     setLoading(false);

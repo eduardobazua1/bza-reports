@@ -70,10 +70,10 @@ export function SupplierOrdersSection({
   const [editLines, setEditLines] = useState<OrderLine[]>([emptyLine()]);
   const [editLoading, setEditLoading] = useState(false);
 
-  // Add form state
+  // Add form state — pre-filled with PO defaults
   const [orderDate, setOrderDate] = useState(new Date().toISOString().split("T")[0]);
-  const [pricePerTon, setPricePerTon] = useState("");
-  const [incoterm, setIncoterm] = useState("");
+  const [pricePerTon, setPricePerTon] = useState(String(buyPrice));
+  const [incoterm, setIncoterm] = useState(poTerms || "");
   const [addItem, setAddItem] = useState(product || "");
   const [lines, setLines] = useState<OrderLine[]>([emptyLine()]);
 
@@ -154,8 +154,8 @@ export function SupplierOrdersSection({
       const data = await res.json();
       setList((prev) => [...prev, data]);
       setOrderDate(new Date().toISOString().split("T")[0]);
-      setPricePerTon("");
-      setIncoterm("");
+      setPricePerTon(String(buyPrice));
+      setIncoterm(poTerms || "");
       setAddItem(product || "");
       setLines([emptyLine()]);
       setAdding(false);

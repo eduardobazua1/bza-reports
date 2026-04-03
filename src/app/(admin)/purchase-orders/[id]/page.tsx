@@ -208,6 +208,7 @@ export default async function PurchaseOrderDetailPage({
         clientPos={po.clientPos}
         poNumber={po.poNumber}
         sellPrice={po.sellPrice}
+        poTerms={po.terms}
         product={clientProduct?.name ?? po.product}
         products={productsList}
       />
