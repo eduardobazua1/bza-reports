@@ -13,6 +13,8 @@ type Invoice = {
   blNumber: string | null;
   shipmentDate: string | null;
   invoiceDate: string | null;
+  dueDate: string | null;
+  paymentTermsDays: number | null;
   quantityTons: number;
   item: string | null;
   balesCount: number | null;
@@ -44,16 +46,29 @@ const paymentStatusColors: Record<string, string> = {
   unpaid: "bg-red-100 text-red-700",
 };
 
+function calcDueDate(inv: Invoice, clientTermsDays: number): string | null {
+  const base = inv.invoiceDate || inv.shipmentDate;
+  if (!base) return null;
+  const terms = (inv.paymentTermsDays != null && inv.paymentTermsDays > 0)
+    ? inv.paymentTermsDays
+    : clientTermsDays;
+  const d = new Date(base + "T12:00:00");
+  d.setDate(d.getDate() + terms);
+  return d.toISOString().split("T")[0];
+}
+
 export function InvoicesSection({
   invoices: initialInvoices,
   poSellPrice,
   poBuyPrice,
   products,
+  clientTermsDays = 60,
 }: {
   invoices: Invoice[];
   poSellPrice: number;
   poBuyPrice: number;
   products: Product[];
+  clientTermsDays?: number;
 }) {
   const [list, setList] = useState<Invoice[]>(initialInvoices);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -167,6 +182,7 @@ export function InvoicesSection({
               <th className="text-right px-3 py-2 font-medium text-stone-500">Cost</th>
               <th className="text-right px-3 py-2 font-medium text-stone-500">Profit</th>
               <th className="text-left px-3 py-2 font-medium text-stone-500">Ship Date</th>
+              <th className="text-left px-3 py-2 font-medium text-stone-500">Due Date</th>
               <th className="text-left px-3 py-2 font-medium text-stone-500">Status</th>
               <th className="text-left px-3 py-2 font-medium text-stone-500">Payment</th>
               <th className="text-left px-3 py-2 font-medium text-stone-500">Docs</th>
@@ -175,7 +191,7 @@ export function InvoicesSection({
           </thead>
           <tbody>
             {list.length === 0 && (
-              <tr><td colSpan={14} className="p-6 text-center text-stone-400">No invoices for this PO.</td></tr>
+              <tr><td colSpan={15} className="p-6 text-center text-stone-400">No invoices for this PO.</td></tr>
             )}
             {list.map((inv) => {
               const sell = inv.sellPriceOverride ?? poSellPrice;
@@ -210,6 +226,9 @@ export function InvoicesSection({
                       <span className={profit >= 0 ? "text-emerald-600" : "text-red-600"}>{formatCurrency(profit)}</span>
                     </td>
                     <td className="px-3 py-2 border-t border-stone-100">{formatDate(inv.shipmentDate)}</td>
+                    <td className="px-3 py-2 border-t border-stone-100 text-xs text-stone-500">
+                      {formatDate(calcDueDate(inv, clientTermsDays)) || "—"}
+                    </td>
                     <td className="px-3 py-2 border-t border-stone-100">
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${shipmentStatusColors[inv.shipmentStatus] || ""}`}>
                         {shipmentStatusLabels[inv.shipmentStatus] || inv.shipmentStatus}
@@ -236,7 +255,7 @@ export function InvoicesSection({
                   {/* Edit form */}
                   {isEditing && (
                     <tr key={`edit-${inv.id}`}>
-                      <td colSpan={14} className="p-0">
+                      <td colSpan={15} className="p-0">
                         <div className="bg-amber-50 border-t border-amber-200 p-4 space-y-4">
                           <p className="text-xs font-semibold text-amber-800 uppercase">Edit Invoice — {inv.invoiceNumber}</p>
 
@@ -367,7 +386,7 @@ export function InvoicesSection({
                 <td className="px-3 py-2 border-t border-stone-200 text-right font-semibold">
                   <span className={totalProfit >= 0 ? "text-emerald-600" : "text-red-600"}>{formatCurrency(totalProfit)}</span>
                 </td>
-                <td colSpan={5} className="px-3 py-2 border-t border-stone-200"></td>
+                <td colSpan={6} className="px-3 py-2 border-t border-stone-200"></td>
               </tr>
             )}
           </tbody>
