@@ -66,12 +66,16 @@ export async function GET(req: NextRequest) {
   const price = inv.sellPriceOverride ?? po.sellPrice;
   const total = inv.quantityTons * price;
   const invoiceDate = inv.invoiceDate || inv.shipmentDate || new Date().toISOString().split("T")[0];
-  const termsDays = inv.paymentTermsDays ?? client?.paymentTermsDays ?? 60;
-  const dueDate = inv.dueDate || (() => {
-    const d = new Date(invoiceDate + "T12:00:00");
-    d.setDate(d.getDate() + termsDays);
-    return d.toISOString().split("T")[0];
-  })();
+  // termsDays: use stored value on invoice, else client's value, else 60 (Net 60 for all)
+  const termsDays = (inv.paymentTermsDays != null && inv.paymentTermsDays > 0)
+    ? inv.paymentTermsDays
+    : (client?.paymentTermsDays != null && client.paymentTermsDays > 0)
+      ? client.paymentTermsDays
+      : 60;
+  // Always compute dueDate fresh from invoiceDate + termsDays for reliability
+  const dueDateObj = new Date(invoiceDate + "T12:00:00");
+  dueDateObj.setDate(dueDateObj.getDate() + termsDays);
+  const dueDate = dueDateObj.toISOString().split("T")[0];
 
   const productName = clientProd?.name || inv.item || po.product || "Woodpulp";
   const inputClaim = clientProd?.inputClaim || supplier?.fscInputClaim || po.inputClaim || "";
