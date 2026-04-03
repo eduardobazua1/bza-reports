@@ -285,7 +285,18 @@ export function ClientPOsSection({
           </div>
         </div>
         <button
-          onClick={() => setAdding(true)}
+          onClick={() => {
+            // Reset to PO defaults each time the form opens
+            setAddForm({
+              clientPoNumber: "",
+              destination: "",
+              plannedTons: "",
+              item: product || "",
+              incoterm: poTerms || "",
+              sellPriceOverride: sellPrice ? String(sellPrice) : "",
+            });
+            setAdding(true);
+          }}
           className="text-xs bg-[#0d3d3b] text-white px-3 py-1.5 rounded hover:bg-[#0a2e2d] transition"
         >
           + Add Order

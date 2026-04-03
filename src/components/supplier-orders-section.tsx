@@ -247,7 +247,16 @@ export function SupplierOrdersSection({
         </div>
         {!adding && (
           <button
-            onClick={() => { setAdding(true); setEditingId(null); }}
+            onClick={() => {
+              setAdding(true);
+              setEditingId(null);
+              // Reset to PO defaults each time the form opens
+              setOrderDate(new Date().toISOString().split("T")[0]);
+              setPricePerTon(String(buyPrice));
+              setIncoterm(poTerms || "");
+              setAddItem(product || "");
+              setLines([emptyLine()]);
+            }}
             className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition"
           >
             + New Order to Supplier
