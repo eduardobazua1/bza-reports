@@ -225,130 +225,130 @@ async function generatePdf({ clientId, columns: requestedColumns, filter }: { cl
     if (r.shipmentStatus === "entregado") deliveredCount++;
   }
 
-  // Layout: landscape if many columns
-  const isLandscape = selectedColKeys.length > 8;
-  const pageWidth = isLandscape ? 792 : 612;
-  const pageHeight = isLandscape ? 612 : 792;
-  const MARGIN = 50;
-  const TABLE_WIDTH = pageWidth - MARGIN * 2;
-  const MAX_Y = pageHeight - 50; // room for footer
+  // Always landscape for reports — more columns fit
+  const M = 24; // margin
+  const pageW = 792; // landscape letter width
+  const pageH = 612; // landscape letter height
+  const TABLE_W = pageW - M * 2;
+  const FOOTER_Y = pageH - M - 10;
+  const HEADER_H = 58; // space taken by page header
 
   // Scale column widths proportionally
   const selectedDefs = selectedColKeys.map((k) => ({ key: k, ...columnDefs[k] }));
   const totalBaseWidth = selectedDefs.reduce((s, c) => s + c.baseWidth, 0);
-  const scale = TABLE_WIDTH / totalBaseWidth;
-  const colWidths = selectedDefs.map((c) => Math.max(Math.round(c.baseWidth * scale), 25));
-  // Adjust last column to fill remaining space
+  const scale = TABLE_W / totalBaseWidth;
+  const colWidths = selectedDefs.map((c) => Math.max(Math.round(c.baseWidth * scale), 22));
   const widthSum = colWidths.reduce((s, w) => s + w, 0);
-  colWidths[colWidths.length - 1] += TABLE_WIDTH - widthSum;
+  colWidths[colWidths.length - 1] += TABLE_W - widthSum;
 
-  // Simple PDF without bufferPages — all text uses save/restore to avoid cursor drift
-  const doc = new PDFDocument({ size: "LETTER", layout: isLandscape ? "landscape" : "portrait", margin: MARGIN });
+  const doc = new PDFDocument({ size: "LETTER", layout: "landscape", margin: 0, autoFirstPage: true });
   const chunks: Buffer[] = [];
   doc.on("data", (chunk: Buffer) => chunks.push(chunk));
   const pdfReady = new Promise<Buffer>((resolve) => { doc.on("end", () => resolve(Buffer.concat(chunks))); });
 
-  // Helper: draw text at position without moving pdfkit cursor
-  function txt(text: string, x: number, ty: number, opts: Record<string, unknown> = {}) {
-    doc.save();
-    doc.text(String(text ?? "-"), x, ty, { ...opts });
-    doc.restore();
+  const TEAL_COLOR = "#0d9488";
+  const DARK_COLOR = "#1c1917";
+  const GRAY_COLOR = "#78716c";
+  const ROW_BG = "#f5f5f4";
+  const TOTAL_BG = "#166534";
+
+  // ── HEADER (drawn once per page) ─────────────────────────────
+  function drawPageHeader() {
+    // Top cyan bar
+    doc.rect(0, 0, pageW, 3).fill(TEAL_COLOR);
+
+    // BZA. logo
+    doc.fontSize(14).font("Helvetica-Bold").fillColor(DARK_GREEN).text("BZA", M, M + 2, { lineBreak: false });
+    doc.fillColor(TEAL_COLOR).text(".", { lineBreak: false });
+
+    // Right: company info
+    const IX = pageW - M - 200;
+    doc.fontSize(6.5).font("Helvetica").fillColor(GRAY_COLOR);
+    doc.text("BZA International Services, LLC", IX, M + 2, { width: 200, align: "right", lineBreak: false });
+    doc.text("1209 S. 10th St. Suite A #583, McAllen, TX 78501", IX, M + 11, { width: 200, align: "right", lineBreak: false });
+    doc.text("accounting@bza-is.com  ·  www.bza-is.com", IX, M + 20, { width: 200, align: "right", lineBreak: false });
+
+    // Teal separator line
+    doc.moveTo(M, M + 32).lineTo(pageW - M, M + 32).strokeColor(TEAL_COLOR).lineWidth(1.5).stroke();
+
+    // Report title
+    doc.fontSize(9).font("Helvetica-Bold").fillColor(DARK_COLOR)
+      .text(`Shipment Report — ${clientName}`, M, M + 37, { lineBreak: false });
+    doc.fontSize(7).font("Helvetica").fillColor(GRAY_COLOR)
+      .text(
+        `${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}  ·  ${filteredRows.length} shipments`,
+        M + 220, M + 38, { lineBreak: false }
+      );
   }
 
-  function drawFooter() {
-    // Only draw a line — no text to avoid cursor drift creating extra pages
-    const fy = pageHeight - 30;
-    doc.save();
-    doc.moveTo(MARGIN, fy).lineTo(pageWidth - MARGIN, fy).strokeColor(TEAL).lineWidth(0.5).stroke();
-    doc.restore();
-  }
-
-  function drawHeader() {
-    doc.save();
-    doc.fillColor(DARK_GREEN).fontSize(14).font("Helvetica-Bold");
-    doc.text("BZA International Services", MARGIN, 35);
-    doc.restore();
-
-    doc.save();
-    doc.fillColor(GRAY).fontSize(8).font("Helvetica");
-    doc.text("1209 S. 10th St. Suite #583, McAllen, TX 78501", MARGIN, 53);
-    doc.restore();
-
-    doc.moveTo(MARGIN, 68).lineTo(pageWidth - MARGIN, 68).strokeColor(TEAL).lineWidth(2).stroke();
-
-    doc.save();
-    doc.fillColor(DARK_GREEN).fontSize(10).font("Helvetica-Bold");
-    doc.text(`Shipment Report — ${clientName}`, MARGIN, 75);
-    doc.restore();
-
-    doc.save();
-    doc.fillColor(GRAY).fontSize(8).font("Helvetica");
-    doc.text(`${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}  |  ${filteredRows.length} shipments`, MARGIN, 90);
-    doc.restore();
-  }
-
-  function drawTableHeader(startY: number) {
-    doc.rect(MARGIN, startY, TABLE_WIDTH, 16).fillColor(DARK_GREEN).fill();
-    let cx = MARGIN + 3;
+  // ── TABLE HEADER ─────────────────────────────────────────────
+  function drawTableHeader(ty: number) {
+    doc.rect(M, ty, TABLE_W, 14).fill(DARK_GREEN);
+    let cx = M + 2;
     for (let i = 0; i < selectedDefs.length; i++) {
-      doc.save();
-      doc.fillColor(WHITE).fontSize(6.5).font("Helvetica-Bold");
-      doc.text(selectedDefs[i].header, cx, startY + 4, { width: colWidths[i] - 3 });
-      doc.restore();
+      doc.fontSize(6).font("Helvetica-Bold").fillColor(WHITE)
+        .text(selectedDefs[i].header, cx, ty + 4, { width: colWidths[i] - 2, lineBreak: false, ellipsis: true });
       cx += colWidths[i];
     }
   }
 
-  // --- PAGE 1 ---
-  drawHeader();
-  let y = 108;
-  drawTableHeader(y);
-  y += 16;
+  // ── FOOTER ────────────────────────────────────────────────────
+  function drawPageFooter() {
+    doc.rect(0, pageH - 28, pageW, 28).fill(DARK_GREEN);
+    doc.fontSize(6.5).font("Helvetica").fillColor(TEAL_COLOR)
+      .text("BZA International Services, LLC  ·  accounting@bza-is.com  ·  www.bza-is.com",
+        M, pageH - 18, { width: TABLE_W, align: "center", lineBreak: false });
+  }
 
-  const ROW_H = 14;
+  const ROW_H = 13;
+
+  // ── RENDER ────────────────────────────────────────────────────
+  drawPageHeader();
+  let y = M + HEADER_H;
+  drawTableHeader(y);
+  y += 14;
 
   for (let ri = 0; ri < filteredRows.length; ri++) {
-    if (y + ROW_H > MAX_Y) {
-      drawFooter();
-      doc.addPage();
-      y = MARGIN;
+    if (y + ROW_H > FOOTER_Y - 14) {
+      drawPageFooter();
+      doc.addPage({ size: "LETTER", layout: "landscape", margin: 0 });
+      doc.rect(0, 0, pageW, 3).fill(TEAL_COLOR);
+      y = M + 8;
       drawTableHeader(y);
-      y += 16;
+      y += 14;
     }
-    if (ri % 2 === 0) doc.rect(MARGIN, y, TABLE_WIDTH, ROW_H).fillColor(LIGHT_BG).fill();
-    let cx = MARGIN + 3;
+    if (ri % 2 === 0) doc.rect(M, y, TABLE_W, ROW_H).fill(ROW_BG);
+    let cx = M + 2;
     for (let i = 0; i < selectedDefs.length; i++) {
-      doc.save();
-      doc.fillColor("#333").fontSize(6.5).font("Helvetica");
-      doc.text(String(selectedDefs[i].getValue(filteredRows[ri]) ?? "-"), cx, y + 3, { width: colWidths[i] - 3 });
-      doc.restore();
+      const val = String(selectedDefs[i].getValue(filteredRows[ri]) ?? "-");
+      doc.fontSize(6.5).font("Helvetica").fillColor(DARK_COLOR)
+        .text(val, cx, y + 3, { width: colWidths[i] - 2, lineBreak: false, ellipsis: true });
       cx += colWidths[i];
     }
     y += ROW_H;
   }
 
-  // Total row
+  // Totals row
   if (filteredRows.length > 0) {
-    if (y + ROW_H > MAX_Y) { drawFooter(); doc.addPage(); y = MARGIN; }
-    doc.rect(MARGIN, y, TABLE_WIDTH, ROW_H).fillColor(DARK_GREEN).fill();
-
-    doc.save();
-    doc.fillColor(WHITE).fontSize(6.5).font("Helvetica-Bold");
-    doc.text("TOTAL", MARGIN + 3, y + 3);
-    doc.restore();
-
+    if (y + ROW_H > FOOTER_Y - 14) {
+      drawPageFooter();
+      doc.addPage({ size: "LETTER", layout: "landscape", margin: 0 });
+      doc.rect(0, 0, pageW, 3).fill(TEAL_COLOR);
+      y = M + 8;
+    }
+    doc.rect(M, y, TABLE_W, ROW_H).fill(TOTAL_BG);
+    doc.fontSize(6.5).font("Helvetica-Bold").fillColor(WHITE)
+      .text("TOTAL", M + 2, y + 3, { lineBreak: false });
     const tonsIdx = selectedColKeys.indexOf("quantityTons");
     if (tonsIdx >= 0) {
-      let tx = MARGIN + 3;
+      let tx = M + 2;
       for (let i = 0; i < tonsIdx; i++) tx += colWidths[i];
-      doc.save();
-      doc.fillColor(WHITE).fontSize(6.5).font("Helvetica-Bold");
-      doc.text(`${filteredRows.reduce((s, r) => s + r.quantityTons, 0).toFixed(3)} TN`, tx, y + 3, { width: colWidths[tonsIdx] - 3 });
-      doc.restore();
+      doc.fontSize(6.5).font("Helvetica-Bold").fillColor(WHITE)
+        .text(`${filteredRows.reduce((s, r) => s + r.quantityTons, 0).toFixed(3)} TN`, tx, y + 3, { width: colWidths[tonsIdx] - 2, lineBreak: false });
     }
   }
 
-  drawFooter();
+  drawPageFooter();
   doc.end();
   const buffer = await pdfReady;
 
