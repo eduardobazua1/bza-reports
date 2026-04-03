@@ -9,6 +9,9 @@ type ClientPO = {
   clientPoNumber: string;
   destination: string | null;
   plannedTons: number | null;
+  item: string | null;
+  incoterm: string | null;
+  sellPriceOverride: number | null;
   status: "pending" | "partial" | "complete";
   notes: string | null;
   createdAt: string;
@@ -24,6 +27,7 @@ type ConvertForm = {
   balesCount: string;
   unitsPerBale: string;
   item: string;
+  sellPriceOverride: string;
 };
 
 type Product = { id: number; name: string };
@@ -58,27 +62,29 @@ export function ClientPOsSection({
     balesCount: "",
     unitsPerBale: "",
     item: product || "",
+    sellPriceOverride: "",
   });
   const [addForm, setAddForm] = useState({
     clientPoNumber: "",
     destination: "",
     plannedTons: "",
+    item: product || "",
+    incoterm: "",
     sellPriceOverride: "",
   });
 
   const totalPlanned = list.reduce((s, p) => s + (p.plannedTons || 0), 0);
   const totalAmount = sellPrice
-    ? list.reduce((s, p) => s + (p.plannedTons || 0) * sellPrice, 0)
+    ? list.reduce((s, p) => s + (p.plannedTons || 0) * (p.sellPriceOverride ?? sellPrice), 0)
     : 0;
 
-  // Suggest next invoice number based on PO
   function suggestInvoiceNumber(invoiceCount: number) {
     if (!poNumber) return "";
-    // e.g. X0043 → IX0043-1
     const base = poNumber.replace("X", "IX");
     return `${base}-${invoiceCount + 1}`;
   }
 
+  // When "Convert to Invoice" is clicked, pre-fill from the client order's stored fields
   function openConvert(cpo: ClientPO, invoiceCount: number) {
     setConvertingId(cpo.id);
     setConvertForm({
@@ -90,13 +96,15 @@ export function ClientPOsSection({
       quantityTons: cpo.plannedTons?.toString() || "",
       balesCount: "",
       unitsPerBale: "",
-      item: product || "",
+      item: cpo.item || product || "",
+      sellPriceOverride: cpo.sellPriceOverride != null ? String(cpo.sellPriceOverride) : "",
     });
   }
 
   async function handleConvert(cpo: ClientPO) {
     if (!convertForm.quantityTons || !convertForm.invoiceNumber) return;
     setConvertLoading(true);
+    const effectivePrice = convertForm.sellPriceOverride ? parseFloat(convertForm.sellPriceOverride) : null;
     const res = await fetch("/api/invoices", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -114,21 +122,18 @@ export function ClientPOsSection({
         shipmentStatus: "programado",
         balesCount: convertForm.balesCount ? parseInt(convertForm.balesCount) : null,
         unitsPerBale: convertForm.unitsPerBale ? parseInt(convertForm.unitsPerBale) : null,
+        sellPriceOverride: effectivePrice,
       }),
     });
 
     if (res.ok) {
-      // Update client PO status to partial/complete
       await fetch(`/api/client-pos/${cpo.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "partial" }),
       });
-      setList((prev) =>
-        prev.map((p) => (p.id === cpo.id ? { ...p, status: "partial" } : p))
-      );
+      setList((prev) => prev.map((p) => (p.id === cpo.id ? { ...p, status: "partial" } : p)));
       setConvertingId(null);
-      // Reload page to show new invoice in table
       window.location.reload();
     } else {
       const err = await res.json().catch(() => ({}));
@@ -148,12 +153,15 @@ export function ClientPOsSection({
         clientPoNumber: addForm.clientPoNumber,
         destination: addForm.destination || null,
         plannedTons: addForm.plannedTons ? parseFloat(addForm.plannedTons) : null,
+        item: addForm.item || null,
+        incoterm: addForm.incoterm || null,
+        sellPriceOverride: addForm.sellPriceOverride ? parseFloat(addForm.sellPriceOverride) : null,
       }),
     });
     if (res.ok) {
       const data = await res.json();
       setList((prev) => [...prev, data]);
-      setAddForm({ clientPoNumber: "", destination: "", plannedTons: "", sellPriceOverride: "" });
+      setAddForm({ clientPoNumber: "", destination: "", plannedTons: "", item: product || "", incoterm: "", sellPriceOverride: "" });
       setAdding(false);
     }
     setLoading(false);
@@ -176,21 +184,38 @@ export function ClientPOsSection({
     complete: "Complete",
   };
 
-  // Count existing invoices per client PO to suggest next invoice number
   let invoiceCounter = 0;
+
+  // Reusable product selector
+  function ProductSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+    return products && products.length > 0 ? (
+      <select
+        className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        <option value="">— Select product —</option>
+        {products.map((p) => (
+          <option key={p.id} value={p.name}>{p.name}</option>
+        ))}
+      </select>
+    ) : (
+      <input
+        className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
+        placeholder="Product name"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    );
+  }
 
   return (
     <div className="bg-white rounded-md shadow-sm">
       {/* Header */}
       <div className="p-4 border-b border-stone-200 flex items-center justify-between">
         <div>
-          <h3 className="font-semibold text-stone-800">
-            Client Orders ({list.length})
-          </h3>
+          <h3 className="font-semibold text-stone-800">Client Orders ({list.length})</h3>
           <div className="flex items-center gap-3 mt-0.5">
-            {product && (
-              <p className="text-xs text-stone-500">{product}</p>
-            )}
             {totalPlanned > 0 && (
               <p className="text-xs text-stone-400">
                 {formatNumber(totalPlanned, 1)} TN planned
@@ -219,18 +244,20 @@ export function ClientPOsSection({
             <thead className="bg-stone-50">
               <tr>
                 <th className="text-left px-4 py-2.5 font-medium text-stone-500">Client PO</th>
+                <th className="text-left px-4 py-2.5 font-medium text-stone-500">Product</th>
                 <th className="text-left px-4 py-2.5 font-medium text-stone-500">Destination</th>
+                <th className="text-left px-4 py-2.5 font-medium text-stone-500">Incoterm</th>
                 <th className="text-right px-4 py-2.5 font-medium text-stone-500">Tons</th>
-                {sellPrice && (
-                  <th className="text-right px-4 py-2.5 font-medium text-stone-500">Est. Amount</th>
-                )}
+                <th className="text-right px-4 py-2.5 font-medium text-stone-500">Price/TN</th>
+                <th className="text-right px-4 py-2.5 font-medium text-stone-500">Est. Amount</th>
                 <th className="text-left px-4 py-2.5 font-medium text-stone-500">Status</th>
                 <th className="px-4 py-2.5 text-right font-medium text-stone-500">Action</th>
               </tr>
             </thead>
             <tbody>
               {list.map((cpo) => {
-                const amount = sellPrice && cpo.plannedTons ? cpo.plannedTons * sellPrice : null;
+                const effectivePrice = cpo.sellPriceOverride ?? sellPrice;
+                const amount = effectivePrice && cpo.plannedTons ? cpo.plannedTons * effectivePrice : null;
                 const isConverting = convertingId === cpo.id;
                 invoiceCounter++;
 
@@ -240,15 +267,19 @@ export function ClientPOsSection({
                       <td className="px-4 py-3 border-t border-stone-100 font-mono text-xs font-semibold text-[#0d3d3b]">
                         {cpo.clientPoNumber}
                       </td>
-                      <td className="px-4 py-3 border-t border-stone-100">{cpo.destination || "—"}</td>
+                      <td className="px-4 py-3 border-t border-stone-100 text-stone-600 text-xs">{cpo.item || "—"}</td>
+                      <td className="px-4 py-3 border-t border-stone-100 text-stone-500">{cpo.destination || "—"}</td>
+                      <td className="px-4 py-3 border-t border-stone-100 text-stone-500 text-xs">{cpo.incoterm || "—"}</td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right">
                         {cpo.plannedTons ? formatNumber(cpo.plannedTons, 1) : "—"}
                       </td>
-                      {sellPrice && (
-                        <td className="px-4 py-3 border-t border-stone-100 text-right font-medium">
-                          {amount ? formatCurrency(amount) : "—"}
-                        </td>
-                      )}
+                      <td className="px-4 py-3 border-t border-stone-100 text-right text-xs text-stone-500">
+                        {cpo.sellPriceOverride ? formatCurrency(cpo.sellPriceOverride) : (sellPrice ? formatCurrency(sellPrice) : "—")}
+                        {cpo.sellPriceOverride && <span className="ml-1 text-amber-500">*</span>}
+                      </td>
+                      <td className="px-4 py-3 border-t border-stone-100 text-right font-medium">
+                        {amount ? formatCurrency(amount) : "—"}
+                      </td>
                       <td className="px-4 py-3 border-t border-stone-100">
                         <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[cpo.status]}`}>
                           {statusLabels[cpo.status]}
@@ -261,15 +292,10 @@ export function ClientPOsSection({
                               onClick={() => openConvert(cpo, invoiceCounter - 1)}
                               className="text-xs bg-emerald-600 text-white px-2.5 py-1 rounded hover:bg-emerald-700 transition font-medium"
                             >
-                              Convert to Invoice →
+                              Convert →
                             </button>
                           )}
-                          <button
-                            onClick={() => handleDelete(cpo.id)}
-                            className="text-red-400 hover:text-red-600 text-xs"
-                          >
-                            ✕
-                          </button>
+                          <button onClick={() => handleDelete(cpo.id)} className="text-red-400 hover:text-red-600 text-xs">✕</button>
                         </div>
                       </td>
                     </tr>
@@ -277,55 +303,52 @@ export function ClientPOsSection({
                     {/* Convert to Invoice inline form */}
                     {isConverting && (
                       <tr key={`convert-${cpo.id}`}>
-                        <td colSpan={sellPrice ? 6 : 5} className="p-0">
-                          <div className="bg-emerald-50 border-t border-emerald-200 p-4">
-                            <p className="text-xs font-semibold text-emerald-800 uppercase mb-3">
-                              New Invoice — Client PO {cpo.clientPoNumber} · {cpo.destination}
+                        <td colSpan={9} className="p-0">
+                          <div className="bg-emerald-50 border-t border-emerald-200 p-4 space-y-3">
+                            <p className="text-xs font-semibold text-emerald-800 uppercase">
+                              New Invoice — {cpo.clientPoNumber} · {cpo.destination}
                             </p>
-                            {/* Product selector */}
-                            <div className="mb-3">
-                              <label className="block text-xs text-stone-500 mb-1">Product</label>
-                              {products && products.length > 0 ? (
-                                <select
-                                  className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white"
-                                  value={convertForm.item}
-                                  onChange={(e) => setConvertForm((f) => ({ ...f, item: e.target.value }))}
-                                >
-                                  <option value="">— Select product —</option>
-                                  {products.map((p) => (
-                                    <option key={p.id} value={p.name}>{p.name}</option>
-                                  ))}
-                                </select>
-                              ) : (
-                                <input
-                                  className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
-                                  placeholder="Product name"
-                                  value={convertForm.item}
-                                  onChange={(e) => setConvertForm((f) => ({ ...f, item: e.target.value }))}
-                                />
-                              )}
-                            </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+
+                            {/* Row 1: key fields pre-filled from client order */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                               <div>
                                 <label className="block text-xs text-stone-500 mb-1">Invoice # *</label>
                                 <input
                                   className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm font-mono"
-                                  placeholder="IX0043-1"
                                   value={convertForm.invoiceNumber}
                                   onChange={(e) => setConvertForm((f) => ({ ...f, invoiceNumber: e.target.value }))}
                                 />
                               </div>
                               <div>
+                                <label className="block text-xs text-stone-500 mb-1">Product</label>
+                                <ProductSelect
+                                  value={convertForm.item}
+                                  onChange={(v) => setConvertForm((f) => ({ ...f, item: v }))}
+                                />
+                              </div>
+                              <div>
                                 <label className="block text-xs text-stone-500 mb-1">Tons ADMT *</label>
                                 <input
-                                  type="number"
-                                  step="0.001"
+                                  type="number" step="0.001"
                                   className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
-                                  placeholder="91.440"
                                   value={convertForm.quantityTons}
                                   onChange={(e) => setConvertForm((f) => ({ ...f, quantityTons: e.target.value }))}
                                 />
                               </div>
+                              <div>
+                                <label className="block text-xs text-stone-500 mb-1">Sell Price/TN</label>
+                                <input
+                                  type="number" step="0.01"
+                                  className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
+                                  placeholder={`${sellPrice ?? ""} (default)`}
+                                  value={convertForm.sellPriceOverride}
+                                  onChange={(e) => setConvertForm((f) => ({ ...f, sellPriceOverride: e.target.value }))}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Row 2: shipment details */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                               <div>
                                 <label className="block text-xs text-stone-500 mb-1">Railcar #</label>
                                 <input
@@ -362,37 +385,30 @@ export function ClientPOsSection({
                                   onChange={(e) => setConvertForm((f) => ({ ...f, invoiceDate: e.target.value }))}
                                 />
                               </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3 max-w-xs">
                               <div>
                                 <label className="block text-xs text-stone-500 mb-1">Bales</label>
-                                <input
-                                  type="number"
-                                  className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
-                                  placeholder="250"
-                                  value={convertForm.balesCount}
-                                  onChange={(e) => setConvertForm((f) => ({ ...f, balesCount: e.target.value }))}
-                                />
+                                <input type="number" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="250" value={convertForm.balesCount} onChange={(e) => setConvertForm((f) => ({ ...f, balesCount: e.target.value }))} />
                               </div>
                               <div>
-                                <label className="block text-xs text-stone-500 mb-1">Units</label>
-                                <input
-                                  type="number"
-                                  className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
-                                  placeholder="1"
-                                  value={convertForm.unitsPerBale}
-                                  onChange={(e) => setConvertForm((f) => ({ ...f, unitsPerBale: e.target.value }))}
-                                />
+                                <label className="block text-xs text-stone-500 mb-1">Units/Bale</label>
+                                <input type="number" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="1" value={convertForm.unitsPerBale} onChange={(e) => setConvertForm((f) => ({ ...f, unitsPerBale: e.target.value }))} />
                               </div>
                             </div>
 
                             {/* Amount preview */}
-                            {sellPrice && convertForm.quantityTons && (
-                              <div className="mt-3 text-sm text-emerald-800 font-medium">
-                                Invoice total: {formatCurrency(parseFloat(convertForm.quantityTons) * sellPrice)}
-                                {" "}({convertForm.quantityTons} TN × ${sellPrice}/TN)
+                            {convertForm.quantityTons && (
+                              <div className="text-sm text-emerald-800 font-medium">
+                                Invoice total: {formatCurrency(
+                                  parseFloat(convertForm.quantityTons) * (convertForm.sellPriceOverride ? parseFloat(convertForm.sellPriceOverride) : (sellPrice ?? 0))
+                                )}
+                                {" "}({convertForm.quantityTons} TN × ${convertForm.sellPriceOverride || sellPrice}/TN)
                               </div>
                             )}
 
-                            <div className="flex gap-2 mt-3">
+                            <div className="flex gap-2">
                               <button
                                 onClick={() => handleConvert(cpo)}
                                 disabled={convertLoading || !convertForm.invoiceNumber || !convertForm.quantityTons}
@@ -400,10 +416,7 @@ export function ClientPOsSection({
                               >
                                 {convertLoading ? "Creating..." : "Create Invoice"}
                               </button>
-                              <button
-                                onClick={() => setConvertingId(null)}
-                                className="text-sm text-stone-500 hover:text-stone-700 px-3 py-1.5"
-                              >
+                              <button onClick={() => setConvertingId(null)} className="text-sm text-stone-500 hover:text-stone-700 px-3 py-1.5">
                                 Cancel
                               </button>
                             </div>
@@ -419,10 +432,12 @@ export function ClientPOsSection({
         </div>
       )}
 
-      {/* Add new Client PO form */}
+      {/* Add new Client Order form */}
       {adding && (
         <div className="p-4 border-t border-stone-100 bg-stone-50 space-y-3">
           <p className="text-xs font-semibold text-stone-500 uppercase">New Client Order</p>
+
+          {/* Row 1 */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs text-stone-500 mb-1">Client PO # *</label>
@@ -437,7 +452,7 @@ export function ClientPOsSection({
               <label className="block text-xs text-stone-500 mb-1">Destination</label>
               <input
                 className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
-                placeholder="Morelia, Ecatepec, Bajio..."
+                placeholder="Morelia, Ecatepec..."
                 value={addForm.destination}
                 onChange={(e) => setAddForm((f) => ({ ...f, destination: e.target.value }))}
               />
@@ -445,8 +460,7 @@ export function ClientPOsSection({
             <div>
               <label className="block text-xs text-stone-500 mb-1">Planned Tons</label>
               <input
-                type="number"
-                step="0.1"
+                type="number" step="0.1"
                 className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
                 placeholder="270"
                 value={addForm.plannedTons}
@@ -454,11 +468,40 @@ export function ClientPOsSection({
               />
             </div>
           </div>
-          {sellPrice && addForm.plannedTons && (
+
+          {/* Row 2 */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs text-stone-500 mb-1">Product</label>
+              <ProductSelect value={addForm.item} onChange={(v) => setAddForm((f) => ({ ...f, item: v }))} />
+            </div>
+            <div>
+              <label className="block text-xs text-stone-500 mb-1">Incoterm</label>
+              <input
+                className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
+                placeholder="DAP, CIF, FOB..."
+                value={addForm.incoterm}
+                onChange={(e) => setAddForm((f) => ({ ...f, incoterm: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-stone-500 mb-1">Price/TN override</label>
+              <input
+                type="number" step="0.01"
+                className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
+                placeholder={sellPrice ? `${sellPrice} (default)` : "0.00"}
+                value={addForm.sellPriceOverride}
+                onChange={(e) => setAddForm((f) => ({ ...f, sellPriceOverride: e.target.value }))}
+              />
+            </div>
+          </div>
+
+          {addForm.plannedTons && (
             <p className="text-xs text-stone-500">
-              Estimated amount: {formatCurrency(parseFloat(addForm.plannedTons) * sellPrice)}
+              Estimated: {formatCurrency(parseFloat(addForm.plannedTons) * (addForm.sellPriceOverride ? parseFloat(addForm.sellPriceOverride) : (sellPrice ?? 0)))}
             </p>
           )}
+
           <div className="flex gap-2">
             <button
               onClick={handleAdd}
@@ -467,10 +510,7 @@ export function ClientPOsSection({
             >
               {loading ? "Saving..." : "Save"}
             </button>
-            <button
-              onClick={() => setAdding(false)}
-              className="text-xs text-stone-500 hover:text-stone-700 px-3 py-1.5"
-            >
+            <button onClick={() => setAdding(false)} className="text-xs text-stone-500 hover:text-stone-700 px-3 py-1.5">
               Cancel
             </button>
           </div>

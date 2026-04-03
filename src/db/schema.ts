@@ -181,6 +181,9 @@ export const clientPurchaseOrders = sqliteTable("client_purchase_orders", {
   clientPoNumber: text("client_po_number").notNull(), // e.g. X189014
   destination: text("destination"), // e.g. "Morelia"
   plannedTons: real("planned_tons"), // e.g. 270
+  item: text("item"), // product name for this client order
+  incoterm: text("incoterm"), // incoterm specific to this order
+  sellPriceOverride: real("sell_price_override"), // price override for this order
   status: text("status", { enum: ["pending", "partial", "complete"] }).notNull().default("pending"),
   notes: text("notes"),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),

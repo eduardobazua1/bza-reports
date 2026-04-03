@@ -18,7 +18,16 @@ export async function PATCH(
 ) {
   const { id } = await params;
   const body = await req.json();
-  const { status } = body;
-  await db.update(clientPurchaseOrders).set({ status }).where(eq(clientPurchaseOrders.id, Number(id)));
+
+  const updateData: Record<string, unknown> = {};
+  if (body.status !== undefined) updateData.status = body.status;
+  if (body.clientPoNumber !== undefined) updateData.clientPoNumber = body.clientPoNumber;
+  if (body.destination !== undefined) updateData.destination = body.destination || null;
+  if (body.plannedTons !== undefined) updateData.plannedTons = body.plannedTons || null;
+  if (body.item !== undefined) updateData.item = body.item || null;
+  if (body.incoterm !== undefined) updateData.incoterm = body.incoterm || null;
+  if (body.sellPriceOverride !== undefined) updateData.sellPriceOverride = body.sellPriceOverride || null;
+
+  await db.update(clientPurchaseOrders).set(updateData).where(eq(clientPurchaseOrders.id, Number(id)));
   return NextResponse.json({ ok: true });
 }
