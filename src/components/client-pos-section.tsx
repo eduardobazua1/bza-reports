@@ -283,9 +283,9 @@ export function ClientPOsSection({
                               New Invoice — Client PO {cpo.clientPoNumber} · {cpo.destination}
                             </p>
                             {/* Product selector */}
-                            {products && products.length > 0 && (
-                              <div className="mb-3">
-                                <label className="block text-xs text-stone-500 mb-1">Product</label>
+                            <div className="mb-3">
+                              <label className="block text-xs text-stone-500 mb-1">Product</label>
+                              {products && products.length > 0 ? (
                                 <select
                                   className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white"
                                   value={convertForm.item}
@@ -296,8 +296,15 @@ export function ClientPOsSection({
                                     <option key={p.id} value={p.name}>{p.name}</option>
                                   ))}
                                 </select>
-                              </div>
-                            )}
+                              ) : (
+                                <input
+                                  className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
+                                  placeholder="Product name"
+                                  value={convertForm.item}
+                                  onChange={(e) => setConvertForm((f) => ({ ...f, item: e.target.value }))}
+                                />
+                              )}
+                            </div>
                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                               <div>
                                 <label className="block text-xs text-stone-500 mb-1">Invoice # *</label>
