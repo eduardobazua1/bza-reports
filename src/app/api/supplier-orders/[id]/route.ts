@@ -16,6 +16,7 @@ export async function PATCH(
       tons: body.tons,
       pricePerTon: body.pricePerTon ?? null,
       incoterm: body.incoterm ?? null,
+      item: body.item ?? null,
       lines: body.lines ? JSON.stringify(body.lines) : null,
       notes: body.notes ?? null,
     })

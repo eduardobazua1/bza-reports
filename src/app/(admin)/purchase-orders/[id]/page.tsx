@@ -203,6 +203,7 @@ export default async function PurchaseOrderDetailPage({
         supplierEmail={po.supplier?.contactEmail ?? null}
         supplierName={po.supplier?.name ?? ""}
         product={supplierProduct?.name ?? po.product}
+        products={productsList}
       />
 
       {/* ── Section 5: Client Orders ────────────────────────── */}
@@ -226,6 +227,7 @@ export default async function PurchaseOrderDetailPage({
               <tr>
                 <th className="text-left px-3 py-2 font-medium text-stone-500">Client PO</th>
                 <th className="text-left px-3 py-2 font-medium text-stone-500">Invoice #</th>
+                <th className="text-left px-3 py-2 font-medium text-stone-500">Product</th>
                 <th className="text-left px-3 py-2 font-medium text-stone-500">Destination</th>
                 <th className="text-left px-3 py-2 font-medium text-stone-500">Vehicle</th>
                 <th className="text-right px-3 py-2 font-medium text-stone-500">Tons</th>
@@ -241,7 +243,7 @@ export default async function PurchaseOrderDetailPage({
             <tbody>
               {po.invoices.length === 0 && (
                 <tr>
-                  <td colSpan={12} className="p-6 text-center text-stone-400">
+                  <td colSpan={13} className="p-6 text-center text-stone-400">
                     No invoices for this PO.
                   </td>
                 </tr>
@@ -268,6 +270,7 @@ export default async function PurchaseOrderDetailPage({
                         </div>
                       )}
                     </td>
+                    <td className="px-3 py-2 border-t border-stone-100 text-stone-600 text-xs">{inv.item || "—"}</td>
                     <td className="px-3 py-2 border-t border-stone-100 text-stone-500">{(inv as any).destination || "—"}</td>
                     <td className="px-3 py-2 border-t border-stone-100 text-stone-500 font-mono text-xs">{inv.vehicleId || "—"}</td>
                     <td className="px-3 py-2 border-t border-stone-100 text-right">{formatNumber(inv.quantityTons, 3)}</td>
@@ -298,7 +301,7 @@ export default async function PurchaseOrderDetailPage({
               {/* Totals row */}
               {po.invoices.length > 0 && (
                 <tr className="bg-stone-50 font-medium">
-                  <td colSpan={4} className="px-3 py-2 border-t border-stone-200 font-semibold">TOTAL</td>
+                  <td colSpan={5} className="px-3 py-2 border-t border-stone-200 font-semibold">TOTAL</td>
                   <td className="px-3 py-2 border-t border-stone-200 text-right font-semibold">{formatNumber(totalTons, 3)}</td>
                   <td className="px-3 py-2 border-t border-stone-200 text-right font-semibold">{formatCurrency(totalRevenue)}</td>
                   <td className="px-3 py-2 border-t border-stone-200 text-right font-semibold">{formatCurrency(totalCost - totalFreight)}</td>
@@ -307,7 +310,7 @@ export default async function PurchaseOrderDetailPage({
                       {formatCurrency(totalProfit)}
                     </span>
                   </td>
-                  <td colSpan={4} className="px-3 py-2 border-t border-stone-200"></td>
+                  <td colSpan={5} className="px-3 py-2 border-t border-stone-200"></td>
                 </tr>
               )}
             </tbody>

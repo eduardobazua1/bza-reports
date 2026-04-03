@@ -12,10 +12,13 @@ type SupplierOrder = {
   tons: number;
   pricePerTon: number | null;
   incoterm: string | null;
+  item: string | null;
   lines: string | null;
   notes: string | null;
   createdAt: string;
 };
+
+type Product = { id: number; name: string };
 
 function emptyLine(): OrderLine {
   return { destination: "", tons: "", notes: "" };
@@ -38,6 +41,7 @@ export function SupplierOrdersSection({
   poNumber,
   supplierEmail,
   product,
+  products,
 }: {
   purchaseOrderId: number;
   supplierOrders: SupplierOrder[];
@@ -47,6 +51,7 @@ export function SupplierOrdersSection({
   supplierEmail: string | null;
   supplierName: string;
   product?: string;
+  products?: Product[];
 }) {
   const [list, setList] = useState<SupplierOrder[]>(supplierOrders);
   const [adding, setAdding] = useState(false);
@@ -61,6 +66,7 @@ export function SupplierOrdersSection({
   const [editDate, setEditDate] = useState("");
   const [editPrice, setEditPrice] = useState("");
   const [editIncoterm, setEditIncoterm] = useState("");
+  const [editItem, setEditItem] = useState("");
   const [editLines, setEditLines] = useState<OrderLine[]>([emptyLine()]);
   const [editLoading, setEditLoading] = useState(false);
 
@@ -68,6 +74,7 @@ export function SupplierOrdersSection({
   const [orderDate, setOrderDate] = useState(new Date().toISOString().split("T")[0]);
   const [pricePerTon, setPricePerTon] = useState("");
   const [incoterm, setIncoterm] = useState("");
+  const [addItem, setAddItem] = useState(product || "");
   const [lines, setLines] = useState<OrderLine[]>([emptyLine()]);
 
   const totalTons = list.reduce((s, o) => s + o.tons, 0);
@@ -91,13 +98,12 @@ export function SupplierOrdersSection({
     setEditDate(order.orderDate || "");
     setEditPrice(order.pricePerTon != null ? String(order.pricePerTon) : "");
     setEditIncoterm(order.incoterm || "");
+    setEditItem(order.item || "");
     setEditLines(parsedLinesToForm(order.lines));
     setSendingId(null);
   }
 
-  function cancelEdit() {
-    setEditingId(null);
-  }
+  function cancelEdit() { setEditingId(null); }
 
   async function handleEdit(order: SupplierOrder) {
     const validLines = editLines.filter(l => l.tons && parseFloat(l.tons) > 0);
@@ -113,6 +119,7 @@ export function SupplierOrdersSection({
         tons: totalT,
         pricePerTon: editPrice ? parseFloat(editPrice) : null,
         incoterm: editIncoterm || null,
+        item: editItem || null,
         lines: validLines.map(l => ({ destination: l.destination, tons: parseFloat(l.tons), notes: l.notes })),
       }),
     });
@@ -139,6 +146,7 @@ export function SupplierOrdersSection({
         tons: totalT,
         pricePerTon: pricePerTon ? parseFloat(pricePerTon) : null,
         incoterm: incoterm || null,
+        item: addItem || null,
         lines: validLines.map(l => ({ destination: l.destination, tons: parseFloat(l.tons), notes: l.notes })),
       }),
     });
@@ -148,6 +156,7 @@ export function SupplierOrdersSection({
       setOrderDate(new Date().toISOString().split("T")[0]);
       setPricePerTon("");
       setIncoterm("");
+      setAddItem(product || "");
       setLines([emptyLine()]);
       setAdding(false);
     }
@@ -197,6 +206,31 @@ export function SupplierOrdersSection({
     catch { return null; }
   }
 
+  const ProductSelect = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
+    <div>
+      <label className="block text-xs text-stone-500 mb-1">Product</label>
+      {products && products.length > 0 ? (
+        <select
+          className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        >
+          <option value="">— Select product —</option>
+          {products.map(p => (
+            <option key={p.id} value={p.name}>{p.name}</option>
+          ))}
+        </select>
+      ) : (
+        <input
+          className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
+          placeholder="Product name"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      )}
+    </div>
+  );
+
   return (
     <div className="bg-white rounded-md shadow-sm">
       <div className="p-4 border-b border-stone-200 flex items-center justify-between">
@@ -231,6 +265,7 @@ export function SupplierOrdersSection({
             <thead className="bg-stone-50">
               <tr>
                 <th className="text-left px-4 py-2.5 font-medium text-stone-500">Date</th>
+                <th className="text-left px-4 py-2.5 font-medium text-stone-500">Product</th>
                 <th className="text-right px-4 py-2.5 font-medium text-stone-500">Tons</th>
                 <th className="text-right px-4 py-2.5 font-medium text-stone-500">Price/TN</th>
                 <th className="text-left px-4 py-2.5 font-medium text-stone-500">Incoterm</th>
@@ -253,6 +288,7 @@ export function SupplierOrdersSection({
                   <>
                     <tr key={order.id} className={`hover:bg-stone-50 align-top ${isEditing ? "bg-amber-50/40" : ""}`}>
                       <td className="px-4 py-3 border-t border-stone-100">{fmtDate(order.orderDate)}</td>
+                      <td className="px-4 py-3 border-t border-stone-100 text-stone-600">{order.item || "—"}</td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right font-medium">{formatNumber(order.tons, 1)}</td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right">{formatCurrency(price)}</td>
                       <td className="px-4 py-3 border-t border-stone-100 text-stone-500">{inc || "—"}</td>
@@ -300,11 +336,11 @@ export function SupplierOrdersSection({
                     {/* Edit inline form */}
                     {isEditing && (
                       <tr key={`edit-${order.id}`}>
-                        <td colSpan={7} className="p-0">
+                        <td colSpan={8} className="p-0">
                           <div className="bg-amber-50 border-t border-amber-200 p-4 space-y-4">
                             <p className="text-xs font-semibold text-amber-800 uppercase">Edit Supplier Order</p>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                               <div>
                                 <label className="block text-xs text-stone-500 mb-1">Date</label>
                                 <input
@@ -314,6 +350,7 @@ export function SupplierOrdersSection({
                                   onChange={(e) => setEditDate(e.target.value)}
                                 />
                               </div>
+                              <ProductSelect value={editItem} onChange={setEditItem} />
                               <div>
                                 <label className="block text-xs text-stone-500 mb-1">Price/TN (USD)</label>
                                 <input
@@ -336,43 +373,18 @@ export function SupplierOrdersSection({
                               </div>
                             </div>
 
-                            {/* Edit line items */}
                             <div>
                               <div className="flex items-center justify-between mb-2">
                                 <label className="text-xs font-semibold text-stone-500 uppercase">Lines</label>
-                                <button
-                                  onClick={addEditLine}
-                                  className="text-xs text-amber-700 hover:text-amber-900 font-medium"
-                                >
-                                  + Add line
-                                </button>
+                                <button onClick={addEditLine} className="text-xs text-amber-700 hover:text-amber-900 font-medium">+ Add line</button>
                               </div>
                               <div className="space-y-2">
                                 {editLines.map((line, i) => (
                                   <div key={i} className="grid grid-cols-[1fr_80px_1fr_24px] gap-2 items-center">
-                                    <input
-                                      className="border border-stone-200 rounded px-2 py-1.5 text-sm"
-                                      placeholder="Destination"
-                                      value={line.destination}
-                                      onChange={(e) => updateEditLine(i, "destination", e.target.value)}
-                                    />
-                                    <input
-                                      type="number"
-                                      step="0.1"
-                                      className="border border-stone-200 rounded px-2 py-1.5 text-sm"
-                                      placeholder="TN"
-                                      value={line.tons}
-                                      onChange={(e) => updateEditLine(i, "tons", e.target.value)}
-                                    />
-                                    <input
-                                      className="border border-stone-200 rounded px-2 py-1.5 text-sm"
-                                      placeholder="Notes"
-                                      value={line.notes}
-                                      onChange={(e) => updateEditLine(i, "notes", e.target.value)}
-                                    />
-                                    {editLines.length > 1 && (
-                                      <button onClick={() => removeEditLine(i)} className="text-red-400 hover:text-red-600 text-sm text-center">✕</button>
-                                    )}
+                                    <input className="border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="Destination" value={line.destination} onChange={(e) => updateEditLine(i, "destination", e.target.value)} />
+                                    <input type="number" step="0.1" className="border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="TN" value={line.tons} onChange={(e) => updateEditLine(i, "tons", e.target.value)} />
+                                    <input className="border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="Notes" value={line.notes} onChange={(e) => updateEditLine(i, "notes", e.target.value)} />
+                                    {editLines.length > 1 && <button onClick={() => removeEditLine(i)} className="text-red-400 hover:text-red-600 text-sm text-center">✕</button>}
                                   </div>
                                 ))}
                               </div>
@@ -384,19 +396,10 @@ export function SupplierOrdersSection({
                             </div>
 
                             <div className="flex gap-2">
-                              <button
-                                onClick={() => handleEdit(order)}
-                                disabled={editLoading || editTotalTons === 0}
-                                className="text-xs bg-amber-600 text-white px-3 py-1.5 rounded hover:bg-amber-700 disabled:opacity-50 font-medium"
-                              >
+                              <button onClick={() => handleEdit(order)} disabled={editLoading || editTotalTons === 0} className="text-xs bg-amber-600 text-white px-3 py-1.5 rounded hover:bg-amber-700 disabled:opacity-50 font-medium">
                                 {editLoading ? "Saving..." : "Save changes"}
                               </button>
-                              <button
-                                onClick={cancelEdit}
-                                className="text-xs text-stone-500 hover:text-stone-700 px-3 py-1.5"
-                              >
-                                Cancel
-                              </button>
+                              <button onClick={cancelEdit} className="text-xs text-stone-500 hover:text-stone-700 px-3 py-1.5">Cancel</button>
                             </div>
                           </div>
                         </td>
@@ -405,7 +408,7 @@ export function SupplierOrdersSection({
 
                     {isSending && (
                       <tr key={`send-${order.id}`}>
-                        <td colSpan={7} className="p-0">
+                        <td colSpan={8} className="p-0">
                           <div className="bg-blue-50 border-t border-blue-200 px-4 py-3 flex items-center gap-3">
                             <span className="text-xs text-blue-700 font-medium whitespace-nowrap">Send to:</span>
                             <input
@@ -415,11 +418,7 @@ export function SupplierOrdersSection({
                               value={sendEmail}
                               onChange={(e) => setSendEmail(e.target.value)}
                             />
-                            <button
-                              onClick={() => handleSend(order)}
-                              disabled={sendLoading || !sendEmail}
-                              className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 disabled:opacity-50 font-medium"
-                            >
+                            <button onClick={() => handleSend(order)} disabled={sendLoading || !sendEmail} className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 disabled:opacity-50 font-medium">
                               {sendLoading ? "Sending..." : "Send PDF"}
                             </button>
                             <button onClick={() => setSendingId(null)} className="text-xs text-stone-400 hover:text-stone-600">Cancel</button>
@@ -440,71 +439,34 @@ export function SupplierOrdersSection({
         <div className="p-4 border-t border-stone-100 bg-stone-50 space-y-4">
           <p className="text-xs font-semibold text-stone-500 uppercase">New Supplier Order — {poNumber}</p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div>
               <label className="block text-xs text-stone-500 mb-1">Date</label>
-              <input
-                type="date"
-                className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
-                value={orderDate}
-                onChange={(e) => setOrderDate(e.target.value)}
-              />
+              <input type="date" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={orderDate} onChange={(e) => setOrderDate(e.target.value)} />
             </div>
+            <ProductSelect value={addItem} onChange={setAddItem} />
             <div>
               <label className="block text-xs text-stone-500 mb-1">Price/TN (USD)</label>
-              <input
-                type="number"
-                step="0.01"
-                className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
-                placeholder="0.00"
-                value={pricePerTon}
-                onChange={(e) => setPricePerTon(e.target.value)}
-              />
+              <input type="number" step="0.01" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="0.00" value={pricePerTon} onChange={(e) => setPricePerTon(e.target.value)} />
             </div>
             <div>
               <label className="block text-xs text-stone-500 mb-1">Incoterm</label>
-              <input
-                className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
-                placeholder="DAP, CIF, FOB..."
-                value={incoterm}
-                onChange={(e) => setIncoterm(e.target.value)}
-              />
+              <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="DAP, CIF, FOB..." value={incoterm} onChange={(e) => setIncoterm(e.target.value)} />
             </div>
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-semibold text-stone-500 uppercase">Lines</label>
-              <button onClick={addLine} className="text-xs text-blue-600 hover:text-blue-800 font-medium">
-                + Add line
-              </button>
+              <button onClick={addLine} className="text-xs text-blue-600 hover:text-blue-800 font-medium">+ Add line</button>
             </div>
             <div className="space-y-2">
               {lines.map((line, i) => (
                 <div key={i} className="grid grid-cols-[1fr_80px_1fr_24px] gap-2 items-center">
-                  <input
-                    className="border border-stone-200 rounded px-2 py-1.5 text-sm"
-                    placeholder="Destination (e.g. Morelia)"
-                    value={line.destination}
-                    onChange={(e) => updateLine(i, "destination", e.target.value)}
-                  />
-                  <input
-                    type="number"
-                    step="0.1"
-                    className="border border-stone-200 rounded px-2 py-1.5 text-sm"
-                    placeholder="TN"
-                    value={line.tons}
-                    onChange={(e) => updateLine(i, "tons", e.target.value)}
-                  />
-                  <input
-                    className="border border-stone-200 rounded px-2 py-1.5 text-sm"
-                    placeholder="Notes (e.g. 90 tons week 6-12)"
-                    value={line.notes}
-                    onChange={(e) => updateLine(i, "notes", e.target.value)}
-                  />
-                  {lines.length > 1 && (
-                    <button onClick={() => removeLine(i)} className="text-red-400 hover:text-red-600 text-sm text-center">✕</button>
-                  )}
+                  <input className="border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="Destination (e.g. Morelia)" value={line.destination} onChange={(e) => updateLine(i, "destination", e.target.value)} />
+                  <input type="number" step="0.1" className="border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="TN" value={line.tons} onChange={(e) => updateLine(i, "tons", e.target.value)} />
+                  <input className="border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="Notes (e.g. 90 tons week 6-12)" value={line.notes} onChange={(e) => updateLine(i, "notes", e.target.value)} />
+                  {lines.length > 1 && <button onClick={() => removeLine(i)} className="text-red-400 hover:text-red-600 text-sm text-center">✕</button>}
                 </div>
               ))}
             </div>
@@ -516,17 +478,10 @@ export function SupplierOrdersSection({
           </div>
 
           <div className="flex gap-2">
-            <button
-              onClick={handleAdd}
-              disabled={loading || formTotalTons === 0}
-              className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 disabled:opacity-50"
-            >
+            <button onClick={handleAdd} disabled={loading || formTotalTons === 0} className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 disabled:opacity-50">
               {loading ? "Saving..." : "Save"}
             </button>
-            <button
-              onClick={() => { setAdding(false); setLines([emptyLine()]); }}
-              className="text-xs text-stone-500 hover:text-stone-700 px-3 py-1.5"
-            >
+            <button onClick={() => { setAdding(false); setLines([emptyLine()]); }} className="text-xs text-stone-500 hover:text-stone-700 px-3 py-1.5">
               Cancel
             </button>
           </div>

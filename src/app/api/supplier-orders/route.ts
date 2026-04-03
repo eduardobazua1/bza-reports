@@ -4,7 +4,7 @@ import { supplierOrders } from "@/db/schema";
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { purchaseOrderId, orderDate, tons, pricePerTon, incoterm, lines, notes } = body;
+  const { purchaseOrderId, orderDate, tons, pricePerTon, incoterm, item, lines, notes } = body;
 
   const [row] = await db
     .insert(supplierOrders)
@@ -14,6 +14,7 @@ export async function POST(req: Request) {
       tons,
       pricePerTon: pricePerTon || null,
       incoterm: incoterm || null,
+      item: item || null,
       lines: lines ? JSON.stringify(lines) : null,
       notes: notes || null,
     })

@@ -219,6 +219,7 @@ export const supplierOrders = sqliteTable("supplier_orders", {
   tons: real("tons").notNull(), // total tons (sum of lines)
   pricePerTon: real("price_per_ton"), // null = use PO buyPrice
   incoterm: text("incoterm"), // null = use PO terms
+  item: text("item"), // product name shown on the PDF
   lines: text("lines"), // JSON: [{destination, tons, notes}]
   notes: text("notes"),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
