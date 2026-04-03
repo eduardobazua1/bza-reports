@@ -194,15 +194,40 @@ export function POForm({
     purchaseOrder?.clientProductId ? String(purchaseOrder.clientProductId) : ""
   );
 
+  function fillFromProduct(type: "fsc" | "pefc", prod: Product) {
+    if (type === "fsc") {
+      setLicenseFsc(prod.fscLicense || "");
+      setChainOfCustody(prod.chainOfCustody || "");
+      setInputClaim(prod.inputClaim || "");
+      setOutputClaim(prod.outputClaim || "");
+      setPefc("");
+    } else {
+      setPefc(prod.pefc || "");
+      setInputClaim(prod.inputClaim || "");
+      setChainOfCustody(prod.chainOfCustody || "");
+      setOutputClaim(prod.outputClaim || "");
+      setLicenseFsc("");
+    }
+  }
+
   function handleCertType(type: "" | "fsc" | "pefc") {
     setCertType(type);
     if (type === "") {
       setLicenseFsc(""); setChainOfCustody(""); setInputClaim(""); setOutputClaim(""); setPefc("");
-    } else if (type === "fsc") {
-      setPefc("");
-    } else if (type === "pefc") {
-      setLicenseFsc(""); setChainOfCustody(""); setInputClaim(""); setOutputClaim("");
+      return;
     }
+    // Auto-fill from selected supplier product if available
+    const prod = products.find(p => String(p.id) === supplierProductId);
+    if (prod) fillFromProduct(type, prod);
+    else if (type === "fsc") setPefc("");
+    else { setLicenseFsc(""); setChainOfCustody(""); setInputClaim(""); setOutputClaim(""); }
+  }
+
+  function handleSupplierProductChange(id: string) {
+    setSupplierProductId(id);
+    if (!id || !certType) return;
+    const prod = products.find(p => String(p.id) === id);
+    if (prod) fillFromProduct(certType as "fsc" | "pefc", prod);
   }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -340,7 +365,7 @@ export function POForm({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">Product (Supplier PO)</label>
-            <select value={supplierProductId} onChange={(e) => setSupplierProductId(e.target.value)} className={inp}>
+            <select value={supplierProductId} onChange={(e) => handleSupplierProductChange(e.target.value)} className={inp}>
               <option value="">— Free text —</option>
               {products.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}{p.grade ? ` (${p.grade})` : ""}</option>
