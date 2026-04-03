@@ -103,11 +103,22 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
               {invoiceRows.map((row) => {
                 const sellPrice = row.invoice.sellPriceOverride ?? row.poSellPrice ?? 0;
                 const revenue = row.invoice.quantityTons * sellPrice;
-                const dueDate = row.invoice.dueDate;
+                // Compute dueDate: use stored value or calculate from invoiceDate/shipmentDate + terms
+                const termsDays = (row.invoice.paymentTermsDays != null && row.invoice.paymentTermsDays > 0)
+                  ? row.invoice.paymentTermsDays
+                  : (row.clientPaymentTermsDays != null && row.clientPaymentTermsDays > 0)
+                    ? row.clientPaymentTermsDays
+                    : 60;
+                const baseDate = row.invoice.invoiceDate || row.invoice.shipmentDate;
+                const dueDate = row.invoice.dueDate || (baseDate ? (() => {
+                  const d = new Date(baseDate + "T12:00:00");
+                  d.setDate(d.getDate() + termsDays);
+                  return d.toISOString().split("T")[0];
+                })() : null);
                 const today = new Date();
                 let daysOverdue = 0;
                 if (dueDate) {
-                  daysOverdue = Math.floor((today.getTime() - new Date(dueDate).getTime()) / (1000 * 60 * 60 * 24));
+                  daysOverdue = Math.floor((today.getTime() - new Date(dueDate + "T12:00:00").getTime()) / (1000 * 60 * 60 * 24));
                 }
                 const isOverdue = dueDate && daysOverdue > 0 && row.invoice.customerPaymentStatus === "unpaid";
 
