@@ -21,6 +21,15 @@ function emptyLine(): OrderLine {
   return { destination: "", tons: "", notes: "" };
 }
 
+function parsedLinesToForm(linesJson: string | null): OrderLine[] {
+  if (!linesJson) return [emptyLine()];
+  try {
+    const parsed = JSON.parse(linesJson) as { destination: string; tons: number; notes: string }[];
+    if (!parsed.length) return [emptyLine()];
+    return parsed.map(l => ({ destination: l.destination || "", tons: String(l.tons), notes: l.notes || "" }));
+  } catch { return [emptyLine()]; }
+}
+
 export function SupplierOrdersSection({
   purchaseOrderId,
   supplierOrders,
@@ -47,7 +56,15 @@ export function SupplierOrdersSection({
   const [sendLoading, setSendLoading] = useState(false);
   const [sentId, setSentId] = useState<number | null>(null);
 
-  // Form state
+  // Edit state
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editDate, setEditDate] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+  const [editIncoterm, setEditIncoterm] = useState("");
+  const [editLines, setEditLines] = useState<OrderLine[]>([emptyLine()]);
+  const [editLoading, setEditLoading] = useState(false);
+
+  // Add form state
   const [orderDate, setOrderDate] = useState(new Date().toISOString().split("T")[0]);
   const [pricePerTon, setPricePerTon] = useState("");
   const [incoterm, setIncoterm] = useState("");
@@ -55,17 +72,56 @@ export function SupplierOrdersSection({
 
   const totalTons = list.reduce((s, o) => s + o.tons, 0);
   const formTotalTons = lines.reduce((s, l) => s + (parseFloat(l.tons) || 0), 0);
+  const editTotalTons = editLines.reduce((s, l) => s + (parseFloat(l.tons) || 0), 0);
 
-  function addLine() {
-    setLines((prev) => [...prev, emptyLine()]);
-  }
-
-  function removeLine(i: number) {
-    setLines((prev) => prev.filter((_, idx) => idx !== i));
-  }
-
+  function addLine() { setLines((prev) => [...prev, emptyLine()]); }
+  function removeLine(i: number) { setLines((prev) => prev.filter((_, idx) => idx !== i)); }
   function updateLine(i: number, field: keyof OrderLine, value: string) {
     setLines((prev) => prev.map((l, idx) => idx === i ? { ...l, [field]: value } : l));
+  }
+
+  function addEditLine() { setEditLines((prev) => [...prev, emptyLine()]); }
+  function removeEditLine(i: number) { setEditLines((prev) => prev.filter((_, idx) => idx !== i)); }
+  function updateEditLine(i: number, field: keyof OrderLine, value: string) {
+    setEditLines((prev) => prev.map((l, idx) => idx === i ? { ...l, [field]: value } : l));
+  }
+
+  function openEdit(order: SupplierOrder) {
+    setEditingId(order.id);
+    setEditDate(order.orderDate || "");
+    setEditPrice(order.pricePerTon != null ? String(order.pricePerTon) : "");
+    setEditIncoterm(order.incoterm || "");
+    setEditLines(parsedLinesToForm(order.lines));
+    setSendingId(null);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+  }
+
+  async function handleEdit(order: SupplierOrder) {
+    const validLines = editLines.filter(l => l.tons && parseFloat(l.tons) > 0);
+    if (validLines.length === 0) return;
+    const totalT = validLines.reduce((s, l) => s + parseFloat(l.tons), 0);
+
+    setEditLoading(true);
+    const res = await fetch(`/api/supplier-orders/${order.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        orderDate: editDate || null,
+        tons: totalT,
+        pricePerTon: editPrice ? parseFloat(editPrice) : null,
+        incoterm: editIncoterm || null,
+        lines: validLines.map(l => ({ destination: l.destination, tons: parseFloat(l.tons), notes: l.notes })),
+      }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setList((prev) => prev.map(o => o.id === order.id ? updated : o));
+      setEditingId(null);
+    }
+    setEditLoading(false);
   }
 
   async function handleAdd() {
@@ -108,6 +164,7 @@ export function SupplierOrdersSection({
     setSendingId(order.id);
     setSendEmail(supplierEmail || "");
     setSentId(null);
+    setEditingId(null);
   }
 
   async function handleSend(order: SupplierOrder) {
@@ -156,7 +213,7 @@ export function SupplierOrdersSection({
         </div>
         {!adding && (
           <button
-            onClick={() => setAdding(true)}
+            onClick={() => { setAdding(true); setEditingId(null); }}
             className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition"
           >
             + New Order to Supplier
@@ -188,12 +245,13 @@ export function SupplierOrdersSection({
                 const inc = order.incoterm ?? poTerms ?? "";
                 const total = order.tons * price;
                 const isSending = sendingId === order.id;
+                const isEditing = editingId === order.id;
                 const wasSent = sentId === order.id;
                 const ol = parsedLines(order);
 
                 return (
                   <>
-                    <tr key={order.id} className="hover:bg-stone-50 align-top">
+                    <tr key={order.id} className={`hover:bg-stone-50 align-top ${isEditing ? "bg-amber-50/40" : ""}`}>
                       <td className="px-4 py-3 border-t border-stone-100">{fmtDate(order.orderDate)}</td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right font-medium">{formatNumber(order.tons, 1)}</td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right">{formatCurrency(price)}</td>
@@ -228,10 +286,122 @@ export function SupplierOrdersSection({
                               Send
                             </button>
                           )}
+                          <button
+                            onClick={() => isEditing ? cancelEdit() : openEdit(order)}
+                            className={`text-xs font-medium ${isEditing ? "text-amber-600 hover:text-amber-800" : "text-stone-400 hover:text-stone-700"}`}
+                          >
+                            {isEditing ? "Cancel" : "Edit"}
+                          </button>
                           <button onClick={() => handleDelete(order.id)} className="text-red-400 hover:text-red-600 text-xs">✕</button>
                         </div>
                       </td>
                     </tr>
+
+                    {/* Edit inline form */}
+                    {isEditing && (
+                      <tr key={`edit-${order.id}`}>
+                        <td colSpan={7} className="p-0">
+                          <div className="bg-amber-50 border-t border-amber-200 p-4 space-y-4">
+                            <p className="text-xs font-semibold text-amber-800 uppercase">Edit Supplier Order</p>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              <div>
+                                <label className="block text-xs text-stone-500 mb-1">Date</label>
+                                <input
+                                  type="date"
+                                  className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
+                                  value={editDate}
+                                  onChange={(e) => setEditDate(e.target.value)}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-stone-500 mb-1">Price/TN (USD)</label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
+                                  placeholder={String(buyPrice)}
+                                  value={editPrice}
+                                  onChange={(e) => setEditPrice(e.target.value)}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-stone-500 mb-1">Incoterm</label>
+                                <input
+                                  className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
+                                  placeholder="DAP, CIF, FOB..."
+                                  value={editIncoterm}
+                                  onChange={(e) => setEditIncoterm(e.target.value)}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Edit line items */}
+                            <div>
+                              <div className="flex items-center justify-between mb-2">
+                                <label className="text-xs font-semibold text-stone-500 uppercase">Lines</label>
+                                <button
+                                  onClick={addEditLine}
+                                  className="text-xs text-amber-700 hover:text-amber-900 font-medium"
+                                >
+                                  + Add line
+                                </button>
+                              </div>
+                              <div className="space-y-2">
+                                {editLines.map((line, i) => (
+                                  <div key={i} className="grid grid-cols-[1fr_80px_1fr_24px] gap-2 items-center">
+                                    <input
+                                      className="border border-stone-200 rounded px-2 py-1.5 text-sm"
+                                      placeholder="Destination"
+                                      value={line.destination}
+                                      onChange={(e) => updateEditLine(i, "destination", e.target.value)}
+                                    />
+                                    <input
+                                      type="number"
+                                      step="0.1"
+                                      className="border border-stone-200 rounded px-2 py-1.5 text-sm"
+                                      placeholder="TN"
+                                      value={line.tons}
+                                      onChange={(e) => updateEditLine(i, "tons", e.target.value)}
+                                    />
+                                    <input
+                                      className="border border-stone-200 rounded px-2 py-1.5 text-sm"
+                                      placeholder="Notes"
+                                      value={line.notes}
+                                      onChange={(e) => updateEditLine(i, "notes", e.target.value)}
+                                    />
+                                    {editLines.length > 1 && (
+                                      <button onClick={() => removeEditLine(i)} className="text-red-400 hover:text-red-600 text-sm text-center">✕</button>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                              {editTotalTons > 0 && (
+                                <p className="text-xs text-stone-500 mt-2">
+                                  Total: {formatNumber(editTotalTons, 1)} TN · {formatCurrency(editTotalTons * (editPrice ? parseFloat(editPrice) : buyPrice))}
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleEdit(order)}
+                                disabled={editLoading || editTotalTons === 0}
+                                className="text-xs bg-amber-600 text-white px-3 py-1.5 rounded hover:bg-amber-700 disabled:opacity-50 font-medium"
+                              >
+                                {editLoading ? "Saving..." : "Save changes"}
+                              </button>
+                              <button
+                                onClick={cancelEdit}
+                                className="text-xs text-stone-500 hover:text-stone-700 px-3 py-1.5"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
 
                     {isSending && (
                       <tr key={`send-${order.id}`}>
@@ -270,7 +440,6 @@ export function SupplierOrdersSection({
         <div className="p-4 border-t border-stone-100 bg-stone-50 space-y-4">
           <p className="text-xs font-semibold text-stone-500 uppercase">New Supplier Order — {poNumber}</p>
 
-          {/* Header fields */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs text-stone-500 mb-1">Date</label>
@@ -303,14 +472,10 @@ export function SupplierOrdersSection({
             </div>
           </div>
 
-          {/* Line items */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-semibold text-stone-500 uppercase">Lines</label>
-              <button
-                onClick={addLine}
-                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-              >
+              <button onClick={addLine} className="text-xs text-blue-600 hover:text-blue-800 font-medium">
                 + Add line
               </button>
             </div>
