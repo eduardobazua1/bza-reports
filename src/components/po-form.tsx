@@ -176,15 +176,17 @@ export function POForm({
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
-  // Controlled FSC fields for auto-fill
-  const [licenseFsc, setLicenseFsc] = useState(purchaseOrder?.licenseFsc || "");
-  const [chainOfCustody, setChainOfCustody] = useState(purchaseOrder?.chainOfCustody || "");
-  const [inputClaim, setInputClaim] = useState(purchaseOrder?.inputClaim || "");
-  const [outputClaim, setOutputClaim] = useState(purchaseOrder?.outputClaim || "");
-  const [certType, setCertType] = useState<"fsc" | "pefc" | "">(purchaseOrder?.certType || "");
-  const [pefc, setPefc] = useState(purchaseOrder?.pefc || "");
+  const inp = "w-full border border-border rounded-lg px-3 py-2 text-sm bg-background";
 
-  // Product selects
+  // Cert state
+  const [certType, setCertType] = useState<"" | "fsc" | "pefc">(purchaseOrder?.certType || "");
+  const [licenseFsc, setLicenseFsc]     = useState(purchaseOrder?.licenseFsc || "");
+  const [chainOfCustody, setChainOfCustody] = useState(purchaseOrder?.chainOfCustody || "");
+  const [inputClaim, setInputClaim]     = useState(purchaseOrder?.inputClaim || "");
+  const [outputClaim, setOutputClaim]   = useState(purchaseOrder?.outputClaim || "");
+  const [pefc, setPefc]                 = useState(purchaseOrder?.pefc || "");
+
+  // Product selects (kept for PDF naming)
   const [supplierProductId, setSupplierProductId] = useState<string>(
     purchaseOrder?.supplierProductId ? String(purchaseOrder.supplierProductId) : ""
   );
@@ -192,97 +194,65 @@ export function POForm({
     purchaseOrder?.clientProductId ? String(purchaseOrder.clientProductId) : ""
   );
 
-  // Derived: which cert options does the selected supplier product have?
-  const selectedSupplierProduct = products.find(p => String(p.id) === supplierProductId);
-  const hasFsc = !!(selectedSupplierProduct?.fscLicense || selectedSupplierProduct?.inputClaim);
-  const hasPefc = !!selectedSupplierProduct?.pefc;
-  const hasBoth = hasFsc && hasPefc;
-
-  function applyCertType(type: "fsc" | "pefc", prod: Product) {
-    if (type === "fsc") {
-      setLicenseFsc(prod.fscLicense || "");
-      setChainOfCustody(prod.chainOfCustody || "");
-      setInputClaim(prod.inputClaim || "");
-      setOutputClaim(prod.outputClaim || "");
-      setPefc("");
-    } else {
-      setLicenseFsc("");
-      setChainOfCustody("");
-      setInputClaim("");
-      setOutputClaim("");
-      setPefc(prod.pefc || "");
-    }
+  function handleCertType(type: "" | "fsc" | "pefc") {
     setCertType(type);
-  }
-
-  function handleSupplierProductChange(id: string) {
-    setSupplierProductId(id);
-    if (!id) { setCertType(""); return; }
-    const prod = products.find(p => String(p.id) === id);
-    if (!prod) return;
-    // Auto-fill cert fields from product data
-    if (prod.pefc) applyCertType("pefc", prod);
-    else if (prod.fscLicense || prod.inputClaim) applyCertType("fsc", prod);
-    else setCertType("");
-  }
-
-  function handleCertTypeSelect(type: "fsc" | "pefc") {
-    if (!selectedSupplierProduct) return;
-    applyCertType(type, selectedSupplierProduct);
-  }
-
-  function handleSupplierChange(supplierId: number) {
-    const supplier = suppliers.find(s => s.id === supplierId);
-    if (supplier?.fscLicense) setLicenseFsc(supplier.fscLicense);
-    if (supplier?.fscChainOfCustody) setChainOfCustody(supplier.fscChainOfCustody);
-    if (supplier?.fscInputClaim) setInputClaim(supplier.fscInputClaim);
-    if (supplier?.fscOutputClaim) setOutputClaim(supplier.fscOutputClaim);
+    if (type === "") {
+      setLicenseFsc(""); setChainOfCustody(""); setInputClaim(""); setOutputClaim(""); setPefc("");
+    } else if (type === "fsc") {
+      setPefc("");
+    } else if (type === "pefc") {
+      setLicenseFsc(""); setChainOfCustody(""); setInputClaim(""); setOutputClaim("");
+    }
   }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
 
-    const supplierProdId = supplierProductId ? Number(supplierProductId) : undefined;
-    const clientProdId = clientProductId ? Number(clientProductId) : undefined;
-    // Fallback product text: prefer supplier product name, else keep existing
-    const supplierProdName = supplierProdId
-      ? (products.find(p => p.id === supplierProdId)?.name || "")
-      : "";
-    const productText = supplierProdName || (formData.get("productFallback") as string) || "";
-
     const data = {
-      poNumber: formData.get("poNumber") as string,
-      poDate: (formData.get("poDate") as string) || undefined,
-      clientId: Number(formData.get("clientId")),
-      supplierId: Number(formData.get("supplierId")),
-      clientPoNumber: (formData.get("clientPoNumber") as string) || undefined,
-      sellPrice: Number(formData.get("sellPrice")),
-      buyPrice: Number(formData.get("buyPrice")),
-      product: productText || "—",
-      supplierProductId: supplierProdId,
-      clientProductId: clientProdId,
-      terms: (formData.get("terms") as string) || undefined,
-      transportType: (formData.get("transportType") as "ffcc" | "ship" | "truck") || undefined,
-      licenseFsc: (formData.get("licenseFsc") as string) || undefined,
-      chainOfCustody: (formData.get("chainOfCustody") as string) || undefined,
-      inputClaim: (formData.get("inputClaim") as string) || undefined,
-      outputClaim: (formData.get("outputClaim") as string) || undefined,
-      certType: (certType as "fsc" | "pefc") || undefined,
-      pefc: pefc || undefined,
-      notes: (formData.get("notes") as string) || undefined,
+      poNumber:        formData.get("poNumber") as string,
+      poDate:          (formData.get("poDate") as string) || undefined,
+      clientId:        Number(formData.get("clientId")),
+      supplierId:      Number(formData.get("supplierId")),
+      clientPoNumber:  (formData.get("clientPoNumber") as string) || undefined,
+      sellPrice:       Number(formData.get("sellPrice")),
+      buyPrice:        Number(formData.get("buyPrice")),
+      product:         (formData.get("product") as string) || purchaseOrder?.product || "—",
+      supplierProductId: supplierProductId ? Number(supplierProductId) : undefined,
+      clientProductId:   clientProductId   ? Number(clientProductId)   : undefined,
+      terms:           (formData.get("terms") as string) || undefined,
+      transportType:   (formData.get("transportType") as "ffcc" | "ship" | "truck") || undefined,
+      certType:        (certType as "fsc" | "pefc") || undefined,
+      licenseFsc:      licenseFsc      || undefined,
+      chainOfCustody:  chainOfCustody  || undefined,
+      inputClaim:      inputClaim      || undefined,
+      outputClaim:     outputClaim     || undefined,
+      pefc:            pefc            || undefined,
+      notes:           (formData.get("notes") as string) || undefined,
     };
 
     startTransition(async () => {
-      if (purchaseOrder) {
-        await updatePurchaseOrder(purchaseOrder.id, data);
-      } else {
-        await createPurchaseOrder(data);
-      }
+      if (purchaseOrder) await updatePurchaseOrder(purchaseOrder.id, data);
+      else               await createPurchaseOrder(data);
       if (onCancel) onCancel();
       router.refresh();
     });
   }
+
+  const certBtn = (type: "" | "fsc" | "pefc", label: string) => (
+    <button
+      key={type}
+      type="button"
+      onClick={() => handleCertType(type)}
+      className={`px-3 py-1 rounded text-xs font-medium border transition-colors ${
+        certType === type
+          ? "bg-primary text-primary-foreground border-primary"
+          : "border-border text-muted-foreground hover:bg-muted"
+      }`}
+    >
+      {label}
+    </button>
+  );
 
   return (
     <div className="bg-white rounded-md shadow-sm p-4">
@@ -290,139 +260,121 @@ export function POForm({
         {purchaseOrder ? "Edit Purchase Order" : "New Purchase Order"}
       </h3>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+        {/* Row 1: PO#, Date, Client PO# */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">PO Number *</label>
-            <input
-              name="poNumber"
-              required
-              defaultValue={purchaseOrder?.poNumber || ""}
-              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-              placeholder="OC-001"
-            />
+            <input name="poNumber" required defaultValue={purchaseOrder?.poNumber || ""} className={inp} placeholder="OC-001" />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Date</label>
-            <input
-              name="poDate"
-              type="date"
-              defaultValue={purchaseOrder?.poDate || ""}
-              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-            />
+            <input name="poDate" type="date" defaultValue={purchaseOrder?.poDate || ""} className={inp} />
           </div>
           <div>
+            <label className="block text-sm font-medium mb-1">Client PO #</label>
+            <input name="clientPoNumber" defaultValue={purchaseOrder?.clientPoNumber || ""} className={inp} />
+          </div>
+        </div>
+
+        {/* Row 2: Client, Supplier + cert selector */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
             <label className="block text-sm font-medium mb-1">Client *</label>
-            <Combobox
-              name="clientId"
-              options={clients}
-              defaultId={purchaseOrder?.clientId}
-              placeholder="Search client..."
-              required
-            />
+            <Combobox name="clientId" options={clients} defaultId={purchaseOrder?.clientId} placeholder="Search client..." required />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Supplier *</label>
-            <Combobox
-              name="supplierId"
-              options={suppliers}
-              defaultId={purchaseOrder?.supplierId}
-              placeholder="Search supplier..."
-              required
-              onSelect={handleSupplierChange}
-            />
+            <Combobox name="supplierId" options={suppliers} defaultId={purchaseOrder?.supplierId} placeholder="Search supplier..." required />
+            <div className="flex gap-1 mt-2">
+              {certBtn("", "None")}
+              {certBtn("fsc", "FSC")}
+              {certBtn("pefc", "PEFC")}
+            </div>
           </div>
+        </div>
+
+        {/* Cert fields — only shown when FSC or PEFC selected */}
+        {certType === "fsc" && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-3 bg-muted/30 rounded-lg">
+            <div>
+              <label className="block text-sm font-medium mb-1">FSC License</label>
+              <input value={licenseFsc} onChange={(e) => setLicenseFsc(e.target.value)} className={inp} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Chain of Custody</label>
+              <input value={chainOfCustody} onChange={(e) => setChainOfCustody(e.target.value)} className={inp} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Input Claim</label>
+              <input value={inputClaim} onChange={(e) => setInputClaim(e.target.value)} className={inp} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Output Claim</label>
+              <input value={outputClaim} onChange={(e) => setOutputClaim(e.target.value)} className={inp} />
+            </div>
+          </div>
+        )}
+        {certType === "pefc" && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-3 bg-muted/30 rounded-lg">
+            <div>
+              <label className="block text-sm font-medium mb-1">PEFC Number</label>
+              <input value={pefc} onChange={(e) => setPefc(e.target.value)} className={inp} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Input Claim</label>
+              <input value={inputClaim} onChange={(e) => setInputClaim(e.target.value)} className={inp} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Chain of Custody</label>
+              <input value={chainOfCustody} onChange={(e) => setChainOfCustody(e.target.value)} className={inp} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Output Claim</label>
+              <input value={outputClaim} onChange={(e) => setOutputClaim(e.target.value)} className={inp} />
+            </div>
+          </div>
+        )}
+
+        {/* Row 3: Product (for supplier PO), Client Product label, Sell Price, Buy Price, Incoterm, Transport */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Supplier Product</label>
-            <select
-              value={supplierProductId}
-              onChange={(e) => handleSupplierProductChange(e.target.value)}
-              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-            >
-              <option value="">— Select —</option>
+            <label className="block text-sm font-medium mb-1">Product (Supplier PO)</label>
+            <select value={supplierProductId} onChange={(e) => setSupplierProductId(e.target.value)} className={inp}>
+              <option value="">— Free text —</option>
               {products.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}{p.grade ? ` (${p.grade})` : ""}
-                </option>
+                <option key={p.id} value={p.id}>{p.name}{p.grade ? ` (${p.grade})` : ""}</option>
               ))}
             </select>
-            {/* Cert type selector: always shown when a product is selected */}
-            {supplierProductId && (
-              <div className="flex gap-1 mt-2">
-                {(["", "fsc", "pefc"] as const).map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => { setCertType(type as "" | "fsc" | "pefc"); if (type === "") { setLicenseFsc(""); setChainOfCustody(""); setInputClaim(""); setOutputClaim(""); setPefc(""); } }}
-                    className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${
-                      certType === type
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "border-border text-muted-foreground hover:bg-muted"
-                    }`}
-                  >
-                    {type === "" ? "None" : type.toUpperCase()}
-                  </button>
-                ))}
-              </div>
+            {!supplierProductId && (
+              <input name="product" defaultValue={purchaseOrder?.product || ""} className={`${inp} mt-1`} placeholder="Product description" />
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Client Product</label>
-            <select
-              value={clientProductId}
-              onChange={(e) => setClientProductId(e.target.value)}
-              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-            >
+            <label className="block text-sm font-medium mb-1">Product (Client Invoice)</label>
+            <select value={clientProductId} onChange={(e) => setClientProductId(e.target.value)} className={inp}>
               <option value="">— Same as supplier —</option>
               {products.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}{p.grade ? ` (${p.grade})` : ""}
-                </option>
+                <option key={p.id} value={p.id}>{p.name}{p.grade ? ` (${p.grade})` : ""}</option>
               ))}
             </select>
           </div>
-          {/* Hidden fallback: keeps existing product text for backward compat */}
-          <input type="hidden" name="productFallback" value={purchaseOrder?.product || ""} />
           <div>
             <label className="block text-sm font-medium mb-1">Sell Price (USD/Ton) *</label>
-            <input
-              name="sellPrice"
-              type="number"
-              step="0.01"
-              required
-              defaultValue={purchaseOrder?.sellPrice || ""}
-              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-              placeholder="0.00"
-            />
+            <input name="sellPrice" type="number" step="0.01" required defaultValue={purchaseOrder?.sellPrice || ""} className={inp} placeholder="0.00" />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Buy Price (USD/Ton) *</label>
-            <input
-              name="buyPrice"
-              type="number"
-              step="0.01"
-              required
-              defaultValue={purchaseOrder?.buyPrice || ""}
-              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-              placeholder="0.00"
-            />
+            <label className="block text-sm font-medium mb-1">Cost (USD/Ton) *</label>
+            <input name="buyPrice" type="number" step="0.01" required defaultValue={purchaseOrder?.buyPrice || ""} className={inp} placeholder="0.00" />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Incoterm</label>
-            <input
-              name="terms"
-              defaultValue={purchaseOrder?.terms || ""}
-              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-              placeholder="DAP, CIF, FOB..."
-            />
+            <input name="terms" defaultValue={purchaseOrder?.terms || ""} className={inp} placeholder="DAP, CIF, FOB..." />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Transport Type</label>
-            <select
-              name="transportType"
-              defaultValue={purchaseOrder?.transportType || ""}
-              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-            >
-              <option value="">Select</option>
+            <label className="block text-sm font-medium mb-1">Transport</label>
+            <select name="transportType" defaultValue={purchaseOrder?.transportType || ""} className={inp}>
+              <option value="">—</option>
               <option value="ffcc">Railroad</option>
               <option value="ship">Maritime</option>
               <option value="truck">Truck</option>
@@ -430,107 +382,18 @@ export function POForm({
           </div>
         </div>
 
-        {/* Certification Fields */}
-        <div>
-          <h4 className="text-sm font-semibold text-muted-foreground mb-2">
-            Certification
-            {certType && (
-              <span className="ml-2 text-xs font-medium text-foreground border border-border rounded px-1.5 py-0.5">
-                {certType.toUpperCase()}
-              </span>
-            )}
-          </h4>
-          {certType === "pefc" ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">PEFC Number</label>
-                <input
-                  name="pefc"
-                  value={pefc}
-                  onChange={(e) => setPefc(e.target.value)}
-                  className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-                  placeholder="e.g. PEFC-2431400"
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">FSC License</label>
-                <input
-                  name="licenseFsc"
-                  value={licenseFsc}
-                  onChange={(e) => setLicenseFsc(e.target.value)}
-                  className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Chain of Custody</label>
-                <input
-                  name="chainOfCustody"
-                  value={chainOfCustody}
-                  onChange={(e) => setChainOfCustody(e.target.value)}
-                  className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Input Claim</label>
-                <input
-                  name="inputClaim"
-                  value={inputClaim}
-                  onChange={(e) => setInputClaim(e.target.value)}
-                  className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Output Claim</label>
-                <input
-                  name="outputClaim"
-                  value={outputClaim}
-                  onChange={(e) => setOutputClaim(e.target.value)}
-                  className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-                />
-              </div>
-            </div>
-          )}
-          {/* Hidden fields so hidden values still submit */}
-          {certType !== "pefc" && <input type="hidden" name="pefc" value="" />}
-          {certType === "pefc" && (
-            <>
-              <input type="hidden" name="licenseFsc" value="" />
-              <input type="hidden" name="chainOfCustody" value="" />
-              <input type="hidden" name="inputClaim" value="" />
-              <input type="hidden" name="outputClaim" value="" />
-            </>
-          )}
-        </div>
-
         {/* Notes */}
         <div>
           <label className="block text-sm font-medium mb-1">Notes</label>
-          <textarea
-            name="notes"
-            defaultValue={purchaseOrder?.notes || ""}
-            rows={3}
-            className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-            placeholder="Additional notes..."
-          />
+          <textarea name="notes" defaultValue={purchaseOrder?.notes || ""} rows={2} className={inp} />
         </div>
 
         <div className="flex gap-2">
-          <button
-            type="submit"
-            disabled={isPending}
-            className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            {isPending ? "Saving..." : purchaseOrder ? "Update" : "Create OC"}
+          <button type="submit" disabled={isPending} className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
+            {isPending ? "Saving..." : purchaseOrder ? "Update" : "Create PO"}
           </button>
           {onCancel && (
-            <button
-              type="button"
-              onClick={onCancel}
-              className="border border-border px-4 py-2 rounded-lg text-sm hover:bg-muted transition-colors"
-            >
+            <button type="button" onClick={onCancel} className="border border-border px-4 py-2 rounded-lg text-sm hover:bg-muted transition-colors">
               Cancel
             </button>
           )}
