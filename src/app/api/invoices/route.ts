@@ -37,6 +37,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `El número de factura "${invoiceNumber}" ya existe` }, { status: 400 });
     }
 
+    // Auto-compute due date: shipmentDate (or invoiceDate) + 60 days
+    const TERMS = 60;
+    const baseDate = shipmentDate || invoiceDate || null;
+    const computedDueDate = baseDate ? (() => {
+      const d = new Date(baseDate + "T12:00:00");
+      d.setDate(d.getDate() + TERMS);
+      return d.toISOString().split("T")[0];
+    })() : null;
+
     const [created] = await db.insert(invoices).values({
       purchaseOrderId: Number(purchaseOrderId),
       invoiceNumber,
@@ -54,6 +63,8 @@ export async function POST(req: NextRequest) {
       sellPriceOverride: sellPriceOverride ? Number(sellPriceOverride) : null,
       buyPriceOverride: buyPriceOverride ? Number(buyPriceOverride) : null,
       freightCost: freightCost ? Number(freightCost) : null,
+      paymentTermsDays: TERMS,
+      dueDate: computedDueDate,
       customerPaymentStatus: "unpaid",
       supplierPaymentStatus: "unpaid",
     }).returning();

@@ -10,6 +10,15 @@ export async function PATCH(
   const { id } = await params;
   const body = await req.json();
 
+  // Recompute dueDate whenever shipmentDate changes
+  const TERMS = 60;
+  const baseDate = body.shipmentDate || body.invoiceDate || null;
+  const computedDueDate = baseDate ? (() => {
+    const d = new Date(baseDate + "T12:00:00");
+    d.setDate(d.getDate() + TERMS);
+    return d.toISOString().split("T")[0];
+  })() : null;
+
   const updated = await db
     .update(invoices)
     .set({
@@ -30,6 +39,8 @@ export async function PATCH(
       shipmentStatus: body.shipmentStatus ?? "programado",
       customerPaymentStatus: body.customerPaymentStatus ?? "unpaid",
       notes: body.notes ?? null,
+      paymentTermsDays: TERMS,
+      dueDate: computedDueDate,
     })
     .where(eq(invoices.id, Number(id)))
     .returning();
