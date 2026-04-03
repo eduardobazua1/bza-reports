@@ -23,7 +23,10 @@ type ConvertForm = {
   quantityTons: string;
   balesCount: string;
   unitsPerBale: string;
+  item: string;
 };
+
+type Product = { id: number; name: string };
 
 export function ClientPOsSection({
   purchaseOrderId,
@@ -31,12 +34,14 @@ export function ClientPOsSection({
   poNumber,
   sellPrice,
   product,
+  products,
 }: {
   purchaseOrderId: number;
   clientPos: ClientPO[];
   poNumber?: string;
   sellPrice?: number;
   product?: string;
+  products?: Product[];
 }) {
   const [list, setList] = useState<ClientPO[]>(clientPos);
   const [adding, setAdding] = useState(false);
@@ -52,6 +57,7 @@ export function ClientPOsSection({
     quantityTons: "",
     balesCount: "",
     unitsPerBale: "",
+    item: product || "",
   });
   const [addForm, setAddForm] = useState({
     clientPoNumber: "",
@@ -84,6 +90,7 @@ export function ClientPOsSection({
       quantityTons: cpo.plannedTons?.toString() || "",
       balesCount: "",
       unitsPerBale: "",
+      item: product || "",
     });
   }
 
@@ -103,7 +110,7 @@ export function ClientPOsSection({
         shipmentDate: convertForm.shipmentDate || null,
         invoiceDate: convertForm.invoiceDate || null,
         quantityTons: parseFloat(convertForm.quantityTons),
-        item: product || null,
+        item: convertForm.item || null,
         shipmentStatus: "programado",
         balesCount: convertForm.balesCount ? parseInt(convertForm.balesCount) : null,
         unitsPerBale: convertForm.unitsPerBale ? parseInt(convertForm.unitsPerBale) : null,
@@ -275,6 +282,22 @@ export function ClientPOsSection({
                             <p className="text-xs font-semibold text-emerald-800 uppercase mb-3">
                               New Invoice — Client PO {cpo.clientPoNumber} · {cpo.destination}
                             </p>
+                            {/* Product selector */}
+                            {products && products.length > 0 && (
+                              <div className="mb-3">
+                                <label className="block text-xs text-stone-500 mb-1">Product</label>
+                                <select
+                                  className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white"
+                                  value={convertForm.item}
+                                  onChange={(e) => setConvertForm((f) => ({ ...f, item: e.target.value }))}
+                                >
+                                  <option value="">— Select product —</option>
+                                  {products.map((p) => (
+                                    <option key={p.id} value={p.name}>{p.name}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                               <div>
                                 <label className="block text-xs text-stone-500 mb-1">Invoice # *</label>

@@ -212,6 +212,7 @@ export default async function PurchaseOrderDetailPage({
         poNumber={po.poNumber}
         sellPrice={po.sellPrice}
         product={clientProduct?.name ?? po.product}
+        products={productsList}
       />
 
       {/* ── Section 6: Invoices ─────────────────────────────── */}
