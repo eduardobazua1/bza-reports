@@ -368,7 +368,7 @@ export function POForm({
             <select value={supplierProductId} onChange={(e) => handleSupplierProductChange(e.target.value)} className={inp}>
               <option value="">— Free text —</option>
               {products.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}{p.grade ? ` (${p.grade})` : ""}</option>
+                <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
             {!supplierProductId && (
@@ -380,7 +380,7 @@ export function POForm({
             <select value={clientProductId} onChange={(e) => setClientProductId(e.target.value)} className={inp}>
               <option value="">— Same as supplier —</option>
               {products.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}{p.grade ? ` (${p.grade})` : ""}</option>
+                <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
           </div>
