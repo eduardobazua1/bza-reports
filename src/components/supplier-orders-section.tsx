@@ -28,6 +28,7 @@ export function SupplierOrdersSection({
   poTerms,
   poNumber,
   supplierEmail,
+  product,
 }: {
   purchaseOrderId: number;
   supplierOrders: SupplierOrder[];
@@ -36,6 +37,7 @@ export function SupplierOrdersSection({
   poNumber: string;
   supplierEmail: string | null;
   supplierName: string;
+  product?: string;
 }) {
   const [list, setList] = useState<SupplierOrder[]>(supplierOrders);
   const [adding, setAdding] = useState(false);
@@ -143,9 +145,14 @@ export function SupplierOrdersSection({
       <div className="p-4 border-b border-stone-200 flex items-center justify-between">
         <div>
           <h3 className="font-semibold text-stone-800">Supplier Orders ({list.length})</h3>
-          {totalTons > 0 && (
-            <p className="text-xs text-stone-400 mt-0.5">{formatNumber(totalTons, 1)} TN total ordered</p>
-          )}
+          <div className="flex items-center gap-3 mt-0.5">
+            {product && (
+              <p className="text-xs text-stone-500">{product}</p>
+            )}
+            {totalTons > 0 && (
+              <p className="text-xs text-stone-400">{formatNumber(totalTons, 1)} TN ordered</p>
+            )}
+          </div>
         </div>
         {!adding && (
           <button

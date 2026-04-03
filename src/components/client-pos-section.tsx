@@ -180,12 +180,17 @@ export function ClientPOsSection({
           <h3 className="font-semibold text-stone-800">
             Client Orders ({list.length})
           </h3>
-          {totalPlanned > 0 && (
-            <p className="text-xs text-stone-400 mt-0.5">
-              {formatNumber(totalPlanned, 1)} TN planned
-              {totalAmount > 0 && ` · ${formatCurrency(totalAmount)} estimated`}
-            </p>
-          )}
+          <div className="flex items-center gap-3 mt-0.5">
+            {product && (
+              <p className="text-xs text-stone-500">{product}</p>
+            )}
+            {totalPlanned > 0 && (
+              <p className="text-xs text-stone-400">
+                {formatNumber(totalPlanned, 1)} TN planned
+                {totalAmount > 0 && ` · ${formatCurrency(totalAmount)} estimated`}
+              </p>
+            )}
+          </div>
         </div>
         <button
           onClick={() => setAdding(true)}
