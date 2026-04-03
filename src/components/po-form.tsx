@@ -220,12 +220,9 @@ export function POForm({
     if (!id) { setCertType(""); return; }
     const prod = products.find(p => String(p.id) === id);
     if (!prod) return;
-    const prodHasFsc = !!(prod.fscLicense || prod.inputClaim);
-    const prodHasPefc = !!prod.pefc;
-    // If only one cert type, auto-select it
-    if (prodHasFsc && !prodHasPefc) applyCertType("fsc", prod);
-    else if (prodHasPefc && !prodHasFsc) applyCertType("pefc", prod);
-    else if (prodHasFsc && prodHasPefc) setCertType(""); // user must choose
+    // Auto-fill cert fields from product data
+    if (prod.pefc) applyCertType("pefc", prod);
+    else if (prod.fscLicense || prod.inputClaim) applyCertType("fsc", prod);
     else setCertType("");
   }
 

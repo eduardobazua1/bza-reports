@@ -11,11 +11,18 @@ type Product = {
   grade: string | null;
   description: string | null;
   notes: string | null;
+  fscLicense: string | null;
+  chainOfCustody: string | null;
+  inputClaim: string | null;
+  outputClaim: string | null;
+  pefc: string | null;
   createdAt: string;
   updatedAt: string;
 };
 
 const GRADES = ["NBSK", "SBSK", "BHK", "BCTMP", "UKP", "Other"];
+
+type CertMode = "none" | "fsc" | "pefc";
 
 function GradeSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
@@ -35,12 +42,34 @@ function GradeSelect({ value, onChange }: { value: string; onChange: (v: string)
 type FormState = {
   name: string;
   grade: string;
+  fscLicense: string;
+  chainOfCustody: string;
+  inputClaim: string;
+  outputClaim: string;
+  pefc: string;
 };
 
-const emptyForm: FormState = { name: "", grade: "" };
+const emptyForm: FormState = {
+  name: "", grade: "",
+  fscLicense: "", chainOfCustody: "", inputClaim: "", outputClaim: "", pefc: "",
+};
+
+function certModeFromState(state: FormState): CertMode {
+  if (state.pefc) return "pefc";
+  if (state.fscLicense || state.inputClaim || state.chainOfCustody || state.outputClaim) return "fsc";
+  return "none";
+}
 
 function formFromProduct(p: Product): FormState {
-  return { name: p.name, grade: p.grade || "" };
+  return {
+    name: p.name,
+    grade: p.grade || "",
+    fscLicense: p.fscLicense || "",
+    chainOfCustody: p.chainOfCustody || "",
+    inputClaim: p.inputClaim || "",
+    outputClaim: p.outputClaim || "",
+    pefc: p.pefc || "",
+  };
 }
 
 function FormRow({
@@ -60,10 +89,24 @@ function FormRow({
   autoFocus?: boolean;
   rowClass?: string;
 }) {
+  const [certMode, setCertMode] = useState<CertMode>(() => certModeFromState(state));
   const inp = "w-full border border-border rounded-lg px-2 py-1.5 text-sm bg-background";
+
+  function handleCertMode(mode: CertMode) {
+    setCertMode(mode);
+    if (mode === "none") {
+      onChange({ fscLicense: "", inputClaim: "", chainOfCustody: "", outputClaim: "", pefc: "" });
+    } else if (mode === "fsc") {
+      onChange({ pefc: "" });
+    } else if (mode === "pefc") {
+      onChange({ fscLicense: "" });
+    }
+  }
+
   return (
     <tr className={rowClass ?? "bg-teal-50/40 border-t border-b border-border"}>
-      <td className="p-2">
+      {/* Name */}
+      <td className="p-2 align-top">
         <input
           autoFocus={autoFocus}
           value={state.name}
@@ -73,10 +116,47 @@ function FormRow({
           onKeyDown={(e) => { if (e.key === "Enter") onSave(); if (e.key === "Escape") onCancel(); }}
         />
       </td>
-      <td className="p-2">
+      {/* Grade */}
+      <td className="p-2 align-top">
         <GradeSelect value={state.grade} onChange={(v) => onChange({ grade: v })} />
       </td>
-      <td className="p-2 text-right">
+      {/* Cert selector + fields */}
+      <td className="p-2 align-top">
+        <div className="flex gap-1 mb-2">
+          {(["none", "fsc", "pefc"] as CertMode[]).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => handleCertMode(m)}
+              className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${
+                certMode === m
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "border-border text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              {m === "none" ? "None" : m.toUpperCase()}
+            </button>
+          ))}
+        </div>
+        {certMode === "fsc" && (
+          <div className="flex flex-col gap-1">
+            <input value={state.fscLicense} onChange={(e) => onChange({ fscLicense: e.target.value })} placeholder="License" className={inp} />
+            <input value={state.inputClaim} onChange={(e) => onChange({ inputClaim: e.target.value })} placeholder="Input claim" className={inp} />
+            <input value={state.chainOfCustody} onChange={(e) => onChange({ chainOfCustody: e.target.value })} placeholder="Chain of custody" className={inp} />
+            <input value={state.outputClaim} onChange={(e) => onChange({ outputClaim: e.target.value })} placeholder="Output claim" className={inp} />
+          </div>
+        )}
+        {certMode === "pefc" && (
+          <div className="flex flex-col gap-1">
+            <input value={state.pefc} onChange={(e) => onChange({ pefc: e.target.value })} placeholder="PEFC number" className={inp} />
+            <input value={state.inputClaim} onChange={(e) => onChange({ inputClaim: e.target.value })} placeholder="Input claim" className={inp} />
+            <input value={state.chainOfCustody} onChange={(e) => onChange({ chainOfCustody: e.target.value })} placeholder="Chain of custody" className={inp} />
+            <input value={state.outputClaim} onChange={(e) => onChange({ outputClaim: e.target.value })} placeholder="Output claim" className={inp} />
+          </div>
+        )}
+      </td>
+      {/* Actions */}
+      <td className="p-2 text-right align-top">
         <div className="flex gap-2 justify-end">
           <button
             onClick={onSave}
@@ -97,6 +177,25 @@ function FormRow({
   );
 }
 
+function CertDisplay({ p }: { p: Product }) {
+  const hasFsc = !!(p.fscLicense || p.inputClaim || p.chainOfCustody || p.outputClaim);
+  if (p.pefc) return (
+    <div className="flex flex-col gap-0.5 text-sm">
+      <span className="font-medium">PEFC</span>
+      {p.pefc && <span className="text-xs font-mono text-muted-foreground">{p.pefc}</span>}
+      {p.inputClaim && <span className="text-xs text-muted-foreground">{p.inputClaim}</span>}
+    </div>
+  );
+  if (hasFsc) return (
+    <div className="flex flex-col gap-0.5 text-sm">
+      <span className="font-medium">FSC</span>
+      {p.fscLicense && <span className="text-xs font-mono text-muted-foreground">{p.fscLicense}</span>}
+      {p.inputClaim && <span className="text-xs text-muted-foreground">{p.inputClaim}</span>}
+    </div>
+  );
+  return <span className="text-muted-foreground text-sm">—</span>;
+}
+
 export function ProductsClient({ products }: { products: Product[] }) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
@@ -114,7 +213,15 @@ export function ProductsClient({ products }: { products: Product[] }) {
   function handleAdd() {
     if (!addForm.name.trim()) return;
     startTransition(async () => {
-      await createProduct({ name: addForm.name.trim(), grade: addForm.grade || undefined });
+      await createProduct({
+        name: addForm.name.trim(),
+        grade: addForm.grade || undefined,
+        fscLicense: addForm.fscLicense || undefined,
+        chainOfCustody: addForm.chainOfCustody || undefined,
+        inputClaim: addForm.inputClaim || undefined,
+        outputClaim: addForm.outputClaim || undefined,
+        pefc: addForm.pefc || undefined,
+      });
       setShowAddRow(false);
       setAddForm(emptyForm);
       router.refresh();
@@ -124,7 +231,15 @@ export function ProductsClient({ products }: { products: Product[] }) {
   function handleUpdate() {
     if (!editForm.name.trim() || editId === null) return;
     startTransition(async () => {
-      await updateProduct(editId, { name: editForm.name.trim(), grade: editForm.grade || undefined });
+      await updateProduct(editId, {
+        name: editForm.name.trim(),
+        grade: editForm.grade || undefined,
+        fscLicense: editForm.fscLicense || undefined,
+        chainOfCustody: editForm.chainOfCustody || undefined,
+        inputClaim: editForm.inputClaim || undefined,
+        outputClaim: editForm.outputClaim || undefined,
+        pefc: editForm.pefc || undefined,
+      });
       setEditId(null);
       router.refresh();
     });
@@ -158,6 +273,7 @@ export function ProductsClient({ products }: { products: Product[] }) {
             <tr>
               <th className="text-left p-3 text-sm font-medium text-muted-foreground">Name</th>
               <th className="text-left p-3 text-sm font-medium text-muted-foreground">Grade</th>
+              <th className="text-left p-3 text-sm font-medium text-muted-foreground">Certification</th>
               <th className="text-right p-3 text-sm font-medium text-muted-foreground">Actions</th>
             </tr>
           </thead>
@@ -175,7 +291,7 @@ export function ProductsClient({ products }: { products: Product[] }) {
 
             {products.length === 0 && !showAddRow && (
               <tr>
-                <td colSpan={3} className="p-8 text-center text-sm text-muted-foreground">
+                <td colSpan={4} className="p-8 text-center text-sm text-muted-foreground">
                   No products yet. Click &ldquo;+ Add Product&rdquo; to create one.
                 </td>
               </tr>
@@ -203,6 +319,9 @@ export function ProductsClient({ products }: { products: Product[] }) {
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}
+                  </td>
+                  <td className="p-3">
+                    <CertDisplay p={p} />
                   </td>
                   <td className="p-3 text-right">
                     <div className="flex gap-2 justify-end">
