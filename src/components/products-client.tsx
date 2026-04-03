@@ -182,9 +182,8 @@ function FormRow({
         </div>
         {/* FSC fields */}
         {showFsc && (
-          <div className="flex flex-col gap-1 mb-2">
-            <span className="text-xs font-medium text-muted-foreground">FSC</span>
-            <input value={state.fscLicense} onChange={(e) => onChange({ fscLicense: e.target.value })} placeholder="License (e.g. FSC-C005174)" className={inp} />
+          <div className="flex flex-col gap-1 mt-1">
+            <input value={state.fscLicense} onChange={(e) => onChange({ fscLicense: e.target.value })} placeholder="License" className={inp} />
             <input value={state.inputClaim} onChange={(e) => onChange({ inputClaim: e.target.value })} placeholder="Input claim" className={inp} />
             <input value={state.chainOfCustody} onChange={(e) => onChange({ chainOfCustody: e.target.value })} placeholder="Chain of custody" className={inp} />
             <input value={state.outputClaim} onChange={(e) => onChange({ outputClaim: e.target.value })} placeholder="Output claim" className={inp} />
@@ -192,9 +191,8 @@ function FormRow({
         )}
         {/* PEFC fields */}
         {showPefc && (
-          <div className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-muted-foreground">PEFC</span>
-            <input value={state.pefc} onChange={(e) => onChange({ pefc: e.target.value })} placeholder="PEFC number (e.g. PEFC-2431400)" className={inp} />
+          <div className="flex flex-col gap-1 mt-1">
+            <input value={state.pefc} onChange={(e) => onChange({ pefc: e.target.value })} placeholder="PEFC number" className={inp} />
             <input value={state.inputClaim} onChange={(e) => onChange({ inputClaim: e.target.value })} placeholder="Input claim" className={inp} />
             <input value={state.chainOfCustody} onChange={(e) => onChange({ chainOfCustody: e.target.value })} placeholder="Chain of custody" className={inp} />
             <input value={state.outputClaim} onChange={(e) => onChange({ outputClaim: e.target.value })} placeholder="Output claim" className={inp} />
