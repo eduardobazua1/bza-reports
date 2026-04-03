@@ -348,30 +348,23 @@ export function POForm({
                 </option>
               ))}
             </select>
-            {/* Cert type selector: only shown when product has both FSC and PEFC */}
-            {hasBoth && (
-              <div className="mt-2 p-2 border border-border rounded-lg bg-muted/40">
-                <p className="text-xs text-muted-foreground mb-1.5">This product has both FSC and PEFC — select which applies to this PO:</p>
-                <div className="flex gap-3">
-                  <label className="flex items-center gap-1.5 text-sm cursor-pointer">
-                    <input
-                      type="radio"
-                      name="certTypeRadio"
-                      checked={certType === "fsc"}
-                      onChange={() => handleCertTypeSelect("fsc")}
-                    />
-                    FSC
-                  </label>
-                  <label className="flex items-center gap-1.5 text-sm cursor-pointer">
-                    <input
-                      type="radio"
-                      name="certTypeRadio"
-                      checked={certType === "pefc"}
-                      onChange={() => handleCertTypeSelect("pefc")}
-                    />
-                    PEFC
-                  </label>
-                </div>
+            {/* Cert type selector: always shown when a product is selected */}
+            {supplierProductId && (
+              <div className="flex gap-1 mt-2">
+                {(["", "fsc", "pefc"] as const).map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => { setCertType(type as "" | "fsc" | "pefc"); if (type === "") { setLicenseFsc(""); setChainOfCustody(""); setInputClaim(""); setOutputClaim(""); setPefc(""); } }}
+                    className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${
+                      certType === type
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "border-border text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {type === "" ? "None" : type.toUpperCase()}
+                  </button>
+                ))}
               </div>
             )}
           </div>
