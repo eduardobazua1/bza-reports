@@ -52,6 +52,18 @@ export function ClientPOsSection({
   const [loading, setLoading] = useState(false);
   const [convertingId, setConvertingId] = useState<number | null>(null);
   const [convertLoading, setConvertLoading] = useState(false);
+
+  // Edit state
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editForm, setEditForm] = useState({
+    clientPoNumber: "",
+    destination: "",
+    plannedTons: "",
+    item: "",
+    incoterm: "",
+    sellPriceOverride: "",
+  });
   const [convertForm, setConvertForm] = useState<ConvertForm>({
     invoiceNumber: "",
     vehicleId: "",
@@ -167,6 +179,52 @@ export function ClientPOsSection({
     setLoading(false);
   }
 
+  function openEdit(cpo: ClientPO) {
+    setEditingId(cpo.id);
+    setConvertingId(null);
+    setEditForm({
+      clientPoNumber: cpo.clientPoNumber,
+      destination: cpo.destination || "",
+      plannedTons: cpo.plannedTons != null ? String(cpo.plannedTons) : "",
+      item: cpo.item || "",
+      incoterm: cpo.incoterm || "",
+      sellPriceOverride: cpo.sellPriceOverride != null ? String(cpo.sellPriceOverride) : "",
+    });
+  }
+
+  function cancelEdit() { setEditingId(null); }
+
+  async function handleEdit(cpo: ClientPO) {
+    setEditLoading(true);
+    const res = await fetch(`/api/client-pos/${cpo.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        clientPoNumber: editForm.clientPoNumber,
+        destination: editForm.destination || null,
+        plannedTons: editForm.plannedTons ? parseFloat(editForm.plannedTons) : null,
+        item: editForm.item || null,
+        incoterm: editForm.incoterm || null,
+        sellPriceOverride: editForm.sellPriceOverride ? parseFloat(editForm.sellPriceOverride) : null,
+      }),
+    });
+    if (res.ok) {
+      setList((prev) => prev.map((p) =>
+        p.id === cpo.id ? {
+          ...p,
+          clientPoNumber: editForm.clientPoNumber,
+          destination: editForm.destination || null,
+          plannedTons: editForm.plannedTons ? parseFloat(editForm.plannedTons) : null,
+          item: editForm.item || null,
+          incoterm: editForm.incoterm || null,
+          sellPriceOverride: editForm.sellPriceOverride ? parseFloat(editForm.sellPriceOverride) : null,
+        } : p
+      ));
+      setEditingId(null);
+    }
+    setEditLoading(false);
+  }
+
   async function handleDelete(id: number) {
     if (!confirm("Delete this Client PO?")) return;
     await fetch(`/api/client-pos/${id}`, { method: "DELETE" });
@@ -263,7 +321,7 @@ export function ClientPOsSection({
 
                 return (
                   <>
-                    <tr key={cpo.id} className="hover:bg-stone-50">
+                    <tr key={cpo.id} className={`hover:bg-stone-50 ${editingId === cpo.id ? "bg-amber-50/40" : ""}`}>
                       <td className="px-4 py-3 border-t border-stone-100 font-mono text-xs font-semibold text-[#0d3d3b]">
                         {cpo.clientPoNumber}
                       </td>
@@ -295,10 +353,61 @@ export function ClientPOsSection({
                               Convert →
                             </button>
                           )}
+                          <button
+                            onClick={() => editingId === cpo.id ? cancelEdit() : openEdit(cpo)}
+                            className={`text-xs font-medium ${editingId === cpo.id ? "text-amber-600 hover:text-amber-800" : "text-stone-400 hover:text-stone-700"}`}
+                          >
+                            {editingId === cpo.id ? "Cancel" : "Edit"}
+                          </button>
                           <button onClick={() => handleDelete(cpo.id)} className="text-red-400 hover:text-red-600 text-xs">✕</button>
                         </div>
                       </td>
                     </tr>
+
+                    {/* Edit inline form */}
+                    {editingId === cpo.id && (
+                      <tr key={`edit-${cpo.id}`}>
+                        <td colSpan={9} className="p-0">
+                          <div className="bg-amber-50 border-t border-amber-200 p-4 space-y-3">
+                            <p className="text-xs font-semibold text-amber-800 uppercase">Edit Client Order</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              <div>
+                                <label className="block text-xs text-stone-500 mb-1">Client PO # *</label>
+                                <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm font-mono" value={editForm.clientPoNumber} onChange={(e) => setEditForm(f => ({ ...f, clientPoNumber: e.target.value }))} />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-stone-500 mb-1">Destination</label>
+                                <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="Morelia..." value={editForm.destination} onChange={(e) => setEditForm(f => ({ ...f, destination: e.target.value }))} />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-stone-500 mb-1">Planned Tons</label>
+                                <input type="number" step="0.1" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.plannedTons} onChange={(e) => setEditForm(f => ({ ...f, plannedTons: e.target.value }))} />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              <div>
+                                <label className="block text-xs text-stone-500 mb-1">Product</label>
+                                <ProductSelect value={editForm.item} onChange={(v) => setEditForm(f => ({ ...f, item: v }))} />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-stone-500 mb-1">Incoterm</label>
+                                <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="DAP, CIF, FOB..." value={editForm.incoterm} onChange={(e) => setEditForm(f => ({ ...f, incoterm: e.target.value }))} />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-stone-500 mb-1">Price/TN override</label>
+                                <input type="number" step="0.01" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder={sellPrice ? `${sellPrice} (default)` : "0.00"} value={editForm.sellPriceOverride} onChange={(e) => setEditForm(f => ({ ...f, sellPriceOverride: e.target.value }))} />
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button onClick={() => handleEdit(cpo)} disabled={editLoading || !editForm.clientPoNumber} className="text-xs bg-amber-600 text-white px-3 py-1.5 rounded hover:bg-amber-700 disabled:opacity-50 font-medium">
+                                {editLoading ? "Saving..." : "Save changes"}
+                              </button>
+                              <button onClick={cancelEdit} className="text-xs text-stone-500 hover:text-stone-700 px-3 py-1.5">Cancel</button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
 
                     {/* Convert to Invoice inline form */}
                     {isConverting && (
