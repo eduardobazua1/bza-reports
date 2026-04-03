@@ -77,11 +77,8 @@ export async function GET(req: NextRequest) {
   const inputClaim = clientProd?.inputClaim || supplier?.fscInputClaim || po.inputClaim || "";
   const chainOfCustody = clientProd?.chainOfCustody || "";
   const supplierShortName = (supplier?.name || "").split(" ")[0];
-  const productLine = [
-    productName,
-    inputClaim ? `${supplierShortName} ${inputClaim}` : "",
-  ].filter(Boolean).join("\n");
-  void chainOfCustody; // available for future use in PDF
+  const productLine = productName;
+  void inputClaim; void supplierShortName; void chainOfCustody;
 
   const balesDisplay = inv.balesCount && inv.unitsPerBale
     ? `${inv.balesCount}/${inv.unitsPerBale}`
