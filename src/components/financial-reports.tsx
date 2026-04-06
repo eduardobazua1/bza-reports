@@ -265,15 +265,12 @@ function DrillDownModal({
   const totCost   = rows.reduce((s,r) => s + r.cost, 0);
   const totProfit = rows.reduce((s,r) => s + r.profit, 0);
 
-  async function openPdf(disposition: "inline" | "attachment") {
-    const res = await fetch("/api/reports/financial/pdf", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rows, title, cols: Array.from(visible), disposition }),
-    });
-    if (!res.ok) return;
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
+  function openPdf(disposition: "inline" | "attachment") {
+    // Derive tab from mode so the server fetches the right data
+    const tab = mode === "ar" ? "ar-aging" : "pl-customer";
+    const cols = Array.from(visible).join(",");
+    const params = new URLSearchParams({ tab, cols, disposition });
+    const url = `/api/reports/financial/pdf?${params}`;
     if (disposition === "inline") {
       window.open(url, "_blank");
     } else {
@@ -282,7 +279,6 @@ function DrillDownModal({
       a.download = `BZA_${title.replace(/[^a-zA-Z0-9]/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf`;
       a.click();
     }
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
 
   return (
@@ -1012,19 +1008,11 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
     }
   }
 
-  // PDF preview / download
-  async function openReportPdf(disposition: "inline" | "attachment") {
-    const reportTitle = REPORT_LABELS[activeReport!];
-    // Use a sensible flat column set for the report PDF
-    const pdfCols = ["invoiceNumber","clientName","supplierName","product","destination","date","dueDate","days","tons","amount","cost","profit","shipStatus","custPayment"];
-    const res = await fetch("/api/reports/financial/pdf", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rows: filtered, title: reportTitle, cols: pdfCols, disposition }),
-    });
-    if (!res.ok) return;
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
+  // PDF preview / download — uses a plain GET URL, no blob needed
+  function openReportPdf(disposition: "inline" | "attachment") {
+    const cols = ["invoiceNumber","clientName","supplierName","product","destination","date","dueDate","days","tons","amount","cost","profit","shipStatus","custPayment"];
+    const params = new URLSearchParams({ tab: activeReport!, cols: cols.join(","), dateFrom, dateTo, disposition });
+    const url = `/api/reports/financial/pdf?${params}`;
     if (disposition === "inline") {
       window.open(url, "_blank");
     } else {
@@ -1033,7 +1021,6 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
       a.download = `BZA_${activeReport}_${new Date().toISOString().split("T")[0]}.pdf`;
       a.click();
     }
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
 
   // ── Browser ────────────────────────────────────────────────────────────────

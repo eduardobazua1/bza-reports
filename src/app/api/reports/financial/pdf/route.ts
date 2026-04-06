@@ -1,35 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import path from "path";
-import fs from "fs";
+import { getInvoices } from "@/server/queries";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const PDFDocument = require("pdfkit");
 
-type InvoiceRow = {
-  invoiceNumber: string;
-  clientName: string;
-  supplierName: string;
-  poNumber: string;
-  invoiceDate: string | null;
-  shipmentDate: string | null;
-  dueDate: string | null;
-  quantityTons: number;
-  revenue: number;
-  costNoFreight: number;
-  freight: number;
-  cost: number;
-  profit: number;
-  customerPaymentStatus: string;
-  supplierPaymentStatus: string;
-  shipmentStatus: string;
-  destination: string | null;
-  product: string | null;
-  transportType: string;
-};
+// ── Brand ──────────────────────────────────────────────────────────────────────
+const TEAL = "#0d3d3b";
+const CYAN = "#4fd1c5";
+const DARK = "#1c1917";
+const GRAY = "#6b7280";
+const LGRY = "#f3f4f6";
+const RULE = "#d1d5db";
+
+const PAGE_W = 792;
+const PAGE_H = 612;
+const M      = 44;
+const TW     = PAGE_W - M * 2;   // table width
 
 const SHIP_LABELS: Record<string, string> = {
   programado: "Scheduled", en_transito: "In Transit",
-  en_aduana: "In Customs", entregado: "Delivered",
+  en_aduana:  "In Customs", entregado:  "Delivered",
 };
 
 function fmtDate(d: string | null | undefined) {
@@ -37,206 +27,284 @@ function fmtDate(d: string | null | undefined) {
   return new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
 }
 
-function daysOverdue(dueDate: string | null): number {
-  if (!dueDate) return 0;
-  return Math.floor((Date.now() - new Date(dueDate + "T12:00:00").getTime()) / 86400000);
+function daysOverdue(due: string | null): number {
+  if (!due) return 0;
+  return Math.floor((Date.now() - new Date(due + "T12:00:00").getTime()) / 86400000);
 }
 
 function fmt$(n: number) {
   return "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-type ColDef = {
-  label: string;
-  get: (r: InvoiceRow) => string;
-  w: number;
-  right?: boolean;
+// ── Column catalogue ───────────────────────────────────────────────────────────
+type Row = {
+  invoiceNumber: string; clientName: string; supplierName: string; poNumber: string;
+  invoiceDate: string | null; shipmentDate: string | null; dueDate: string | null;
+  quantityTons: number; revenue: number; cost: number; profit: number;
+  customerPaymentStatus: string; shipmentStatus: string;
+  destination: string | null; product: string | null;
 };
 
-const ALL_COLS: Record<string, ColDef> = {
-  invoiceNumber: { label: "Invoice #",  get: r => r.invoiceNumber,                              w: 55 },
-  clientName:    { label: "Client",     get: r => r.clientName,                                 w: 80 },
-  supplierName:  { label: "Supplier",   get: r => r.supplierName,                               w: 70 },
-  poNumber:      { label: "PO #",       get: r => r.poNumber || "—",                            w: 45 },
-  product:       { label: "Product",    get: r => r.product ?? "—",                             w: 65 },
-  destination:   { label: "Dest.",      get: r => r.destination ?? "—",                         w: 55 },
-  date:          { label: "Date",       get: r => fmtDate(r.invoiceDate ?? r.shipmentDate),     w: 52 },
-  dueDate:       { label: "Due Date",   get: r => fmtDate(r.dueDate),                           w: 52 },
-  days:          { label: "Days",       get: r => { const d = daysOverdue(r.dueDate); return d <= 0 ? "—" : `${d}d`; }, w: 28, right: true },
-  tons:          { label: "Tons",       get: r => r.quantityTons.toFixed(1),                    w: 38, right: true },
-  amount:        { label: "Amount",     get: r => fmt$(r.revenue),                              w: 68, right: true },
-  cost:          { label: "Cost",       get: r => fmt$(r.cost),                                 w: 68, right: true },
-  profit:        { label: "Profit",     get: r => fmt$(r.profit),                               w: 68, right: true },
-  margin:        { label: "Margin %",   get: r => (r.revenue > 0 ? ((r.profit/r.revenue)*100).toFixed(1) : "0") + "%", w: 44, right: true },
-  shipStatus:    { label: "Status",     get: r => SHIP_LABELS[r.shipmentStatus] ?? r.shipmentStatus, w: 50 },
-  custPayment:   { label: "Payment",    get: r => r.customerPaymentStatus === "paid" ? "Paid" : "Unpaid", w: 45 },
+type ColDef = { label: string; get: (r: Row) => string; w: number; right?: boolean };
+
+const COL_MAP: Record<string, ColDef> = {
+  invoiceNumber: { label: "Invoice #",  get: r => r.invoiceNumber,                                    w: 55 },
+  clientName:    { label: "Client",     get: r => r.clientName,                                       w: 85 },
+  supplierName:  { label: "Supplier",   get: r => r.supplierName,                                     w: 75 },
+  poNumber:      { label: "PO #",       get: r => r.poNumber || "—",                                  w: 46 },
+  product:       { label: "Product",    get: r => r.product ?? "—",                                   w: 68 },
+  destination:   { label: "Dest.",      get: r => r.destination ?? "—",                               w: 55 },
+  date:          { label: "Date",       get: r => fmtDate(r.invoiceDate ?? r.shipmentDate),           w: 54 },
+  dueDate:       { label: "Due Date",   get: r => fmtDate(r.dueDate),                                 w: 54 },
+  days:          { label: "Days",       get: r => { const d = daysOverdue(r.dueDate); return d <= 0 ? "—" : `${d}d`; }, w: 30, right: true },
+  tons:          { label: "Tons",       get: r => r.quantityTons.toFixed(1),                          w: 38, right: true },
+  amount:        { label: "Amount",     get: r => fmt$(r.revenue),                                    w: 68, right: true },
+  cost:          { label: "Cost",       get: r => fmt$(r.cost),                                       w: 68, right: true },
+  profit:        { label: "Profit",     get: r => fmt$(r.profit),                                     w: 68, right: true },
+  margin:        { label: "Margin %",   get: r => (r.revenue > 0 ? ((r.profit/r.revenue)*100).toFixed(1) : "0") + "%", w: 46, right: true },
+  shipStatus:    { label: "Status",     get: r => SHIP_LABELS[r.shipmentStatus] ?? r.shipmentStatus,  w: 52 },
+  custPayment:   { label: "Payment",    get: r => r.customerPaymentStatus === "paid" ? "Paid" : "Unpaid", w: 46 },
 };
 
-async function buildPdf(title: string, rows: InvoiceRow[], colKeys: string[], disposition: string): Promise<Buffer> {
-  const TEAL = "#0d3d3b";
-  const CYAN = "#4fd1c5";
-  const DARK = "#1c1917";
-  const GRAY = "#6b7280";
-  const LGRY = "#f3f4f6";
-  const RULE = "#d1d5db";
+// ── Page helpers ───────────────────────────────────────────────────────────────
+// Returns the y where table content should start on this page
+function drawFullHeader(doc: typeof PDFDocument, title: string, subtitle: string): number {
+  const y0 = M;
 
-  const PAGE_W = 792;
-  const PAGE_H = 612;
-  const M = 40;
-  const TABLE_W = PAGE_W - M * 2;
-  const MAX_Y = PAGE_H - 52;
+  // Top accent bar
+  doc.rect(0, 0, PAGE_W, 3).fill(CYAN);
 
-  // Filter to valid cols
-  const cols = colKeys.filter(k => ALL_COLS[k]).map(k => ALL_COLS[k]);
+  // "BZA." wordmark
+  doc.fontSize(22).font("Helvetica-Bold").fillColor(TEAL)
+    .text("BZA", M, y0, { continued: true, lineBreak: false });
+  doc.fillColor(CYAN).text(".", { lineBreak: false });
 
-  // Scale widths to fit table
-  const totalW = cols.reduce((s, c) => s + c.w, 0);
-  const scale = TABLE_W / totalW;
-  const widths = cols.map(c => Math.round(c.w * scale));
-  widths[widths.length - 1] += TABLE_W - widths.reduce((s, w) => s + w, 0);
+  // Company info – top right
+  const IX = 490;
+  const IW = PAGE_W - M - IX;
+  doc.fontSize(6.5).font("Helvetica").fillColor(GRAY);
+  doc.text("BZA International Services, LLC", IX, y0,      { width: IW, align: "right" });
+  doc.text("1209 S. 10th St. Suite A #583",   IX, y0 + 10, { width: IW, align: "right" });
+  doc.text("McAllen, TX 78501 US",            IX, y0 + 20, { width: IW, align: "right" });
+  doc.text("ebazua@bza-is.com",               IX, y0 + 30, { width: IW, align: "right" });
 
-  // Logo
-  const logoPath = path.join(process.cwd(), "public", "bza-logo-pdf.png");
-  const logoExists = fs.existsSync(logoPath);
+  // Divider
+  const divY = y0 + 46;
+  doc.moveTo(M, divY).lineTo(PAGE_W - M, divY).strokeColor(RULE).lineWidth(0.5).stroke();
+
+  // Title + subtitle
+  doc.fontSize(13).font("Helvetica-Bold").fillColor(TEAL)
+    .text(title, M, divY + 8, { lineBreak: false });
+  doc.fontSize(7).font("Helvetica").fillColor(GRAY)
+    .text(subtitle, M, divY + 26, { lineBreak: false });
+
+  return divY + 42; // table starts here
+}
+
+function drawContinuationHeader(doc: typeof PDFDocument, title: string, page: number): number {
+  doc.rect(0, 0, PAGE_W, 2).fill(CYAN);
+  doc.fontSize(8).font("Helvetica-Bold").fillColor(TEAL)
+    .text(`${title}  (cont.)`, M, M, { lineBreak: false });
+  doc.fontSize(7).font("Helvetica").fillColor(GRAY)
+    .text(`Page ${page}`, PAGE_W - M - 40, M, { width: 40, align: "right", lineBreak: false });
+  return M + 18;
+}
+
+function drawTableHeader(doc: typeof PDFDocument, y: number, cols: ColDef[], widths: number[]) {
+  doc.rect(M, y, TW, 16).fill(TEAL);
+  let x = M + 3;
+  cols.forEach((c, i) => {
+    doc.fontSize(6.5).font("Helvetica-Bold").fillColor("white")
+      .text(c.label, x, y + 5, { width: widths[i] - 4, align: c.right ? "right" : "left", lineBreak: false });
+    x += widths[i];
+  });
+  return y + 16;
+}
+
+// ── Main PDF builder ───────────────────────────────────────────────────────────
+async function buildPdf(
+  rows: Row[],
+  title: string,
+  colKeys: string[],
+  disposition: string,
+): Promise<Buffer> {
+  const validKeys = colKeys.filter(k => COL_MAP[k]);
+  const cols    = validKeys.map(k => COL_MAP[k]);
+
+  // Scale column widths proportionally to table width
+  const baseW  = cols.reduce((s, c) => s + c.w, 0);
+  const scale  = TW / baseW;
+  const widths = cols.map(c => Math.floor(c.w * scale));
+  // Fix rounding remainder on last column
+  widths[widths.length - 1] += TW - widths.reduce((s, w) => s + w, 0);
+
+  const dateStr  = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  const subtitle = `${dateStr}  ·  ${rows.length} invoice${rows.length !== 1 ? "s" : ""}`;
 
   const doc = new PDFDocument({ size: [PAGE_W, PAGE_H], layout: "landscape", margin: 0, bufferPages: true });
   const chunks: Buffer[] = [];
   doc.on("data", (c: Buffer) => chunks.push(c));
   const ready = new Promise<Buffer>(resolve => doc.on("end", () => resolve(Buffer.concat(chunks))));
 
-  const dateStr = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  let pageNum = 1;
+  const MAX_Y = PAGE_H - 44; // leave room for footer
 
-  function drawPageHeader() {
-    // Top accent bar
-    doc.rect(0, 0, PAGE_W, 3).fill(CYAN);
-
-    // Logo or "BZA."
-    if (logoExists) {
-      doc.image(logoPath, M, M, { height: 28 });
-    } else {
-      doc.fontSize(20).font("Helvetica-Bold").fillColor(TEAL).text("BZA", M, M, { continued: true, lineBreak: false });
-      doc.fillColor(CYAN).text(".", { lineBreak: false });
-    }
-
-    // Company info top-right
-    const IX = 480;
-    const IW = PAGE_W - M - IX;
-    doc.fontSize(6.5).font("Helvetica").fillColor(GRAY);
-    doc.text("BZA International Services, LLC", IX, M,      { width: IW, align: "right" });
-    doc.text("1209 S. 10th St. Suite A #583",   IX, M + 10, { width: IW, align: "right" });
-    doc.text("McAllen, TX 78501 US",            IX, M + 19, { width: IW, align: "right" });
-    doc.text("ebazua@bza-is.com",               IX, M + 28, { width: IW, align: "right" });
-
-    // Divider
-    doc.moveTo(M, M + 42).lineTo(PAGE_W - M, M + 42).strokeColor(RULE).lineWidth(0.5).stroke();
-
-    // Report title
-    doc.fontSize(14).font("Helvetica-Bold").fillColor(TEAL).text(title, M, M + 50, { lineBreak: false });
-    doc.fontSize(7).font("Helvetica").fillColor(GRAY)
-      .text(dateStr + "  ·  " + rows.length + " invoice" + (rows.length !== 1 ? "s" : ""), M, M + 68, { lineBreak: false });
-  }
-
-  let y = M + 82;
-  drawPageHeader();
-
-  function drawTableHeader() {
-    doc.rect(M, y, TABLE_W, 15).fill(TEAL);
-    let x = M + 3;
-    cols.forEach((c, i) => {
-      doc.fontSize(6).font("Helvetica-Bold").fillColor("white")
-        .text(c.label, x, y + 4.5, { width: widths[i] - 3, align: c.right ? "right" : "left", lineBreak: false });
-      x += widths[i];
-    });
-    y += 15;
-  }
-  drawTableHeader();
+  // First page header
+  let y = drawFullHeader(doc, title, subtitle);
+  y = drawTableHeader(doc, y, cols, widths);
 
   let totTons = 0, totRev = 0, totCost = 0, totProfit = 0;
 
-  rows.forEach((r, ri) => {
-    if (y > MAX_Y) {
+  for (let ri = 0; ri < rows.length; ri++) {
+    const r = rows[ri];
+
+    // New page
+    if (y + 13 > MAX_Y) {
       doc.addPage();
-      y = M;
-      drawPageHeader();
-      drawTableHeader();
+      pageNum++;
+      y = drawContinuationHeader(doc, title, pageNum);
+      y = drawTableHeader(doc, y, cols, widths);
     }
-    if (ri % 2 === 0) doc.rect(M, y, TABLE_W, 13).fillColor(LGRY).fill();
+
+    // Alternating row bg
+    if (ri % 2 === 0) doc.rect(M, y, TW, 13).fillColor(LGRY).fill();
 
     let x = M + 3;
     cols.forEach((c, i) => {
-      const val = c.get(r);
-      const isNeg = val.startsWith("-") || (val.startsWith("$") && val.includes("-"));
+      const val   = c.get(r);
+      const isNeg = c.right && val.startsWith("$") && r.profit < 0 && c.label === "Profit";
       doc.fontSize(6.5).font("Helvetica").fillColor(isNeg ? "#dc2626" : DARK)
-        .text(val, x, y + 3, { width: widths[i] - 3, align: c.right ? "right" : "left", lineBreak: false, ellipsis: true });
+        .text(val, x, y + 3, {
+          width: widths[i] - 4,
+          align: c.right ? "right" : "left",
+          lineBreak: false,
+          ellipsis: true,
+        });
       x += widths[i];
     });
 
     totTons += r.quantityTons;
-    totRev += r.revenue;
+    totRev  += r.revenue;
     totCost += r.cost;
     totProfit += r.profit;
     y += 13;
-  });
+  }
 
   // Totals row
-  if (y + 16 > MAX_Y) { doc.addPage(); y = M; drawTableHeader(); }
+  if (y + 16 > MAX_Y) {
+    doc.addPage();
+    pageNum++;
+    y = drawContinuationHeader(doc, title, pageNum);
+  }
   doc.moveTo(M, y).lineTo(PAGE_W - M, y).strokeColor(CYAN).lineWidth(1).stroke();
   y += 1;
-  doc.rect(M, y, TABLE_W, 15).fill("#e8f5f3");
-  let x = M + 3;
-  const totals: Record<string, string> = {
-    invoiceNumber: "TOTAL", tons: totTons.toFixed(1),
-    amount: fmt$(totRev), cost: fmt$(totCost), profit: fmt$(totProfit),
+  doc.rect(M, y, TW, 16).fill("#e0f5f2");
+  const totVals: Record<string, string> = {
+    invoiceNumber: "TOTAL",
+    tons:   totTons.toFixed(1),
+    amount: fmt$(totRev),
+    cost:   fmt$(totCost),
+    profit: fmt$(totProfit),
     margin: totRev > 0 ? ((totProfit / totRev) * 100).toFixed(1) + "%" : "—",
   };
-  cols.forEach((c, i) => {
-    const colKey = Object.keys(ALL_COLS).find(k => ALL_COLS[k] === c) ?? "";
-    const val = totals[colKey] ?? "";
+  let x2 = M + 3;
+  validKeys.forEach((key, i) => {
+    const val = totVals[key] ?? "";
     if (val) {
       doc.fontSize(6.5).font("Helvetica-Bold").fillColor(TEAL)
-        .text(val, x, y + 4, { width: widths[i] - 3, align: c.right ? "right" : "left", lineBreak: false });
+        .text(val, x2, y + 5, { width: widths[i] - 4, align: COL_MAP[key].right ? "right" : "left", lineBreak: false });
     }
-    x += widths[i];
+    x2 += widths[i];
   });
-  y += 15;
+  y += 16;
 
   // Page footers
-  const pages = doc.bufferedPageRange();
-  for (let i = 0; i < pages.count; i++) {
+  const range = doc.bufferedPageRange();
+  for (let i = 0; i < range.count; i++) {
     doc.switchToPage(i);
-    const fy = PAGE_H - 24;
+    const fy = PAGE_H - 22;
     doc.moveTo(M, fy).lineTo(PAGE_W - M, fy).strokeColor(RULE).lineWidth(0.5).stroke();
     doc.fontSize(6.5).font("Helvetica").fillColor(GRAY)
-      .text("BZA International Services, LLC  ·  McAllen, TX  ·  Confidential", M, fy + 5, { align: "center", width: TABLE_W });
-    doc.text(`Page ${i + 1} of ${pages.count}`, M, fy + 13, { align: "right", width: TABLE_W });
+      .text("BZA International Services, LLC  ·  McAllen, TX  ·  Confidential", M, fy + 5, { align: "center", width: TW });
+    doc.text(`Page ${i + 1} of ${range.count}`, M, fy + 5, { align: "right", width: TW });
   }
 
   doc.end();
   return ready;
 }
 
-export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const { rows, title, cols, disposition = "inline" } = body as {
-    rows: InvoiceRow[];
-    title: string;
-    cols: string[];
-    disposition?: "inline" | "attachment";
-  };
+// ── Route handler (GET) ────────────────────────────────────────────────────────
+export async function GET(req: NextRequest) {
+  const sp          = req.nextUrl.searchParams;
+  const tab         = sp.get("tab") ?? "ar-aging";
+  const colKeys     = (sp.get("cols") ?? "invoiceNumber,clientName,product,date,dueDate,days,tons,amount,custPayment").split(",").filter(Boolean);
+  const dateFrom    = sp.get("dateFrom") ?? "";
+  const dateTo      = sp.get("dateTo")   ?? "";
+  const disposition = sp.get("disposition") ?? "inline";
 
-  if (!rows?.length || !cols?.length) {
-    return NextResponse.json({ error: "Missing rows or cols" }, { status: 400 });
-  }
+  const allRows = await getInvoices();
+
+  const data: Row[] = allRows.map(row => {
+    const sellPrice  = row.invoice.sellPriceOverride ?? row.poSellPrice ?? 0;
+    const buyPrice   = row.invoice.buyPriceOverride  ?? row.poBuyPrice  ?? 0;
+    const revenue    = row.invoice.quantityTons * sellPrice;
+    const costNoFrt  = row.invoice.quantityTons * buyPrice;
+    const freight    = row.invoice.freightCost ?? 0;
+    const cost       = costNoFrt + freight;
+    const profit     = revenue - cost;
+    const terms      = row.invoice.paymentTermsDays != null && row.invoice.paymentTermsDays > 0
+      ? row.invoice.paymentTermsDays : (row.clientPaymentTermsDays ?? 60);
+    const base = row.invoice.invoiceDate || row.invoice.shipmentDate;
+    let dueDate: string | null = null;
+    if (base) {
+      const d = new Date(base + "T12:00:00");
+      d.setDate(d.getDate() + terms);
+      dueDate = d.toISOString().split("T")[0];
+    }
+    return {
+      invoiceNumber:        row.invoice.invoiceNumber,
+      clientName:           row.clientName           ?? "Unknown",
+      supplierName:         row.supplierName         ?? "Unknown",
+      poNumber:             row.poNumber             ?? "",
+      invoiceDate:          row.invoice.invoiceDate,
+      shipmentDate:         row.invoice.shipmentDate,
+      dueDate,
+      quantityTons:         row.invoice.quantityTons,
+      revenue, cost, profit,
+      customerPaymentStatus: row.invoice.customerPaymentStatus,
+      supplierPaymentStatus: row.invoice.supplierPaymentStatus,
+      shipmentStatus:        row.invoice.shipmentStatus,
+      destination:           row.invoice.destination,
+      product:               row.invoice.item ?? row.product,
+    };
+  }).filter(r => {
+    const d = r.invoiceDate || r.shipmentDate;
+    if (dateFrom && d && d < dateFrom) return false;
+    if (dateTo   && d && d > dateTo)   return false;
+    return true;
+  });
+
+  // For AR aging only show unpaid
+  const rows = tab === "ar-aging" ? data.filter(r => r.customerPaymentStatus === "unpaid") : data;
+
+  const LABELS: Record<string, string> = {
+    "ar-aging":    "Accounts Receivable Aging",
+    "pl-monthly":  "Profit and Loss by Month",
+    "pl-customer": "Profit and Loss by Customer",
+    "pl-supplier": "Profit and Loss by Supplier",
+  };
+  const title = LABELS[tab] ?? "Financial Report";
 
   const dateStr = new Date().toISOString().split("T")[0];
-  const safeTitle = (title || "Financial_Report").replace(/[^a-zA-Z0-9_]/g, "_");
+  const safeTitle = title.replace(/[^a-zA-Z0-9_]/g, "_");
 
   try {
-    const buf = await buildPdf(title, rows, cols, disposition);
+    const buf = await buildPdf(rows, title, colKeys, disposition);
     return new NextResponse(buf, {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `${disposition}; filename="BZA_${safeTitle}_${dateStr}.pdf"`,
+        "Cache-Control": "no-store",
       },
     });
   } catch (err) {
