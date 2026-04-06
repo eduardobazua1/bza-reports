@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { deleteInvoice, markInvoicesPaid } from "@/server/actions";
+import { deleteInvoice, markInvoicesPaid, duplicateInvoice } from "@/server/actions";
 import { InvoiceForm } from "@/components/invoice-form";
 import {
   formatCurrency,
@@ -362,6 +362,12 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                           </button>
                           {openDropdownId === row.invoice.id && (
                             <div className="absolute right-0 top-full mt-1 bg-white border border-stone-200 rounded-md shadow-lg z-50 min-w-[160px] py-1">
+                              <button
+                                onClick={() => { openPanel(row, "edit"); setOpenDropdownId(null); }}
+                                className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"
+                              >
+                                View/Edit
+                              </button>
                               <a
                                 href={`/api/invoice-pdf?invoice=${row.invoice.invoiceNumber}`}
                                 target="_blank"
@@ -369,35 +375,29 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                                 className="block px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"
                                 onClick={() => setOpenDropdownId(null)}
                               >
-                                Download PDF
+                                Print
                               </a>
                               {!row.invoice.invoiceNumber.startsWith("PEND-") && (
                                 <button
-                                  onClick={() => openPanel(row, "send")}
+                                  onClick={() => { openPanel(row, "send"); setOpenDropdownId(null); }}
                                   className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"
                                 >
                                   Send
                                 </button>
                               )}
-                              {row.invoice.customerPaymentStatus === "unpaid" && row.clientId && (
-                                <button
-                                  onClick={() => openPanel(row, "payment")}
-                                  className="w-full text-left px-4 py-2 text-sm text-emerald-700 hover:bg-emerald-50 font-medium"
-                                >
-                                  Receive payment
-                                </button>
-                              )}
-                              {!row.invoice.invoiceNumber.startsWith("PEND-") && (
-                                <button
-                                  onClick={() => openPanel(row, "view")}
-                                  className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"
-                                >
-                                  Activity
-                                </button>
-                              )}
+                              <button
+                                onClick={async () => {
+                                  setOpenDropdownId(null);
+                                  await duplicateInvoice(row.invoice.id);
+                                  router.refresh();
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"
+                              >
+                                Duplicate
+                              </button>
                               <div className="border-t border-stone-100 my-1" />
                               <button
-                                onClick={() => handleDelete(row.invoice)}
+                                onClick={() => { handleDelete(row.invoice); setOpenDropdownId(null); }}
                                 className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                               >
                                 Delete

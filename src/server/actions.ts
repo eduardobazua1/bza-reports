@@ -288,6 +288,37 @@ export async function deleteInvoice(id: number) {
   revalidatePath("/purchase-orders");
 }
 
+export async function duplicateInvoice(id: number) {
+  const [orig] = await db.select().from(invoices).where(eq(invoices.id, id));
+  if (!orig) return;
+  const newNumber = `PEND-COPY-${Date.now().toString().slice(-6)}`;
+  await db.insert(invoices).values({
+    invoiceNumber: newNumber,
+    purchaseOrderId: orig.purchaseOrderId,
+    quantityTons: orig.quantityTons,
+    unit: orig.unit,
+    sellPriceOverride: orig.sellPriceOverride,
+    buyPriceOverride: orig.buyPriceOverride,
+    shipmentDate: orig.shipmentDate,
+    estimatedArrival: orig.estimatedArrival,
+    shipmentStatus: "programado",
+    customerPaymentStatus: "unpaid",
+    supplierPaymentStatus: "unpaid",
+    usesFactoring: orig.usesFactoring,
+    freightCost: orig.freightCost,
+    item: orig.item,
+    notes: orig.notes,
+    destination: orig.destination,
+    vehicleId: orig.vehicleId,
+    blNumber: orig.blNumber,
+    currentLocation: orig.currentLocation,
+    balesCount: orig.balesCount,
+    unitsPerBale: orig.unitsPerBale,
+  });
+  revalidatePath("/invoices");
+  revalidatePath("/purchase-orders");
+}
+
 // ---- Products ----
 export async function createProduct(data: {
   name: string;

@@ -251,7 +251,7 @@ export function InvoicesSection({
               <th className="text-left px-3 py-2 font-medium text-stone-500">Due Date</th>
               <th className="text-left px-3 py-2 font-medium text-stone-500">Status</th>
               <th className="text-left px-3 py-2 font-medium text-stone-500">Payment</th>
-              <th className="text-left px-3 py-2 font-medium text-stone-500">Docs</th>
+              <th className="text-left px-3 py-2 font-medium text-stone-500">Attachments</th>
               <th className="px-3 py-2"></th>
             </tr>
           </thead>
