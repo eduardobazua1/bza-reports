@@ -242,6 +242,17 @@ export async function updateInvoice(id: number, data: Partial<{
   revalidatePath("/purchase-orders");
 }
 
+export async function markInvoicesPaid(ids: number[], paidDate: string) {
+  for (const id of ids) {
+    await db
+      .update(invoices)
+      .set({ customerPaymentStatus: "paid", customerPaidDate: paidDate })
+      .where(eq(invoices.id, id));
+  }
+  revalidatePath("/invoices");
+  revalidatePath("/purchase-orders");
+}
+
 export async function deleteInvoice(id: number) {
   await db.delete(shipmentUpdates).where(eq(shipmentUpdates.invoiceId, id));
   await db.delete(invoices).where(eq(invoices.id, id));

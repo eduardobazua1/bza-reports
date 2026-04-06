@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { deleteInvoice } from "@/server/actions";
+import { deleteInvoice, markInvoicesPaid } from "@/server/actions";
 import { InvoiceForm } from "@/components/invoice-form";
 import {
   formatCurrency,
@@ -39,6 +39,7 @@ type InvoiceRow = {
     destination: string | null;
   };
   poNumber: string | null;
+  clientId: number | null;
   clientName: string | null;
   clientEmail: string | null;
   clientPaymentTermsDays: number | null;
@@ -62,6 +63,19 @@ type EmailLog = {
 
 type Doc = { id: number; fileName: string; type: string };
 
+type UnpaidInvoice = {
+  id: number;
+  invoiceNumber: string;
+  invoiceDate: string | null;
+  shipmentDate: string | null;
+  dueDate: string | null;
+  paymentTermsDays: number | null;
+  quantityTons: number;
+  sellPriceOverride: number | null;
+  poSellPrice: number | null;
+  clientPaymentTermsDays: number | null;
+};
+
 function fmtDateTime(iso: string | null) {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -72,16 +86,22 @@ function fmtDateTime(iso: string | null) {
   );
 }
 
-function computeDueDate(row: InvoiceRow): string | null {
+function computeDueDate(
+  invoiceDate: string | null,
+  shipmentDate: string | null,
+  dueDate: string | null,
+  paymentTermsDays: number | null,
+  clientPaymentTermsDays: number | null
+): string | null {
   const termsDays =
-    row.invoice.paymentTermsDays != null && row.invoice.paymentTermsDays > 0
-      ? row.invoice.paymentTermsDays
-      : row.clientPaymentTermsDays != null && row.clientPaymentTermsDays > 0
-      ? row.clientPaymentTermsDays
+    paymentTermsDays != null && paymentTermsDays > 0
+      ? paymentTermsDays
+      : clientPaymentTermsDays != null && clientPaymentTermsDays > 0
+      ? clientPaymentTermsDays
       : 60;
-  const baseDate = row.invoice.invoiceDate || row.invoice.shipmentDate;
+  const baseDate = invoiceDate || shipmentDate;
   return (
-    row.invoice.dueDate ||
+    dueDate ||
     (baseDate
       ? (() => {
           const d = new Date(baseDate + "T12:00:00");
@@ -92,10 +112,20 @@ function computeDueDate(row: InvoiceRow): string | null {
   );
 }
 
+function computeRowDueDate(row: InvoiceRow): string | null {
+  return computeDueDate(
+    row.invoice.invoiceDate,
+    row.invoice.shipmentDate,
+    row.invoice.dueDate,
+    row.invoice.paymentTermsDays,
+    row.clientPaymentTermsDays
+  );
+}
+
 export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [panelMode, setPanelMode] = useState<"view" | "edit" | "send">("view");
+  const [panelMode, setPanelMode] = useState<"view" | "edit" | "send" | "payment">("view");
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
   const [emailLogs, setEmailLogs] = useState<EmailLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
@@ -105,12 +135,16 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
   const [sendTo, setSendTo] = useState("");
   const [sendCc, setSendCc] = useState("");
   const [sendLoading, setSendLoading] = useState(false);
+  // Receive payment state
+  const [unpaidInvoices, setUnpaidInvoices] = useState<UnpaidInvoice[]>([]);
+  const [unpaidLoading, setUnpaidLoading] = useState(false);
+  const [paymentClientId, setPaymentClientId] = useState<number | null>(null);
+  const [paymentClientName, setPaymentClientName] = useState("");
   const [isPending, startTransition] = useTransition();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const selectedRow = rows.find((r) => r.invoice.id === selectedId) ?? null;
 
-  // Close dropdown on outside click
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -121,12 +155,13 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  function openPanel(row: InvoiceRow, mode: "view" | "edit" | "send" = "view") {
+  function openPanel(row: InvoiceRow, mode: "view" | "edit" | "send" | "payment" = "view") {
     setSelectedId(row.invoice.id);
     setPanelMode(mode);
     setOpenDropdownId(null);
     if (mode === "view") loadLogs(row.invoice.invoiceNumber);
     if (mode === "send") openSend(row);
+    if (mode === "payment") openPayment(row);
   }
 
   function closePanel() {
@@ -134,6 +169,7 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
     setPanelMode("view");
     setEmailLogs([]);
     setDocs([]);
+    setUnpaidInvoices([]);
   }
 
   async function loadLogs(invoiceNumber: string) {
@@ -160,6 +196,19 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
       }
     } finally {
       setDocsLoading(false);
+    }
+  }
+
+  async function openPayment(row: InvoiceRow) {
+    if (!row.clientId) return;
+    setPaymentClientId(row.clientId);
+    setPaymentClientName(row.clientName || "");
+    setUnpaidLoading(true);
+    try {
+      const res = await fetch(`/api/client-unpaid-invoices?clientId=${row.clientId}`);
+      if (res.ok) setUnpaidInvoices(await res.json());
+    } finally {
+      setUnpaidLoading(false);
     }
   }
 
@@ -203,7 +252,7 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
   }
 
   return (
-    <div className="relative flex gap-0">
+    <div className="relative flex gap-4 items-start">
       {/* Table */}
       <div className={`bg-white rounded-md shadow-sm overflow-hidden transition-all duration-300 ${selectedId ? "flex-1 min-w-0" : "w-full"}`}>
         <div className="overflow-x-auto">
@@ -226,15 +275,13 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
             <tbody>
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={11} className="p-6 text-center text-sm text-muted-foreground">
-                    No invoices found.
-                  </td>
+                  <td colSpan={11} className="p-6 text-center text-sm text-muted-foreground">No invoices found.</td>
                 </tr>
               )}
               {rows.map((row) => {
                 const sellPrice = row.invoice.sellPriceOverride ?? row.poSellPrice ?? 0;
                 const revenue = row.invoice.quantityTons * sellPrice;
-                const dueDate = computeDueDate(row);
+                const dueDate = computeRowDueDate(row);
                 const today = new Date();
                 let daysOverdue = 0;
                 if (dueDate) {
@@ -250,20 +297,12 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                     key={row.invoice.id}
                     onClick={() => openPanel(row)}
                     className={`cursor-pointer transition-colors border-t border-border ${
-                      isSelected
-                        ? "bg-blue-50"
-                        : isOverdue
-                        ? "bg-red-50/40 hover:bg-red-50/70"
-                        : "hover:bg-muted/40"
+                      isSelected ? "bg-blue-50" : isOverdue ? "bg-red-50/40 hover:bg-red-50/70" : "hover:bg-muted/40"
                     }`}
                   >
                     <td className="p-3 text-sm font-medium text-stone-800">{row.invoice.invoiceNumber}</td>
                     <td className="p-3 text-sm">
-                      <Link
-                        href={`/purchase-orders/${row.invoice.purchaseOrderId}`}
-                        className="text-primary hover:underline"
-                        onClick={(e) => e.stopPropagation()}
-                      >
+                      <Link href={`/purchase-orders/${row.invoice.purchaseOrderId}`} className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
                         {row.poNumber || "-"}
                       </Link>
                     </td>
@@ -275,9 +314,7 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                     <td className="p-3 text-sm">
                       {dueDate ? (
                         row.invoice.customerPaymentStatus === "unpaid" && daysOverdue > 0 ? (
-                          <span className="text-red-600 font-medium text-xs">
-                            {formatDate(dueDate)} <span className="font-bold">+{daysOverdue}d</span>
-                          </span>
+                          <span className="text-red-600 font-medium text-xs">{formatDate(dueDate)} <span className="font-bold">+{daysOverdue}d</span></span>
                         ) : (
                           <span className="text-stone-600">{formatDate(dueDate)}</span>
                         )
@@ -311,7 +348,7 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                             ▼
                           </button>
                           {openDropdownId === row.invoice.id && (
-                            <div className="absolute right-0 top-full mt-1 bg-white border border-stone-200 rounded-md shadow-lg z-50 min-w-[140px] py-1">
+                            <div className="absolute right-0 top-full mt-1 bg-white border border-stone-200 rounded-md shadow-lg z-50 min-w-[160px] py-1">
                               <a
                                 href={`/api/invoice-pdf?invoice=${row.invoice.invoiceNumber}`}
                                 target="_blank"
@@ -327,6 +364,14 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                                   className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"
                                 >
                                   Send
+                                </button>
+                              )}
+                              {row.invoice.customerPaymentStatus === "unpaid" && row.clientId && (
+                                <button
+                                  onClick={() => openPanel(row, "payment")}
+                                  className="w-full text-left px-4 py-2 text-sm text-emerald-700 hover:bg-emerald-50 font-medium"
+                                >
+                                  Receive payment
                                 </button>
                               )}
                               {!row.invoice.invoiceNumber.startsWith("PEND-") && (
@@ -359,14 +404,12 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
 
       {/* Side Panel */}
       {selectedRow && (
-        <div className="w-[360px] shrink-0 ml-4 bg-white rounded-md shadow-sm border border-stone-200 flex flex-col max-h-[calc(100vh-120px)] sticky top-4 overflow-hidden">
+        <div className="w-[380px] shrink-0 bg-white rounded-md shadow-sm border border-stone-200 flex flex-col max-h-[calc(100vh-120px)] sticky top-4 overflow-hidden">
           {panelMode === "edit" ? (
             <div className="overflow-y-auto flex-1 p-4">
               <div className="flex items-center justify-between mb-3">
-                <span className="font-semibold text-stone-800 text-sm">
-                  Edit — {selectedRow.invoice.invoiceNumber}
-                </span>
-                <button onClick={closePanel} className="text-stone-400 hover:text-stone-600 text-lg leading-none">×</button>
+                <span className="font-semibold text-stone-800 text-sm">Edit — {selectedRow.invoice.invoiceNumber}</span>
+                <button onClick={closePanel} className="text-stone-400 hover:text-stone-600 text-xl leading-none">×</button>
               </div>
               <InvoiceForm
                 invoice={selectedRow.invoice}
@@ -389,6 +432,14 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
               onSend={handleSend}
               onClose={() => { setPanelMode("view"); loadLogs(selectedRow.invoice.invoiceNumber); }}
             />
+          ) : panelMode === "payment" ? (
+            <ReceivePaymentPanel
+              clientName={paymentClientName}
+              unpaidInvoices={unpaidInvoices}
+              loading={unpaidLoading}
+              onClose={closePanel}
+              onSaved={() => { closePanel(); router.refresh(); }}
+            />
           ) : (
             <ViewPanel
               row={selectedRow}
@@ -397,6 +448,7 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
               onClose={closePanel}
               onEdit={() => setPanelMode("edit")}
               onSend={() => openSend(selectedRow).then(() => setPanelMode("send"))}
+              onPayment={() => openPayment(selectedRow).then(() => setPanelMode("payment"))}
             />
           )}
         </div>
@@ -405,6 +457,214 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
   );
 }
 
+// ─── Receive Payment Panel ────────────────────────────────────────────────────
+
+function ReceivePaymentPanel({
+  clientName,
+  unpaidInvoices,
+  loading,
+  onClose,
+  onSaved,
+}: {
+  clientName: string;
+  unpaidInvoices: UnpaidInvoice[];
+  loading: boolean;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const today = new Date().toISOString().split("T")[0];
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [paymentDate, setPaymentDate] = useState(today);
+  const [referenceNo, setReferenceNo] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  function toggleInvoice(id: number) {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
+  function toggleAll() {
+    if (selectedIds.length === unpaidInvoices.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(unpaidInvoices.map((i) => i.id));
+    }
+  }
+
+  const totalSelected = unpaidInvoices
+    .filter((inv) => selectedIds.includes(inv.id))
+    .reduce((sum, inv) => {
+      const price = inv.sellPriceOverride ?? inv.poSellPrice ?? 0;
+      return sum + inv.quantityTons * price;
+    }, 0);
+
+  async function handleSave() {
+    if (selectedIds.length === 0 || !paymentDate) return;
+    setSaving(true);
+    try {
+      await markInvoicesPaid(selectedIds, paymentDate);
+      onSaved();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <>
+      {/* Header */}
+      <div className="flex items-start justify-between p-4 border-b border-stone-100">
+        <div>
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="text-base font-bold text-stone-900">Receive Payment</span>
+          </div>
+          <p className="text-xs text-stone-500">{clientName}</p>
+        </div>
+        <button onClick={onClose} className="text-stone-400 hover:text-stone-600 text-xl leading-none mt-0.5">×</button>
+      </div>
+
+      {/* Payment fields */}
+      <div className="px-4 py-3 border-b border-stone-100 grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-stone-600 mb-1">Payment date</label>
+          <input
+            type="date"
+            className="w-full border border-stone-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+            value={paymentDate}
+            onChange={(e) => setPaymentDate(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-stone-600 mb-1">Reference no.</label>
+          <input
+            type="text"
+            className="w-full border border-stone-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+            placeholder="Optional"
+            value={referenceNo}
+            onChange={(e) => setReferenceNo(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* Amount received */}
+      {selectedIds.length > 0 && (
+        <div className="px-4 py-2 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between">
+          <span className="text-xs text-emerald-700 font-medium">Amount received</span>
+          <span className="text-lg font-bold text-emerald-800">{formatCurrency(totalSelected)}</span>
+        </div>
+      )}
+
+      {/* Outstanding invoices */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="px-4 py-2 border-b border-stone-100 flex items-center justify-between">
+          <span className="text-xs font-semibold text-stone-600 uppercase tracking-wide">Outstanding Transactions</span>
+          {!loading && unpaidInvoices.length > 0 && (
+            <button onClick={toggleAll} className="text-xs text-primary hover:underline">
+              {selectedIds.length === unpaidInvoices.length ? "Deselect all" : "Select all"}
+            </button>
+          )}
+        </div>
+
+        {loading ? (
+          <div className="p-6 text-center text-sm text-stone-400">Loading...</div>
+        ) : unpaidInvoices.length === 0 ? (
+          <div className="p-6 text-center text-sm text-stone-400 italic">No outstanding invoices.</div>
+        ) : (
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="bg-stone-50 border-b border-stone-100">
+                <th className="w-8 p-2 text-center">
+                  <input
+                    type="checkbox"
+                    className="w-3.5 h-3.5"
+                    checked={selectedIds.length === unpaidInvoices.length && unpaidInvoices.length > 0}
+                    onChange={toggleAll}
+                  />
+                </th>
+                <th className="text-left p-2 font-medium text-stone-500">Invoice</th>
+                <th className="text-left p-2 font-medium text-stone-500">Due</th>
+                <th className="text-right p-2 font-medium text-stone-500">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {unpaidInvoices.map((inv) => {
+                const price = inv.sellPriceOverride ?? inv.poSellPrice ?? 0;
+                const amount = inv.quantityTons * price;
+                const due = computeDueDate(
+                  inv.invoiceDate,
+                  inv.shipmentDate,
+                  inv.dueDate,
+                  inv.paymentTermsDays,
+                  inv.clientPaymentTermsDays
+                );
+                const today = new Date();
+                const daysOverdue = due
+                  ? Math.floor((today.getTime() - new Date(due + "T12:00:00").getTime()) / (1000 * 60 * 60 * 24))
+                  : 0;
+                const isChecked = selectedIds.includes(inv.id);
+
+                return (
+                  <tr
+                    key={inv.id}
+                    onClick={() => toggleInvoice(inv.id)}
+                    className={`border-b border-stone-50 cursor-pointer transition-colors ${isChecked ? "bg-emerald-50/60" : "hover:bg-stone-50"}`}
+                  >
+                    <td className="p-2 text-center">
+                      <input
+                        type="checkbox"
+                        className="w-3.5 h-3.5"
+                        checked={isChecked}
+                        onChange={() => toggleInvoice(inv.id)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </td>
+                    <td className="p-2">
+                      <p className="font-medium text-stone-800">{inv.invoiceNumber}</p>
+                      {inv.invoiceDate && <p className="text-[10px] text-stone-400">{formatDate(inv.invoiceDate)}</p>}
+                    </td>
+                    <td className="p-2">
+                      {due ? (
+                        daysOverdue > 0 ? (
+                          <span className="text-red-600 font-semibold">{formatDate(due)}<br /><span className="text-[10px]">+{daysOverdue}d overdue</span></span>
+                        ) : (
+                          <span className="text-stone-600">{formatDate(due)}</span>
+                        )
+                      ) : "-"}
+                    </td>
+                    <td className="p-2 text-right font-medium text-stone-800">{formatCurrency(amount)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="p-3 border-t border-stone-100 space-y-2">
+        {selectedIds.length > 0 && (
+          <div className="flex items-center justify-between text-xs text-stone-600 px-1">
+            <span>{selectedIds.length} invoice{selectedIds.length !== 1 ? "s" : ""} selected</span>
+            <span className="font-bold text-stone-800">{formatCurrency(totalSelected)}</span>
+          </div>
+        )}
+        <div className="flex gap-2">
+          <button onClick={onClose} className="flex-1 text-xs border border-stone-300 text-stone-700 px-3 py-2 rounded hover:bg-stone-50 font-medium">
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving || selectedIds.length === 0 || !paymentDate}
+            className="flex-1 text-xs bg-emerald-600 text-white px-3 py-2 rounded hover:bg-emerald-700 disabled:opacity-50 font-medium"
+          >
+            {saving ? "Saving..." : `Save payment${selectedIds.length > 1 ? "s" : ""}`}
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── View Panel ───────────────────────────────────────────────────────────────
+
 function ViewPanel({
   row,
   emailLogs,
@@ -412,6 +672,7 @@ function ViewPanel({
   onClose,
   onEdit,
   onSend,
+  onPayment,
 }: {
   row: InvoiceRow;
   emailLogs: EmailLog[];
@@ -419,10 +680,11 @@ function ViewPanel({
   onClose: () => void;
   onEdit: () => void;
   onSend: () => void;
+  onPayment: () => void;
 }) {
   const sellPrice = row.invoice.sellPriceOverride ?? row.poSellPrice ?? 0;
   const revenue = row.invoice.quantityTons * sellPrice;
-  const dueDate = computeDueDate(row);
+  const dueDate = computeRowDueDate(row);
   const today = new Date();
   let daysOverdue = 0;
   if (dueDate) {
@@ -434,14 +696,11 @@ function ViewPanel({
 
   return (
     <>
-      {/* Header */}
       <div className="flex items-start justify-between p-4 border-b border-stone-100">
         <div>
           <p className="text-xs text-stone-500 mb-0.5">Invoice {row.invoice.invoiceNumber}</p>
           {isOverdue ? (
-            <span className="text-xs font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
-              Overdue {daysOverdue} days
-            </span>
+            <span className="text-xs font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">Overdue {daysOverdue} days</span>
           ) : (
             <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${paymentStatusColors[row.invoice.customerPaymentStatus]}`}>
               {paymentStatusLabels[row.invoice.customerPaymentStatus]}
@@ -451,15 +710,13 @@ function ViewPanel({
         <button onClick={onClose} className="text-stone-400 hover:text-stone-600 text-xl leading-none mt-0.5">×</button>
       </div>
 
-      {/* Amount */}
       <div className="px-4 py-3 border-b border-stone-100">
         <p className="text-xs text-stone-500 mb-0.5">Total</p>
         <p className="text-2xl font-bold text-stone-900">{formatCurrency(revenue)}</p>
         <p className="text-xs text-stone-500 mt-0.5">{formatNumber(row.invoice.quantityTons, 2)} tons</p>
       </div>
 
-      {/* Details */}
-      <div className="px-4 py-3 border-b border-stone-100 space-y-2 overflow-y-auto flex-1">
+      <div className="px-4 py-3 border-b border-stone-100 flex-1 overflow-y-auto space-y-2">
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
           {row.invoice.invoiceDate && (
             <>
@@ -476,9 +733,7 @@ function ViewPanel({
           {row.poNumber && (
             <>
               <span className="text-stone-500">Purchase Order</span>
-              <Link href={`/purchase-orders/${row.invoice.purchaseOrderId}`} className="text-primary hover:underline font-medium">
-                {row.poNumber}
-              </Link>
+              <Link href={`/purchase-orders/${row.invoice.purchaseOrderId}`} className="text-primary hover:underline font-medium">{row.poNumber}</Link>
             </>
           )}
           {row.product && (
@@ -513,7 +768,6 @@ function ViewPanel({
           </>
         </div>
 
-        {/* Client */}
         {row.clientName && (
           <div className="pt-2 border-t border-stone-100">
             <p className="text-xs text-stone-500 mb-0.5">Client</p>
@@ -522,7 +776,6 @@ function ViewPanel({
           </div>
         )}
 
-        {/* Invoice activity */}
         <div className="pt-2 border-t border-stone-100">
           <p className="text-xs font-semibold text-stone-700 mb-2">Invoice activity</p>
           {logsLoading ? (
@@ -554,34 +807,39 @@ function ViewPanel({
         </div>
       </div>
 
-      {/* Footer actions */}
-      <div className="p-3 border-t border-stone-100 flex gap-2">
-        <a
-          href={`/api/invoice-pdf?invoice=${row.invoice.invoiceNumber}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex-1 text-center text-xs border border-stone-300 text-stone-700 px-3 py-2 rounded hover:bg-stone-50 font-medium"
-        >
-          PDF
-        </a>
-        {!row.invoice.invoiceNumber.startsWith("PEND-") && (
+      <div className="p-3 border-t border-stone-100 space-y-2">
+        {row.invoice.customerPaymentStatus === "unpaid" && row.clientId && (
           <button
-            onClick={onSend}
-            className="flex-1 text-xs border border-stone-300 text-stone-700 px-3 py-2 rounded hover:bg-stone-50 font-medium"
+            onClick={onPayment}
+            className="w-full text-xs bg-emerald-600 text-white px-3 py-2 rounded hover:bg-emerald-700 font-medium"
           >
-            Send
+            Receive payment
           </button>
         )}
-        <button
-          onClick={onEdit}
-          className="flex-1 text-xs bg-primary text-white px-3 py-2 rounded hover:opacity-90 font-medium"
-        >
-          Edit invoice
-        </button>
+        <div className="flex gap-2">
+          <a
+            href={`/api/invoice-pdf?invoice=${row.invoice.invoiceNumber}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 text-center text-xs border border-stone-300 text-stone-700 px-3 py-2 rounded hover:bg-stone-50 font-medium"
+          >
+            PDF
+          </a>
+          {!row.invoice.invoiceNumber.startsWith("PEND-") && (
+            <button onClick={onSend} className="flex-1 text-xs border border-stone-300 text-stone-700 px-3 py-2 rounded hover:bg-stone-50 font-medium">
+              Send
+            </button>
+          )}
+          <button onClick={onEdit} className="flex-1 text-xs bg-primary text-white px-3 py-2 rounded hover:opacity-90 font-medium">
+            Edit invoice
+          </button>
+        </div>
       </div>
     </>
   );
 }
+
+// ─── Send Panel ───────────────────────────────────────────────────────────────
 
 function SendPanel({
   row,
@@ -637,8 +895,6 @@ function SendPanel({
             onChange={(e) => setSendCc(e.target.value)}
           />
         </div>
-
-        {/* Attachments */}
         <div>
           <p className="text-xs font-medium text-stone-600 mb-2">Attachments</p>
           <div className="bg-stone-50 rounded border border-stone-200 p-3 space-y-2">
@@ -651,12 +907,7 @@ function SendPanel({
             ) : docs.length > 0 ? (
               docs.map((d) => (
                 <label key={d.id} className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="w-3.5 h-3.5"
-                    checked={selectedDocIds.includes(d.id)}
-                    onChange={() => toggleDoc(d.id)}
-                  />
+                  <input type="checkbox" className="w-3.5 h-3.5" checked={selectedDocIds.includes(d.id)} onChange={() => toggleDoc(d.id)} />
                   <span className="text-xs text-stone-700">{d.fileName}</span>
                   <span className="text-[10px] text-stone-400 uppercase">{d.type}</span>
                 </label>
