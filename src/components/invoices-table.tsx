@@ -867,9 +867,6 @@ function ViewPanel({
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-stone-50 group"
                 >
-                  <span className="text-stone-400 group-hover:text-stone-600">
-                    {doc.type === "bl" ? "📄" : doc.type === "pl" ? "📋" : "📎"}
-                  </span>
                   <span className="text-xs text-primary hover:underline flex-1 truncate">{doc.fileName}</span>
                   <span className="text-[10px] text-stone-400 uppercase shrink-0">{doc.type}</span>
                 </a>
