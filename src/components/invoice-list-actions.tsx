@@ -24,6 +24,8 @@ type Invoice = {
   notes: string | null;
 };
 
+type Doc = { id: number; fileName: string; type: string };
+
 export function InvoiceListActions({
   invoice,
   clientEmail,
@@ -37,6 +39,9 @@ export function InvoiceListActions({
   const [sendCc, setSendCc] = useState("");
   const [sendLoading, setSendLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [docs, setDocs] = useState<Doc[]>([]);
+  const [selectedDocIds, setSelectedDocIds] = useState<number[]>([]);
+  const [docsLoading, setDocsLoading] = useState(false);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -48,13 +53,35 @@ export function InvoiceListActions({
     });
   }
 
+  async function openSendPanel() {
+    setSendTo(clientEmail || "");
+    setSendCc("");
+    setDocsLoading(true);
+    setShowSend(true);
+    try {
+      const res = await fetch(`/api/documents?invoiceId=${invoice.id}`);
+      if (res.ok) {
+        const all: Doc[] = await res.json();
+        const blPl = all.filter(d => d.type === "bl" || d.type === "pl");
+        setDocs(blPl);
+        setSelectedDocIds(blPl.map(d => d.id)); // pre-select all
+      }
+    } finally {
+      setDocsLoading(false);
+    }
+  }
+
+  function toggleDoc(id: number) {
+    setSelectedDocIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  }
+
   async function handleSend() {
     if (!sendTo) return;
     setSendLoading(true);
     const res = await fetch("/api/invoice-pdf/send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ invoiceNumber: invoice.invoiceNumber, to: sendTo, cc: sendCc || undefined }),
+      body: JSON.stringify({ invoiceNumber: invoice.invoiceNumber, to: sendTo, cc: sendCc || undefined, documentIds: selectedDocIds }),
     });
     if (res.ok) {
       const data = await res.json();
@@ -111,7 +138,26 @@ export function InvoiceListActions({
             Cancel
           </button>
         </div>
-        <p className="text-[10px] text-stone-400">Invoice PDF + BOL/PL documents will be attached</p>
+        {docsLoading ? (
+          <p className="text-[10px] text-stone-400">Loading documents...</p>
+        ) : docs.length > 0 ? (
+          <div className="flex items-center gap-3 flex-wrap justify-end">
+            <span className="text-[10px] text-stone-500 font-medium">Attach:</span>
+            {docs.map(d => (
+              <label key={d.id} className="flex items-center gap-1 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="w-3 h-3"
+                  checked={selectedDocIds.includes(d.id)}
+                  onChange={() => toggleDoc(d.id)}
+                />
+                <span className="text-[10px] text-stone-600">{d.fileName}</span>
+              </label>
+            ))}
+          </div>
+        ) : (
+          <p className="text-[10px] text-stone-400">Invoice PDF only (no BOL/PL uploaded)</p>
+        )}
       </div>
     );
   }
@@ -131,7 +177,7 @@ export function InvoiceListActions({
           <span className="text-xs text-emerald-600 font-medium">Sent ✓</span>
         ) : (
           <button
-            onClick={() => { setSendTo(clientEmail || ""); setShowSend(true); }}
+            onClick={openSendPanel}
             className="text-xs text-blue-600 hover:underline font-medium"
           >
             Send

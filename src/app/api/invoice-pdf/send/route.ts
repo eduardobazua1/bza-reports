@@ -287,40 +287,39 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Email not configured" }, { status: 503 });
   }
 
-  const { invoiceNumber, to, cc } = await req.json();
+  // documentIds: if provided (even empty array), attach only those docs; if undefined, attach all BOL/PL
+  const { invoiceNumber, to, cc, documentIds } = await req.json();
   if (!invoiceNumber || !to) {
     return NextResponse.json({ error: "invoiceNumber and to are required" }, { status: 400 });
   }
 
   try {
-    // Generate invoice PDF
     const pdfBuffer = await generateInvoicePdf(invoiceNumber);
 
-    // Fetch BOL and packing list documents attached to this invoice
-    const inv = await db.query.invoices.findFirst({ where: eq(invoices.invoiceNumber, invoiceNumber) });
     const attachments: { filename: string; content: Buffer; contentType: string }[] = [
       { filename: `Invoice_${invoiceNumber}_BZA.pdf`, content: pdfBuffer, contentType: "application/pdf" },
     ];
 
-    if (inv) {
-      const docs = await db.select().from(documents)
-        .where(eq(documents.invoiceId, inv.id));
+    const inv = await db.query.invoices.findFirst({ where: eq(invoices.invoiceNumber, invoiceNumber) });
 
-      for (const doc of docs) {
-        if (doc.type !== "bl" && doc.type !== "pl") continue;
-        // fileUrl is stored as "data:mime;base64,..."
+    if (inv) {
+      const allDocs = await db.select().from(documents).where(eq(documents.invoiceId, inv.id));
+
+      // If documentIds array was passed, use only those; otherwise attach all BOL/PL
+      const docsToAttach = documentIds !== undefined
+        ? allDocs.filter(d => (documentIds as number[]).includes(d.id))
+        : allDocs.filter(d => d.type === "bl" || d.type === "pl");
+
+      for (const doc of docsToAttach) {
         const match = doc.fileUrl.match(/^data:([^;]+);base64,(.+)$/);
         if (!match) continue;
         const [, mimeType, base64] = match;
-        const content = Buffer.from(base64, "base64");
-        attachments.push({ filename: doc.fileName, content, contentType: mimeType });
+        attachments.push({ filename: doc.fileName, content: Buffer.from(base64, "base64"), contentType: mimeType });
       }
     }
 
     const docList = attachments.slice(1).map(a => `<li>${a.filename}</li>`).join("");
-    const docsHtml = docList
-      ? `<p>Also attached: <ul>${docList}</ul></p>`
-      : "";
+    const docsHtml = docList ? `<p>Also attached:<ul>${docList}</ul></p>` : "";
 
     await sendEmail({
       to,

@@ -79,6 +79,9 @@ export function InvoicesSection({
   const [sendCc, setSendCc] = useState("");
   const [sendLoading, setSendLoading] = useState(false);
   const [sentId, setSentId] = useState<number | null>(null);
+  const [sendDocs, setSendDocs] = useState<{ id: number; fileName: string; type: string }[]>([]);
+  const [selectedDocIds, setSelectedDocIds] = useState<number[]>([]);
+  const [docsLoading, setDocsLoading] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [editForm, setEditForm] = useState<Partial<Invoice> & { quantityTons: string; sellPriceOverride: string; buyPriceOverride: string; freightCost: string; balesCount: string; unitsPerBale: string }>({
     invoiceNumber: "",
@@ -125,12 +128,28 @@ export function InvoicesSection({
 
   function cancelEdit() { setEditingId(null); }
 
-  function openSend(inv: Invoice) {
+  async function openSend(inv: Invoice) {
     setSendingId(inv.id);
     setSendTo(clientEmail || "");
     setSendCc("");
     setSentId(null);
     setEditingId(null);
+    setDocsLoading(true);
+    try {
+      const res = await fetch(`/api/documents?invoiceId=${inv.id}`);
+      if (res.ok) {
+        const all: { id: number; fileName: string; type: string }[] = await res.json();
+        const blPl = all.filter(d => d.type === "bl" || d.type === "pl");
+        setSendDocs(blPl);
+        setSelectedDocIds(blPl.map(d => d.id));
+      }
+    } finally {
+      setDocsLoading(false);
+    }
+  }
+
+  function toggleSendDoc(id: number) {
+    setSelectedDocIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   }
 
   async function handleSend(inv: Invoice) {
@@ -139,7 +158,7 @@ export function InvoicesSection({
     const res = await fetch("/api/invoice-pdf/send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ invoiceNumber: inv.invoiceNumber, to: sendTo, cc: sendCc || undefined }),
+      body: JSON.stringify({ invoiceNumber: inv.invoiceNumber, to: sendTo, cc: sendCc || undefined, documentIds: selectedDocIds }),
     });
     if (res.ok) {
       const data = await res.json();
@@ -306,7 +325,7 @@ export function InvoicesSection({
                     <tr key={`send-${inv.id}`}>
                       <td colSpan={15} className="p-0">
                         <div className="bg-blue-50 border-t border-blue-200 px-4 py-3 space-y-2">
-                          <p className="text-xs font-semibold text-blue-800">Send Invoice {inv.invoiceNumber} — BOL and Packing List documents will be attached automatically</p>
+                          <p className="text-xs font-semibold text-blue-800">Send Invoice {inv.invoiceNumber}</p>
                           <div className="flex items-center gap-3 flex-wrap">
                             <div className="flex items-center gap-2">
                               <span className="text-xs text-blue-700 font-medium whitespace-nowrap">To:</span>
@@ -337,6 +356,26 @@ export function InvoicesSection({
                             </button>
                             <button onClick={() => setSendingId(null)} className="text-xs text-stone-400 hover:text-stone-600">Cancel</button>
                           </div>
+                          {docsLoading ? (
+                            <p className="text-xs text-stone-400">Loading documents...</p>
+                          ) : sendDocs.length > 0 ? (
+                            <div className="flex items-center gap-3 flex-wrap">
+                              <span className="text-xs text-stone-500 font-medium">Attach:</span>
+                              {sendDocs.map(d => (
+                                <label key={d.id} className="flex items-center gap-1 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    className="w-3 h-3"
+                                    checked={selectedDocIds.includes(d.id)}
+                                    onChange={() => toggleSendDoc(d.id)}
+                                  />
+                                  <span className="text-xs text-stone-600">{d.fileName}</span>
+                                </label>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-stone-400">Invoice PDF only (no BOL/PL uploaded)</p>
+                          )}
                         </div>
                       </td>
                     </tr>
