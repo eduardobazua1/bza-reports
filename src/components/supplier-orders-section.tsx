@@ -356,78 +356,6 @@ export function SupplierOrdersSection({
                       </td>
                     </tr>
 
-                    {/* Edit inline form */}
-                    {isEditing && (
-                      <tr key={`edit-${order.id}`}>
-                        <td colSpan={8} className="p-0">
-                          <div className="bg-amber-50 border-t border-amber-200 p-4 space-y-4">
-                            <p className="text-xs font-semibold text-amber-800 uppercase">Edit Supplier Order</p>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                              <div>
-                                <label className="block text-xs text-stone-500 mb-1">Date</label>
-                                <input
-                                  type="date"
-                                  className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
-                                  value={editDate}
-                                  onChange={(e) => setEditDate(e.target.value)}
-                                />
-                              </div>
-                              <ProductSelect value={editItem} onChange={setEditItem} />
-                              <div>
-                                <label className="block text-xs text-stone-500 mb-1">Price/TN (USD)</label>
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
-                                  placeholder={String(buyPrice)}
-                                  value={editPrice}
-                                  onChange={(e) => setEditPrice(e.target.value)}
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs text-stone-500 mb-1">Incoterm</label>
-                                <input
-                                  className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
-                                  placeholder="DAP, CIF, FOB..."
-                                  value={editIncoterm}
-                                  onChange={(e) => setEditIncoterm(e.target.value)}
-                                />
-                              </div>
-                            </div>
-
-                            <div>
-                              <div className="flex items-center justify-between mb-2">
-                                <label className="text-xs font-semibold text-stone-500 uppercase">Lines</label>
-                                <button onClick={addEditLine} className="text-xs text-amber-700 hover:text-amber-900 font-medium">+ Add line</button>
-                              </div>
-                              <div className="space-y-2">
-                                {editLines.map((line, i) => (
-                                  <div key={i} className="grid grid-cols-[1fr_80px_1fr_24px] gap-2 items-center">
-                                    <input className="border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="Destination" value={line.destination} onChange={(e) => updateEditLine(i, "destination", e.target.value)} />
-                                    <input type="number" step="0.1" className="border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="TN" value={line.tons} onChange={(e) => updateEditLine(i, "tons", e.target.value)} />
-                                    <input className="border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="Notes" value={line.notes} onChange={(e) => updateEditLine(i, "notes", e.target.value)} />
-                                    {editLines.length > 1 && <button onClick={() => removeEditLine(i)} className="text-red-400 hover:text-red-600 text-sm text-center">✕</button>}
-                                  </div>
-                                ))}
-                              </div>
-                              {editTotalTons > 0 && (
-                                <p className="text-xs text-stone-500 mt-2">
-                                  Total: {formatNumber(editTotalTons, 1)} TN · {formatCurrency(editTotalTons * (editPrice ? parseFloat(editPrice) : buyPrice))}
-                                </p>
-                              )}
-                            </div>
-
-                            <div className="flex gap-2">
-                              <button onClick={() => handleEdit(order)} disabled={editLoading || editTotalTons === 0} className="text-xs bg-amber-600 text-white px-3 py-1.5 rounded hover:bg-amber-700 disabled:opacity-50 font-medium">
-                                {editLoading ? "Saving..." : "Save changes"}
-                              </button>
-                              <button onClick={cancelEdit} className="text-xs text-stone-500 hover:text-stone-700 px-3 py-1.5">Cancel</button>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
 
                     {isSending && (
                       <tr key={`send-${order.id}`}>
@@ -510,6 +438,65 @@ export function SupplierOrdersSection({
           </div>
         </div>
       )}
+
+      {/* Edit modal — fixed overlay, no layout shift */}
+      {editingId !== null && (() => {
+        const order = list.find(o => o.id === editingId);
+        if (!order) return null;
+        return (
+          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={cancelEdit}>
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-stone-700">Edit Supplier Order</p>
+                <button onClick={cancelEdit} className="text-stone-400 hover:text-stone-600 text-xl leading-none">×</button>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div>
+                  <label className="block text-xs text-stone-500 mb-1">Date</label>
+                  <input type="date" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editDate} onChange={(e) => setEditDate(e.target.value)} />
+                </div>
+                <ProductSelect value={editItem} onChange={setEditItem} />
+                <div>
+                  <label className="block text-xs text-stone-500 mb-1">Price/TN (USD)</label>
+                  <input type="number" step="0.01" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder={String(buyPrice)} value={editPrice} onChange={(e) => setEditPrice(e.target.value)} />
+                </div>
+                <div>
+                  <label className="block text-xs text-stone-500 mb-1">Incoterm</label>
+                  <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="DAP, CIF, FOB..." value={editIncoterm} onChange={(e) => setEditIncoterm(e.target.value)} />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-semibold text-stone-500 uppercase">Lines</label>
+                  <button onClick={addEditLine} className="text-xs text-amber-700 hover:text-amber-900 font-medium">+ Add line</button>
+                </div>
+                <div className="space-y-2">
+                  {editLines.map((line, i) => (
+                    <div key={i} className="grid grid-cols-[1fr_80px_1fr_24px] gap-2 items-center">
+                      <input className="border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="Destination" value={line.destination} onChange={(e) => updateEditLine(i, "destination", e.target.value)} />
+                      <input type="number" step="0.1" className="border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="TN" value={line.tons} onChange={(e) => updateEditLine(i, "tons", e.target.value)} />
+                      <input className="border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="Notes" value={line.notes} onChange={(e) => updateEditLine(i, "notes", e.target.value)} />
+                      {editLines.length > 1 && <button onClick={() => removeEditLine(i)} className="text-red-400 hover:text-red-600 text-sm text-center">✕</button>}
+                    </div>
+                  ))}
+                </div>
+                {editTotalTons > 0 && (
+                  <p className="text-xs text-stone-500 mt-2">Total: {formatNumber(editTotalTons, 1)} TN · {formatCurrency(editTotalTons * (editPrice ? parseFloat(editPrice) : buyPrice))}</p>
+                )}
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <button onClick={() => handleEdit(order)} disabled={editLoading || editTotalTons === 0} className="text-sm bg-amber-600 text-white px-4 py-1.5 rounded hover:bg-amber-700 disabled:opacity-50 font-medium">
+                  {editLoading ? "Saving..." : "Save changes"}
+                </button>
+                <button onClick={cancelEdit} className="text-sm text-stone-500 hover:text-stone-700 px-4 py-1.5">Cancel</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

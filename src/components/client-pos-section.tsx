@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { formatNumber, formatCurrency } from "@/lib/utils";
 
 type ClientPO = {
@@ -52,6 +52,18 @@ export function ClientPOsSection({
   const [list, setList] = useState<ClientPO[]>(clientPos);
   const [adding, setAdding] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpenDropdownId(null);
+      }
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
   const [convertingId, setConvertingId] = useState<number | null>(null);
   const [convertLoading, setConvertLoading] = useState(false);
 
@@ -357,70 +369,34 @@ export function ClientPOsSection({
                         </span>
                       </td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-1">
                           {cpo.status !== "complete" && (
                             <button
                               onClick={() => openConvert(cpo, invoiceCounter - 1)}
-                              className="text-xs bg-emerald-600 text-white px-2.5 py-1 rounded hover:bg-emerald-700 transition font-medium"
+                              className="text-xs bg-emerald-600 text-white px-2.5 py-1 rounded hover:bg-emerald-700 transition font-medium mr-1"
                             >
                               Convert →
                             </button>
                           )}
-                          <button
-                            onClick={() => editingId === cpo.id ? cancelEdit() : openEdit(cpo)}
-                            className={`text-xs font-medium ${editingId === cpo.id ? "text-amber-600 hover:text-amber-800" : "text-stone-400 hover:text-stone-700"}`}
-                          >
-                            {editingId === cpo.id ? "Cancel" : "Edit"}
-                          </button>
-                          <button onClick={() => handleDelete(cpo.id)} className="text-red-400 hover:text-red-600 text-xs">✕</button>
+                          <div className="relative" ref={openDropdownId === cpo.id ? dropdownRef : undefined}>
+                            <button
+                              onClick={() => setOpenDropdownId(openDropdownId === cpo.id ? null : cpo.id)}
+                              className="text-xs text-primary font-medium px-2 py-1 hover:bg-blue-50 rounded border border-stone-200"
+                            >
+                              ▼
+                            </button>
+                            {openDropdownId === cpo.id && (
+                              <div className="absolute right-0 top-full mt-1 bg-white border border-stone-200 rounded-md shadow-lg z-50 min-w-[130px] py-1 text-left">
+                                <button onClick={() => { setOpenDropdownId(null); openEdit(cpo); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">Edit</button>
+                                <div className="border-t border-stone-100 my-1" />
+                                <button onClick={() => { setOpenDropdownId(null); handleDelete(cpo.id); }} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </td>
                     </tr>
 
-                    {/* Edit inline form */}
-                    {editingId === cpo.id && (
-                      <tr key={`edit-${cpo.id}`}>
-                        <td colSpan={9} className="p-0">
-                          <div className="bg-amber-50 border-t border-amber-200 p-4 space-y-3">
-                            <p className="text-xs font-semibold text-amber-800 uppercase">Edit Client Order</p>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                              <div>
-                                <label className="block text-xs text-stone-500 mb-1">Client PO # *</label>
-                                <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm font-mono" value={editForm.clientPoNumber} onChange={(e) => setEditForm(f => ({ ...f, clientPoNumber: e.target.value }))} />
-                              </div>
-                              <div>
-                                <label className="block text-xs text-stone-500 mb-1">Destination</label>
-                                <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="Morelia..." value={editForm.destination} onChange={(e) => setEditForm(f => ({ ...f, destination: e.target.value }))} />
-                              </div>
-                              <div>
-                                <label className="block text-xs text-stone-500 mb-1">Planned Tons</label>
-                                <input type="number" step="0.1" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.plannedTons} onChange={(e) => setEditForm(f => ({ ...f, plannedTons: e.target.value }))} />
-                              </div>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                              <div>
-                                <label className="block text-xs text-stone-500 mb-1">Product</label>
-                                <ProductSelect value={editForm.item} onChange={(v) => setEditForm(f => ({ ...f, item: v }))} />
-                              </div>
-                              <div>
-                                <label className="block text-xs text-stone-500 mb-1">Incoterm</label>
-                                <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="DAP, CIF, FOB..." value={editForm.incoterm} onChange={(e) => setEditForm(f => ({ ...f, incoterm: e.target.value }))} />
-                              </div>
-                              <div>
-                                <label className="block text-xs text-stone-500 mb-1">Price/TN override</label>
-                                <input type="number" step="0.01" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder={sellPrice ? `${sellPrice} (default)` : "0.00"} value={editForm.sellPriceOverride} onChange={(e) => setEditForm(f => ({ ...f, sellPriceOverride: e.target.value }))} />
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <button onClick={() => handleEdit(cpo)} disabled={editLoading || !editForm.clientPoNumber} className="text-xs bg-amber-600 text-white px-3 py-1.5 rounded hover:bg-amber-700 disabled:opacity-50 font-medium">
-                                {editLoading ? "Saving..." : "Save changes"}
-                              </button>
-                              <button onClick={cancelEdit} className="text-xs text-stone-500 hover:text-stone-700 px-3 py-1.5">Cancel</button>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
 
                     {/* Convert to Invoice inline form */}
                     {isConverting && (
@@ -638,6 +614,56 @@ export function ClientPOsSection({
           </div>
         </div>
       )}
+
+      {/* Edit modal — fixed overlay, no layout shift */}
+      {editingId !== null && (() => {
+        const cpo = list.find(o => o.id === editingId);
+        if (!cpo) return null;
+        return (
+          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={cancelEdit}>
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-stone-700">Edit Client Order</p>
+                <button onClick={cancelEdit} className="text-stone-400 hover:text-stone-600 text-xl leading-none">×</button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs text-stone-500 mb-1">Client PO # *</label>
+                  <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm font-mono" value={editForm.clientPoNumber} onChange={(e) => setEditForm(f => ({ ...f, clientPoNumber: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="block text-xs text-stone-500 mb-1">Destination</label>
+                  <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="Morelia..." value={editForm.destination} onChange={(e) => setEditForm(f => ({ ...f, destination: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="block text-xs text-stone-500 mb-1">Planned Tons</label>
+                  <input type="number" step="0.1" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.plannedTons} onChange={(e) => setEditForm(f => ({ ...f, plannedTons: e.target.value }))} />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs text-stone-500 mb-1">Product</label>
+                  <ProductSelect value={editForm.item} onChange={(v) => setEditForm(f => ({ ...f, item: v }))} />
+                </div>
+                <div>
+                  <label className="block text-xs text-stone-500 mb-1">Incoterm</label>
+                  <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="DAP, CIF, FOB..." value={editForm.incoterm} onChange={(e) => setEditForm(f => ({ ...f, incoterm: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="block text-xs text-stone-500 mb-1">Price/TN override</label>
+                  <input type="number" step="0.01" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder={sellPrice ? `${sellPrice} (default)` : "0.00"} value={editForm.sellPriceOverride} onChange={(e) => setEditForm(f => ({ ...f, sellPriceOverride: e.target.value }))} />
+                </div>
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button onClick={() => handleEdit(cpo)} disabled={editLoading || !editForm.clientPoNumber} className="text-sm bg-amber-600 text-white px-4 py-1.5 rounded hover:bg-amber-700 disabled:opacity-50 font-medium">
+                  {editLoading ? "Saving..." : "Save changes"}
+                </button>
+                <button onClick={cancelEdit} className="text-sm text-stone-500 hover:text-stone-700 px-4 py-1.5">Cancel</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
