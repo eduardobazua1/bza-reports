@@ -808,8 +808,10 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
   const [dateTo,   setDateTo]   = useState("");
   const [conditions, setConditions] = useState<FilterCondition[]>([]);
   const [customizeOpen, setCustomizeOpen] = useState(false);
+  const [actionsOpen,  setActionsOpen]  = useState(false);
   const [drillDown,  setDrillDown]  = useState<{ rows: InvoiceRow[]; title: string } | null>(null);
   const [emailState, setEmailState] = useState<{ rows: InvoiceRow[]; title: string } | null>(null);
+  const actionsRef = useRef<HTMLDivElement>(null);
 
   const [arVisible,       setArVisible]       = useState(() => new Set(AR_COLS.map(c=>c.key)));
   const [monthlyVisible,  setMonthlyVisible]  = useState(() => new Set(MONTHLY_COLS.map(c=>c.key)));
@@ -919,20 +921,29 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
             {(dateFrom||dateTo) && <button onClick={()=>{setDateFrom("");setDateTo("");}} className="text-stone-400 hover:text-stone-600">✕</button>}
           </div>
 
-          {/* Download */}
-          <button onClick={download} className="flex items-center gap-1.5 text-xs border border-stone-200 bg-white rounded-md px-3 py-1.5 hover:bg-stone-50 text-stone-600 font-medium">
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-            Save As
-          </button>
-
-          {/* Email */}
-          <button onClick={() => setEmailState({ rows: filtered, title: REPORT_LABELS[activeReport!] })}
-            className="flex items-center gap-1.5 text-xs border border-stone-200 bg-white rounded-md px-3 py-1.5 hover:bg-stone-50 text-stone-600 font-medium">
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-            </svg>
-            Email
-          </button>
+          {/* Actions dropdown */}
+          <div className="relative" ref={actionsRef}>
+            <button onClick={() => setActionsOpen(o => !o)}
+              className="flex items-center gap-1.5 text-xs border border-stone-200 bg-white rounded-md px-3 py-1.5 hover:bg-stone-50 text-stone-600 font-medium">
+              Action
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            {actionsOpen && (
+              <div className="absolute right-0 top-full mt-1 w-44 bg-white border border-stone-200 rounded-lg shadow-lg z-30 py-1"
+                onClick={() => setActionsOpen(false)}>
+                <button onClick={download}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 text-left">
+                  <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                  Download Excel
+                </button>
+                <button onClick={() => setEmailState({ rows: filtered, title: REPORT_LABELS[activeReport!] })}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 text-left">
+                  <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                  Email Report
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Customize */}
           <button onClick={()=>setCustomizeOpen(true)}
