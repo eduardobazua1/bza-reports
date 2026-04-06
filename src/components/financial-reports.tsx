@@ -194,27 +194,61 @@ function EmailModal({
 
 // ─── Drill-down modal ─────────────────────────────────────────────────────────
 
-function DrillDownModal({
-  title, rows, onClose, onEmail,
-}: { title: string; rows: InvoiceRow[]; onClose: () => void; onEmail: () => void }) {
-  const [actionsOpen, setActionsOpen] = useState(false);
+// Column definitions for drill-down
+const DD_COL_DEFS = [
+  { key: "invoiceNumber", label: "Invoice #" },
+  { key: "clientName",    label: "Client" },
+  { key: "supplierName",  label: "Supplier" },
+  { key: "poNumber",      label: "PO #" },
+  { key: "product",       label: "Product" },
+  { key: "destination",   label: "Destination" },
+  { key: "invoiceDate",   label: "Invoice Date" },
+  { key: "shipmentDate",  label: "Ship Date" },
+  { key: "dueDate",       label: "Due Date" },
+  { key: "days",          label: "Days" },
+  { key: "tons",          label: "Tons" },
+  { key: "amount",        label: "Amount" },
+  { key: "cost",          label: "Cost" },
+  { key: "profit",        label: "Profit" },
+  { key: "margin",        label: "Margin %" },
+  { key: "shipStatus",    label: "Ship Status" },
+  { key: "custPayment",   label: "Payment" },
+];
+const AR_DEFAULT_COLS  = new Set(["invoiceNumber","clientName","poNumber","product","destination","invoiceDate","dueDate","days","tons","amount","custPayment"]);
+const PL_DEFAULT_COLS  = new Set(["invoiceNumber","clientName","supplierName","product","destination","invoiceDate","dueDate","tons","amount","cost","profit","shipStatus","custPayment"]);
 
-  const shipStatusColors: Record<string, string> = {
-    programado: "bg-amber-100 text-amber-700", en_transito: "bg-blue-100 text-blue-700",
-    en_aduana: "bg-purple-100 text-purple-700", entregado: "bg-emerald-100 text-emerald-700",
-  };
+function DrillDownModal({
+  title, rows, onClose, onEmail, mode = "pl",
+}: { title: string; rows: InvoiceRow[]; onClose: () => void; onEmail: () => void; mode?: "ar" | "pl" }) {
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const [colsOpen,    setColsOpen]    = useState(false);
+  const [visible, setVisible] = useState<Set<string>>(() => mode === "ar" ? new Set(AR_DEFAULT_COLS) : new Set(PL_DEFAULT_COLS));
+  const v = (k: string) => visible.has(k);
+
+  function toggleCol(k: string) {
+    setVisible(prev => { const next = new Set(prev); next.has(k) ? next.delete(k) : next.add(k); return next; });
+  }
 
   function downloadCSV() {
-    const headers = ["Invoice #","Client","Supplier","Product","Destination","Invoice Date","Due Date","Tons","Revenue","Cost","Profit","Ship Status","Payment"];
+    const activeCols = DD_COL_DEFS.filter(c => visible.has(c.key));
+    const headers = activeCols.map(c => c.label);
     const csvRows = [
       headers,
-      ...rows.map(r => [
-        r.invoiceNumber, r.clientName, r.supplierName, r.product ?? "", r.destination ?? "",
-        r.invoiceDate ?? "", r.dueDate ?? "",
-        r.quantityTons.toFixed(3), r.revenue.toFixed(2), r.cost.toFixed(2), r.profit.toFixed(2),
-        SHIP_LABELS[r.shipmentStatus] ?? r.shipmentStatus,
-        r.customerPaymentStatus === "paid" ? "Paid" : "Unpaid",
-      ]),
+      ...rows.map(r => {
+        const days = daysOverdue(r.dueDate);
+        const vals: Record<string, string> = {
+          invoiceNumber: r.invoiceNumber, clientName: r.clientName, supplierName: r.supplierName,
+          poNumber: r.poNumber, product: r.product ?? "", destination: r.destination ?? "",
+          invoiceDate: r.invoiceDate ?? "", shipmentDate: r.shipmentDate ?? "", dueDate: r.dueDate ?? "",
+          days: days <= 0 ? "Not due" : `${days}`,
+          tons: r.quantityTons.toFixed(3), amount: r.revenue.toFixed(2),
+          cost: r.cost.toFixed(2), profit: r.profit.toFixed(2),
+          margin: r.revenue > 0 ? ((r.profit / r.revenue) * 100).toFixed(2) : "0",
+          shipStatus: SHIP_LABELS[r.shipmentStatus] ?? r.shipmentStatus,
+          custPayment: r.customerPaymentStatus === "paid" ? "Paid" : "Unpaid",
+        };
+        return activeCols.map(c => vals[c.key]);
+      }),
     ];
     const csv = csvRows.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -226,18 +260,47 @@ function DrillDownModal({
     URL.revokeObjectURL(url);
   }
 
+  const totTons   = rows.reduce((s,r) => s + r.quantityTons, 0);
+  const totRev    = rows.reduce((s,r) => s + r.revenue, 0);
+  const totCost   = rows.reduce((s,r) => s + r.cost, 0);
+  const totProfit = rows.reduce((s,r) => s + r.profit, 0);
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-stone-200">
+      <div className="bg-white rounded-lg shadow-2xl w-full max-w-5xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-3 border-b border-stone-200">
           <div>
             <h3 className="text-sm font-semibold text-stone-800">{title}</h3>
             <p className="text-xs text-stone-400 mt-0.5">{rows.length} invoice{rows.length !== 1 ? "s" : ""}</p>
           </div>
           <div className="flex items-center gap-2">
+
+            {/* Columns toggle */}
+            <div className="relative">
+              <button onClick={() => { setColsOpen(o => !o); setActionsOpen(false); }}
+                className="flex items-center gap-1.5 text-xs border border-stone-200 bg-white rounded-md px-2.5 py-1.5 hover:bg-stone-50 text-stone-600 font-medium">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                Columns
+              </button>
+              {colsOpen && (
+                <div className="absolute right-0 top-full mt-1 w-44 bg-white border border-stone-200 rounded-lg shadow-lg z-30 py-2 px-1 max-h-72 overflow-y-auto"
+                  onClick={e => e.stopPropagation()}>
+                  {DD_COL_DEFS.map(c => (
+                    <label key={c.key} className="flex items-center gap-2 px-2 py-1.5 hover:bg-stone-50 rounded cursor-pointer">
+                      <input type="checkbox" checked={visible.has(c.key)} onChange={() => toggleCol(c.key)}
+                        className="w-3.5 h-3.5 accent-blue-600 shrink-0"/>
+                      <span className="text-sm text-stone-700">{c.label}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Action dropdown */}
             <div className="relative">
-              <button onClick={() => setActionsOpen(o => !o)}
+              <button onClick={() => { setActionsOpen(o => !o); setColsOpen(false); }}
                 className="flex items-center gap-1.5 text-xs border border-stone-200 bg-white rounded-md px-2.5 py-1.5 hover:bg-stone-50 text-stone-600 font-medium">
                 Action
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
@@ -258,59 +321,74 @@ function DrillDownModal({
                 </div>
               )}
             </div>
-            <button onClick={onClose} className="text-stone-400 hover:text-stone-700 text-xl leading-none">×</button>
+
+            <button onClick={onClose} className="text-stone-400 hover:text-stone-700 text-xl leading-none ml-1">×</button>
           </div>
         </div>
+
+        {/* Table */}
         <div className="overflow-auto flex-1">
           <table className="w-full text-xs">
-            <thead className="bg-stone-50 sticky top-0">
+            <thead className="bg-white sticky top-0 border-b-2 border-gray-200">
               <tr>
-                {["Invoice #","Client","Supplier","Product","Destination","Invoice Date","Due Date","Days","Tons","Revenue","Cost","Profit","Ship Status","Payment"].map(h => (
-                  <th key={h} className="px-3 py-2 text-left text-[10px] font-semibold text-stone-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
-                ))}
+                {v("invoiceNumber") && <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">Invoice #</th>}
+                {v("clientName")    && <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">Client</th>}
+                {v("supplierName")  && <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">Supplier</th>}
+                {v("poNumber")      && <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">PO #</th>}
+                {v("product")       && <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">Product</th>}
+                {v("destination")   && <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">Destination</th>}
+                {v("invoiceDate")   && <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">Invoice Date</th>}
+                {v("shipmentDate")  && <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">Ship Date</th>}
+                {v("dueDate")       && <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">Due Date</th>}
+                {v("days")          && <th className="px-3 py-2 text-right text-[10px] font-medium text-gray-500 whitespace-nowrap">Days</th>}
+                {v("tons")          && <th className="px-3 py-2 text-right text-[10px] font-medium text-gray-500 whitespace-nowrap">Tons</th>}
+                {v("amount")        && <th className="px-3 py-2 text-right text-[10px] font-medium text-gray-500 whitespace-nowrap">Amount</th>}
+                {v("cost")          && <th className="px-3 py-2 text-right text-[10px] font-medium text-gray-500 whitespace-nowrap">Cost</th>}
+                {v("profit")        && <th className="px-3 py-2 text-right text-[10px] font-medium text-gray-500 whitespace-nowrap">Profit</th>}
+                {v("margin")        && <th className="px-3 py-2 text-right text-[10px] font-medium text-gray-500 whitespace-nowrap">Margin %</th>}
+                {v("shipStatus")    && <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">Ship Status</th>}
+                {v("custPayment")   && <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">Payment</th>}
               </tr>
             </thead>
             <tbody>
               {rows.map((r, i) => {
                 const days = daysOverdue(r.dueDate);
+                const margin = r.revenue > 0 ? (r.profit / r.revenue) * 100 : 0;
                 return (
-                  <tr key={i} className="hover:bg-stone-50 border-t border-stone-100">
-                    <td className="px-3 py-2 font-mono font-medium text-blue-700">{r.invoiceNumber}</td>
-                    <td className="px-3 py-2 font-medium">{r.clientName}</td>
-                    <td className="px-3 py-2 text-stone-500">{r.supplierName}</td>
-                    <td className="px-3 py-2 text-stone-500">{r.product || "—"}</td>
-                    <td className="px-3 py-2 text-stone-500">{r.destination || "—"}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{fmtDate(r.invoiceDate)}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{fmtDate(r.dueDate)}</td>
-                    <td className={`px-3 py-2 font-medium ${days > 90 ? "text-red-600" : days > 30 ? "text-orange-500" : days > 0 ? "text-amber-500" : "text-emerald-600"}`}>
-                      {days <= 0 ? "Not due" : `${days}d`}
-                    </td>
-                    <td className="px-3 py-2 text-right">{formatNumber(r.quantityTons, 1)}</td>
-                    <td className="px-3 py-2 text-right font-medium">{formatCurrency(r.revenue)}</td>
-                    <td className="px-3 py-2 text-right">{formatCurrency(r.cost)}</td>
-                    <td className={`px-3 py-2 text-right font-medium ${r.profit >= 0 ? "text-emerald-600" : "text-red-600"}`}>{formatCurrency(r.profit)}</td>
-                    <td className="px-3 py-2">
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${shipStatusColors[r.shipmentStatus] ?? ""}`}>
-                        {SHIP_LABELS[r.shipmentStatus] ?? r.shipmentStatus}
-                      </span>
-                    </td>
-                    <td className={`px-3 py-2 font-medium ${r.customerPaymentStatus === "paid" ? "text-emerald-600" : "text-amber-600"}`}>
-                      {r.customerPaymentStatus === "paid" ? "Paid" : "Unpaid"}
-                    </td>
+                  <tr key={i} className="border-b border-gray-100 hover:bg-gray-50">
+                    {v("invoiceNumber") && <td className="px-3 py-1.5 font-mono font-medium text-blue-700 whitespace-nowrap">{r.invoiceNumber}</td>}
+                    {v("clientName")    && <td className="px-3 py-1.5 font-medium whitespace-nowrap">{r.clientName}</td>}
+                    {v("supplierName")  && <td className="px-3 py-1.5 text-gray-500 whitespace-nowrap">{r.supplierName}</td>}
+                    {v("poNumber")      && <td className="px-3 py-1.5 text-gray-500 whitespace-nowrap">{r.poNumber || "—"}</td>}
+                    {v("product")       && <td className="px-3 py-1.5 text-gray-600">{r.product || "—"}</td>}
+                    {v("destination")   && <td className="px-3 py-1.5 text-gray-600">{r.destination || "—"}</td>}
+                    {v("invoiceDate")   && <td className="px-3 py-1.5 whitespace-nowrap text-gray-600">{fmtDate(r.invoiceDate)}</td>}
+                    {v("shipmentDate")  && <td className="px-3 py-1.5 whitespace-nowrap text-gray-600">{fmtDate(r.shipmentDate)}</td>}
+                    {v("dueDate")       && <td className="px-3 py-1.5 whitespace-nowrap text-gray-600">{fmtDate(r.dueDate)}</td>}
+                    {v("days")          && <td className={`px-3 py-1.5 text-right font-medium whitespace-nowrap ${days > 90 ? "text-red-600" : days > 30 ? "text-orange-500" : days > 0 ? "text-amber-500" : "text-gray-400"}`}>{days <= 0 ? "—" : `${days}d`}</td>}
+                    {v("tons")          && <td className="px-3 py-1.5 text-right text-gray-700">{formatNumber(r.quantityTons, 1)}</td>}
+                    {v("amount")        && <td className="px-3 py-1.5 text-right font-medium">{formatCurrency(r.revenue)}</td>}
+                    {v("cost")          && <td className="px-3 py-1.5 text-right text-gray-600">{formatCurrency(r.cost)}</td>}
+                    {v("profit")        && <td className={`px-3 py-1.5 text-right font-medium ${r.profit < 0 ? "text-red-600" : ""}`}>{formatCurrency(r.profit)}</td>}
+                    {v("margin")        && <td className={`px-3 py-1.5 text-right ${margin < 0 ? "text-red-600" : "text-gray-600"}`}>{formatPercent(margin)}</td>}
+                    {v("shipStatus")    && <td className="px-3 py-1.5 text-gray-600 whitespace-nowrap">{SHIP_LABELS[r.shipmentStatus] ?? r.shipmentStatus}</td>}
+                    {v("custPayment")   && <td className={`px-3 py-1.5 font-medium ${r.customerPaymentStatus === "paid" ? "text-gray-600" : "text-red-600"}`}>{r.customerPaymentStatus === "paid" ? "Paid" : "Unpaid"}</td>}
                   </tr>
                 );
               })}
             </tbody>
-            <tfoot className="bg-stone-50 sticky bottom-0">
-              <tr className="border-t-2 border-stone-200">
-                <td colSpan={8} className="px-3 py-2 font-semibold text-xs">TOTAL</td>
-                <td className="px-3 py-2 text-right font-semibold">{formatNumber(rows.reduce((s,r)=>s+r.quantityTons,0),1)}</td>
-                <td className="px-3 py-2 text-right font-semibold">{formatCurrency(rows.reduce((s,r)=>s+r.revenue,0))}</td>
-                <td className="px-3 py-2 text-right font-semibold">{formatCurrency(rows.reduce((s,r)=>s+r.cost,0))}</td>
-                <td className={`px-3 py-2 text-right font-bold ${rows.reduce((s,r)=>s+r.profit,0)>=0?"text-emerald-600":"text-red-600"}`}>
-                  {formatCurrency(rows.reduce((s,r)=>s+r.profit,0))}
-                </td>
-                <td colSpan={2} />
+            <tfoot className="sticky bottom-0 bg-white border-t-2 border-gray-300">
+              <tr>
+                {/* Span all non-numeric cols up to tons */}
+                <td colSpan={DD_COL_DEFS.filter(c => !["tons","amount","cost","profit","margin","shipStatus","custPayment"].includes(c.key) && visible.has(c.key)).length || 1}
+                  className="px-3 py-2 font-semibold text-xs text-gray-600 uppercase tracking-wide">TOTAL</td>
+                {v("tons")    && <td className="px-3 py-2 text-right font-semibold">{formatNumber(totTons, 1)}</td>}
+                {v("amount")  && <td className="px-3 py-2 text-right font-semibold">{formatCurrency(totRev)}</td>}
+                {v("cost")    && <td className="px-3 py-2 text-right font-semibold">{formatCurrency(totCost)}</td>}
+                {v("profit")  && <td className={`px-3 py-2 text-right font-semibold ${totProfit < 0 ? "text-red-600" : ""}`}>{formatCurrency(totProfit)}</td>}
+                {v("margin")  && <td className={`px-3 py-2 text-right font-semibold ${totProfit < 0 ? "text-red-600" : ""}`}>{formatPercent(totRev > 0 ? (totProfit / totRev) * 100 : 0)}</td>}
+                {v("shipStatus")  && <td />}
+                {v("custPayment") && <td />}
               </tr>
             </tfoot>
           </table>
@@ -849,7 +927,7 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
   const [conditions, setConditions] = useState<FilterCondition[]>([]);
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [actionsOpen,  setActionsOpen]  = useState(false);
-  const [drillDown,  setDrillDown]  = useState<{ rows: InvoiceRow[]; title: string } | null>(null);
+  const [drillDown,  setDrillDown]  = useState<{ rows: InvoiceRow[]; title: string; mode: "ar"|"pl" } | null>(null);
   const [emailState, setEmailState] = useState<{ rows: InvoiceRow[]; title: string } | null>(null);
   const actionsRef = useRef<HTMLDivElement>(null);
 
@@ -997,10 +1075,10 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
 
       {/* Report — document-style, wrapped in a thin border */}
       <div className="border border-gray-200 rounded overflow-hidden">
-        {activeReport === "ar-aging"    && <ARAgingReport   data={filtered} visible={arVisible}       onDrillDown={(r,t)=>setDrillDown({rows:r,title:t})} />}
-        {activeReport === "pl-monthly"  && <PLMonthlyReport data={filtered} visible={monthlyVisible}  onDrillDown={(r,t)=>setDrillDown({rows:r,title:t})} />}
-        {activeReport === "pl-customer" && <PLEntityReport  data={filtered} visible={clientVisible}   isClient={true}  onDrillDown={(r,t)=>setDrillDown({rows:r,title:t})} />}
-        {activeReport === "pl-supplier" && <PLEntityReport  data={filtered} visible={supplierVisible} isClient={false} onDrillDown={(r,t)=>setDrillDown({rows:r,title:t})} />}
+        {activeReport === "ar-aging"    && <ARAgingReport   data={filtered} visible={arVisible}       onDrillDown={(r,t)=>setDrillDown({rows:r,title:t,mode:"ar"})} />}
+        {activeReport === "pl-monthly"  && <PLMonthlyReport data={filtered} visible={monthlyVisible}  onDrillDown={(r,t)=>setDrillDown({rows:r,title:t,mode:"pl"})} />}
+        {activeReport === "pl-customer" && <PLEntityReport  data={filtered} visible={clientVisible}   isClient={true}  onDrillDown={(r,t)=>setDrillDown({rows:r,title:t,mode:"pl"})} />}
+        {activeReport === "pl-supplier" && <PLEntityReport  data={filtered} visible={supplierVisible} isClient={false} onDrillDown={(r,t)=>setDrillDown({rows:r,title:t,mode:"pl"})} />}
       </div>
 
       {/* Customize panel */}
@@ -1015,6 +1093,7 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
         <DrillDownModal
           title={drillDown.title}
           rows={drillDown.rows}
+          mode={drillDown.mode}
           onClose={() => setDrillDown(null)}
           onEmail={() => { setEmailState({ rows: drillDown.rows, title: drillDown.title }); setDrillDown(null); }}
         />
