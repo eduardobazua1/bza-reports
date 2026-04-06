@@ -197,10 +197,34 @@ function EmailModal({
 function DrillDownModal({
   title, rows, onClose, onEmail,
 }: { title: string; rows: InvoiceRow[]; onClose: () => void; onEmail: () => void }) {
+  const [actionsOpen, setActionsOpen] = useState(false);
+
   const shipStatusColors: Record<string, string> = {
     programado: "bg-amber-100 text-amber-700", en_transito: "bg-blue-100 text-blue-700",
     en_aduana: "bg-purple-100 text-purple-700", entregado: "bg-emerald-100 text-emerald-700",
   };
+
+  function downloadCSV() {
+    const headers = ["Invoice #","Client","Supplier","Product","Destination","Invoice Date","Due Date","Tons","Revenue","Cost","Profit","Ship Status","Payment"];
+    const csvRows = [
+      headers,
+      ...rows.map(r => [
+        r.invoiceNumber, r.clientName, r.supplierName, r.product ?? "", r.destination ?? "",
+        r.invoiceDate ?? "", r.dueDate ?? "",
+        r.quantityTons.toFixed(3), r.revenue.toFixed(2), r.cost.toFixed(2), r.profit.toFixed(2),
+        SHIP_LABELS[r.shipmentStatus] ?? r.shipmentStatus,
+        r.customerPaymentStatus === "paid" ? "Paid" : "Unpaid",
+      ]),
+    ];
+    const csv = csvRows.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `BZA_${title.replace(/[^a-zA-Z0-9]/g, "_")}_${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -211,13 +235,29 @@ function DrillDownModal({
             <p className="text-xs text-stone-400 mt-0.5">{rows.length} invoice{rows.length !== 1 ? "s" : ""}</p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={onEmail}
-              className="flex items-center gap-1.5 text-xs border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-md px-2.5 py-1.5 font-medium transition-colors">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-              </svg>
-              Email
-            </button>
+            {/* Action dropdown */}
+            <div className="relative">
+              <button onClick={() => setActionsOpen(o => !o)}
+                className="flex items-center gap-1.5 text-xs border border-stone-200 bg-white rounded-md px-2.5 py-1.5 hover:bg-stone-50 text-stone-600 font-medium">
+                Action
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
+              </button>
+              {actionsOpen && (
+                <div className="absolute right-0 top-full mt-1 w-44 bg-white border border-stone-200 rounded-lg shadow-lg z-30 py-1"
+                  onClick={() => setActionsOpen(false)}>
+                  <button onClick={downloadCSV}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 text-left">
+                    <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Download CSV
+                  </button>
+                  <button onClick={onEmail}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 text-left">
+                    <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    Email Report
+                  </button>
+                </div>
+              )}
+            </div>
             <button onClick={onClose} className="text-stone-400 hover:text-stone-700 text-xl leading-none">×</button>
           </div>
         </div>
