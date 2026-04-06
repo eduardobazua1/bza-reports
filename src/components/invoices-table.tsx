@@ -132,6 +132,8 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
   const [docs, setDocs] = useState<Doc[]>([]);
   const [selectedDocIds, setSelectedDocIds] = useState<number[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
+  const [viewDocs, setViewDocs] = useState<Doc[]>([]);
+  const [viewDocsLoading, setViewDocsLoading] = useState(false);
   const [sendTo, setSendTo] = useState("");
   const [sendCc, setSendCc] = useState("");
   const [sendLoading, setSendLoading] = useState(false);
@@ -159,7 +161,7 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
     setSelectedId(row.invoice.id);
     setPanelMode(mode);
     setOpenDropdownId(null);
-    if (mode === "view") loadLogs(row.invoice.invoiceNumber);
+    if (mode === "view") { loadLogs(row.invoice.invoiceNumber); loadViewDocs(row.invoice.id); }
     if (mode === "send") openSend(row);
     if (mode === "payment") openPayment(row);
   }
@@ -169,7 +171,18 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
     setPanelMode("view");
     setEmailLogs([]);
     setDocs([]);
+    setViewDocs([]);
     setUnpaidInvoices([]);
+  }
+
+  async function loadViewDocs(invoiceId: number) {
+    setViewDocsLoading(true);
+    try {
+      const res = await fetch(`/api/documents?invoiceId=${invoiceId}`);
+      if (res.ok) setViewDocs(await res.json());
+    } finally {
+      setViewDocsLoading(false);
+    }
   }
 
   async function loadLogs(invoiceNumber: string) {
@@ -446,9 +459,23 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
               row={selectedRow}
               emailLogs={emailLogs}
               logsLoading={logsLoading}
+              attachments={viewDocs}
+              attachmentsLoading={viewDocsLoading}
               onClose={closePanel}
               onEdit={() => setPanelMode("edit")}
-              onSend={() => openSend(selectedRow).then(() => setPanelMode("send"))}
+              onSend={() => {
+                // Pre-populate from already-loaded viewDocs if available
+                if (viewDocs.length > 0) {
+                  setSendTo(selectedRow.clientEmail || "");
+                  setSendCc("");
+                  const blPl = viewDocs.filter((d) => d.type === "bl" || d.type === "pl");
+                  setDocs(blPl);
+                  setSelectedDocIds(blPl.map((d) => d.id));
+                  setPanelMode("send");
+                } else {
+                  openSend(selectedRow).then(() => setPanelMode("send"));
+                }
+              }}
               onPayment={() => openPayment(selectedRow).then(() => setPanelMode("payment"))}
             />
           )}
@@ -712,6 +739,8 @@ function ViewPanel({
   row,
   emailLogs,
   logsLoading,
+  attachments,
+  attachmentsLoading,
   onClose,
   onEdit,
   onSend,
@@ -720,6 +749,8 @@ function ViewPanel({
   row: InvoiceRow;
   emailLogs: EmailLog[];
   logsLoading: boolean;
+  attachments: Doc[];
+  attachmentsLoading: boolean;
   onClose: () => void;
   onEdit: () => void;
   onSend: () => void;
@@ -818,6 +849,34 @@ function ViewPanel({
             {row.clientEmail && <p className="text-xs text-stone-500">{row.clientEmail}</p>}
           </div>
         )}
+
+        {/* Attachments */}
+        <div className="pt-2 border-t border-stone-100">
+          <p className="text-xs font-semibold text-stone-700 mb-2">Attachments</p>
+          {attachmentsLoading ? (
+            <p className="text-xs text-stone-400">Loading...</p>
+          ) : attachments.length === 0 ? (
+            <p className="text-xs text-stone-400 italic">No attachments.</p>
+          ) : (
+            <div className="space-y-1">
+              {attachments.map((doc) => (
+                <a
+                  key={doc.id}
+                  href={`/api/documents/download/${doc.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-stone-50 group"
+                >
+                  <span className="text-stone-400 group-hover:text-stone-600">
+                    {doc.type === "bl" ? "📄" : doc.type === "pl" ? "📋" : "📎"}
+                  </span>
+                  <span className="text-xs text-primary hover:underline flex-1 truncate">{doc.fileName}</span>
+                  <span className="text-[10px] text-stone-400 uppercase shrink-0">{doc.type}</span>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="pt-2 border-t border-stone-100">
           <p className="text-xs font-semibold text-stone-700 mb-2">Invoice activity</p>
