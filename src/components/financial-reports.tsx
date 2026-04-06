@@ -202,11 +202,28 @@ function daysOverdue(dueDate: string | null): number {
   return Math.floor(diff);
 }
 
-function TH({ visible, children, right }: { visible: boolean; children: React.ReactNode; right?: boolean }) {
+function TH({ visible, children, right, sortKey, sortCol, sortDir, onSort }: {
+  visible: boolean; children: React.ReactNode; right?: boolean;
+  sortKey?: string; sortCol?: string; sortDir?: "asc" | "desc"; onSort?: (k: string) => void;
+}) {
   if (!visible) return null;
+  const active = sortKey && sortCol === sortKey;
   return (
-    <th className={`px-3 py-2 text-[10px] font-semibold text-stone-500 uppercase tracking-wide whitespace-nowrap ${right ? "text-right" : "text-left"}`}>
-      {children}
+    <th
+      onClick={sortKey && onSort ? () => onSort(sortKey) : undefined}
+      className={`px-3 py-2 text-[10px] font-semibold text-stone-500 uppercase tracking-wide whitespace-nowrap select-none
+        ${right ? "text-right" : "text-left"}
+        ${sortKey ? "cursor-pointer hover:text-stone-800 hover:bg-stone-100" : ""}
+        ${active ? "text-stone-800 bg-stone-100" : ""}`}
+    >
+      <span className="inline-flex items-center gap-1">
+        {children}
+        {sortKey && (
+          <span className={`text-[8px] ${active ? "text-blue-600" : "text-stone-300"}`}>
+            {active ? (sortDir === "asc" ? "▲" : "▼") : "⬍"}
+          </span>
+        )}
+      </span>
     </th>
   );
 }
@@ -223,10 +240,28 @@ function TD({ visible, children, right, className }: { visible: boolean; childre
 
 function ARAgingTab({ data, cols, visible }: { data: InvoiceRow[]; cols: typeof AR_COLS; visible: Set<string> }) {
   const v = (k: string) => visible.has(k);
-  const today = new Date();
-  today.setHours(12, 0, 0, 0);
+  const [sortCol, setSortCol] = useState("days");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
-  const unpaid = data.filter((r) => r.customerPaymentStatus === "unpaid" && r.revenue > 0);
+  function handleSort(key: string) {
+    if (sortCol === key) setSortDir((d) => d === "asc" ? "desc" : "asc");
+    else { setSortCol(key); setSortDir("desc"); }
+  }
+
+  const unpaid = data
+    .filter((r) => r.customerPaymentStatus === "unpaid" && r.revenue > 0)
+    .map((r) => ({ ...r, _days: daysOverdue(r.dueDate) }))
+    .sort((a, b) => {
+      let va: string | number = 0, vb: string | number = 0;
+      if (sortCol === "client") { va = a.clientName; vb = b.clientName; }
+      else if (sortCol === "invoice") { va = a.invoiceNumber; vb = b.invoiceNumber; }
+      else if (sortCol === "days") { va = a._days; vb = b._days; }
+      else if (sortCol === "amount") { va = a.revenue; vb = b.revenue; }
+      else if (sortCol === "dueDate") { va = a.dueDate ?? ""; vb = b.dueDate ?? ""; }
+      else if (sortCol === "invoiceDate") { va = a.invoiceDate ?? ""; vb = b.invoiceDate ?? ""; }
+      const cmp = typeof va === "string" ? va.localeCompare(vb as string) : (va as number) - (vb as number);
+      return sortDir === "asc" ? cmp : -cmp;
+    });
 
   // Bucket totals
   let totalCurrent = 0, total30 = 0, total60 = 0, total90 = 0, total90p = 0;
@@ -262,14 +297,14 @@ function ARAgingTab({ data, cols, visible }: { data: InvoiceRow[]; cols: typeof 
         <table className="w-full">
           <thead className="bg-stone-50">
             <tr>
-              <TH visible={v("client")}>Client</TH>
-              <TH visible={v("invoice")}>Invoice #</TH>
+              <TH visible={v("client")} sortKey="client" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Client</TH>
+              <TH visible={v("invoice")} sortKey="invoice" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Invoice #</TH>
               <TH visible={v("po")}>PO #</TH>
               <TH visible={v("product")}>Product</TH>
-              <TH visible={v("invoiceDate")}>Invoice Date</TH>
-              <TH visible={v("dueDate")}>Due Date</TH>
-              <TH visible={v("days")} right>Days Overdue</TH>
-              <TH visible={v("amount")} right>Amount</TH>
+              <TH visible={v("invoiceDate")} sortKey="invoiceDate" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Invoice Date</TH>
+              <TH visible={v("dueDate")} sortKey="dueDate" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Due Date</TH>
+              <TH visible={v("days")} right sortKey="days" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Days Overdue</TH>
+              <TH visible={v("amount")} right sortKey="amount" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Amount</TH>
               <TH visible={v("current")} right>Current</TH>
               <TH visible={v("d30")} right>1–30</TH>
               <TH visible={v("d60")} right>31–60</TH>
@@ -282,7 +317,7 @@ function ARAgingTab({ data, cols, visible }: { data: InvoiceRow[]; cols: typeof 
               <tr><td colSpan={13} className="p-6 text-center text-stone-400 text-sm">No outstanding receivables.</td></tr>
             )}
             {unpaid.map((r, i) => {
-              const days = daysOverdue(r.dueDate);
+              const days = r._days;
               const overdueCls = days > 90 ? "text-red-600 font-bold" : days > 60 ? "text-orange-600 font-semibold" : days > 30 ? "text-yellow-600" : days > 0 ? "text-amber-500" : "text-emerald-600";
               const inCurrent = days <= 0 ? r.revenue : 0;
               const in30 = days > 0 && days <= 30 ? r.revenue : 0;
@@ -337,12 +372,19 @@ function ARAgingTab({ data, cols, visible }: { data: InvoiceRow[]; cols: typeof 
 
 function PLMonthlyTab({ data, visible }: { data: InvoiceRow[]; visible: Set<string> }) {
   const v = (k: string) => visible.has(k);
+  const [sortCol, setSortCol] = useState("month");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  function handleSort(key: string) {
+    if (sortCol === key) setSortDir((d) => d === "asc" ? "desc" : "asc");
+    else { setSortCol(key); setSortDir("desc"); }
+  }
 
   const map = new Map<string, { invoices: number; tons: number; revenue: number; costNoFreight: number; freight: number; cost: number; profit: number }>();
   data.forEach((r) => {
     const d = r.shipmentDate || r.invoiceDate;
     if (!d) return;
-    const key = d.slice(0, 7); // YYYY-MM
+    const key = d.slice(0, 7);
     if (!map.has(key)) map.set(key, { invoices: 0, tons: 0, revenue: 0, costNoFreight: 0, freight: 0, cost: 0, profit: 0 });
     const m = map.get(key)!;
     m.invoices += 1; m.tons += r.quantityTons; m.revenue += r.revenue;
@@ -351,16 +393,20 @@ function PLMonthlyTab({ data, visible }: { data: InvoiceRow[]; visible: Set<stri
   });
 
   const months = Array.from(map.entries())
-    .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([key, m]) => ({
-      key,
-      label: new Date(key + "-15").toLocaleDateString("en-US", { month: "short", year: "numeric" }),
+      key, label: new Date(key + "-15").toLocaleDateString("en-US", { month: "short", year: "numeric" }),
       ...m,
       margin: m.revenue > 0 ? (m.profit / m.revenue) * 100 : 0,
       avgSell: m.tons > 0 ? m.revenue / m.tons : 0,
       avgBuy: m.tons > 0 ? m.costNoFreight / m.tons : 0,
       marginTon: m.tons > 0 ? m.profit / m.tons : 0,
-    }));
+    }))
+    .sort((a, b) => {
+      const va = (a as Record<string, string | number>)[sortCol] ?? 0;
+      const vb = (b as Record<string, string | number>)[sortCol] ?? 0;
+      const cmp = typeof va === "string" ? va.localeCompare(vb as string) : (va as number) - (vb as number);
+      return sortDir === "asc" ? cmp : -cmp;
+    });
 
   const totals = months.reduce((a, m) => ({
     invoices: a.invoices + m.invoices, tons: a.tons + m.tons,
@@ -373,18 +419,18 @@ function PLMonthlyTab({ data, visible }: { data: InvoiceRow[]; visible: Set<stri
       <table className="w-full">
         <thead className="bg-stone-50">
           <tr>
-            <TH visible={v("month")}>Month</TH>
-            <TH visible={v("invoices")} right>Invoices</TH>
-            <TH visible={v("tons")} right>Tons</TH>
-            <TH visible={v("revenue")} right>Revenue</TH>
-            <TH visible={v("costNoFreight")} right>Cost (ex-freight)</TH>
-            <TH visible={v("freight")} right>Freight</TH>
-            <TH visible={v("totalCost")} right>Total Cost</TH>
-            <TH visible={v("profit")} right>Profit</TH>
-            <TH visible={v("margin")} right>Margin %</TH>
-            <TH visible={v("avgSell")} right>Avg Sell/TN</TH>
-            <TH visible={v("avgBuy")} right>Avg Buy/TN</TH>
-            <TH visible={v("marginTon")} right>Margin/TN</TH>
+            <TH visible={v("month")} sortKey="key" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Month</TH>
+            <TH visible={v("invoices")} right sortKey="invoices" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Invoices</TH>
+            <TH visible={v("tons")} right sortKey="tons" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Tons</TH>
+            <TH visible={v("revenue")} right sortKey="revenue" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Revenue</TH>
+            <TH visible={v("costNoFreight")} right sortKey="costNoFreight" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Cost (ex-freight)</TH>
+            <TH visible={v("freight")} right sortKey="freight" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Freight</TH>
+            <TH visible={v("totalCost")} right sortKey="cost" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Total Cost</TH>
+            <TH visible={v("profit")} right sortKey="profit" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Profit</TH>
+            <TH visible={v("margin")} right sortKey="margin" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Margin %</TH>
+            <TH visible={v("avgSell")} right sortKey="avgSell" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Avg Sell/TN</TH>
+            <TH visible={v("avgBuy")} right sortKey="avgBuy" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Avg Buy/TN</TH>
+            <TH visible={v("marginTon")} right sortKey="marginTon" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Margin/TN</TH>
           </tr>
         </thead>
         <tbody>
@@ -491,6 +537,21 @@ function PLEntityTab({
 }) {
   const v = (k: string) => visible.has(k);
   const nameKey = isClient ? "client" : "supplier";
+  const [sortCol, setSortCol] = useState("revenue");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  function handleSort(key: string) {
+    if (sortCol === key) setSortDir((d) => d === "asc" ? "desc" : "asc");
+    else { setSortCol(key); setSortDir("desc"); }
+  }
+
+  const sorted = [...rows].sort((a, b) => {
+    let va: string | number = 0, vb: string | number = 0;
+    if (sortCol === "name") { va = a.name; vb = b.name; }
+    else { va = (a as Record<string, number>)[sortCol] ?? 0; vb = (b as Record<string, number>)[sortCol] ?? 0; }
+    const cmp = typeof va === "string" ? va.localeCompare(vb as string) : (va as number) - (vb as number);
+    return sortDir === "asc" ? cmp : -cmp;
+  });
 
   const totals = rows.reduce((a, r) => ({
     invoices: a.invoices + r.invoices, tons: a.tons + r.tons,
@@ -511,29 +572,29 @@ function PLEntityTab({
       <table className="w-full">
         <thead className="bg-stone-50">
           <tr>
-            <TH visible={v(nameKey)}>{isClient ? "Client" : "Supplier"}</TH>
-            <TH visible={v("invoices")} right>Invoices</TH>
-            <TH visible={v("tons")} right>Tons</TH>
-            <TH visible={v("revenue")} right>Revenue</TH>
-            <TH visible={v("costNoFreight")} right>Cost (ex-freight)</TH>
-            <TH visible={v("freight")} right>Freight</TH>
-            <TH visible={v("totalCost")} right>Total Cost</TH>
-            <TH visible={v("profit")} right>Profit</TH>
-            <TH visible={v("margin")} right>Margin %</TH>
-            <TH visible={v("avgSell")} right>Avg Sell/TN</TH>
-            <TH visible={v("avgBuy")} right>Avg Buy/TN</TH>
-            <TH visible={v("marginTon")} right>Margin/TN</TH>
-            <TH visible={v("receivable") || v("payable")} right>{isClient ? "Receivable" : "Payable"}</TH>
-            <TH visible={v("paidInv")} right>Paid</TH>
-            <TH visible={v("unpaidInv")} right>Unpaid</TH>
+            <TH visible={v(nameKey)} sortKey="name" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>{isClient ? "Client" : "Supplier"}</TH>
+            <TH visible={v("invoices")} right sortKey="invoices" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Invoices</TH>
+            <TH visible={v("tons")} right sortKey="tons" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Tons</TH>
+            <TH visible={v("revenue")} right sortKey="revenue" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Revenue</TH>
+            <TH visible={v("costNoFreight")} right sortKey="costNoFreight" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Cost (ex-freight)</TH>
+            <TH visible={v("freight")} right sortKey="freight" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Freight</TH>
+            <TH visible={v("totalCost")} right sortKey="cost" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Total Cost</TH>
+            <TH visible={v("profit")} right sortKey="profit" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Profit</TH>
+            <TH visible={v("margin")} right sortKey="margin" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Margin %</TH>
+            <TH visible={v("avgSell")} right sortKey="avgSell" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Avg Sell/TN</TH>
+            <TH visible={v("avgBuy")} right sortKey="avgBuy" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Avg Buy/TN</TH>
+            <TH visible={v("marginTon")} right sortKey="marginTon" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Margin/TN</TH>
+            <TH visible={v("receivable") || v("payable")} right sortKey="receivable" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>{isClient ? "Receivable" : "Payable"}</TH>
+            <TH visible={v("paidInv")} right sortKey="paidInv" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Paid</TH>
+            <TH visible={v("unpaidInv")} right sortKey="unpaidInv" sortCol={sortCol} sortDir={sortDir} onSort={handleSort}>Unpaid</TH>
             <TH visible={v("transport")}>Transport</TH>
           </tr>
         </thead>
         <tbody>
-          {rows.length === 0 && (
+          {sorted.length === 0 && (
             <tr><td colSpan={16} className="p-6 text-center text-stone-400 text-sm">No data.</td></tr>
           )}
-          {rows.map((r) => (
+          {sorted.map((r) => (
             <tr key={r.name} className="hover:bg-stone-50 align-middle">
               <TD visible={v(nameKey)} className="font-semibold">{r.name}</TD>
               <TD visible={v("invoices")} right>{r.invoices}</TD>
