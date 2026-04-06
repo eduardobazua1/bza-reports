@@ -54,6 +54,7 @@ export function ClientPOsSection({
   const [loading, setLoading] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number } | null>(null);
+  const [dropdownInvoiceCounter, setDropdownInvoiceCounter] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -370,24 +371,23 @@ export function ClientPOsSection({
                         </span>
                       </td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          {cpo.status !== "complete" && (
-                            <button
-                              onClick={() => openConvert(cpo, invoiceCounter - 1)}
-                              className="text-xs bg-emerald-600 text-white px-2.5 py-1 rounded hover:bg-emerald-700 transition font-medium mr-1"
-                            >
-                              Convert →
-                            </button>
-                          )}
+                        <div className="flex items-center justify-end gap-0">
+                          <button
+                            onClick={() => openEdit(cpo)}
+                            className="text-xs text-primary font-medium px-2 py-1 hover:bg-blue-50 rounded-l border border-stone-200"
+                          >
+                            View/Edit
+                          </button>
                           <div ref={openDropdownId === cpo.id ? dropdownRef : undefined}>
                             <button
                               onClick={(e) => {
                                 if (openDropdownId === cpo.id) { setOpenDropdownId(null); return; }
                                 const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
                                 setDropdownPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+                                setDropdownInvoiceCounter(invoiceCounter - 1);
                                 setOpenDropdownId(cpo.id);
                               }}
-                              className="text-xs text-primary font-medium px-2 py-1 hover:bg-blue-50 rounded border border-stone-200"
+                              className="text-xs text-primary font-medium px-2 py-1 hover:bg-blue-50 rounded-r border border-l-0 border-stone-200"
                             >
                               ▼
                             </button>
@@ -619,8 +619,11 @@ export function ClientPOsSection({
         const cpo = list.find(o => o.id === openDropdownId);
         if (!cpo) return null;
         return (
-          <div ref={dropdownRef} style={{ position: "fixed", top: dropdownPos.top, right: dropdownPos.right, zIndex: 9999 }} className="bg-white border border-stone-200 rounded-md shadow-lg min-w-[130px] py-1 text-left">
-            <button onClick={() => { setOpenDropdownId(null); openEdit(cpo); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">Edit</button>
+          <div ref={dropdownRef} style={{ position: "fixed", top: dropdownPos.top, right: dropdownPos.right, zIndex: 9999 }} className="bg-white border border-stone-200 rounded-md shadow-lg min-w-[150px] py-1 text-left">
+            <button onClick={() => { setOpenDropdownId(null); openEdit(cpo); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">View/Edit</button>
+            {cpo.status !== "complete" && (
+              <button onClick={() => { setOpenDropdownId(null); openConvert(cpo, dropdownInvoiceCounter); }} className="w-full text-left px-4 py-2 text-sm text-emerald-700 hover:bg-emerald-50 font-medium">Convert →</button>
+            )}
             <div className="border-t border-stone-100 my-1" />
             <button onClick={() => { setOpenDropdownId(null); handleDelete(cpo.id); }} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</button>
           </div>
