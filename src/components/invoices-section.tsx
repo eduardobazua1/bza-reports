@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { formatCurrency, formatNumber, formatDate } from "@/lib/utils";
 import { DocumentUpload } from "@/components/document-upload";
 
@@ -75,6 +75,18 @@ export function InvoicesSection({
   const [list, setList] = useState<Invoice[]>(initialInvoices);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [sendingId, setSendingId] = useState<number | null>(null);
+  const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpenDropdownId(null);
+      }
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
   const [sendTo, setSendTo] = useState("");
   const [sendCc, setSendCc] = useState("");
   const [sendLoading, setSendLoading] = useState(false);
@@ -263,11 +275,7 @@ export function InvoicesSection({
                       {inv.invoiceNumber.startsWith("PEND-") ? (
                         <span className="text-xs text-amber-500 italic">Pending</span>
                       ) : (
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-medium">{inv.invoiceNumber}</span>
-                          <a href={`/api/invoice-pdf?invoice=${inv.invoiceNumber}`} target="_blank" rel="noopener noreferrer"
-                            className="text-[10px] text-orange-500 hover:text-orange-700 font-medium">PDF</a>
-                        </div>
+                        <span className="font-medium">{inv.invoiceNumber}</span>
                       )}
                     </td>
                     <td className="px-3 py-2 border-t border-stone-100 text-stone-600 text-xs">{inv.item || "—"}</td>
@@ -297,25 +305,48 @@ export function InvoicesSection({
                       <DocumentUpload invoiceId={inv.id} invoiceNumber={inv.invoiceNumber} />
                     </td>
                     <td className="px-3 py-2 border-t border-stone-100 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {!inv.invoiceNumber.startsWith("PEND-") && (
-                          sentId === inv.id ? (
-                            <span className="text-xs text-emerald-600 font-medium">Sent ✓</span>
-                          ) : (
-                            <button
-                              onClick={() => sendingId === inv.id ? setSendingId(null) : openSend(inv)}
-                              className={`text-xs font-medium ${sendingId === inv.id ? "text-blue-600" : "text-stone-400 hover:text-stone-700"}`}
-                            >
-                              {sendingId === inv.id ? "Cancel" : "Send"}
-                            </button>
-                          )
-                        )}
+                      <div className="flex items-center justify-end gap-0">
                         <button
                           onClick={() => isEditing ? cancelEdit() : openEdit(inv)}
-                          className={`text-xs font-medium ${isEditing ? "text-amber-600 hover:text-amber-800" : "text-stone-400 hover:text-stone-700"}`}
+                          className="text-xs text-primary font-medium px-2 py-1 hover:bg-blue-50 rounded-l border border-stone-200"
                         >
-                          {isEditing ? "Cancel" : "Edit"}
+                          {isEditing ? "Cancel" : "View/Edit"}
                         </button>
+                        <div className="relative" ref={openDropdownId === inv.id ? dropdownRef : undefined}>
+                          <button
+                            onClick={() => setOpenDropdownId(openDropdownId === inv.id ? null : inv.id)}
+                            className="text-xs text-primary font-medium px-2 py-1 hover:bg-blue-50 rounded-r border border-l-0 border-stone-200"
+                          >
+                            ▼
+                          </button>
+                          {openDropdownId === inv.id && (
+                            <div className="absolute right-0 top-full mt-1 bg-white border border-stone-200 rounded-md shadow-lg z-50 min-w-[150px] py-1">
+                              {!inv.invoiceNumber.startsWith("PEND-") && (
+                                <a
+                                  href={`/api/invoice-pdf?invoice=${inv.invoiceNumber}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="block px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"
+                                  onClick={() => setOpenDropdownId(null)}
+                                >
+                                  Download PDF
+                                </a>
+                              )}
+                              {!inv.invoiceNumber.startsWith("PEND-") && (
+                                sentId === inv.id ? (
+                                  <span className="block px-4 py-2 text-sm text-emerald-600 font-medium">Sent ✓</span>
+                                ) : (
+                                  <button
+                                    onClick={() => { setOpenDropdownId(null); openSend(inv); }}
+                                    className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"
+                                  >
+                                    Send
+                                  </button>
+                                )
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </td>
                   </tr>
