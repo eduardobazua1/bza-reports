@@ -365,13 +365,7 @@ function DrillDownModal({
                     {v("poNumber")      && <td className="px-3 py-1.5 text-gray-500 whitespace-nowrap">{r.poNumber || "—"}</td>}
                     {v("product")       && <td className="px-3 py-1.5 text-gray-600">{r.product || "—"}</td>}
                     {v("destination")   && <td className="px-3 py-1.5 text-gray-600">{r.destination || "—"}</td>}
-                    {v("date")          && <td className="px-3 py-1.5 whitespace-nowrap text-gray-600">
-                      {r.invoiceDate
-                        ? <span>{fmtDate(r.invoiceDate)}</span>
-                        : r.shipmentDate
-                          ? <span>{fmtDate(r.shipmentDate)} <span className="text-[10px] text-gray-400">ship</span></span>
-                          : "—"}
-                    </td>}
+                    {v("date")          && <td className="px-3 py-1.5 whitespace-nowrap text-gray-600">{fmtDate(r.invoiceDate ?? r.shipmentDate)}</td>}
                     {v("invoiceDate")   && <td className="px-3 py-1.5 whitespace-nowrap text-gray-600">{fmtDate(r.invoiceDate)}</td>}
                     {v("shipmentDate")  && <td className="px-3 py-1.5 whitespace-nowrap text-gray-600">{fmtDate(r.shipmentDate)}</td>}
                     {v("dueDate")       && <td className="px-3 py-1.5 whitespace-nowrap text-gray-600">{fmtDate(r.dueDate)}</td>}
