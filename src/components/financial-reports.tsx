@@ -589,20 +589,47 @@ function PLEntityTab({
   );
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// ─── Report catalog ──────────────────────────────────────────────────────────
 
-const TAB_LABELS: Record<Tab, string> = {
-  "ar-aging": "AR Aging",
-  "pl-monthly": "P&L by Month",
-  "pl-customer": "P&L by Customer",
-  "pl-supplier": "P&L by Supplier",
+const REPORT_CATALOG = [
+  {
+    category: "Business Overview",
+    reports: [
+      { id: "pl-monthly" as Tab, label: "Profit and Loss by Month", description: "Revenue, cost and profit broken down by calendar month" },
+    ],
+  },
+  {
+    category: "Who Owes You",
+    reports: [
+      { id: "ar-aging" as Tab, label: "Accounts Receivable Aging", description: "Outstanding invoices grouped by how long they've been unpaid" },
+    ],
+  },
+  {
+    category: "Sales & Customers",
+    reports: [
+      { id: "pl-customer" as Tab, label: "Profit and Loss by Customer", description: "Revenue, cost, margin and receivables per client" },
+    ],
+  },
+  {
+    category: "Suppliers & Costs",
+    reports: [
+      { id: "pl-supplier" as Tab, label: "Profit and Loss by Supplier", description: "Cost, margin and payables per supplier" },
+    ],
+  },
+];
+
+const REPORT_LABELS: Record<Tab, string> = {
+  "ar-aging": "Accounts Receivable Aging",
+  "pl-monthly": "Profit and Loss by Month",
+  "pl-customer": "Profit and Loss by Customer",
+  "pl-supplier": "Profit and Loss by Supplier",
 };
 
-const TAB_DESCRIPTIONS: Record<Tab, string> = {
-  "ar-aging": "Outstanding receivables grouped by aging bucket",
-  "pl-monthly": "Profit & loss breakdown by calendar month",
-  "pl-customer": "Revenue, cost and profit per client",
-  "pl-supplier": "Cost and profit contribution per supplier",
+const REPORT_DESCRIPTIONS: Record<Tab, string> = {
+  "ar-aging": "Outstanding invoices grouped by aging bucket",
+  "pl-monthly": "Revenue, cost and profit by calendar month",
+  "pl-customer": "Revenue, cost, margin and receivables per client",
+  "pl-supplier": "Cost, margin and payables per supplier",
 };
 
 function defaultVisible(cols: { key: string }[]): Set<string> {
@@ -610,7 +637,7 @@ function defaultVisible(cols: { key: string }[]): Set<string> {
 }
 
 export function FinancialReports({ data }: { data: InvoiceRow[] }) {
-  const [tab, setTab] = useState<Tab>("ar-aging");
+  const [activeReport, setActiveReport] = useState<Tab | null>(null);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
@@ -619,7 +646,6 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
   const [clientVisible, setClientVisible] = useState(() => defaultVisible(CLIENT_COLS));
   const [supplierVisible, setSupplierVisible] = useState(() => defaultVisible(SUPPLIER_COLS));
 
-  // Filter by date range
   const filtered = data.filter((r) => {
     const d = r.shipmentDate || r.invoiceDate;
     if (dateFrom && d && d < dateFrom) return false;
@@ -627,31 +653,31 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
     return true;
   });
 
-  const colsForTab = {
+  const colsForReport = activeReport ? {
     "ar-aging": AR_COLS,
     "pl-monthly": MONTHLY_COLS,
     "pl-customer": CLIENT_COLS,
     "pl-supplier": SUPPLIER_COLS,
-  }[tab];
+  }[activeReport] : AR_COLS;
 
-  const visibleForTab = {
+  const visibleForReport = activeReport ? {
     "ar-aging": arVisible,
     "pl-monthly": monthlyVisible,
     "pl-customer": clientVisible,
     "pl-supplier": supplierVisible,
-  }[tab];
+  }[activeReport] : arVisible;
 
   function toggleCol(key: string) {
+    if (!activeReport) return;
     const setters = {
       "ar-aging": setArVisible,
       "pl-monthly": setMonthlyVisible,
       "pl-customer": setClientVisible,
       "pl-supplier": setSupplierVisible,
     };
-    setters[tab]((prev) => {
+    setters[activeReport]((prev) => {
       const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
+      if (next.has(key)) next.delete(key); else next.add(key);
       return next;
     });
   }
@@ -659,31 +685,57 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
   const clientRows = buildEntityRows(filtered, "clientName", "customerPaymentStatus");
   const supplierRows = buildEntityRows(filtered, "supplierName", "supplierPaymentStatus");
 
-  return (
-    <div className="space-y-4">
-      {/* Tab bar */}
-      <div className="flex gap-1 bg-muted rounded-lg p-1 w-fit">
-        {(Object.keys(TAB_LABELS) as Tab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-              tab === t ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {TAB_LABELS[t]}
-          </button>
+  // ── Report browser (QB-style) ──────────────────────────────────────────────
+  if (!activeReport) {
+    return (
+      <div className="space-y-6">
+        {REPORT_CATALOG.map((section) => (
+          <div key={section.category} className="bg-white rounded-md shadow-sm">
+            <div className="px-5 py-3 border-b border-stone-100">
+              <h2 className="text-sm font-semibold text-stone-800">{section.category}</h2>
+            </div>
+            <div className="divide-y divide-stone-100">
+              {section.reports.map((r) => (
+                <button
+                  key={r.id}
+                  onClick={() => setActiveReport(r.id)}
+                  className="w-full flex items-center justify-between px-5 py-3 hover:bg-stone-50 text-left group"
+                >
+                  <div>
+                    <p className="text-sm text-blue-600 group-hover:underline font-medium">{r.label}</p>
+                    <p className="text-xs text-stone-400 mt-0.5">{r.description}</p>
+                  </div>
+                  <svg className="w-4 h-4 text-stone-300 group-hover:text-stone-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
+    );
+  }
 
-      {/* Toolbar */}
+  // ── Active report view ─────────────────────────────────────────────────────
+  return (
+    <div className="space-y-4">
+      {/* Back + title */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h2 className="text-base font-semibold text-stone-800">{TAB_LABELS[tab]}</h2>
-          <p className="text-xs text-stone-400 mt-0.5">{TAB_DESCRIPTIONS[tab]}</p>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setActiveReport(null)}
+            className="flex items-center gap-1 text-xs text-stone-500 hover:text-stone-800 font-medium"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            All Reports
+          </button>
+          <span className="text-stone-300">/</span>
+          <h2 className="text-base font-semibold text-stone-800">{REPORT_LABELS[activeReport]}</h2>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Date range filter */}
           <div className="flex items-center gap-1.5 text-xs">
             <span className="text-stone-500">From</span>
             <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
@@ -692,21 +744,27 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
             <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
               className="border border-stone-200 rounded px-2 py-1.5 text-xs bg-white" />
             {(dateFrom || dateTo) && (
-              <button onClick={() => { setDateFrom(""); setDateTo(""); }}
-                className="text-stone-400 hover:text-stone-600 text-xs">✕ Clear</button>
+              <button onClick={() => { setDateFrom(""); setDateTo(""); }} className="text-stone-400 hover:text-stone-600">✕</button>
             )}
           </div>
-          <ActionsDropdown cols={colsForTab} visible={visibleForTab} onToggleCol={toggleCol} tab={tab} dateFrom={dateFrom} dateTo={dateTo} />
+          <ActionsDropdown
+            cols={colsForReport}
+            visible={visibleForReport}
+            onToggleCol={toggleCol}
+            tab={activeReport}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+          />
         </div>
       </div>
 
-      {/* Report content */}
-      {tab === "ar-aging" && <ARAgingTab data={filtered} cols={AR_COLS} visible={arVisible} />}
-      {tab === "pl-monthly" && <PLMonthlyTab data={filtered} visible={monthlyVisible} />}
-      {tab === "pl-customer" && (
+      {/* Report */}
+      {activeReport === "ar-aging" && <ARAgingTab data={filtered} cols={AR_COLS} visible={arVisible} />}
+      {activeReport === "pl-monthly" && <PLMonthlyTab data={filtered} visible={monthlyVisible} />}
+      {activeReport === "pl-customer" && (
         <PLEntityTab rows={clientRows} isClient={true} colDefs={CLIENT_COLS} visible={clientVisible} />
       )}
-      {tab === "pl-supplier" && (
+      {activeReport === "pl-supplier" && (
         <PLEntityTab rows={supplierRows} isClient={false} colDefs={SUPPLIER_COLS} visible={supplierVisible} />
       )}
     </div>
