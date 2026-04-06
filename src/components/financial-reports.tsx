@@ -202,6 +202,7 @@ const DD_COL_DEFS = [
   { key: "poNumber",      label: "PO #" },
   { key: "product",       label: "Product" },
   { key: "destination",   label: "Destination" },
+  { key: "date",          label: "Date" },
   { key: "invoiceDate",   label: "Invoice Date" },
   { key: "shipmentDate",  label: "Ship Date" },
   { key: "dueDate",       label: "Due Date" },
@@ -214,8 +215,8 @@ const DD_COL_DEFS = [
   { key: "shipStatus",    label: "Ship Status" },
   { key: "custPayment",   label: "Payment" },
 ];
-const AR_DEFAULT_COLS  = new Set(["invoiceNumber","clientName","poNumber","product","destination","invoiceDate","dueDate","days","tons","amount","custPayment"]);
-const PL_DEFAULT_COLS  = new Set(["invoiceNumber","clientName","supplierName","product","destination","invoiceDate","dueDate","tons","amount","cost","profit","shipStatus","custPayment"]);
+const AR_DEFAULT_COLS  = new Set(["invoiceNumber","clientName","poNumber","product","destination","date","dueDate","days","tons","amount","custPayment"]);
+const PL_DEFAULT_COLS  = new Set(["invoiceNumber","clientName","supplierName","product","destination","date","dueDate","tons","amount","cost","profit","shipStatus","custPayment"]);
 
 function DrillDownModal({
   title, rows, onClose, onEmail, mode = "pl",
@@ -239,6 +240,7 @@ function DrillDownModal({
         const vals: Record<string, string> = {
           invoiceNumber: r.invoiceNumber, clientName: r.clientName, supplierName: r.supplierName,
           poNumber: r.poNumber, product: r.product ?? "", destination: r.destination ?? "",
+          date: r.invoiceDate ?? r.shipmentDate ?? "",
           invoiceDate: r.invoiceDate ?? "", shipmentDate: r.shipmentDate ?? "", dueDate: r.dueDate ?? "",
           days: days <= 0 ? "Not due" : `${days}`,
           tons: r.quantityTons.toFixed(3), amount: r.revenue.toFixed(2),
@@ -337,6 +339,7 @@ function DrillDownModal({
                 {v("poNumber")      && <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">PO #</th>}
                 {v("product")       && <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">Product</th>}
                 {v("destination")   && <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">Destination</th>}
+                {v("date")          && <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">Date</th>}
                 {v("invoiceDate")   && <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">Invoice Date</th>}
                 {v("shipmentDate")  && <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">Ship Date</th>}
                 {v("dueDate")       && <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">Due Date</th>}
@@ -362,6 +365,13 @@ function DrillDownModal({
                     {v("poNumber")      && <td className="px-3 py-1.5 text-gray-500 whitespace-nowrap">{r.poNumber || "—"}</td>}
                     {v("product")       && <td className="px-3 py-1.5 text-gray-600">{r.product || "—"}</td>}
                     {v("destination")   && <td className="px-3 py-1.5 text-gray-600">{r.destination || "—"}</td>}
+                    {v("date")          && <td className="px-3 py-1.5 whitespace-nowrap text-gray-600">
+                      {r.invoiceDate
+                        ? <span>{fmtDate(r.invoiceDate)}</span>
+                        : r.shipmentDate
+                          ? <span>{fmtDate(r.shipmentDate)} <span className="text-[10px] text-gray-400">ship</span></span>
+                          : "—"}
+                    </td>}
                     {v("invoiceDate")   && <td className="px-3 py-1.5 whitespace-nowrap text-gray-600">{fmtDate(r.invoiceDate)}</td>}
                     {v("shipmentDate")  && <td className="px-3 py-1.5 whitespace-nowrap text-gray-600">{fmtDate(r.shipmentDate)}</td>}
                     {v("dueDate")       && <td className="px-3 py-1.5 whitespace-nowrap text-gray-600">{fmtDate(r.dueDate)}</td>}
