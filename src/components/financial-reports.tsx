@@ -632,6 +632,125 @@ const REPORT_DESCRIPTIONS: Record<Tab, string> = {
   "pl-supplier": "Cost, margin and payables per supplier",
 };
 
+// ─── Filter panel ─────────────────────────────────────────────────────────────
+
+type Filters = {
+  clients: Set<string>;
+  suppliers: Set<string>;
+  products: Set<string>;
+  destinations: Set<string>;
+  transports: Set<string>;
+  shipmentStatuses: Set<string>;
+  customerPayment: Set<string>;
+  supplierPayment: Set<string>;
+};
+
+function emptyFilters(): Filters {
+  return {
+    clients: new Set(), suppliers: new Set(), products: new Set(),
+    destinations: new Set(), transports: new Set(),
+    shipmentStatuses: new Set(), customerPayment: new Set(), supplierPayment: new Set(),
+  };
+}
+
+function hasActiveFilters(f: Filters) {
+  return Object.values(f).some((s) => s.size > 0);
+}
+
+function FilterSection({
+  label, options, selected, onToggle,
+}: { label: string; options: string[]; selected: Set<string>; onToggle: (v: string) => void }) {
+  if (options.length === 0) return null;
+  return (
+    <div>
+      <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wide mb-1.5">{label}</p>
+      <div className="space-y-1">
+        {options.map((o) => (
+          <label key={o} className="flex items-center gap-2 cursor-pointer hover:bg-stone-50 px-1 py-0.5 rounded">
+            <input type="checkbox" className="w-3.5 h-3.5 accent-blue-600"
+              checked={selected.has(o)} onChange={() => onToggle(o)} />
+            <span className="text-xs text-stone-700">{o}</span>
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FiltersPanel({
+  data, filters, onChange, onClear, open, onClose,
+}: {
+  data: InvoiceRow[];
+  filters: Filters;
+  onChange: (key: keyof Filters, val: string) => void;
+  onClear: () => void;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    function h(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    }
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [onClose]);
+
+  const uniq = (fn: (r: InvoiceRow) => string | null | undefined) =>
+    [...new Set(data.map(fn).filter(Boolean) as string[])].sort();
+
+  const shipLabels: Record<string, string> = {
+    programado: "Scheduled", en_transito: "In Transit", en_aduana: "In Customs", entregado: "Delivered",
+  };
+
+  if (!open) return null;
+
+  return (
+    <div ref={ref} className="absolute right-0 top-full mt-1 z-50 bg-white border border-stone-200 rounded-lg shadow-xl w-72 max-h-[80vh] overflow-y-auto">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-stone-100 sticky top-0 bg-white">
+        <p className="text-sm font-semibold text-stone-800">Filters</p>
+        <div className="flex items-center gap-2">
+          {hasActiveFilters(filters) && (
+            <button onClick={onClear} className="text-xs text-blue-600 hover:underline">Clear all</button>
+          )}
+          <button onClick={onClose} className="text-stone-400 hover:text-stone-600 text-lg leading-none">×</button>
+        </div>
+      </div>
+      <div className="p-4 space-y-4">
+        <FilterSection label="Client" options={uniq((r) => r.clientName)}
+          selected={filters.clients} onToggle={(v) => onChange("clients", v)} />
+        <FilterSection label="Supplier" options={uniq((r) => r.supplierName)}
+          selected={filters.suppliers} onToggle={(v) => onChange("suppliers", v)} />
+        <FilterSection label="Product" options={uniq((r) => r.product)}
+          selected={filters.products} onToggle={(v) => onChange("products", v)} />
+        <FilterSection label="Destination" options={uniq((r) => r.destination)}
+          selected={filters.destinations} onToggle={(v) => onChange("destinations", v)} />
+        <FilterSection label="Transport" options={uniq((r) => r.transportType)}
+          selected={filters.transports} onToggle={(v) => onChange("transports", v)} />
+        <FilterSection
+          label="Shipment Status"
+          options={uniq((r) => r.shipmentStatus).map((s) => shipLabels[s] ?? s)}
+          selected={new Set([...filters.shipmentStatuses].map((s) => shipLabels[s] ?? s))}
+          onToggle={(v) => {
+            const raw = Object.entries(shipLabels).find(([, lbl]) => lbl === v)?.[0] ?? v;
+            onChange("shipmentStatuses", raw);
+          }}
+        />
+        <FilterSection label="Customer Payment"
+          options={["Paid", "Unpaid"]}
+          selected={new Set([...filters.customerPayment].map((s) => s === "paid" ? "Paid" : "Unpaid"))}
+          onToggle={(v) => onChange("customerPayment", v === "Paid" ? "paid" : "unpaid")} />
+        <FilterSection label="Supplier Payment"
+          options={["Paid", "Unpaid"]}
+          selected={new Set([...filters.supplierPayment].map((s) => s === "paid" ? "Paid" : "Unpaid"))}
+          onToggle={(v) => onChange("supplierPayment", v === "Paid" ? "paid" : "unpaid")} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
 function defaultVisible(cols: { key: string }[]): Set<string> {
   return new Set(cols.map((c) => c.key));
 }
@@ -640,40 +759,53 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
   const [activeReport, setActiveReport] = useState<Tab | null>(null);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [filters, setFilters] = useState<Filters>(emptyFilters);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const [arVisible, setArVisible] = useState(() => defaultVisible(AR_COLS));
   const [monthlyVisible, setMonthlyVisible] = useState(() => defaultVisible(MONTHLY_COLS));
   const [clientVisible, setClientVisible] = useState(() => defaultVisible(CLIENT_COLS));
   const [supplierVisible, setSupplierVisible] = useState(() => defaultVisible(SUPPLIER_COLS));
 
+  function toggleFilter(key: keyof Filters, val: string) {
+    setFilters((prev) => {
+      const next = new Set(prev[key]);
+      if (next.has(val)) next.delete(val); else next.add(val);
+      return { ...prev, [key]: next };
+    });
+  }
+
+  // Apply all filters
   const filtered = data.filter((r) => {
     const d = r.shipmentDate || r.invoiceDate;
     if (dateFrom && d && d < dateFrom) return false;
     if (dateTo && d && d > dateTo) return false;
+    if (filters.clients.size > 0 && !filters.clients.has(r.clientName)) return false;
+    if (filters.suppliers.size > 0 && !filters.suppliers.has(r.supplierName)) return false;
+    if (filters.products.size > 0 && !filters.products.has(r.product ?? "")) return false;
+    if (filters.destinations.size > 0 && !filters.destinations.has(r.destination ?? "")) return false;
+    if (filters.transports.size > 0 && !filters.transports.has(r.transportType)) return false;
+    if (filters.shipmentStatuses.size > 0 && !filters.shipmentStatuses.has(r.shipmentStatus)) return false;
+    if (filters.customerPayment.size > 0 && !filters.customerPayment.has(r.customerPaymentStatus)) return false;
+    if (filters.supplierPayment.size > 0 && !filters.supplierPayment.has(r.supplierPaymentStatus)) return false;
     return true;
   });
 
   const colsForReport = activeReport ? {
-    "ar-aging": AR_COLS,
-    "pl-monthly": MONTHLY_COLS,
-    "pl-customer": CLIENT_COLS,
-    "pl-supplier": SUPPLIER_COLS,
+    "ar-aging": AR_COLS, "pl-monthly": MONTHLY_COLS,
+    "pl-customer": CLIENT_COLS, "pl-supplier": SUPPLIER_COLS,
   }[activeReport] : AR_COLS;
 
   const visibleForReport = activeReport ? {
-    "ar-aging": arVisible,
-    "pl-monthly": monthlyVisible,
-    "pl-customer": clientVisible,
-    "pl-supplier": supplierVisible,
+    "ar-aging": arVisible, "pl-monthly": monthlyVisible,
+    "pl-customer": clientVisible, "pl-supplier": supplierVisible,
   }[activeReport] : arVisible;
 
   function toggleCol(key: string) {
     if (!activeReport) return;
     const setters = {
-      "ar-aging": setArVisible,
-      "pl-monthly": setMonthlyVisible,
-      "pl-customer": setClientVisible,
-      "pl-supplier": setSupplierVisible,
+      "ar-aging": setArVisible, "pl-monthly": setMonthlyVisible,
+      "pl-customer": setClientVisible, "pl-supplier": setSupplierVisible,
     };
     setters[activeReport]((prev) => {
       const next = new Set(prev);
@@ -685,7 +817,21 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
   const clientRows = buildEntityRows(filtered, "clientName", "customerPaymentStatus");
   const supplierRows = buildEntityRows(filtered, "supplierName", "supplierPaymentStatus");
 
-  // ── Report browser (QB-style) ──────────────────────────────────────────────
+  // Active filter chips
+  const activeChips: { label: string; key: keyof Filters; val: string }[] = [];
+  const shipLabels: Record<string, string> = { programado: "Scheduled", en_transito: "In Transit", en_aduana: "In Customs", entregado: "Delivered" };
+  const chipLabels: Record<keyof Filters, string> = {
+    clients: "Client", suppliers: "Supplier", products: "Product", destinations: "Destination",
+    transports: "Transport", shipmentStatuses: "Status", customerPayment: "Cust. Payment", supplierPayment: "Supp. Payment",
+  };
+  (Object.entries(filters) as [keyof Filters, Set<string>][]).forEach(([key, set]) => {
+    set.forEach((val) => {
+      const display = key === "shipmentStatuses" ? (shipLabels[val] ?? val) : key === "customerPayment" || key === "supplierPayment" ? (val === "paid" ? "Paid" : "Unpaid") : val;
+      activeChips.push({ label: `${chipLabels[key]}: ${display}`, key, val });
+    });
+  });
+
+  // ── Report browser ─────────────────────────────────────────────────────────
   if (!activeReport) {
     return (
       <div className="space-y-6">
@@ -696,11 +842,8 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
             </div>
             <div className="divide-y divide-stone-100">
               {section.reports.map((r) => (
-                <button
-                  key={r.id}
-                  onClick={() => setActiveReport(r.id)}
-                  className="w-full flex items-center justify-between px-5 py-3 hover:bg-stone-50 text-left group"
-                >
+                <button key={r.id} onClick={() => setActiveReport(r.id)}
+                  className="w-full flex items-center justify-between px-5 py-3 hover:bg-stone-50 text-left group">
                   <div>
                     <p className="text-sm text-blue-600 group-hover:underline font-medium">{r.label}</p>
                     <p className="text-xs text-stone-400 mt-0.5">{r.description}</p>
@@ -720,13 +863,11 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
   // ── Active report view ─────────────────────────────────────────────────────
   return (
     <div className="space-y-4">
-      {/* Back + title */}
+      {/* Header row */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setActiveReport(null)}
-            className="flex items-center gap-1 text-xs text-stone-500 hover:text-stone-800 font-medium"
-          >
+          <button onClick={() => setActiveReport(null)}
+            className="flex items-center gap-1 text-xs text-stone-500 hover:text-stone-800 font-medium">
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
@@ -734,8 +875,15 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
           </button>
           <span className="text-stone-300">/</span>
           <h2 className="text-base font-semibold text-stone-800">{REPORT_LABELS[activeReport]}</h2>
+          {filtered.length !== data.length && (
+            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+              {filtered.length} of {data.length} rows
+            </span>
+          )}
         </div>
+
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Date range */}
           <div className="flex items-center gap-1.5 text-xs">
             <span className="text-stone-500">From</span>
             <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
@@ -747,16 +895,56 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
               <button onClick={() => { setDateFrom(""); setDateTo(""); }} className="text-stone-400 hover:text-stone-600">✕</button>
             )}
           </div>
-          <ActionsDropdown
-            cols={colsForReport}
-            visible={visibleForReport}
-            onToggleCol={toggleCol}
-            tab={activeReport}
-            dateFrom={dateFrom}
-            dateTo={dateTo}
-          />
+
+          {/* Filters button */}
+          <div className="relative">
+            <button
+              onClick={() => setFiltersOpen((o) => !o)}
+              className={`flex items-center gap-1.5 text-xs px-3 py-1.5 border rounded-md font-medium transition-colors ${
+                hasActiveFilters(filters)
+                  ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                  : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"
+              }`}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+              </svg>
+              Filters
+              {hasActiveFilters(filters) && (
+                <span className="bg-white text-blue-600 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold">
+                  {activeChips.length}
+                </span>
+              )}
+            </button>
+            <FiltersPanel
+              data={data}
+              filters={filters}
+              onChange={toggleFilter}
+              onClear={() => setFilters(emptyFilters())}
+              open={filtersOpen}
+              onClose={() => setFiltersOpen(false)}
+            />
+          </div>
+
+          <ActionsDropdown cols={colsForReport} visible={visibleForReport}
+            onToggleCol={toggleCol} tab={activeReport} dateFrom={dateFrom} dateTo={dateTo} />
         </div>
       </div>
+
+      {/* Active filter chips */}
+      {activeChips.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {activeChips.map((chip, i) => (
+            <span key={i} className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-1 rounded-full">
+              {chip.label}
+              <button onClick={() => toggleFilter(chip.key, chip.val)} className="hover:text-blue-900 font-bold leading-none">×</button>
+            </span>
+          ))}
+          <button onClick={() => setFilters(emptyFilters())} className="text-xs text-stone-400 hover:text-stone-600 px-2 py-1">
+            Clear all
+          </button>
+        </div>
+      )}
 
       {/* Report */}
       {activeReport === "ar-aging" && <ARAgingTab data={filtered} cols={AR_COLS} visible={arVisible} />}
