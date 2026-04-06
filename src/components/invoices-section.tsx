@@ -78,6 +78,7 @@ export function InvoicesSection({
   const [editingId, setEditingId] = useState<number | null>(null);
   const [sendingId, setSendingId] = useState<number | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -316,67 +317,18 @@ export function InvoicesSection({
                         >
                           {isEditing ? "Cancel" : "View/Edit"}
                         </button>
-                        <div className="relative" ref={openDropdownId === inv.id ? dropdownRef : undefined}>
+                        <div ref={openDropdownId === inv.id ? dropdownRef : undefined}>
                           <button
-                            onClick={() => setOpenDropdownId(openDropdownId === inv.id ? null : inv.id)}
+                            onClick={(e) => {
+                              if (openDropdownId === inv.id) { setOpenDropdownId(null); return; }
+                              const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                              setDropdownPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+                              setOpenDropdownId(inv.id);
+                            }}
                             className="text-xs text-primary font-medium px-2 py-1 hover:bg-blue-50 rounded-r border border-l-0 border-stone-200"
                           >
                             ▼
                           </button>
-                          {openDropdownId === inv.id && (
-                            <div className="absolute right-0 top-full mt-1 bg-white border border-stone-200 rounded-md shadow-lg z-50 min-w-[150px] py-1">
-                              <button
-                                onClick={() => { setOpenDropdownId(null); openEdit(inv); }}
-                                className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"
-                              >
-                                View/Edit
-                              </button>
-                              <a
-                                href={`/api/invoice-pdf?invoice=${inv.invoiceNumber}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="block w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"
-                                onClick={() => setOpenDropdownId(null)}
-                              >
-                                Print
-                              </a>
-                              {!inv.invoiceNumber.startsWith("PEND-") && (
-                                sentId === inv.id ? (
-                                  <span className="block px-4 py-2 text-sm text-emerald-600 font-medium">Sent ✓</span>
-                                ) : (
-                                  <button
-                                    onClick={() => { setOpenDropdownId(null); openSend(inv); }}
-                                    className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"
-                                  >
-                                    Send
-                                  </button>
-                                )
-                              )}
-                              <button
-                                onClick={() => {
-                                  setOpenDropdownId(null);
-                                  startTransition(async () => {
-                                    await duplicateInvoice(inv.id);
-                                    router.refresh();
-                                  });
-                                }}
-                                className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"
-                              >
-                                Duplicate
-                              </button>
-                              <div className="border-t border-stone-100 my-1" />
-                              <button
-                                onClick={() => {
-                                  setOpenDropdownId(null);
-                                  if (!confirm(`Delete invoice ${inv.invoiceNumber}?`)) return;
-                                  fetch(`/api/invoices/${inv.id}`, { method: "DELETE" }).then(() => router.refresh());
-                                }}
-                                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          )}
                         </div>
                       </div>
                     </td>
@@ -584,6 +536,28 @@ export function InvoicesSection({
           </tbody>
         </table>
       </div>
+
+      {/* Dropdown — fixed position to escape overflow containers */}
+      {openDropdownId !== null && dropdownPos && (() => {
+        const inv = list.find(i => i.id === openDropdownId);
+        if (!inv) return null;
+        return (
+          <div ref={dropdownRef} style={{ position: "fixed", top: dropdownPos.top, right: dropdownPos.right, zIndex: 9999 }} className="bg-white border border-stone-200 rounded-md shadow-lg min-w-[150px] py-1 text-left">
+            <button onClick={() => { setOpenDropdownId(null); openEdit(inv); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">View/Edit</button>
+            <a href={`/api/invoice-pdf?invoice=${inv.invoiceNumber}`} target="_blank" rel="noopener noreferrer" className="block w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50" onClick={() => setOpenDropdownId(null)}>Print</a>
+            {!inv.invoiceNumber.startsWith("PEND-") && (
+              sentId === inv.id ? (
+                <span className="block px-4 py-2 text-sm text-emerald-600 font-medium">Sent ✓</span>
+              ) : (
+                <button onClick={() => { setOpenDropdownId(null); openSend(inv); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">Send</button>
+              )
+            )}
+            <button onClick={() => { setOpenDropdownId(null); startTransition(async () => { await duplicateInvoice(inv.id); router.refresh(); }); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">Duplicate</button>
+            <div className="border-t border-stone-100 my-1" />
+            <button onClick={() => { setOpenDropdownId(null); if (!confirm(`Delete invoice ${inv.invoiceNumber}?`)) return; fetch(`/api/invoices/${inv.id}`, { method: "DELETE" }).then(() => router.refresh()); }} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</button>
+          </div>
+        );
+      })()}
     </div>
   );
 }

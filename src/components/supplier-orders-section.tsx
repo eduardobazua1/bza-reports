@@ -61,6 +61,7 @@ export function SupplierOrdersSection({
   const [sendLoading, setSendLoading] = useState(false);
   const [sentId, setSentId] = useState<number | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -331,26 +332,18 @@ export function SupplierOrdersSection({
                           >
                             {isEditing ? "Cancel" : "View/Edit"}
                           </button>
-                          <div className="relative" ref={openDropdownId === order.id ? dropdownRef : undefined}>
+                          <div ref={openDropdownId === order.id ? dropdownRef : undefined}>
                             <button
-                              onClick={() => setOpenDropdownId(openDropdownId === order.id ? null : order.id)}
+                              onClick={(e) => {
+                                if (openDropdownId === order.id) { setOpenDropdownId(null); return; }
+                                const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                setDropdownPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+                                setOpenDropdownId(order.id);
+                              }}
                               className="text-xs text-primary font-medium px-2 py-1 hover:bg-blue-50 rounded-r border border-l-0 border-stone-200"
                             >
                               ▼
                             </button>
-                            {openDropdownId === order.id && (
-                              <div className="absolute right-0 top-full mt-1 bg-white border border-stone-200 rounded-md shadow-lg z-50 min-w-[150px] py-1 text-left">
-                                <button onClick={() => { setOpenDropdownId(null); isEditing ? cancelEdit() : openEdit(order); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">View/Edit</button>
-                                <a href={`/api/supplier-po-pdf?poId=${purchaseOrderId}&soId=${order.id}`} target="_blank" rel="noopener noreferrer" className="block w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50" onClick={() => setOpenDropdownId(null)}>Print</a>
-                                {wasSent ? (
-                                  <span className="block px-4 py-2 text-sm text-emerald-600 font-medium">Sent ✓</span>
-                                ) : (
-                                  <button onClick={() => { setOpenDropdownId(null); openSend(order); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">Send</button>
-                                )}
-                                <div className="border-t border-stone-100 my-1" />
-                                <button onClick={() => { setOpenDropdownId(null); handleDelete(order.id); }} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</button>
-                              </div>
-                            )}
                           </div>
                         </div>
                       </td>
@@ -438,6 +431,27 @@ export function SupplierOrdersSection({
           </div>
         </div>
       )}
+
+      {/* Dropdown — fixed position to escape overflow containers */}
+      {openDropdownId !== null && dropdownPos && (() => {
+        const order = list.find(o => o.id === openDropdownId);
+        if (!order) return null;
+        const wasSent = sentId === order.id;
+        const isEditing = editingId === order.id;
+        return (
+          <div ref={dropdownRef} style={{ position: "fixed", top: dropdownPos.top, right: dropdownPos.right, zIndex: 9999 }} className="bg-white border border-stone-200 rounded-md shadow-lg min-w-[150px] py-1 text-left">
+            <button onClick={() => { setOpenDropdownId(null); isEditing ? cancelEdit() : openEdit(order); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">View/Edit</button>
+            <a href={`/api/supplier-po-pdf?poId=${purchaseOrderId}&soId=${order.id}`} target="_blank" rel="noopener noreferrer" className="block w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50" onClick={() => setOpenDropdownId(null)}>Print</a>
+            {wasSent ? (
+              <span className="block px-4 py-2 text-sm text-emerald-600 font-medium">Sent ✓</span>
+            ) : (
+              <button onClick={() => { setOpenDropdownId(null); openSend(order); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">Send</button>
+            )}
+            <div className="border-t border-stone-100 my-1" />
+            <button onClick={() => { setOpenDropdownId(null); handleDelete(order.id); }} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</button>
+          </div>
+        );
+      })()}
 
       {/* Edit modal — fixed overlay, no layout shift */}
       {editingId !== null && (() => {

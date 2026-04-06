@@ -53,6 +53,7 @@ export function ClientPOsSection({
   const [adding, setAdding] = useState(false);
   const [loading, setLoading] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -378,20 +379,18 @@ export function ClientPOsSection({
                               Convert →
                             </button>
                           )}
-                          <div className="relative" ref={openDropdownId === cpo.id ? dropdownRef : undefined}>
+                          <div ref={openDropdownId === cpo.id ? dropdownRef : undefined}>
                             <button
-                              onClick={() => setOpenDropdownId(openDropdownId === cpo.id ? null : cpo.id)}
+                              onClick={(e) => {
+                                if (openDropdownId === cpo.id) { setOpenDropdownId(null); return; }
+                                const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                setDropdownPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+                                setOpenDropdownId(cpo.id);
+                              }}
                               className="text-xs text-primary font-medium px-2 py-1 hover:bg-blue-50 rounded border border-stone-200"
                             >
                               ▼
                             </button>
-                            {openDropdownId === cpo.id && (
-                              <div className="absolute right-0 top-full mt-1 bg-white border border-stone-200 rounded-md shadow-lg z-50 min-w-[130px] py-1 text-left">
-                                <button onClick={() => { setOpenDropdownId(null); openEdit(cpo); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">Edit</button>
-                                <div className="border-t border-stone-100 my-1" />
-                                <button onClick={() => { setOpenDropdownId(null); handleDelete(cpo.id); }} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</button>
-                              </div>
-                            )}
                           </div>
                         </div>
                       </td>
@@ -614,6 +613,19 @@ export function ClientPOsSection({
           </div>
         </div>
       )}
+
+      {/* Dropdown — fixed position to escape overflow containers */}
+      {openDropdownId !== null && dropdownPos && (() => {
+        const cpo = list.find(o => o.id === openDropdownId);
+        if (!cpo) return null;
+        return (
+          <div ref={dropdownRef} style={{ position: "fixed", top: dropdownPos.top, right: dropdownPos.right, zIndex: 9999 }} className="bg-white border border-stone-200 rounded-md shadow-lg min-w-[130px] py-1 text-left">
+            <button onClick={() => { setOpenDropdownId(null); openEdit(cpo); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">Edit</button>
+            <div className="border-t border-stone-100 my-1" />
+            <button onClick={() => { setOpenDropdownId(null); handleDelete(cpo.id); }} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</button>
+          </div>
+        );
+      })()}
 
       {/* Edit modal — fixed overlay, no layout shift */}
       {editingId !== null && (() => {
