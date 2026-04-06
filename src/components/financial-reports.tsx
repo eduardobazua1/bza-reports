@@ -83,11 +83,120 @@ function applyConditions(data: InvoiceRow[], conditions: FilterCondition[]): Inv
   });
 }
 
+// ─── Email modal ──────────────────────────────────────────────────────────────
+
+function EmailModal({
+  title, rows, onClose,
+}: { title: string; rows: InvoiceRow[]; onClose: () => void }) {
+  const [email,   setEmail]   = useState("");
+  const [subject, setSubject] = useState(`BZA Financial Report – ${title}`);
+  const [message, setMessage] = useState("");
+  const [format,  setFormat]  = useState<"excel"|"pdf"|"both">("excel");
+  const [status,  setStatus]  = useState<"idle"|"sending"|"ok"|"error">("idle");
+  const [errMsg,  setErrMsg]  = useState("");
+
+  async function send() {
+    if (!email) return;
+    setStatus("sending");
+    try {
+      const res = await fetch("/api/reports/financial/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, subject, message, title, rows, format }),
+      });
+      const json = await res.json();
+      if (res.ok) { setStatus("ok"); }
+      else { setStatus("error"); setErrMsg(json.error ?? "Failed to send"); }
+    } catch {
+      setStatus("error"); setErrMsg("Network error");
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-stone-200">
+          <div>
+            <h3 className="text-sm font-semibold text-stone-800">Email Report</h3>
+            <p className="text-xs text-stone-400 mt-0.5">{rows.length} invoice{rows.length !== 1 ? "s" : ""} · {title}</p>
+          </div>
+          <button onClick={onClose} className="text-stone-400 hover:text-stone-700 text-xl leading-none">×</button>
+        </div>
+
+        {status === "ok" ? (
+          <div className="px-5 py-10 text-center">
+            <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-3">
+              <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
+              </svg>
+            </div>
+            <p className="font-semibold text-stone-800">Email sent!</p>
+            <p className="text-xs text-stone-500 mt-1">Report delivered to {email}</p>
+            <button onClick={onClose} className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">Done</button>
+          </div>
+        ) : (
+          <div className="px-5 py-4 space-y-3">
+            {/* To */}
+            <div>
+              <label className="block text-xs font-medium text-stone-600 mb-1">To</label>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="recipient@example.com"
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+            </div>
+            {/* Subject */}
+            <div>
+              <label className="block text-xs font-medium text-stone-600 mb-1">Subject</label>
+              <input type="text" value={subject} onChange={e => setSubject(e.target.value)}
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+            </div>
+            {/* Message */}
+            <div>
+              <label className="block text-xs font-medium text-stone-600 mb-1">Message <span className="text-stone-400">(optional)</span></label>
+              <textarea value={message} onChange={e => setMessage(e.target.value)} rows={3} placeholder="Add a note..."
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+            </div>
+            {/* Format */}
+            <div>
+              <label className="block text-xs font-medium text-stone-600 mb-2">Format</label>
+              <div className="flex gap-2">
+                {(["excel","pdf","both"] as const).map(f => (
+                  <button key={f} onClick={() => setFormat(f)}
+                    className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-colors capitalize ${format===f ? "bg-blue-600 text-white border-blue-600" : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"}`}>
+                    {f === "both" ? "PDF + Excel" : f === "excel" ? "Excel" : "PDF"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Error */}
+            {status === "error" && (
+              <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{errMsg}</p>
+            )}
+            {/* Actions */}
+            <div className="flex gap-2 pt-1">
+              <button onClick={onClose} className="flex-1 py-2 rounded-lg border border-stone-200 text-sm text-stone-600 hover:bg-stone-50">
+                Cancel
+              </button>
+              <button onClick={send} disabled={!email || status==="sending"}
+                className="flex-1 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2">
+                {status === "sending" ? (
+                  <><svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>Sending…</>
+                ) : (
+                  <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>Send</>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Drill-down modal ─────────────────────────────────────────────────────────
 
 function DrillDownModal({
-  title, rows, onClose,
-}: { title: string; rows: InvoiceRow[]; onClose: () => void }) {
+  title, rows, onClose, onEmail,
+}: { title: string; rows: InvoiceRow[]; onClose: () => void; onEmail: () => void }) {
   const shipStatusColors: Record<string, string> = {
     programado: "bg-amber-100 text-amber-700", en_transito: "bg-blue-100 text-blue-700",
     en_aduana: "bg-purple-100 text-purple-700", entregado: "bg-emerald-100 text-emerald-700",
@@ -101,7 +210,16 @@ function DrillDownModal({
             <h3 className="text-sm font-semibold text-stone-800">{title}</h3>
             <p className="text-xs text-stone-400 mt-0.5">{rows.length} invoice{rows.length !== 1 ? "s" : ""}</p>
           </div>
-          <button onClick={onClose} className="text-stone-400 hover:text-stone-700 text-xl leading-none">×</button>
+          <div className="flex items-center gap-2">
+            <button onClick={onEmail}
+              className="flex items-center gap-1.5 text-xs border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-md px-2.5 py-1.5 font-medium transition-colors">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
+              Email
+            </button>
+            <button onClick={onClose} className="text-stone-400 hover:text-stone-700 text-xl leading-none">×</button>
+          </div>
         </div>
         <div className="overflow-auto flex-1">
           <table className="w-full text-xs">
@@ -690,7 +808,8 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
   const [dateTo,   setDateTo]   = useState("");
   const [conditions, setConditions] = useState<FilterCondition[]>([]);
   const [customizeOpen, setCustomizeOpen] = useState(false);
-  const [drillDown, setDrillDown] = useState<{ rows: InvoiceRow[]; title: string } | null>(null);
+  const [drillDown,  setDrillDown]  = useState<{ rows: InvoiceRow[]; title: string } | null>(null);
+  const [emailState, setEmailState] = useState<{ rows: InvoiceRow[]; title: string } | null>(null);
 
   const [arVisible,       setArVisible]       = useState(() => new Set(AR_COLS.map(c=>c.key)));
   const [monthlyVisible,  setMonthlyVisible]  = useState(() => new Set(MONTHLY_COLS.map(c=>c.key)));
@@ -806,6 +925,15 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
             Save As
           </button>
 
+          {/* Email */}
+          <button onClick={() => setEmailState({ rows: filtered, title: REPORT_LABELS[activeReport!] })}
+            className="flex items-center gap-1.5 text-xs border border-stone-200 bg-white rounded-md px-3 py-1.5 hover:bg-stone-50 text-stone-600 font-medium">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            Email
+          </button>
+
           {/* Customize */}
           <button onClick={()=>setCustomizeOpen(true)}
             className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md font-medium border transition-colors ${hasFilters ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700" : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"}`}>
@@ -830,7 +958,17 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
       />
 
       {/* Drill-down modal */}
-      {drillDown && <DrillDownModal title={drillDown.title} rows={drillDown.rows} onClose={()=>setDrillDown(null)} />}
+      {drillDown && (
+        <DrillDownModal
+          title={drillDown.title}
+          rows={drillDown.rows}
+          onClose={() => setDrillDown(null)}
+          onEmail={() => { setEmailState({ rows: drillDown.rows, title: drillDown.title }); setDrillDown(null); }}
+        />
+      )}
+
+      {/* Email modal */}
+      {emailState && <EmailModal title={emailState.title} rows={emailState.rows} onClose={() => setEmailState(null)} />}
     </div>
   );
 }
