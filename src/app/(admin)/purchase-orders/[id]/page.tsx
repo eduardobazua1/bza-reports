@@ -220,6 +220,7 @@ export default async function PurchaseOrderDetailPage({
         poBuyPrice={po.buyPrice}
         products={productsList}
         clientTermsDays={po.client?.paymentTermsDays ?? 60}
+        clientEmail={po.client?.email ?? null}
       />
 
       {/* Edit PO & Add Invoice */}

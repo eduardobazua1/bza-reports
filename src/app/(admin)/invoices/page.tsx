@@ -168,7 +168,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
                       </span>
                     </td>
                     <td className="p-3 text-sm border-t border-border text-right">
-                      <InvoiceListActions invoice={row.invoice} />
+                      <InvoiceListActions invoice={row.invoice} clientEmail={(row as any).clientEmail} />
                     </td>
                   </tr>
                 );

@@ -63,15 +63,22 @@ export function InvoicesSection({
   poBuyPrice,
   products,
   clientTermsDays = 60,
+  clientEmail,
 }: {
   invoices: Invoice[];
   poSellPrice: number;
   poBuyPrice: number;
   products: Product[];
   clientTermsDays?: number;
+  clientEmail?: string | null;
 }) {
   const [list, setList] = useState<Invoice[]>(initialInvoices);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [sendingId, setSendingId] = useState<number | null>(null);
+  const [sendTo, setSendTo] = useState("");
+  const [sendCc, setSendCc] = useState("");
+  const [sendLoading, setSendLoading] = useState(false);
+  const [sentId, setSentId] = useState<number | null>(null);
   const [editLoading, setEditLoading] = useState(false);
   const [editForm, setEditForm] = useState<Partial<Invoice> & { quantityTons: string; sellPriceOverride: string; buyPriceOverride: string; freightCost: string; balesCount: string; unitsPerBale: string }>({
     invoiceNumber: "",
@@ -117,6 +124,34 @@ export function InvoicesSection({
   }
 
   function cancelEdit() { setEditingId(null); }
+
+  function openSend(inv: Invoice) {
+    setSendingId(inv.id);
+    setSendTo(clientEmail || "");
+    setSendCc("");
+    setSentId(null);
+    setEditingId(null);
+  }
+
+  async function handleSend(inv: Invoice) {
+    if (!sendTo) return;
+    setSendLoading(true);
+    const res = await fetch("/api/invoice-pdf/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ invoiceNumber: inv.invoiceNumber, to: sendTo, cc: sendCc || undefined }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setSentId(inv.id);
+      setSendingId(null);
+      alert(`Sent! ${data.attachmentCount} attachment(s) delivered.`);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || "Error sending email");
+    }
+    setSendLoading(false);
+  }
 
   async function handleSave(inv: Invoice) {
     if (!editForm.invoiceNumber || !editForm.quantityTons) return;
@@ -243,14 +278,69 @@ export function InvoicesSection({
                       <DocumentUpload invoiceId={inv.id} invoiceNumber={inv.invoiceNumber} />
                     </td>
                     <td className="px-3 py-2 border-t border-stone-100 text-right">
-                      <button
-                        onClick={() => isEditing ? cancelEdit() : openEdit(inv)}
-                        className={`text-xs font-medium ${isEditing ? "text-amber-600 hover:text-amber-800" : "text-stone-400 hover:text-stone-700"}`}
-                      >
-                        {isEditing ? "Cancel" : "Edit"}
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        {!inv.invoiceNumber.startsWith("PEND-") && (
+                          sentId === inv.id ? (
+                            <span className="text-xs text-emerald-600 font-medium">Sent ✓</span>
+                          ) : (
+                            <button
+                              onClick={() => sendingId === inv.id ? setSendingId(null) : openSend(inv)}
+                              className={`text-xs font-medium ${sendingId === inv.id ? "text-blue-600" : "text-stone-400 hover:text-stone-700"}`}
+                            >
+                              {sendingId === inv.id ? "Cancel" : "Send"}
+                            </button>
+                          )
+                        )}
+                        <button
+                          onClick={() => isEditing ? cancelEdit() : openEdit(inv)}
+                          className={`text-xs font-medium ${isEditing ? "text-amber-600 hover:text-amber-800" : "text-stone-400 hover:text-stone-700"}`}
+                        >
+                          {isEditing ? "Cancel" : "Edit"}
+                        </button>
+                      </div>
                     </td>
                   </tr>
+
+                  {/* Send form */}
+                  {sendingId === inv.id && (
+                    <tr key={`send-${inv.id}`}>
+                      <td colSpan={15} className="p-0">
+                        <div className="bg-blue-50 border-t border-blue-200 px-4 py-3 space-y-2">
+                          <p className="text-xs font-semibold text-blue-800">Send Invoice {inv.invoiceNumber} — BOL and Packing List documents will be attached automatically</p>
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-blue-700 font-medium whitespace-nowrap">To:</span>
+                              <input
+                                type="email"
+                                className="border border-blue-200 rounded px-2 py-1 text-sm w-56"
+                                placeholder="client@example.com"
+                                value={sendTo}
+                                onChange={(e) => setSendTo(e.target.value)}
+                              />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-blue-700 font-medium whitespace-nowrap">CC:</span>
+                              <input
+                                type="email"
+                                className="border border-blue-200 rounded px-2 py-1 text-sm w-56"
+                                placeholder="optional"
+                                value={sendCc}
+                                onChange={(e) => setSendCc(e.target.value)}
+                              />
+                            </div>
+                            <button
+                              onClick={() => handleSend(inv)}
+                              disabled={sendLoading || !sendTo}
+                              className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 disabled:opacity-50 font-medium"
+                            >
+                              {sendLoading ? "Sending..." : "Send"}
+                            </button>
+                            <button onClick={() => setSendingId(null)} className="text-xs text-stone-400 hover:text-stone-600">Cancel</button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
 
                   {/* Edit form */}
                   {isEditing && (

@@ -83,6 +83,7 @@ export async function getInvoices() {
       poNumber: purchaseOrders.poNumber,
       clientPoNumber: purchaseOrders.clientPoNumber,
       clientName: clients.name,
+      clientEmail: clients.email,
       clientPaymentTermsDays: clients.paymentTermsDays,
       supplierName: suppliers.name,
       poSellPrice: purchaseOrders.sellPrice,
