@@ -203,8 +203,6 @@ const DD_COL_DEFS = [
   { key: "product",       label: "Product" },
   { key: "destination",   label: "Destination" },
   { key: "date",          label: "Date" },
-  { key: "invoiceDate",   label: "Invoice Date" },
-  { key: "shipmentDate",  label: "Ship Date" },
   { key: "dueDate",       label: "Due Date" },
   { key: "days",          label: "Days" },
   { key: "tons",          label: "Tons" },
@@ -241,7 +239,7 @@ function DrillDownModal({
           invoiceNumber: r.invoiceNumber, clientName: r.clientName, supplierName: r.supplierName,
           poNumber: r.poNumber, product: r.product ?? "", destination: r.destination ?? "",
           date: r.invoiceDate ?? r.shipmentDate ?? "",
-          invoiceDate: r.invoiceDate ?? "", shipmentDate: r.shipmentDate ?? "", dueDate: r.dueDate ?? "",
+          dueDate: r.dueDate ?? "",
           days: days <= 0 ? "Not due" : `${days}`,
           tons: r.quantityTons.toFixed(3), amount: r.revenue.toFixed(2),
           cost: r.cost.toFixed(2), profit: r.profit.toFixed(2),
@@ -340,8 +338,6 @@ function DrillDownModal({
                 {v("product")       && <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">Product</th>}
                 {v("destination")   && <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">Destination</th>}
                 {v("date")          && <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">Date</th>}
-                {v("invoiceDate")   && <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">Invoice Date</th>}
-                {v("shipmentDate")  && <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">Ship Date</th>}
                 {v("dueDate")       && <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">Due Date</th>}
                 {v("days")          && <th className="px-3 py-2 text-right text-[10px] font-medium text-gray-500 whitespace-nowrap">Days</th>}
                 {v("tons")          && <th className="px-3 py-2 text-right text-[10px] font-medium text-gray-500 whitespace-nowrap">Tons</th>}
@@ -366,8 +362,6 @@ function DrillDownModal({
                     {v("product")       && <td className="px-3 py-1.5 text-gray-600">{r.product || "—"}</td>}
                     {v("destination")   && <td className="px-3 py-1.5 text-gray-600">{r.destination || "—"}</td>}
                     {v("date")          && <td className="px-3 py-1.5 whitespace-nowrap text-gray-600">{fmtDate(r.invoiceDate ?? r.shipmentDate)}</td>}
-                    {v("invoiceDate")   && <td className="px-3 py-1.5 whitespace-nowrap text-gray-600">{fmtDate(r.invoiceDate)}</td>}
-                    {v("shipmentDate")  && <td className="px-3 py-1.5 whitespace-nowrap text-gray-600">{fmtDate(r.shipmentDate)}</td>}
                     {v("dueDate")       && <td className="px-3 py-1.5 whitespace-nowrap text-gray-600">{fmtDate(r.dueDate)}</td>}
                     {v("days")          && <td className={`px-3 py-1.5 text-right font-medium whitespace-nowrap ${days > 90 ? "text-red-600" : days > 30 ? "text-orange-500" : days > 0 ? "text-amber-500" : "text-gray-400"}`}>{days <= 0 ? "—" : `${days}d`}</td>}
                     {v("tons")          && <td className="px-3 py-1.5 text-right text-gray-700">{formatNumber(r.quantityTons, 1)}</td>}
