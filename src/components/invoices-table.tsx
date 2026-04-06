@@ -272,17 +272,17 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
           <table className="w-full">
             <thead className="bg-muted">
               <tr>
-                <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Invoice #</th>
-                <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">PO</th>
-                <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Client</th>
-                <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Destination</th>
-                <th className="text-right p-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Tons</th>
-                <th className="text-right p-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Revenue</th>
-                <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Ship Date</th>
-                <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Due Date</th>
-                <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Shipment</th>
-                <th className="text-left p-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Payment</th>
-                <th className="text-right p-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Actions</th>
+                <th className="text-left px-3 py-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Invoice #</th>
+                <th className="text-left px-3 py-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wide">PO</th>
+                <th className="text-left px-3 py-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Client</th>
+                <th className="text-left px-3 py-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Destination</th>
+                <th className="text-right px-3 py-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Tons</th>
+                <th className="text-right px-3 py-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Revenue</th>
+                <th className="text-left px-3 py-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Ship Date</th>
+                <th className="text-left px-3 py-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Due Date</th>
+                <th className="text-left px-3 py-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Shipment</th>
+                <th className="text-left px-3 py-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Payment</th>
+                <th className="text-right px-3 py-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -313,21 +313,21 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                       isSelected ? "bg-blue-50" : isOverdue ? "bg-red-50/40 hover:bg-red-50/70" : "hover:bg-muted/40"
                     }`}
                   >
-                    <td className="p-3 text-sm font-medium text-stone-800">{row.invoice.invoiceNumber}</td>
-                    <td className="p-3 text-sm">
+                    <td className="px-3 py-1.5 text-xs font-medium text-stone-800 whitespace-nowrap">{row.invoice.invoiceNumber}</td>
+                    <td className="px-3 py-1.5 text-xs">
                       <Link href={`/purchase-orders/${row.invoice.purchaseOrderId}`} className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
                         {row.poNumber || "-"}
                       </Link>
                     </td>
-                    <td className="p-3 text-sm text-stone-700">{row.clientName || "-"}</td>
-                    <td className="p-3 text-sm text-stone-500">{(row.invoice as any).destination || "-"}</td>
-                    <td className="p-3 text-sm text-right tabular-nums">{formatNumber(row.invoice.quantityTons, 2)}</td>
-                    <td className="p-3 text-sm text-right font-medium tabular-nums">{formatCurrency(revenue)}</td>
-                    <td className="p-3 text-sm text-stone-600">{formatDate(row.invoice.shipmentDate)}</td>
-                    <td className="p-3 text-sm">
+                    <td className="px-3 py-1.5 text-xs text-stone-700">{row.clientName || "-"}</td>
+                    <td className="px-3 py-1.5 text-xs text-stone-500">{(row.invoice as any).destination || "-"}</td>
+                    <td className="px-3 py-1.5 text-xs text-right tabular-nums">{formatNumber(row.invoice.quantityTons, 2)}</td>
+                    <td className="px-3 py-1.5 text-xs text-right font-medium tabular-nums">{formatCurrency(revenue)}</td>
+                    <td className="px-3 py-1.5 text-xs text-stone-600 whitespace-nowrap">{formatDate(row.invoice.shipmentDate)}</td>
+                    <td className="px-3 py-1.5 text-xs whitespace-nowrap">
                       {dueDate ? (
                         row.invoice.customerPaymentStatus === "unpaid" && daysOverdue > 0 ? (
-                          <span className="text-red-600 font-medium text-xs">{formatDate(dueDate)} <span className="font-bold">+{daysOverdue}d</span></span>
+                          <span className="text-red-600 font-medium">{formatDate(dueDate)} <span className="font-bold">+{daysOverdue}d</span></span>
                         ) : (
                           <span className="text-stone-600">{formatDate(dueDate)}</span>
                         )
@@ -335,17 +335,17 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                         <span className="text-stone-400">-</span>
                       )}
                     </td>
-                    <td className="p-3 text-sm">
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${shipmentStatusColors[row.invoice.shipmentStatus] || ""}`}>
+                    <td className="px-3 py-1.5 text-xs">
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${shipmentStatusColors[row.invoice.shipmentStatus] || ""}`}>
                         {shipmentStatusLabels[row.invoice.shipmentStatus] || row.invoice.shipmentStatus}
                       </span>
                     </td>
-                    <td className="p-3 text-sm">
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${paymentStatusColors[row.invoice.customerPaymentStatus] || ""}`}>
+                    <td className="px-3 py-1.5 text-xs">
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${paymentStatusColors[row.invoice.customerPaymentStatus] || ""}`}>
                         {paymentStatusLabels[row.invoice.customerPaymentStatus] || row.invoice.customerPaymentStatus}
                       </span>
                     </td>
-                    <td className="p-3 text-sm text-right" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-3 py-1.5 text-xs text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-0">
                         <button
                           onClick={() => openPanel(row, "edit")}
