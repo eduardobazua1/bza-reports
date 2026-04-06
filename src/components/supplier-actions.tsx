@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import { createSupplier, updateSupplier, deleteSupplier } from "@/server/actions";
 import { useRouter } from "next/navigation";
 
@@ -21,7 +21,19 @@ export function SupplierActions({ suppliers }: { suppliers: Supplier[] }) {
   const [showForm, setShowForm] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpenDropdownId(null);
+      }
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -186,20 +198,20 @@ export function SupplierActions({ suppliers }: { suppliers: Supplier[] }) {
                     ) : <span className="text-green-600">Settled</span>}
                   </td>
                   <td className="p-3 text-sm border-t border-border text-right">
-                    <div className="flex gap-2 justify-end">
+                    <div className="relative inline-block" ref={openDropdownId === supplier.id ? dropdownRef : undefined}>
                       <button
-                        onClick={() => handleEdit(supplier)}
-                        className="text-xs text-primary hover:underline"
+                        onClick={() => setOpenDropdownId(openDropdownId === supplier.id ? null : supplier.id)}
+                        className="text-xs text-primary font-medium px-2 py-1 hover:bg-blue-50 rounded border border-stone-200"
                       >
-                        Edit
+                        ▼
                       </button>
-                      <button
-                        onClick={() => handleDelete(supplier.id)}
-                        disabled={isPending}
-                        className="text-xs text-destructive hover:underline"
-                      >
-                        Delete
-                      </button>
+                      {openDropdownId === supplier.id && (
+                        <div className="absolute right-0 top-full mt-1 bg-white border border-stone-200 rounded-md shadow-lg z-50 min-w-[130px] py-1 text-left">
+                          <button onClick={() => { setOpenDropdownId(null); handleEdit(supplier); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">Edit</button>
+                          <div className="border-t border-stone-100 my-1" />
+                          <button onClick={() => { setOpenDropdownId(null); handleDelete(supplier.id); }} disabled={isPending} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</button>
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>

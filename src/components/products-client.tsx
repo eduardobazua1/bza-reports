@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import { createProduct, updateProduct, deleteProduct } from "@/server/actions";
 import { useRouter } from "next/navigation";
-import { Pencil, Trash2 } from "lucide-react";
 
 type Product = {
   id: number;
@@ -204,6 +203,18 @@ export function ProductsClient({ products }: { products: Product[] }) {
   const [editId, setEditId] = useState<number | null>(null);
   const [addForm, setAddForm] = useState<FormState>(emptyForm);
   const [editForm, setEditForm] = useState<FormState>(emptyForm);
+  const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpenDropdownId(null);
+      }
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   function startEdit(p: Product) {
     setEditId(p.id);
@@ -324,13 +335,20 @@ export function ProductsClient({ products }: { products: Product[] }) {
                     <CertDisplay p={p} />
                   </td>
                   <td className="p-3 text-right">
-                    <div className="flex gap-2 justify-end">
-                      <button onClick={() => startEdit(p)} className="text-stone-400 hover:text-stone-700 transition-colors" title="Edit">
-                        <Pencil className="w-4 h-4" />
+                    <div className="relative inline-block" ref={openDropdownId === p.id ? dropdownRef : undefined}>
+                      <button
+                        onClick={() => setOpenDropdownId(openDropdownId === p.id ? null : p.id)}
+                        className="text-xs text-primary font-medium px-2 py-1 hover:bg-blue-50 rounded border border-stone-200"
+                      >
+                        ▼
                       </button>
-                      <button onClick={() => handleDelete(p.id)} className="text-stone-400 hover:text-red-600 transition-colors" title="Delete">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {openDropdownId === p.id && (
+                        <div className="absolute right-0 top-full mt-1 bg-white border border-stone-200 rounded-md shadow-lg z-50 min-w-[130px] py-1 text-left">
+                          <button onClick={() => { setOpenDropdownId(null); startEdit(p); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">Edit</button>
+                          <div className="border-t border-stone-100 my-1" />
+                          <button onClick={() => { setOpenDropdownId(null); handleDelete(p.id); }} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</button>
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>

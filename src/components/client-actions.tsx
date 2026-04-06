@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useRef } from "react";
 import { createClient, updateClient, deleteClient } from "@/server/actions";
 import { useRouter } from "next/navigation";
 
@@ -31,6 +31,8 @@ export function ClientActions({ clients }: { clients: Client[] }) {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [isPending, startTransition] = useTransition();
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const [portalUsersClientId, setPortalUsersClientId] = useState<number | null>(null);
   const [portalUsersList, setPortalUsersList] = useState<PortalUser[]>([]);
   const [newEmail, setNewEmail] = useState("");
@@ -47,6 +49,16 @@ export function ClientActions({ clients }: { clients: Client[] }) {
         .catch(() => {});
     }
   }, [portalUsersClientId]);
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpenDropdownId(null);
+      }
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   async function handleAddPortalUser(e: React.FormEvent) {
     e.preventDefault();
@@ -287,26 +299,21 @@ export function ClientActions({ clients }: { clients: Client[] }) {
                     )}
                   </td>
                   <td className="p-3 text-sm border-t border-border text-right">
-                    <div className="flex gap-2 justify-end">
-                      <a
-                        href={`/clients/${client.id}/send-report`}
-                        className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded hover:opacity-90"
-                      >
-                        Send Report
-                      </a>
+                    <div className="relative inline-block" ref={openDropdownId === client.id ? dropdownRef : undefined}>
                       <button
-                        onClick={() => handleEdit(client)}
-                        className="text-xs text-primary hover:underline"
+                        onClick={() => setOpenDropdownId(openDropdownId === client.id ? null : client.id)}
+                        className="text-xs text-primary font-medium px-2 py-1 hover:bg-blue-50 rounded border border-stone-200"
                       >
-                        Edit
+                        ▼
                       </button>
-                      <button
-                        onClick={() => handleDelete(client.id)}
-                        disabled={isPending}
-                        className="text-xs text-destructive hover:underline"
-                      >
-                        Delete
-                      </button>
+                      {openDropdownId === client.id && (
+                        <div className="absolute right-0 top-full mt-1 bg-white border border-stone-200 rounded-md shadow-lg z-50 min-w-[140px] py-1 text-left">
+                          <a href={`/clients/${client.id}/send-report`} className="block w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50" onClick={() => setOpenDropdownId(null)}>Send Report</a>
+                          <button onClick={() => { setOpenDropdownId(null); handleEdit(client); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">Edit</button>
+                          <div className="border-t border-stone-100 my-1" />
+                          <button onClick={() => { setOpenDropdownId(null); handleDelete(client.id); }} disabled={isPending} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</button>
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>

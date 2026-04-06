@@ -335,7 +335,7 @@ export function InvoicesSection({
                                 href={`/api/invoice-pdf?invoice=${inv.invoiceNumber}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="block px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"
+                                className="block w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"
                                 onClick={() => setOpenDropdownId(null)}
                               >
                                 Print

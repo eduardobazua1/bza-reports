@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { formatNumber, formatCurrency } from "@/lib/utils";
 
 type OrderLine = { destination: string; tons: string; notes: string };
@@ -60,6 +60,18 @@ export function SupplierOrdersSection({
   const [sendEmail, setSendEmail] = useState("");
   const [sendLoading, setSendLoading] = useState(false);
   const [sentId, setSentId] = useState<number | null>(null);
+  const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpenDropdownId(null);
+      }
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   // Edit state
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -312,32 +324,34 @@ export function SupplierOrdersSection({
                         )) : "—"}
                       </td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right">
-                        <div className="flex items-center justify-end gap-3">
-                          <a
-                            href={`/api/supplier-po-pdf?poId=${purchaseOrderId}&soId=${order.id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-                          >
-                            PDF
-                          </a>
-                          {wasSent ? (
-                            <span className="text-xs text-emerald-600 font-medium">Sent ✓</span>
-                          ) : (
-                            <button
-                              onClick={() => openSend(order)}
-                              className="text-xs text-stone-500 hover:text-stone-700 font-medium"
-                            >
-                              Send
-                            </button>
-                          )}
+                        <div className="flex items-center justify-end gap-0">
                           <button
                             onClick={() => isEditing ? cancelEdit() : openEdit(order)}
-                            className={`text-xs font-medium ${isEditing ? "text-amber-600 hover:text-amber-800" : "text-stone-400 hover:text-stone-700"}`}
+                            className="text-xs text-primary font-medium px-2 py-1 hover:bg-blue-50 rounded-l border border-stone-200"
                           >
-                            {isEditing ? "Cancel" : "Edit"}
+                            {isEditing ? "Cancel" : "View/Edit"}
                           </button>
-                          <button onClick={() => handleDelete(order.id)} className="text-red-400 hover:text-red-600 text-xs">✕</button>
+                          <div className="relative" ref={openDropdownId === order.id ? dropdownRef : undefined}>
+                            <button
+                              onClick={() => setOpenDropdownId(openDropdownId === order.id ? null : order.id)}
+                              className="text-xs text-primary font-medium px-2 py-1 hover:bg-blue-50 rounded-r border border-l-0 border-stone-200"
+                            >
+                              ▼
+                            </button>
+                            {openDropdownId === order.id && (
+                              <div className="absolute right-0 top-full mt-1 bg-white border border-stone-200 rounded-md shadow-lg z-50 min-w-[150px] py-1 text-left">
+                                <button onClick={() => { setOpenDropdownId(null); isEditing ? cancelEdit() : openEdit(order); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">View/Edit</button>
+                                <a href={`/api/supplier-po-pdf?poId=${purchaseOrderId}&soId=${order.id}`} target="_blank" rel="noopener noreferrer" className="block w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50" onClick={() => setOpenDropdownId(null)}>Print</a>
+                                {wasSent ? (
+                                  <span className="block px-4 py-2 text-sm text-emerald-600 font-medium">Sent ✓</span>
+                                ) : (
+                                  <button onClick={() => { setOpenDropdownId(null); openSend(order); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">Send</button>
+                                )}
+                                <div className="border-t border-stone-100 my-1" />
+                                <button onClick={() => { setOpenDropdownId(null); handleDelete(order.id); }} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </td>
                     </tr>
