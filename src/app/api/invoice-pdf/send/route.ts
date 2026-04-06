@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendEmail, isEmailConfigured } from "@/lib/email";
 import { db } from "@/db";
-import { invoices, purchaseOrders, clients, suppliers, appSettings, products, documents } from "@/db/schema";
+import { invoices, purchaseOrders, clients, suppliers, appSettings, products, documents, invoiceEmailLogs } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { randomUUID } from "crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -321,6 +322,22 @@ export async function POST(req: NextRequest) {
     const docList = attachments.slice(1).map(a => `<li>${a.filename}</li>`).join("");
     const docsHtml = docList ? `<p>Also attached:<ul>${docList}</ul></p>` : "";
 
+    // Generate tracking ID and log the send
+    const trackingId = randomUUID();
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://app.bza-is.com";
+    const pixelUrl = `${appUrl}/api/track/open?t=${trackingId}`;
+
+    if (inv) {
+      await db.insert(invoiceEmailLogs).values({
+        invoiceId: inv.id,
+        invoiceNumber,
+        sentTo: Array.isArray(to) ? to.join(", ") : to,
+        sentCc: cc ? (Array.isArray(cc) ? cc.join(", ") : cc) : null,
+        attachmentCount: attachments.length,
+        trackingId,
+      });
+    }
+
     await sendEmail({
       to,
       ...(cc ? { cc } : {}),
@@ -332,6 +349,7 @@ export async function POST(req: NextRequest) {
         <p>If you have any questions, please don't hesitate to contact us.</p>
         <br/>
         <p>Best regards,<br/>Eduardo Bazua<br/>BZA International Services, LLC<br/>accounting@bza-is.com | www.bza-is.com</p>
+        <img src="${pixelUrl}" width="1" height="1" style="display:none" alt="" />
       `,
       attachments,
     });

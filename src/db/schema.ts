@@ -270,6 +270,21 @@ export const appSettings = sqliteTable("app_settings", {
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
+// Email send history for invoices
+export const invoiceEmailLogs = sqliteTable("invoice_email_logs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  invoiceId: integer("invoice_id").notNull().references(() => invoices.id),
+  invoiceNumber: text("invoice_number").notNull(),
+  sentAt: text("sent_at").notNull().$defaultFn(() => new Date().toISOString()),
+  sentTo: text("sent_to").notNull(),
+  sentCc: text("sent_cc"),
+  attachmentCount: integer("attachment_count").default(1),
+  trackingId: text("tracking_id").notNull().unique(),
+  openCount: integer("open_count").default(0),
+  firstOpenedAt: text("first_opened_at"),
+  lastOpenedAt: text("last_opened_at"),
+});
+
 // Documents attached to invoices (BL, PL, Invoice PDF, etc.)
 export const documents = sqliteTable("documents", {
   id: integer("id").primaryKey({ autoIncrement: true }),

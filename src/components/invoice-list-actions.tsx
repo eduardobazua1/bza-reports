@@ -26,6 +26,24 @@ type Invoice = {
 
 type Doc = { id: number; fileName: string; type: string };
 
+type EmailLog = {
+  id: number;
+  sentAt: string;
+  sentTo: string;
+  sentCc: string | null;
+  attachmentCount: number | null;
+  openCount: number | null;
+  firstOpenedAt: string | null;
+  lastOpenedAt: string | null;
+};
+
+function fmtDateTime(iso: string | null) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    + " " + d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+}
+
 export function InvoiceListActions({
   invoice,
   clientEmail,
@@ -35,6 +53,7 @@ export function InvoiceListActions({
 }) {
   const [showEdit, setShowEdit] = useState(false);
   const [showSend, setShowSend] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [sendTo, setSendTo] = useState(clientEmail || "");
   const [sendCc, setSendCc] = useState("");
   const [sendLoading, setSendLoading] = useState(false);
@@ -42,6 +61,8 @@ export function InvoiceListActions({
   const [docs, setDocs] = useState<Doc[]>([]);
   const [selectedDocIds, setSelectedDocIds] = useState<number[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
+  const [emailLogs, setEmailLogs] = useState<EmailLog[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -58,16 +79,29 @@ export function InvoiceListActions({
     setSendCc("");
     setDocsLoading(true);
     setShowSend(true);
+    setShowHistory(false);
     try {
       const res = await fetch(`/api/documents?invoiceId=${invoice.id}`);
       if (res.ok) {
         const all: Doc[] = await res.json();
         const blPl = all.filter(d => d.type === "bl" || d.type === "pl");
         setDocs(blPl);
-        setSelectedDocIds(blPl.map(d => d.id)); // pre-select all
+        setSelectedDocIds(blPl.map(d => d.id));
       }
     } finally {
       setDocsLoading(false);
+    }
+  }
+
+  async function openHistory() {
+    setShowHistory(true);
+    setShowSend(false);
+    setLogsLoading(true);
+    try {
+      const res = await fetch(`/api/invoice-email-logs?invoiceNumber=${encodeURIComponent(invoice.invoiceNumber)}`);
+      if (res.ok) setEmailLogs(await res.json());
+    } finally {
+      setLogsLoading(false);
     }
   }
 
@@ -162,41 +196,82 @@ export function InvoiceListActions({
     );
   }
 
-  return (
-    <div className="flex gap-2 justify-end items-center">
-      <a
-        href={`/api/invoice-pdf?invoice=${invoice.invoiceNumber}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-xs text-orange-600 hover:underline font-medium"
-      >
-        PDF
-      </a>
-      {!invoice.invoiceNumber.startsWith("PEND-") && (
-        sent ? (
-          <span className="text-xs text-emerald-600 font-medium">Sent ✓</span>
+  if (showHistory) {
+    return (
+      <div className="flex flex-col gap-2 items-end min-w-[320px]">
+        <div className="flex items-center justify-between w-full">
+          <span className="text-xs font-semibold text-stone-700">Send history — {invoice.invoiceNumber}</span>
+          <button onClick={() => setShowHistory(false)} className="text-xs text-stone-400 hover:text-stone-600">Close</button>
+        </div>
+        {logsLoading ? (
+          <p className="text-xs text-stone-400">Loading...</p>
+        ) : emailLogs.length === 0 ? (
+          <p className="text-xs text-stone-400 italic">Never sent.</p>
         ) : (
-          <button
-            onClick={openSendPanel}
-            className="text-xs text-blue-600 hover:underline font-medium"
-          >
-            Send
-          </button>
-        )
+          <div className="w-full space-y-2">
+            {emailLogs.map(log => (
+              <div key={log.id} className="bg-stone-50 border border-stone-200 rounded p-2 text-xs">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="space-y-0.5">
+                    <p className="font-medium text-stone-800">{fmtDateTime(log.sentAt)}</p>
+                    <p className="text-stone-500">To: <span className="text-stone-700">{log.sentTo}</span></p>
+                    {log.sentCc && <p className="text-stone-500">CC: <span className="text-stone-700">{log.sentCc}</span></p>}
+                    <p className="text-stone-500">{log.attachmentCount ?? 1} attachment(s)</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    {(log.openCount ?? 0) > 0 ? (
+                      <div className="space-y-0.5">
+                        <span className="inline-block bg-emerald-100 text-emerald-700 font-semibold px-2 py-0.5 rounded-full text-[10px]">
+                          Opened {log.openCount}×
+                        </span>
+                        <p className="text-[10px] text-stone-400">First: {fmtDateTime(log.firstOpenedAt)}</p>
+                        <p className="text-[10px] text-stone-400">Last: {fmtDateTime(log.lastOpenedAt)}</p>
+                      </div>
+                    ) : (
+                      <span className="inline-block bg-stone-100 text-stone-500 px-2 py-0.5 rounded-full text-[10px]">Not opened</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1 items-end">
+      <div className="flex gap-2 justify-end items-center">
+        <a
+          href={`/api/invoice-pdf?invoice=${invoice.invoiceNumber}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-orange-600 hover:underline font-medium"
+        >
+          PDF
+        </a>
+        {!invoice.invoiceNumber.startsWith("PEND-") && (
+          sent ? (
+            <span className="text-xs text-emerald-600 font-medium">Sent ✓</span>
+          ) : (
+            <button onClick={openSendPanel} className="text-xs text-blue-600 hover:underline font-medium">
+              Send
+            </button>
+          )
+        )}
+        <button onClick={() => setShowEdit(true)} className="text-xs text-primary hover:underline">
+          Edit
+        </button>
+        <button onClick={handleDelete} disabled={isPending} className="text-xs text-destructive hover:underline">
+          Delete
+        </button>
+      </div>
+      {!invoice.invoiceNumber.startsWith("PEND-") && (
+        <button onClick={openHistory} className="text-[10px] text-stone-400 hover:text-stone-600 hover:underline">
+          Activity
+        </button>
       )}
-      <button
-        onClick={() => setShowEdit(true)}
-        className="text-xs text-primary hover:underline"
-      >
-        Edit
-      </button>
-      <button
-        onClick={handleDelete}
-        disabled={isPending}
-        className="text-xs text-destructive hover:underline"
-      >
-        Delete
-      </button>
     </div>
   );
 }
