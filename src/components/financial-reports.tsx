@@ -265,6 +265,26 @@ function DrillDownModal({
   const totCost   = rows.reduce((s,r) => s + r.cost, 0);
   const totProfit = rows.reduce((s,r) => s + r.profit, 0);
 
+  async function openPdf(disposition: "inline" | "attachment") {
+    const res = await fetch("/api/reports/financial/pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rows, title, cols: Array.from(visible), disposition }),
+    });
+    if (!res.ok) return;
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    if (disposition === "inline") {
+      window.open(url, "_blank");
+    } else {
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `BZA_${title.replace(/[^a-zA-Z0-9]/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf`;
+      a.click();
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-lg shadow-2xl w-full max-w-5xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
@@ -306,13 +326,24 @@ function DrillDownModal({
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
               </button>
               {actionsOpen && (
-                <div className="absolute right-0 top-full mt-1 w-44 bg-white border border-stone-200 rounded-lg shadow-lg z-30 py-1"
+                <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-stone-200 rounded-lg shadow-lg z-30 py-1"
                   onClick={() => setActionsOpen(false)}>
+                  <button onClick={() => openPdf("inline")}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 text-left">
+                    <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    Preview PDF
+                  </button>
+                  <button onClick={() => openPdf("attachment")}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 text-left">
+                    <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                    Download PDF
+                  </button>
                   <button onClick={downloadCSV}
                     className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 text-left">
                     <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                     Download CSV
                   </button>
+                  <div className="border-t border-stone-100 my-1"/>
                   <button onClick={onEmail}
                     className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 text-left">
                     <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
@@ -981,6 +1012,30 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
     }
   }
 
+  // PDF preview / download
+  async function openReportPdf(disposition: "inline" | "attachment") {
+    const reportTitle = REPORT_LABELS[activeReport!];
+    // Use a sensible flat column set for the report PDF
+    const pdfCols = ["invoiceNumber","clientName","supplierName","product","destination","date","dueDate","days","tons","amount","cost","profit","shipStatus","custPayment"];
+    const res = await fetch("/api/reports/financial/pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rows: filtered, title: reportTitle, cols: pdfCols, disposition }),
+    });
+    if (!res.ok) return;
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    if (disposition === "inline") {
+      window.open(url, "_blank");
+    } else {
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `BZA_${activeReport}_${new Date().toISOString().split("T")[0]}.pdf`;
+      a.click();
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+
   // ── Browser ────────────────────────────────────────────────────────────────
   if (!activeReport) {
     return (
@@ -1045,13 +1100,24 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
             </button>
             {actionsOpen && (
-              <div className="absolute right-0 top-full mt-1 w-44 bg-white border border-stone-200 rounded-lg shadow-lg z-30 py-1"
+              <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-stone-200 rounded-lg shadow-lg z-30 py-1"
                 onClick={() => setActionsOpen(false)}>
+                <button onClick={() => openReportPdf("inline")}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 text-left">
+                  <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                  Preview PDF
+                </button>
+                <button onClick={() => openReportPdf("attachment")}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 text-left">
+                  <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                  Download PDF
+                </button>
                 <button onClick={download}
                   className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 text-left">
                   <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                   Download Excel
                 </button>
+                <div className="border-t border-stone-100 my-1"/>
                 <button onClick={() => setEmailState({ rows: filtered, title: REPORT_LABELS[activeReport!] })}
                   className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 text-left">
                   <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
