@@ -434,6 +434,7 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
             />
           ) : panelMode === "payment" ? (
             <ReceivePaymentPanel
+              clientId={paymentClientId!}
               clientName={paymentClientName}
               unpaidInvoices={unpaidInvoices}
               loading={unpaidLoading}
@@ -459,13 +460,24 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
 
 // ─── Receive Payment Panel ────────────────────────────────────────────────────
 
+const PAYMENT_METHODS = [
+  { value: "wire_transfer", label: "Wire Transfer" },
+  { value: "cv_credit", label: "CV Credit" },
+  { value: "xepellin", label: "Xepellin" },
+  { value: "factoraje_bbva", label: "Factoraje BBVA" },
+  { value: "biopappel_scribe", label: "Biopappel Scribe" },
+  { value: "other", label: "Other..." },
+];
+
 function ReceivePaymentPanel({
+  clientId,
   clientName,
   unpaidInvoices,
   loading,
   onClose,
   onSaved,
 }: {
+  clientId: number;
   clientName: string;
   unpaidInvoices: UnpaidInvoice[];
   loading: boolean;
@@ -475,6 +487,8 @@ function ReceivePaymentPanel({
   const today = new Date().toISOString().split("T")[0];
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [paymentDate, setPaymentDate] = useState(today);
+  const [paymentMethod, setPaymentMethod] = useState("wire_transfer");
+  const [customMethod, setCustomMethod] = useState("");
   const [referenceNo, setReferenceNo] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -490,18 +504,24 @@ function ReceivePaymentPanel({
     }
   }
 
-  const totalSelected = unpaidInvoices
-    .filter((inv) => selectedIds.includes(inv.id))
-    .reduce((sum, inv) => {
-      const price = inv.sellPriceOverride ?? inv.poSellPrice ?? 0;
-      return sum + inv.quantityTons * price;
-    }, 0);
+  const selectedInvoices = unpaidInvoices.filter((inv) => selectedIds.includes(inv.id));
+
+  const totalSelected = selectedInvoices.reduce((sum, inv) => {
+    const price = inv.sellPriceOverride ?? inv.poSellPrice ?? 0;
+    return sum + inv.quantityTons * price;
+  }, 0);
 
   async function handleSave() {
     if (selectedIds.length === 0 || !paymentDate) return;
+    const finalMethod = paymentMethod === "other" ? (customMethod || "other") : paymentMethod;
+    const invoiceAmounts = selectedInvoices.map((inv) => ({
+      id: inv.id,
+      invoiceNumber: inv.invoiceNumber,
+      amount: inv.quantityTons * (inv.sellPriceOverride ?? inv.poSellPrice ?? 0),
+    }));
     setSaving(true);
     try {
-      await markInvoicesPaid(selectedIds, paymentDate);
+      await markInvoicesPaid(selectedIds, paymentDate, finalMethod, referenceNo, clientId, invoiceAmounts);
       onSaved();
     } finally {
       setSaving(false);
@@ -522,25 +542,48 @@ function ReceivePaymentPanel({
       </div>
 
       {/* Payment fields */}
-      <div className="px-4 py-3 border-b border-stone-100 grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-stone-600 mb-1">Payment date</label>
-          <input
-            type="date"
-            className="w-full border border-stone-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-            value={paymentDate}
-            onChange={(e) => setPaymentDate(e.target.value)}
-          />
+      <div className="px-4 py-3 border-b border-stone-100 space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-stone-600 mb-1">Payment date</label>
+            <input
+              type="date"
+              className="w-full border border-stone-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              value={paymentDate}
+              onChange={(e) => setPaymentDate(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-stone-600 mb-1">Reference no.</label>
+            <input
+              type="text"
+              className="w-full border border-stone-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder="Optional"
+              value={referenceNo}
+              onChange={(e) => setReferenceNo(e.target.value)}
+            />
+          </div>
         </div>
         <div>
-          <label className="block text-xs font-medium text-stone-600 mb-1">Reference no.</label>
-          <input
-            type="text"
-            className="w-full border border-stone-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-            placeholder="Optional"
-            value={referenceNo}
-            onChange={(e) => setReferenceNo(e.target.value)}
-          />
+          <label className="block text-xs font-medium text-stone-600 mb-1">Payment method</label>
+          <select
+            className="w-full border border-stone-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary bg-white"
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(e.target.value)}
+          >
+            {PAYMENT_METHODS.map((m) => (
+              <option key={m.value} value={m.value}>{m.label}</option>
+            ))}
+          </select>
+          {paymentMethod === "other" && (
+            <input
+              type="text"
+              className="mt-2 w-full border border-stone-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder="Describe payment method"
+              value={customMethod}
+              onChange={(e) => setCustomMethod(e.target.value)}
+            />
+          )}
         </div>
       </div>
 

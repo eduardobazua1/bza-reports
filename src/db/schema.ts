@@ -270,6 +270,28 @@ export const appSettings = sqliteTable("app_settings", {
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
+// Customer payments received (one payment can cover multiple invoices)
+export const customerPayments = sqliteTable("customer_payments", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  clientId: integer("client_id").notNull().references(() => clients.id),
+  paymentDate: text("payment_date").notNull(),
+  amount: real("amount").notNull(),
+  paymentMethod: text("payment_method").notNull().default("wire_transfer"),
+  // wire_transfer | cv_credit | xepellin | factoraje_bbva | biopappel_scribe | other
+  referenceNo: text("reference_no"),
+  notes: text("notes"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Junction: which invoices were covered by a customer payment
+export const customerPaymentInvoices = sqliteTable("customer_payment_invoices", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  paymentId: integer("payment_id").notNull().references(() => customerPayments.id),
+  invoiceId: integer("invoice_id").references(() => invoices.id),
+  invoiceNumber: text("invoice_number").notNull(),
+  amount: real("amount").notNull(),
+});
+
 // Email send history for invoices
 export const invoiceEmailLogs = sqliteTable("invoice_email_logs", {
   id: integer("id").primaryKey({ autoIncrement: true }),

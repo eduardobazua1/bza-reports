@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, products } from "@/db/schema";
+import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, products, customerPayments, customerPaymentInvoices } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { v4 as uuidv4 } from "uuid";
@@ -242,13 +242,41 @@ export async function updateInvoice(id: number, data: Partial<{
   revalidatePath("/purchase-orders");
 }
 
-export async function markInvoicesPaid(ids: number[], paidDate: string) {
-  for (const id of ids) {
+export async function markInvoicesPaid(
+  ids: number[],
+  paidDate: string,
+  paymentMethod: string,
+  referenceNo: string,
+  clientId: number,
+  invoiceAmounts: { id: number; invoiceNumber: string; amount: number }[]
+) {
+  // Create the payment record
+  const [payment] = await db
+    .insert(customerPayments)
+    .values({
+      clientId,
+      paymentDate: paidDate,
+      amount: invoiceAmounts.filter((i) => ids.includes(i.id)).reduce((s, i) => s + i.amount, 0),
+      paymentMethod,
+      referenceNo: referenceNo || null,
+    })
+    .returning({ id: customerPayments.id });
+
+  // Link invoices to the payment
+  for (const inv of invoiceAmounts.filter((i) => ids.includes(i.id))) {
+    await db.insert(customerPaymentInvoices).values({
+      paymentId: payment.id,
+      invoiceId: inv.id,
+      invoiceNumber: inv.invoiceNumber,
+      amount: inv.amount,
+    });
+    // Mark invoice paid
     await db
       .update(invoices)
       .set({ customerPaymentStatus: "paid", customerPaidDate: paidDate })
-      .where(eq(invoices.id, id));
+      .where(eq(invoices.id, inv.id));
   }
+
   revalidatePath("/invoices");
   revalidatePath("/purchase-orders");
 }
