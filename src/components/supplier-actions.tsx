@@ -165,7 +165,7 @@ export function SupplierActions({ suppliers }: { suppliers: Supplier[] }) {
                 <th className="text-right p-3 text-sm font-medium text-muted-foreground">Total Cost</th>
                 <th className="text-right p-3 text-sm font-medium text-muted-foreground">Paid</th>
                 <th className="text-right p-3 text-sm font-medium text-muted-foreground">Balance</th>
-                <th className="text-right p-3 text-sm font-medium text-muted-foreground">Actions</th>
+                <th className="text-right p-3 text-sm font-medium text-muted-foreground">Action</th>
               </tr>
             </thead>
             <tbody>

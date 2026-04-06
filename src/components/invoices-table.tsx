@@ -282,7 +282,7 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                 <th className="text-left px-3 py-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Due Date</th>
                 <th className="text-left px-3 py-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Shipment</th>
                 <th className="text-left px-3 py-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Payment</th>
-                <th className="text-right px-3 py-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Actions</th>
+                <th className="text-right px-3 py-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Action</th>
               </tr>
             </thead>
             <tbody>

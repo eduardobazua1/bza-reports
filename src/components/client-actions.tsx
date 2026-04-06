@@ -248,7 +248,7 @@ export function ClientActions({ clients }: { clients: Client[] }) {
                 <th className="text-center p-3 text-sm font-medium text-muted-foreground">Terms</th>
                 <th className="text-left p-3 text-sm font-medium text-muted-foreground">Portal</th>
                 <th className="text-left p-3 text-sm font-medium text-muted-foreground">Portal Link</th>
-                <th className="text-right p-3 text-sm font-medium text-muted-foreground">Actions</th>
+                <th className="text-right p-3 text-sm font-medium text-muted-foreground">Action</th>
               </tr>
             </thead>
             <tbody>

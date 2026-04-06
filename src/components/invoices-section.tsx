@@ -257,7 +257,7 @@ export function InvoicesSection({
               <th className="text-left px-3 py-1.5 font-medium text-stone-500">Status</th>
               <th className="text-left px-3 py-1.5 font-medium text-stone-500">Payment</th>
               <th className="text-left px-3 py-1.5 font-medium text-stone-500">Attachments</th>
-              <th className="px-3 py-1.5"></th>
+              <th className="px-3 py-1.5 sticky right-0 bg-stone-50 z-10"></th>
             </tr>
           </thead>
           <tbody>
@@ -309,7 +309,7 @@ export function InvoicesSection({
                     <td className="px-3 py-1.5 border-t border-stone-100">
                       <DocumentUpload invoiceId={inv.id} invoiceNumber={inv.invoiceNumber} />
                     </td>
-                    <td className="px-3 py-1.5 border-t border-stone-100 text-right">
+                    <td className="px-3 py-1.5 border-t border-stone-100 text-right sticky right-0 bg-white z-10">
                       <div className="flex items-center justify-end gap-0">
                         <button
                           onClick={() => isEditing ? cancelEdit() : openEdit(inv)}

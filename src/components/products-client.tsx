@@ -285,7 +285,7 @@ export function ProductsClient({ products }: { products: Product[] }) {
               <th className="text-left p-3 text-sm font-medium text-muted-foreground">Name</th>
               <th className="text-left p-3 text-sm font-medium text-muted-foreground">Grade</th>
               <th className="text-left p-3 text-sm font-medium text-muted-foreground">Certification</th>
-              <th className="text-right p-3 text-sm font-medium text-muted-foreground">Actions</th>
+              <th className="text-right p-3 text-sm font-medium text-muted-foreground">Action</th>
             </tr>
           </thead>
           <tbody>

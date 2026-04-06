@@ -293,7 +293,7 @@ export function SupplierOrdersSection({
                 <th className="text-left px-4 py-2.5 font-medium text-stone-500">Incoterm</th>
                 <th className="text-right px-4 py-2.5 font-medium text-stone-500">Total</th>
                 <th className="text-left px-4 py-2.5 font-medium text-stone-500">Lines</th>
-                <th className="px-4 py-2.5 text-right font-medium text-stone-500">Actions</th>
+                <th className="px-4 py-2.5 text-right font-medium text-stone-500">Action</th>
               </tr>
             </thead>
             <tbody>
