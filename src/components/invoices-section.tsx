@@ -6,6 +6,14 @@ import { formatCurrency, formatNumber, formatDate } from "@/lib/utils";
 import { DocumentUpload } from "@/components/document-upload";
 import { duplicateInvoice } from "@/server/actions";
 
+function PaperclipIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+    </svg>
+  );
+}
+
 type Invoice = {
   id: number;
   invoiceNumber: string;
@@ -80,6 +88,7 @@ export function InvoicesSection({
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [attachmentsId, setAttachmentsId] = useState<number | null>(null);
   const router = useRouter();
   const [, startTransition] = useTransition();
 
@@ -256,13 +265,12 @@ export function InvoicesSection({
               <th className="text-left px-3 py-1.5 font-medium text-stone-500">Due Date</th>
               <th className="text-left px-3 py-1.5 font-medium text-stone-500">Status</th>
               <th className="text-left px-3 py-1.5 font-medium text-stone-500">Payment</th>
-              <th className="text-left px-3 py-1.5 font-medium text-stone-500">Attachments</th>
-              <th className="px-3 py-1.5 sticky right-0 bg-stone-50 z-10"></th>
+              <th className="px-3 py-1.5 text-right sticky right-0 bg-stone-50 z-10 font-medium text-stone-500">Action</th>
             </tr>
           </thead>
           <tbody>
             {list.length === 0 && (
-              <tr><td colSpan={15} className="p-6 text-center text-stone-400">No invoices for this PO.</td></tr>
+              <tr><td colSpan={14} className="p-6 text-center text-stone-400">No invoices for this PO.</td></tr>
             )}
             {list.map((inv) => {
               const sell = inv.sellPriceOverride ?? poSellPrice;
@@ -306,29 +314,35 @@ export function InvoicesSection({
                         {inv.customerPaymentStatus === "paid" ? "Paid" : "Unpaid"}
                       </span>
                     </td>
-                    <td className="px-3 py-1.5 border-t border-stone-100">
-                      <DocumentUpload invoiceId={inv.id} invoiceNumber={inv.invoiceNumber} />
-                    </td>
                     <td className="px-3 py-1.5 border-t border-stone-100 text-right sticky right-0 bg-white z-10">
-                      <div className="flex items-center justify-end gap-0">
+                      <div className="flex items-center justify-end gap-1">
                         <button
-                          onClick={() => isEditing ? cancelEdit() : openEdit(inv)}
-                          className="text-xs text-primary font-medium px-2 py-1 hover:bg-blue-50 rounded-l border border-stone-200"
+                          onClick={() => setAttachmentsId(attachmentsId === inv.id ? null : inv.id)}
+                          title="Attachments"
+                          className="text-stone-400 hover:text-stone-600 p-1 rounded hover:bg-stone-100"
                         >
-                          {isEditing ? "Cancel" : "View/Edit"}
+                          <PaperclipIcon className="w-3.5 h-3.5" />
                         </button>
-                        <div ref={openDropdownId === inv.id ? dropdownRef : undefined}>
+                        <div className="flex items-center gap-0">
                           <button
-                            onClick={(e) => {
-                              if (openDropdownId === inv.id) { setOpenDropdownId(null); return; }
-                              const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                              setDropdownPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
-                              setOpenDropdownId(inv.id);
-                            }}
-                            className="text-xs text-primary font-medium px-2 py-1 hover:bg-blue-50 rounded-r border border-l-0 border-stone-200"
+                            onClick={() => isEditing ? cancelEdit() : openEdit(inv)}
+                            className="text-xs text-primary font-medium px-2 py-1 hover:bg-blue-50 rounded-l border border-stone-200"
                           >
-                            ▼
+                            {isEditing ? "Cancel" : "View/Edit"}
                           </button>
+                          <div ref={openDropdownId === inv.id ? dropdownRef : undefined}>
+                            <button
+                              onClick={(e) => {
+                                if (openDropdownId === inv.id) { setOpenDropdownId(null); return; }
+                                const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                setDropdownPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+                                setOpenDropdownId(inv.id);
+                              }}
+                              className="text-xs text-primary font-medium px-2 py-1 hover:bg-blue-50 rounded-r border border-l-0 border-stone-200"
+                            >
+                              ▼
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -337,7 +351,7 @@ export function InvoicesSection({
                   {/* Send form */}
                   {sendingId === inv.id && (
                     <tr key={`send-${inv.id}`}>
-                      <td colSpan={15} className="p-0">
+                      <td colSpan={14} className="p-0">
                         <div className="bg-blue-50 border-t border-blue-200 px-4 py-3 space-y-2">
                           <p className="text-xs font-semibold text-blue-800">Send Invoice {inv.invoiceNumber}</p>
                           <div className="flex items-center gap-3 flex-wrap">
@@ -399,7 +413,7 @@ export function InvoicesSection({
                   {/* Edit form */}
                   {isEditing && (
                     <tr key={`edit-${inv.id}`}>
-                      <td colSpan={15} className="p-0">
+                      <td colSpan={14} className="p-0">
                         <div className="bg-amber-50 border-t border-amber-200 p-4 space-y-4">
                           <p className="text-xs font-semibold text-amber-800 uppercase">Edit Invoice — {inv.invoiceNumber}</p>
 
@@ -530,12 +544,29 @@ export function InvoicesSection({
                 <td className="px-3 py-2 border-t border-stone-200 text-right font-semibold">
                   <span className={totalProfit >= 0 ? "text-emerald-600" : "text-red-600"}>{formatCurrency(totalProfit)}</span>
                 </td>
-                <td colSpan={6} className="px-3 py-2 border-t border-stone-200"></td>
+                <td colSpan={5} className="px-3 py-2 border-t border-stone-200"></td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
+
+      {/* Attachments modal */}
+      {attachmentsId !== null && (() => {
+        const inv = list.find(i => i.id === attachmentsId);
+        if (!inv) return null;
+        return (
+          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setAttachmentsId(null)}>
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-5" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm font-semibold text-stone-700">Attachments — {inv.invoiceNumber}</p>
+                <button onClick={() => setAttachmentsId(null)} className="text-stone-400 hover:text-stone-600 text-xl leading-none">×</button>
+              </div>
+              <DocumentUpload invoiceId={inv.id} invoiceNumber={inv.invoiceNumber} />
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Dropdown — fixed position to escape overflow containers */}
       {openDropdownId !== null && dropdownPos && (() => {
