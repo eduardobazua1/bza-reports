@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { deleteInvoice, markInvoicesPaid, duplicateInvoice } from "@/server/actions";
+import { deleteInvoice, markInvoicesPaid, duplicateInvoice, markInvoiceUnpaid } from "@/server/actions";
 import { InvoiceForm } from "@/components/invoice-form";
 import {
   formatCurrency,
@@ -395,6 +395,18 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                               >
                                 Duplicate
                               </button>
+                              {row.invoice.customerPaymentStatus === "paid" && (
+                                <button
+                                  onClick={async () => {
+                                    setOpenDropdownId(null);
+                                    await markInvoiceUnpaid(row.invoice.id);
+                                    router.refresh();
+                                  }}
+                                  className="w-full text-left px-4 py-2 text-sm text-amber-700 hover:bg-amber-50"
+                                >
+                                  Mark as Unpaid
+                                </button>
+                              )}
                               <div className="border-t border-stone-100 my-1" />
                               <button
                                 onClick={() => { handleDelete(row.invoice); setOpenDropdownId(null); }}

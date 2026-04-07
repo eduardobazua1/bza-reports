@@ -281,6 +281,13 @@ export async function markInvoicesPaid(
   revalidatePath("/purchase-orders");
 }
 
+export async function markInvoiceUnpaid(id: number) {
+  await db.update(invoices).set({ customerPaymentStatus: "unpaid" }).where(eq(invoices.id, id));
+  revalidatePath("/invoices");
+  revalidatePath("/purchase-orders");
+  revalidatePath("/reports/financial");
+}
+
 export async function deleteInvoice(id: number) {
   await db.delete(shipmentUpdates).where(eq(shipmentUpdates.invoiceId, id));
   await db.delete(invoices).where(eq(invoices.id, id));
