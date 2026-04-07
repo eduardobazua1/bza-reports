@@ -66,6 +66,37 @@ const COL_MAP: Record<string, ColDef> = {
   custPayment:   { label: "Payment",    get: r => r.customerPaymentStatus === "paid" ? "Paid" : "Unpaid", w: 46 },
 };
 
+// ── Row height constant ────────────────────────────────────────────────────────
+const ROW_H = 16;
+
+// ── Clipped cell text helper ───────────────────────────────────────────────────
+function drawCell(
+  doc: typeof PDFDocument,
+  text: string,
+  x: number,
+  y: number,
+  w: number,
+  rowH: number,
+  opts: { right?: boolean; bold?: boolean; color?: string },
+) {
+  const pad = 3;
+  const cellX = x + pad;
+  const cellW = Math.max(1, w - pad * 2);
+  doc.save();
+  doc.rect(cellX - 1, y, w, rowH).clip();
+  doc
+    .fontSize(6.5)
+    .font(opts.bold ? "Helvetica-Bold" : "Helvetica")
+    .fillColor(opts.color ?? DARK)
+    .text(text, cellX, y + Math.floor((rowH - 6.5) / 2), {
+      width: cellW,
+      align: opts.right ? "right" : "left",
+      lineBreak: false,
+      ellipsis: true,
+    });
+  doc.restore();
+}
+
 // ── Page helpers ───────────────────────────────────────────────────────────────
 // Returns the y where table content should start on this page
 function drawFullHeader(doc: typeof PDFDocument, title: string, subtitle: string): number {
@@ -111,14 +142,14 @@ function drawContinuationHeader(doc: typeof PDFDocument, title: string, page: nu
 }
 
 function drawTableHeader(doc: typeof PDFDocument, y: number, cols: ColDef[], widths: number[]) {
-  doc.rect(M, y, TW, 16).fill(TEAL);
-  let x = M + 3;
+  const H = ROW_H;
+  doc.rect(M, y, TW, H).fill(TEAL);
+  let x = M;
   cols.forEach((c, i) => {
-    doc.fontSize(6.5).font("Helvetica-Bold").fillColor("white")
-      .text(c.label, x, y + 5, { width: widths[i] - 4, align: c.right ? "right" : "left", lineBreak: false });
+    drawCell(doc, c.label, x, y, widths[i], H, { right: c.right, bold: true, color: "white" });
     x += widths[i];
   });
-  return y + 16;
+  return y + H;
 }
 
 // ── Main PDF builder ───────────────────────────────────────────────────────────
@@ -159,7 +190,7 @@ async function buildPdf(
     const r = rows[ri];
 
     // New page
-    if (y + 13 > MAX_Y) {
+    if (y + ROW_H > MAX_Y) {
       doc.addPage();
       pageNum++;
       y = drawContinuationHeader(doc, title, pageNum);
@@ -167,19 +198,13 @@ async function buildPdf(
     }
 
     // Alternating row bg
-    if (ri % 2 === 0) doc.rect(M, y, TW, 13).fillColor(LGRY).fill();
+    if (ri % 2 === 0) doc.rect(M, y, TW, ROW_H).fillColor(LGRY).fill();
 
-    let x = M + 3;
+    let x = M;
     cols.forEach((c, i) => {
       const val   = c.get(r);
       const isNeg = c.right && val.startsWith("$") && r.profit < 0 && c.label === "Profit";
-      doc.fontSize(6.5).font("Helvetica").fillColor(isNeg ? "#dc2626" : DARK)
-        .text(val, x, y + 3, {
-          width: widths[i] - 4,
-          align: c.right ? "right" : "left",
-          lineBreak: false,
-          ellipsis: true,
-        });
+      drawCell(doc, val, x, y, widths[i], ROW_H, { right: c.right, color: isNeg ? "#dc2626" : DARK });
       x += widths[i];
     });
 
@@ -187,18 +212,19 @@ async function buildPdf(
     totRev  += r.revenue;
     totCost += r.cost;
     totProfit += r.profit;
-    y += 13;
+    y += ROW_H;
   }
 
   // Totals row
-  if (y + 16 > MAX_Y) {
+  const TOT_H = ROW_H + 2;
+  if (y + TOT_H > MAX_Y) {
     doc.addPage();
     pageNum++;
     y = drawContinuationHeader(doc, title, pageNum);
   }
   doc.moveTo(M, y).lineTo(PAGE_W - M, y).strokeColor(CYAN).lineWidth(1).stroke();
   y += 1;
-  doc.rect(M, y, TW, 16).fill("#e0f5f2");
+  doc.rect(M, y, TW, TOT_H).fill("#e0f5f2");
   const totVals: Record<string, string> = {
     invoiceNumber: "TOTAL",
     tons:   totTons.toFixed(1),
@@ -207,16 +233,15 @@ async function buildPdf(
     profit: fmt$(totProfit),
     margin: totRev > 0 ? ((totProfit / totRev) * 100).toFixed(1) + "%" : "—",
   };
-  let x2 = M + 3;
+  let x2 = M;
   validKeys.forEach((key, i) => {
     const val = totVals[key] ?? "";
     if (val) {
-      doc.fontSize(6.5).font("Helvetica-Bold").fillColor(TEAL)
-        .text(val, x2, y + 5, { width: widths[i] - 4, align: COL_MAP[key].right ? "right" : "left", lineBreak: false });
+      drawCell(doc, val, x2, y, widths[i], TOT_H, { right: COL_MAP[key].right, bold: true, color: TEAL });
     }
     x2 += widths[i];
   });
-  y += 16;
+  y += TOT_H;
 
   // Page footers
   const range = doc.bufferedPageRange();
