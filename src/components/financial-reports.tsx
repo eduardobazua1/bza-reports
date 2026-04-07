@@ -86,8 +86,8 @@ function applyConditions(data: InvoiceRow[], conditions: FilterCondition[]): Inv
 // ─── Email modal ──────────────────────────────────────────────────────────────
 
 function EmailModal({
-  title, rows, onClose,
-}: { title: string; rows: InvoiceRow[]; onClose: () => void }) {
+  title, rows, cols, onClose,
+}: { title: string; rows: InvoiceRow[]; cols: string[]; onClose: () => void }) {
   const [email,   setEmail]   = useState("");
   const [subject, setSubject] = useState(`BZA Financial Report – ${title}`);
   const [message, setMessage] = useState("");
@@ -102,7 +102,7 @@ function EmailModal({
       const res = await fetch("/api/reports/financial/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, subject, message, title, rows, format }),
+        body: JSON.stringify({ email, subject, message, title, rows, cols, format }),
       });
       const json = await res.json();
       if (res.ok) { setStatus("ok"); }
@@ -953,7 +953,7 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [actionsOpen,  setActionsOpen]  = useState(false);
   const [drillDown,  setDrillDown]  = useState<{ rows: InvoiceRow[]; title: string; mode: "ar"|"pl" } | null>(null);
-  const [emailState, setEmailState] = useState<{ rows: InvoiceRow[]; title: string } | null>(null);
+  const [emailState, setEmailState] = useState<{ rows: InvoiceRow[]; title: string; cols: string[] } | null>(null);
   const actionsRef = useRef<HTMLDivElement>(null);
 
   const [arVisible,       setArVisible]       = useState(() => new Set(AR_COLS.map(c=>c.key)));
@@ -1105,7 +1105,7 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
                   Download Excel
                 </button>
                 <div className="border-t border-stone-100 my-1"/>
-                <button onClick={() => setEmailState({ rows: filtered, title: REPORT_LABELS[activeReport!] })}
+                <button onClick={() => setEmailState({ rows: filtered, title: REPORT_LABELS[activeReport!], cols: Array.from(visibleForReport) })}
                   className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 text-left">
                   <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                   Email Report
@@ -1146,12 +1146,12 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
           rows={drillDown.rows}
           mode={drillDown.mode}
           onClose={() => setDrillDown(null)}
-          onEmail={() => { setEmailState({ rows: drillDown.rows, title: drillDown.title }); setDrillDown(null); }}
+          onEmail={() => { setEmailState({ rows: drillDown.rows, title: drillDown.title, cols: Array.from(drillDown.mode === "ar" ? arVisible : visibleForReport) }); setDrillDown(null); }}
         />
       )}
 
       {/* Email modal */}
-      {emailState && <EmailModal title={emailState.title} rows={emailState.rows} onClose={() => setEmailState(null)} />}
+      {emailState && <EmailModal title={emailState.title} rows={emailState.rows} cols={emailState.cols} onClose={() => setEmailState(null)} />}
     </div>
   );
 }
