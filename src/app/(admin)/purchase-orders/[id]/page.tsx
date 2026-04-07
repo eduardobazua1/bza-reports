@@ -14,6 +14,7 @@ import { PODetailActions } from "@/components/po-detail-actions";
 import { ClientPOsSection } from "@/components/client-pos-section";
 import { SupplierOrdersSection } from "@/components/supplier-orders-section";
 import { InvoicesSection } from "@/components/invoices-section";
+import { POSupplierPayments } from "@/components/po-supplier-payments";
 
 export default async function PurchaseOrderDetailPage({
   params,
@@ -189,7 +190,18 @@ export default async function PurchaseOrderDetailPage({
         </div>
       </div>
 
-      {/* ── Section 4: Supplier Orders ──────────────────────── */}
+      {/* ── Section 4: Supplier Payments ────────────────────── */}
+      {po.supplierId && (
+        <POSupplierPayments
+          purchaseOrderId={po.id}
+          supplierId={po.supplierId}
+          payments={po.payments}
+          totalCost={totalCost}
+          poNumber={po.poNumber}
+        />
+      )}
+
+      {/* ── Section 5: Supplier Orders ──────────────────────── */}
       <SupplierOrdersSection
         purchaseOrderId={po.id}
         supplierOrders={po.supplierOrders}
@@ -202,7 +214,7 @@ export default async function PurchaseOrderDetailPage({
         products={productsList}
       />
 
-      {/* ── Section 5: Client Orders ────────────────────────── */}
+      {/* ── Section 6: Client Orders ────────────────────────── */}
       <ClientPOsSection
         purchaseOrderId={po.id}
         clientPos={po.clientPos}
@@ -213,7 +225,7 @@ export default async function PurchaseOrderDetailPage({
         products={productsList}
       />
 
-      {/* ── Section 6: Invoices ─────────────────────────────── */}
+      {/* ── Section 7: Invoices ─────────────────────────────── */}
       <InvoicesSection
         invoices={po.invoices as any}
         poSellPrice={po.sellPrice}
