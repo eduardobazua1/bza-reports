@@ -27,9 +27,15 @@ function fmtDate(d: string | null | undefined) {
   return new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
 }
 
+function todayCST(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "America/Chicago" }); // "YYYY-MM-DD"
+}
+
 function daysOverdue(due: string | null): number {
   if (!due) return 0;
-  return Math.floor((Date.now() - new Date(due + "T12:00:00").getTime()) / 86400000);
+  const nowMs  = new Date(todayCST() + "T00:00:00").getTime();
+  const dueMs  = new Date(due        + "T00:00:00").getTime();
+  return Math.floor((nowMs - dueMs) / 86400000);
 }
 
 function fmt$(n: number) {
@@ -169,7 +175,7 @@ async function buildPdf(
   // Fix rounding remainder on last column
   widths[widths.length - 1] += TW - widths.reduce((s, w) => s + w, 0);
 
-  const dateStr  = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  const dateStr  = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "America/Chicago" });
   const subtitle = `${dateStr}  ·  ${rows.length} invoice${rows.length !== 1 ? "s" : ""}`;
 
   const doc = new PDFDocument({ size: [PAGE_W, PAGE_H], margin: 0, bufferPages: true });
@@ -320,7 +326,7 @@ export async function GET(req: NextRequest) {
   };
   const title = LABELS[tab] ?? "Financial Report";
 
-  const dateStr = new Date().toISOString().split("T")[0];
+  const dateStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/Chicago" }); // YYYY-MM-DD in CST
   const safeTitle = title.replace(/[^a-zA-Z0-9_]/g, "_");
 
   try {
