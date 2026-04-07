@@ -1,16 +1,29 @@
 import { getInvoices } from "@/server/queries";
 import { formatNumber, formatDate, shipmentStatusLabels, shipmentStatusColors } from "@/lib/utils";
-import { ShipmentActions } from "@/components/shipment-actions";
+import { ShipmentActions, ShipmentStatusBadge } from "@/components/shipment-actions";
+import Link from "next/link";
 
-export default async function ShipmentsPage() {
+export default async function ShipmentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
+  const params = await searchParams;
+  const filterStatus = params.status || "";
+
   const allInvoices = await getInvoices();
 
   const active = allInvoices.filter((r) => r.invoice.shipmentStatus !== "entregado");
   const delivered = allInvoices.filter((r) => r.invoice.shipmentStatus === "entregado");
+  const all = [...active, ...delivered];
 
-  // Group active by client
-  const byClient = new Map<string, typeof active>();
-  for (const row of active) {
+  // Group by client applying filter
+  const filtered = filterStatus
+    ? all.filter((r) => r.invoice.shipmentStatus === filterStatus)
+    : active;
+
+  const byClient = new Map<string, typeof filtered>();
+  for (const row of filtered) {
     const name = row.clientName || "No client";
     if (!byClient.has(name)) byClient.set(name, []);
     byClient.get(name)!.push(row);
@@ -27,9 +40,14 @@ export default async function ShipmentsPage() {
             {active.length} shipments &middot; {formatNumber(totalActiveTons, 0)} TN in transit
           </p>
         </div>
+        {filterStatus && (
+          <Link href="/shipments" className="text-xs text-primary hover:underline">
+            Clear filter
+          </Link>
+        )}
       </div>
 
-      {/* Summary cards by status */}
+      {/* Summary cards by status — clickable to filter */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {(["programado", "en_transito", "en_aduana", "entregado"] as const).map((status) => {
           const count = status === "entregado"
@@ -38,8 +56,13 @@ export default async function ShipmentsPage() {
           const tons = status === "entregado"
             ? delivered.reduce((s, r) => s + r.invoice.quantityTons, 0)
             : active.filter((r) => r.invoice.shipmentStatus === status).reduce((s, r) => s + r.invoice.quantityTons, 0);
+          const isActive = filterStatus === status;
           return (
-            <div key={status} className="bg-white rounded-md shadow-sm p-4">
+            <Link
+              key={status}
+              href={isActive ? "/shipments" : `/shipments?status=${status}`}
+              className={`bg-white rounded-md shadow-sm p-4 block hover:shadow-md transition-shadow ${isActive ? "ring-2 ring-primary" : ""}`}
+            >
               <div className="flex items-center justify-between mb-1">
                 <span className={`text-xs px-2 py-0.5 rounded-full ${shipmentStatusColors[status]}`}>
                   {shipmentStatusLabels[status]}
@@ -47,12 +70,12 @@ export default async function ShipmentsPage() {
                 <span className="text-lg font-bold">{count}</span>
               </div>
               <p className="text-xs text-muted-foreground">{formatNumber(tons, 0)} TN</p>
-            </div>
+            </Link>
           );
         })}
       </div>
 
-      {/* Active shipments grouped by client */}
+      {/* Shipments grouped by client */}
       {Array.from(byClient.entries()).map(([clientName, rows]) => (
         <div key={clientName} className="bg-white rounded-md shadow-sm">
           <div className="p-4 border-b border-border flex items-center justify-between">
@@ -82,9 +105,10 @@ export default async function ShipmentsPage() {
                 {rows.map((row) => (
                   <tr key={row.invoice.id} className="hover:bg-muted/30">
                     <td className="px-2 py-1.5 border-t border-border">
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${shipmentStatusColors[row.invoice.shipmentStatus]}`}>
-                        {shipmentStatusLabels[row.invoice.shipmentStatus]}
-                      </span>
+                      <ShipmentStatusBadge
+                        invoiceId={row.invoice.id}
+                        currentStatus={row.invoice.shipmentStatus}
+                      />
                     </td>
                     <td className="px-2 py-1.5 border-t border-border font-medium">{row.invoice.invoiceNumber}</td>
                     <td className="px-2 py-1.5 border-t border-border">{row.poNumber}</td>
@@ -133,9 +157,9 @@ export default async function ShipmentsPage() {
         </div>
       ))}
 
-      {active.length === 0 && (
+      {filtered.length === 0 && (
         <div className="bg-white rounded-md shadow-sm p-8 text-center text-muted-foreground">
-          No active shipments at this time.
+          No shipments found{filterStatus ? ` for status "${shipmentStatusLabels[filterStatus as keyof typeof shipmentStatusLabels]}"` : ""}.
         </div>
       )}
     </div>

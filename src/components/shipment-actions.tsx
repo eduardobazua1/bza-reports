@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import { updateInvoice } from "@/server/actions";
 import { useRouter } from "next/navigation";
+import { shipmentStatusLabels, shipmentStatusColors } from "@/lib/utils";
 
 const statuses = [
   { value: "programado", label: "Scheduled" },
@@ -10,6 +11,54 @@ const statuses = [
   { value: "en_aduana", label: "Customs" },
   { value: "entregado", label: "Delivered" },
 ] as const;
+
+export function ShipmentStatusBadge({
+  invoiceId,
+  currentStatus,
+}: {
+  invoiceId: number;
+  currentStatus: "programado" | "en_transito" | "en_aduana" | "entregado";
+}) {
+  const [open, setOpen] = useState(false);
+  const router = useRouter();
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div className="relative inline-block" ref={ref}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium cursor-pointer hover:opacity-80 ${shipmentStatusColors[currentStatus]}`}
+      >
+        {shipmentStatusLabels[currentStatus]} ▾
+      </button>
+      {open && (
+        <div className="absolute left-full top-0 ml-1 bg-white border border-stone-200 rounded-md shadow-lg z-50 min-w-[130px] py-1">
+          {statuses.map((s) => (
+            <button
+              key={s.value}
+              onClick={async () => {
+                setOpen(false);
+                await updateInvoice(invoiceId, { shipmentStatus: s.value });
+                router.refresh();
+              }}
+              className={`w-full text-left px-3 py-1.5 text-xs hover:bg-stone-50 ${currentStatus === s.value ? "font-semibold text-primary" : "text-stone-700"}`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function ShipmentActions({
   invoiceId,

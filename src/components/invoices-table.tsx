@@ -351,7 +351,7 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                           {shipmentStatusLabels[row.invoice.shipmentStatus] || row.invoice.shipmentStatus} ▾
                         </button>
                         {statusDropdownId === row.invoice.id && (
-                          <div className="absolute left-0 top-full mt-1 bg-white border border-stone-200 rounded-md shadow-lg z-50 min-w-[130px] py-1">
+                          <div className="absolute left-full top-0 ml-1 bg-white border border-stone-200 rounded-md shadow-lg z-50 min-w-[130px] py-1">
                             {(["programado", "en_transito", "en_aduana", "entregado"] as const).map((s) => (
                               <button
                                 key={s}
