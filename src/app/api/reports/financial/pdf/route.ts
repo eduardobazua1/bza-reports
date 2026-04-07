@@ -75,6 +75,17 @@ const COL_MAP: Record<string, ColDef> = {
 // ── Row height constant ────────────────────────────────────────────────────────
 const ROW_H = 16;
 
+// ── Manual text truncation (pdfkit ellipsis is unreliable) ────────────────────
+function fitText(doc: typeof PDFDocument, text: string, maxW: number, bold: boolean): string {
+  doc.fontSize(6.5).font(bold ? "Helvetica-Bold" : "Helvetica");
+  if (doc.widthOfString(text) <= maxW) return text;
+  const ellipsis = "…";
+  const ew = doc.widthOfString(ellipsis);
+  let t = text;
+  while (t.length > 0 && doc.widthOfString(t) + ew > maxW) t = t.slice(0, -1);
+  return t + ellipsis;
+}
+
 // ── Clipped cell text helper ───────────────────────────────────────────────────
 function drawCell(
   doc: typeof PDFDocument,
@@ -88,18 +99,17 @@ function drawCell(
   const pad = 3;
   const cellX = x + pad;
   const cellW = Math.max(1, w - pad * 2);
+  const safe  = fitText(doc, text, cellW, opts.bold ?? false);
   doc.save();
-  // Clip exactly to this column — no bleed into neighbours
   doc.rect(x, y, w, rowH).clip();
   doc
     .fontSize(6.5)
     .font(opts.bold ? "Helvetica-Bold" : "Helvetica")
     .fillColor(opts.color ?? DARK)
-    .text(text, cellX, y + Math.floor((rowH - 6.5) / 2), {
+    .text(safe, cellX, y + Math.floor((rowH - 6.5) / 2), {
       width: cellW,
       align: opts.right ? "right" : "left",
       lineBreak: false,
-      ellipsis: true,
     });
   doc.restore();
 }

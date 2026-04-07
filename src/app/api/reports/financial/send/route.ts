@@ -127,20 +127,31 @@ function todayCSTSend(): string {
   return new Date().toLocaleDateString("en-CA", { timeZone: "America/Chicago" });
 }
 
+function fitTextSend(doc: typeof PDFDocument, text: string, maxW: number, bold: boolean): string {
+  doc.fontSize(6.5).font(bold ? "Helvetica-Bold" : "Helvetica");
+  if (doc.widthOfString(text) <= maxW) return text;
+  const ellipsis = "…";
+  const ew = doc.widthOfString(ellipsis);
+  let t = text;
+  while (t.length > 0 && doc.widthOfString(t) + ew > maxW) t = t.slice(0, -1);
+  return t + ellipsis;
+}
+
 function drawCellSend(
   doc: typeof PDFDocument,
   text: string, x: number, y: number, w: number, rowH: number,
   opts: { right?: boolean; bold?: boolean; color?: string },
 ) {
-  const pad = 3;
+  const pad  = 3;
+  const cellW = Math.max(1, w - pad * 2);
+  const safe  = fitTextSend(doc, text, cellW, opts.bold ?? false);
   doc.save();
   doc.rect(x, y, w, rowH).clip();
   doc.fontSize(6.5).font(opts.bold ? "Helvetica-Bold" : "Helvetica").fillColor(opts.color ?? DARK)
-    .text(text, x + pad, y + Math.floor((rowH - 6.5) / 2), {
-      width: Math.max(1, w - pad * 2),
+    .text(safe, x + pad, y + Math.floor((rowH - 6.5) / 2), {
+      width: cellW,
       align: opts.right ? "right" : "left",
       lineBreak: false,
-      ellipsis: true,
     });
   doc.restore();
 }
