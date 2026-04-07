@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendEmail, isEmailConfigured } from "@/lib/email";
+import { getInvoices } from "@/server/queries";
 import * as XLSX from "xlsx";
-import { AR_DEFAULT_COLS } from "@/lib/financial-pdf";
 import { PDFDocument, rgb, StandardFonts, type PDFPage, type PDFFont } from "pdf-lib";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -51,10 +51,6 @@ type Row = {
   destination: string | null; product: string | null;
 };
 
-type InvoiceRow = Row & {
-  costNoFreight?: number; freight?: number;
-  supplierPaymentStatus?: string; transportType?: string;
-};
 
 type ColDef = { label: string; get: (r: Row) => string; w: number; right?: boolean };
 
@@ -222,7 +218,7 @@ async function buildPdf(rows: Row[], title: string, colKeys: string[]): Promise<
 }
 
 // ── Excel builder ──────────────────────────────────────────────────────────────
-const EXCEL_COL: Record<string, { header: string; get: (r: InvoiceRow) => string | number }> = {
+const EXCEL_COL: Record<string, { header: string; get: (r: Row) => string | number }> = {
   invoiceNumber: { header: "Invoice #",  get: r => r.invoiceNumber },
   clientName:    { header: "Client",     get: r => r.clientName },
   supplierName:  { header: "Supplier",   get: r => r.supplierName },
@@ -241,7 +237,7 @@ const EXCEL_COL: Record<string, { header: string; get: (r: InvoiceRow) => string
   custPayment:   { header: "Payment",    get: r => r.customerPaymentStatus === "paid" ? "Paid" : "Unpaid" },
 };
 
-function buildExcel(title: string, rows: InvoiceRow[], colKeys: string[]): Buffer {
+function buildExcel(title: string, rows: Row[], colKeys: string[]): Buffer {
   const validKeys = colKeys.filter(k => EXCEL_COL[k]);
   const headers   = validKeys.map(k => EXCEL_COL[k].header);
   const data      = rows.map(r => validKeys.map(k => EXCEL_COL[k].get(r)));
@@ -260,6 +256,51 @@ function buildExcel(title: string, rows: InvoiceRow[], colKeys: string[]): Buffe
   return Buffer.from(XLSX.write(wb, { type: "buffer", bookType: "xlsx" }));
 }
 
+// ── Shared data fetch (same logic as GET /pdf route) ──────────────────────────
+async function fetchRows(tab: string, dateFrom: string, dateTo: string, invoiceNumbers?: string[]): Promise<{ rows: Row[]; count: number }> {
+  const allRows = await getInvoices();
+  const data: Row[] = allRows.map(row => {
+    const sellPrice = row.invoice.sellPriceOverride ?? row.poSellPrice ?? 0;
+    const buyPrice  = row.invoice.buyPriceOverride  ?? row.poBuyPrice  ?? 0;
+    const revenue   = row.invoice.quantityTons * sellPrice;
+    const cost      = row.invoice.quantityTons * buyPrice + (row.invoice.freightCost ?? 0);
+    const profit    = revenue - cost;
+    const terms     = row.invoice.paymentTermsDays != null && row.invoice.paymentTermsDays > 0
+      ? row.invoice.paymentTermsDays : (row.clientPaymentTermsDays ?? 60);
+    const base = row.invoice.invoiceDate || row.invoice.shipmentDate;
+    let dueDate: string | null = null;
+    if (base) {
+      const d = new Date(base + "T12:00:00");
+      d.setDate(d.getDate() + terms);
+      dueDate = d.toISOString().split("T")[0];
+    }
+    return {
+      invoiceNumber:         row.invoice.invoiceNumber,
+      clientName:            row.clientName           ?? "Unknown",
+      supplierName:          row.supplierName         ?? "Unknown",
+      poNumber:              row.poNumber             ?? "",
+      invoiceDate:           row.invoice.invoiceDate,
+      shipmentDate:          row.invoice.shipmentDate,
+      dueDate,
+      quantityTons:          row.invoice.quantityTons,
+      revenue, cost, profit,
+      customerPaymentStatus: row.invoice.customerPaymentStatus,
+      shipmentStatus:        row.invoice.shipmentStatus,
+      destination:           row.invoice.destination,
+      product:               row.invoice.item ?? row.product,
+    };
+  }).filter(r => {
+    if (invoiceNumbers?.length) return invoiceNumbers.includes(r.invoiceNumber);
+    const d = r.invoiceDate || r.shipmentDate;
+    if (dateFrom && d && d < dateFrom) return false;
+    if (dateTo   && d && d > dateTo)   return false;
+    return true;
+  });
+
+  const rows = tab === "ar-aging" ? data.filter(r => r.customerPaymentStatus === "unpaid") : data;
+  return { rows, count: rows.length };
+}
+
 // ── Route handler ──────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   if (!isEmailConfigured()) {
@@ -269,40 +310,43 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const body = await req.json();
-  const { email, subject, message, title, rows, cols, format } = body as {
-    email: string; subject: string; message: string; title: string;
-    rows: InvoiceRow[]; cols?: string[]; format: "excel" | "pdf" | "both";
-  };
-
-  if (!email || !rows?.length) {
-    return NextResponse.json({ error: "Missing email or rows" }, { status: 400 });
-  }
-
-  const colKeys = cols?.length ? cols : AR_DEFAULT_COLS;
-  const attachments: Array<{ filename: string; content: Buffer; contentType: string }> = [];
-  const dateStr   = todayCST();
-  const safeTitle = (title || "Financial_Report").replace(/[^a-zA-Z0-9_]/g, "_");
-
-  if (format === "excel" || format === "both") {
-    attachments.push({
-      filename: `BZA_${safeTitle}_${dateStr}.xlsx`,
-      content: buildExcel(title, rows, colKeys),
-      contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-  }
-  if (format === "pdf" || format === "both") {
-    const pdfBytes = await buildPdf(rows, title, colKeys);
-    attachments.push({
-      filename: `BZA_${safeTitle}_${dateStr}.pdf`,
-      content: Buffer.from(pdfBytes),
-      contentType: "application/pdf",
-    });
-  }
-
-  const fmtLabel = format === "both" ? "PDF and Excel" : format === "pdf" ? "PDF" : "Excel";
-
   try {
+    const body = await req.json();
+    const { email, subject, message, title, tab, cols, dateFrom, dateTo, invoiceNumbers, format } = body as {
+      email: string; subject: string; message: string; title: string;
+      tab: string; cols?: string[]; dateFrom?: string; dateTo?: string;
+      invoiceNumbers?: string[]; format: "excel" | "pdf" | "both";
+    };
+
+    if (!email) {
+      return NextResponse.json({ error: "Missing email" }, { status: 400 });
+    }
+
+    const colKeys = cols?.length ? cols : ["invoiceNumber","clientName","product","date","dueDate","days","tons","amount","custPayment"];
+    const { rows, count } = await fetchRows(tab ?? "ar-aging", dateFrom ?? "", dateTo ?? "", invoiceNumbers);
+
+    const attachments: Array<{ filename: string; content: Buffer; contentType: string }> = [];
+    const dateStr   = todayCST();
+    const safeTitle = (title || "Financial_Report").replace(/[^a-zA-Z0-9_]/g, "_");
+
+    if (format === "excel" || format === "both") {
+      attachments.push({
+        filename: `BZA_${safeTitle}_${dateStr}.xlsx`,
+        content: buildExcel(title, rows, colKeys),
+        contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+    }
+    if (format === "pdf" || format === "both") {
+      const pdfBytes = await buildPdf(rows, title, colKeys);
+      attachments.push({
+        filename: `BZA_${safeTitle}_${dateStr}.pdf`,
+        content: Buffer.from(pdfBytes),
+        contentType: "application/pdf",
+      });
+    }
+
+    const fmtLabel = format === "both" ? "PDF and Excel" : format === "pdf" ? "PDF" : "Excel";
+
     await sendEmail({
       to: email,
       subject,
@@ -313,7 +357,7 @@ export async function POST(req: NextRequest) {
           ${message ? `<p style="color: #333; line-height: 1.6;">${message.replace(/\n/g, "<br>")}</p>` : ""}
           <p style="color: #666; font-size: 13px;">
             Please find the ${fmtLabel} report attached.
-            (${rows.length} invoice${rows.length !== 1 ? "s" : ""})
+            (${count} invoice${count !== 1 ? "s" : ""})
           </p>
           <p style="color: #999; font-size: 11px; margin-top: 32px; border-top: 1px solid #eee; padding-top: 12px;">
             BZA International Services, LLC<br>
@@ -326,6 +370,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: `Failed to send email: ${msg}` }, { status: 400 });
+    return NextResponse.json({ error: `Failed to send: ${msg}` }, { status: 500 });
   }
 }
