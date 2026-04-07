@@ -257,6 +257,7 @@ async function buildPdf(rows: Row[], title: string, colKeys: string[]): Promise<
 
 // ── Route handler ──────────────────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
+  try {
   const sp          = req.nextUrl.searchParams;
   const tab         = sp.get("tab") ?? "ar-aging";
   const colKeys     = (sp.get("cols") ?? "invoiceNumber,clientName,product,date,dueDate,days,tons,amount,custPayment").split(",").filter(Boolean);
@@ -314,9 +315,8 @@ export async function GET(req: NextRequest) {
   const title      = LABELS[tab] ?? "Financial Report";
   const safeTitle  = title.replace(/[^a-zA-Z0-9_]/g, "_");
 
-  try {
     const buf = await buildPdf(rows, title, colKeys);
-    return new NextResponse(buf, {
+    return new NextResponse(Buffer.from(buf), {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `${disposition}; filename="BZA_${safeTitle}_${todayCST()}.pdf"`,
@@ -324,6 +324,10 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "PDF error" }, { status: 500 });
+    const msg = err instanceof Error ? `${err.message}\n${err.stack}` : String(err);
+    return new NextResponse(`PDF generation failed:\n\n${msg}`, {
+      status: 500,
+      headers: { "Content-Type": "text/plain" },
+    });
   }
 }
