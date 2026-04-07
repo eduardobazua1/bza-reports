@@ -57,8 +57,8 @@ export function DashboardVisuals({
       {/* Volume by Month — area chart */}
       <Link href="/reports" className={chartCard}>
         <h3 className="text-sm font-semibold text-stone-600 mb-4">Volume by Month (TN)</h3>
-        <ResponsiveContainer width="100%" height={200}>
-          <AreaChart data={volumeByMonth} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+        <ResponsiveContainer width="100%" height={240}>
+          <AreaChart data={volumeByMonth} margin={{ top: 10, right: 16, left: 0, bottom: 8 }}>
             <defs>
               <linearGradient id="volGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#0d3d3b" stopOpacity={0.18} />
