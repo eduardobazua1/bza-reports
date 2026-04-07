@@ -54,22 +54,22 @@ type Row = {
 type ColDef = { label: string; get: (r: Row) => string; w: number; right?: boolean };
 
 const COL_MAP: Record<string, ColDef> = {
-  invoiceNumber: { label: "Invoice #",  get: r => r.invoiceNumber,                                    w: 55 },
-  clientName:    { label: "Client",     get: r => r.clientName,                                       w: 85 },
-  supplierName:  { label: "Supplier",   get: r => r.supplierName,                                     w: 75 },
+  invoiceNumber: { label: "Invoice #",  get: r => r.invoiceNumber,                                    w: 52 },
+  clientName:    { label: "Client",     get: r => r.clientName,                                       w: 130 },
+  supplierName:  { label: "Supplier",   get: r => r.supplierName,                                     w: 100 },
   poNumber:      { label: "PO #",       get: r => r.poNumber || "—",                                  w: 46 },
-  product:       { label: "Product",    get: r => r.product ?? "—",                                   w: 68 },
+  product:       { label: "Product",    get: r => r.product ?? "—",                                   w: 90 },
   destination:   { label: "Dest.",      get: r => r.destination ?? "—",                               w: 55 },
   date:          { label: "Date",       get: r => fmtDate(r.invoiceDate ?? r.shipmentDate),           w: 54 },
   dueDate:       { label: "Due Date",   get: r => fmtDate(r.dueDate),                                 w: 54 },
   days:          { label: "Days",       get: r => { const d = daysOverdue(r.dueDate); return d <= 0 ? "—" : `${d}d`; }, w: 30, right: true },
-  tons:          { label: "Tons",       get: r => r.quantityTons.toFixed(1),                          w: 38, right: true },
+  tons:          { label: "Tons",       get: r => r.quantityTons.toFixed(1),                          w: 36, right: true },
   amount:        { label: "Amount",     get: r => fmt$(r.revenue),                                    w: 68, right: true },
   cost:          { label: "Cost",       get: r => fmt$(r.cost),                                       w: 68, right: true },
   profit:        { label: "Profit",     get: r => fmt$(r.profit),                                     w: 68, right: true },
-  margin:        { label: "Margin %",   get: r => (r.revenue > 0 ? ((r.profit/r.revenue)*100).toFixed(1) : "0") + "%", w: 46, right: true },
+  margin:        { label: "Margin %",   get: r => (r.revenue > 0 ? ((r.profit/r.revenue)*100).toFixed(1) : "0") + "%", w: 44, right: true },
   shipStatus:    { label: "Status",     get: r => SHIP_LABELS[r.shipmentStatus] ?? r.shipmentStatus,  w: 52 },
-  custPayment:   { label: "Payment",    get: r => r.customerPaymentStatus === "paid" ? "Paid" : "Unpaid", w: 46 },
+  custPayment:   { label: "Payment",    get: r => r.customerPaymentStatus === "paid" ? "Paid" : "Unpaid", w: 44 },
 };
 
 // ── Row height constant ────────────────────────────────────────────────────────
@@ -89,7 +89,8 @@ function drawCell(
   const cellX = x + pad;
   const cellW = Math.max(1, w - pad * 2);
   doc.save();
-  doc.rect(cellX - 1, y, w, rowH).clip();
+  // Clip exactly to this column — no bleed into neighbours
+  doc.rect(x, y, w, rowH).clip();
   doc
     .fontSize(6.5)
     .font(opts.bold ? "Helvetica-Bold" : "Helvetica")
