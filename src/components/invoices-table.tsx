@@ -393,7 +393,7 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                               } else {
                                 const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
                                 const w = 170;
-                                setActionDropdownPos({ top: rect.bottom + 4, left: Math.max(4, rect.right - w) });
+                                setActionDropdownPos({ top: rect.top, left: Math.max(4, rect.left - w - 4) });
                                 setOpenDropdownId(row.invoice.id);
                               }
                             }}
