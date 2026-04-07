@@ -144,16 +144,14 @@ function drawCellSend(
 ) {
   const pad  = 3;
   const cellW = Math.max(1, w - pad * 2);
+  // fitTextSend pre-truncates so text never overflows — no clip needed
   const safe  = fitTextSend(doc, text, cellW, opts.bold ?? false);
-  doc.save();
-  doc.rect(x, y, w, rowH).clip();
   doc.fontSize(6.5).font(opts.bold ? "Helvetica-Bold" : "Helvetica").fillColor(opts.color ?? DARK)
     .text(safe, x + pad, y + Math.floor((rowH - 6.5) / 2), {
       width: cellW,
       align: opts.right ? "right" : "left",
       lineBreak: false,
     });
-  doc.restore();
 }
 
 async function buildPdf(title: string, rows: InvoiceRow[], colKeys: string[]): Promise<Buffer> {

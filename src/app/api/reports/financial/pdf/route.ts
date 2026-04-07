@@ -86,7 +86,7 @@ function fitText(doc: typeof PDFDocument, text: string, maxW: number, bold: bool
   return t + ellipsis;
 }
 
-// ── Clipped cell text helper ───────────────────────────────────────────────────
+// ── Cell text helper ───────────────────────────────────────────────────────────
 function drawCell(
   doc: typeof PDFDocument,
   text: string,
@@ -96,12 +96,11 @@ function drawCell(
   rowH: number,
   opts: { right?: boolean; bold?: boolean; color?: string },
 ) {
-  const pad = 3;
+  const pad  = 3;
   const cellX = x + pad;
   const cellW = Math.max(1, w - pad * 2);
+  // fitText pre-truncates so text never overflows — no clip needed
   const safe  = fitText(doc, text, cellW, opts.bold ?? false);
-  doc.save();
-  doc.rect(x, y, w, rowH).clip();
   doc
     .fontSize(6.5)
     .font(opts.bold ? "Helvetica-Bold" : "Helvetica")
@@ -111,7 +110,6 @@ function drawCell(
       align: opts.right ? "right" : "left",
       lineBreak: false,
     });
-  doc.restore();
 }
 
 // ── Page helpers ───────────────────────────────────────────────────────────────
