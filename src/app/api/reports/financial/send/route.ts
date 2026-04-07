@@ -148,7 +148,9 @@ async function buildPdf(rows: Row[], title: string, colKeys: string[]): Promise<
   const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const fonts = { bold: boldFont, regular: regularFont };
 
-  const validKeys = colKeys.filter(k => COL_MAP[k]);
+  const DEFAULT_KEYS = ["invoiceNumber","clientName","product","date","dueDate","days","tons","amount","custPayment"];
+  const filtered = colKeys.filter(k => COL_MAP[k]);
+  const validKeys = filtered.length > 0 ? filtered : DEFAULT_KEYS;
   const cols = validKeys.map(k => COL_MAP[k]);
   const baseW = cols.reduce((s, c) => s + c.w, 0);
   const widths = cols.map(c => Math.floor(c.w * TW / baseW));
@@ -238,7 +240,9 @@ const EXCEL_COL: Record<string, { header: string; get: (r: Row) => string | numb
 };
 
 function buildExcel(title: string, rows: Row[], colKeys: string[]): Buffer {
-  const validKeys = colKeys.filter(k => EXCEL_COL[k]);
+  const DEFAULT_KEYS = ["invoiceNumber","clientName","product","date","dueDate","days","tons","amount","custPayment"];
+  const filtered = colKeys.filter(k => EXCEL_COL[k]);
+  const validKeys = filtered.length > 0 ? filtered : DEFAULT_KEYS;
   const headers   = validKeys.map(k => EXCEL_COL[k].header);
   const data      = rows.map(r => validKeys.map(k => EXCEL_COL[k].get(r)));
   const numericKeys = new Set(["tons", "amount", "cost", "profit"]);
