@@ -127,14 +127,12 @@ function todayCSTSend(): string {
   return new Date().toLocaleDateString("en-CA", { timeZone: "America/Chicago" });
 }
 
-function fitTextSend(doc: typeof PDFDocument, text: string, maxW: number, bold: boolean): string {
-  doc.fontSize(6.5).font(bold ? "Helvetica-Bold" : "Helvetica");
-  if (doc.widthOfString(text) <= maxW) return text;
-  const ellipsis = "…";
-  const ew = doc.widthOfString(ellipsis);
-  let t = text;
-  while (t.length > 0 && doc.widthOfString(t) + ew > maxW) t = t.slice(0, -1);
-  return t + ellipsis;
+function truncateSend(text: string, colW: number, bold = false): string {
+  const pad      = 6;
+  const charPx   = bold ? 3.8 : 3.5;
+  const maxChars = Math.floor((colW - pad) / charPx);
+  if (text.length <= maxChars) return text;
+  return text.slice(0, Math.max(0, maxChars - 1)) + "\u2026";
 }
 
 function drawCellSend(
@@ -144,8 +142,7 @@ function drawCellSend(
 ) {
   const pad  = 3;
   const cellW = Math.max(1, w - pad * 2);
-  // fitTextSend pre-truncates so text never overflows — no clip needed
-  const safe  = fitTextSend(doc, text, cellW, opts.bold ?? false);
+  const safe  = truncateSend(text, w, opts.bold);
   doc.fontSize(6.5).font(opts.bold ? "Helvetica-Bold" : "Helvetica").fillColor(opts.color ?? DARK)
     .text(safe, x + pad, y + Math.floor((rowH - 6.5) / 2), {
       width: cellW,

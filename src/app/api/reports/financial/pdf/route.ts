@@ -75,15 +75,14 @@ const COL_MAP: Record<string, ColDef> = {
 // ── Row height constant ────────────────────────────────────────────────────────
 const ROW_H = 16;
 
-// ── Manual text truncation (pdfkit ellipsis is unreliable) ────────────────────
-function fitText(doc: typeof PDFDocument, text: string, maxW: number, bold: boolean): string {
-  doc.fontSize(6.5).font(bold ? "Helvetica-Bold" : "Helvetica");
-  if (doc.widthOfString(text) <= maxW) return text;
-  const ellipsis = "…";
-  const ew = doc.widthOfString(ellipsis);
-  let t = text;
-  while (t.length > 0 && doc.widthOfString(t) + ew > maxW) t = t.slice(0, -1);
-  return t + ellipsis;
+// ── Simple char-count truncation — never touches doc state ────────────────────
+// At 6.5pt Helvetica, ~3.5px avg per char. Bold is slightly wider, use 3.8.
+function truncate(text: string, colW: number, bold = false): string {
+  const pad      = 6; // 3px each side
+  const charPx   = bold ? 3.8 : 3.5;
+  const maxChars = Math.floor((colW - pad) / charPx);
+  if (text.length <= maxChars) return text;
+  return text.slice(0, Math.max(0, maxChars - 1)) + "\u2026"; // …
 }
 
 // ── Cell text helper ───────────────────────────────────────────────────────────
@@ -99,8 +98,7 @@ function drawCell(
   const pad  = 3;
   const cellX = x + pad;
   const cellW = Math.max(1, w - pad * 2);
-  // fitText pre-truncates so text never overflows — no clip needed
-  const safe  = fitText(doc, text, cellW, opts.bold ?? false);
+  const safe  = truncate(text, w, opts.bold);
   doc
     .fontSize(6.5)
     .font(opts.bold ? "Helvetica-Bold" : "Helvetica")
