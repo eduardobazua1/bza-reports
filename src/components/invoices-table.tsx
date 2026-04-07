@@ -350,7 +350,11 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                             setStatusDropdownId(null);
                           } else {
                             const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
-                            setStatusDropdownPos({ top: rect.top, left: rect.right + 4 });
+                            const dropdownW = 140;
+                            const left = (rect.right + dropdownW + 4) > window.innerWidth
+                              ? rect.left - dropdownW - 4
+                              : rect.right + 4;
+                            setStatusDropdownPos({ top: rect.top, left: Math.max(4, left) });
                             setStatusDropdownId(row.invoice.id);
                           }
                         }}

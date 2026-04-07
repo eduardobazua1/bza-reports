@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useRef, useEffect } from "react";
+import React, { useState, useTransition, useRef, useEffect } from "react";
 import { updateInvoice } from "@/server/actions";
 import { useRouter } from "next/navigation";
 import { shipmentStatusLabels, shipmentStatusColors } from "@/lib/utils";
@@ -20,6 +20,7 @@ export function ShipmentStatusBadge({
   currentStatus: "programado" | "en_transito" | "en_aduana" | "entregado";
 }) {
   const [open, setOpen] = useState(false);
+  const [posStyle, setPosStyle] = useState<React.CSSProperties>({});
   const router = useRouter();
   const ref = useRef<HTMLDivElement>(null);
 
@@ -34,13 +35,23 @@ export function ShipmentStatusBadge({
   return (
     <div className="relative inline-block" ref={ref}>
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={(e) => {
+          if (!open) {
+            const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+            const dropdownW = 140;
+            const left = (rect.right + dropdownW + 4) > window.innerWidth
+              ? rect.left - dropdownW - 4
+              : rect.right + 4;
+            setPosStyle({ position: "fixed", top: rect.top, left: Math.max(4, left), zIndex: 9999 });
+          }
+          setOpen((v) => !v);
+        }}
         className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium cursor-pointer hover:opacity-80 ${shipmentStatusColors[currentStatus]}`}
       >
         {shipmentStatusLabels[currentStatus]} ▾
       </button>
       {open && (
-        <div className="absolute left-full top-0 ml-1 bg-white border border-stone-200 rounded-md shadow-lg z-50 min-w-[130px] py-1">
+        <div style={posStyle} className="bg-white border border-stone-200 rounded-md shadow-lg min-w-[130px] py-1">
           {statuses.map((s) => (
             <button
               key={s.value}
