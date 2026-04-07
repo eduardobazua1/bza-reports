@@ -31,10 +31,11 @@ export default async function DashboardPage() {
       totalPaid: sql<number>`coalesce(sum(${supplierPayments.amountUsd}), 0)`,
     }).from(supplierPayments).groupBy(supplierPayments.supplierId),
   ]);
-  const supplierBalance = supplierCosts.reduce((sum, c) => {
+  const supplierBalanceNet = supplierCosts.reduce((sum, c) => {
     const paid = supplierPaid.find(p => p.supplierId === c.supplierId)?.totalPaid ?? 0;
-    return sum + Math.max(0, Number(c.totalCost) - Number(paid));
+    return sum + (Number(c.totalCost) - Number(paid));
   }, 0);
+  const supplierBalance = Math.abs(supplierBalanceNet);
 
   // Market prices for widget
   let allMarketPrices: any[] = [];
@@ -213,7 +214,7 @@ export default async function DashboardPage() {
         <KPIBig label="Active PO's" value={kpis.activePOs.toString()} unit="active orders" color="amber" href="/purchase-orders?status=active" animatedValue={kpis.activePOs} />
         <KPIBig label="Open Invoices" value={kpis.unpaidInvoices.toString()} unit="unpaid" color="amber" href="/invoices?status=unpaid" animatedValue={kpis.unpaidInvoices} />
         <KPIBig label="Accounts Receivable" value={formatCurrency(kpis.accountsReceivable)} unit="clients owe BZA" color="green" href="/invoices?status=unpaid" animatedValue={kpis.accountsReceivable} />
-        <KPIBig label="Suppliers Owed" value={formatCurrency(supplierBalance)} unit="balance due" color="amber" href="/suppliers" animatedValue={supplierBalance} />
+        <KPIBig label="Suppliers Owed" value={formatCurrency(supplierBalance)} unit={supplierBalanceNet > 0 ? "you owe" : supplierBalanceNet < 0 ? "they owe you" : "settled"} color={supplierBalanceNet > 0 ? "red" : supplierBalanceNet < 0 ? "green" : "amber"} href="/suppliers" animatedValue={supplierBalance} />
       </div>
 
 
