@@ -26,8 +26,9 @@ export async function sendEmail({
   html: string;
   attachments?: Array<{
     filename: string;
-    content: Buffer;
+    content: Buffer | string;
     contentType?: string;
+    encoding?: string;
   }>;
 }) {
   const from = fromOverride || process.env.SMTP_FROM || process.env.SMTP_USER || "noreply@bza.com";

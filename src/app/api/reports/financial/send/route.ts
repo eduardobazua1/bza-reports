@@ -325,23 +325,30 @@ export async function POST(req: NextRequest) {
     const colKeys = cols?.length ? cols : ["invoiceNumber","clientName","product","date","dueDate","days","tons","amount","custPayment"];
     const { rows, count } = await fetchRows(tab ?? "ar-aging", dateFrom ?? "", dateTo ?? "", invoiceNumbers);
 
-    const attachments: Array<{ filename: string; content: Buffer; contentType: string }> = [];
+    const attachments: Array<{ filename: string; content: string; contentType: string; encoding: string }> = [];
     const dateStr   = todayCST();
     const safeTitle = (title || "Financial_Report").replace(/[^a-zA-Z0-9_]/g, "_");
+    const debugLines: string[] = [`Rows: ${count}`];
 
     if (format === "excel" || format === "both") {
+      const xlsBuf = buildExcel(title, rows, colKeys);
+      debugLines.push(`Excel: ${xlsBuf.length} bytes`);
       attachments.push({
         filename: `BZA_${safeTitle}_${dateStr}.xlsx`,
-        content: buildExcel(title, rows, colKeys),
+        content: xlsBuf.toString("base64"),
         contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        encoding: "base64",
       });
     }
     if (format === "pdf" || format === "both") {
       const pdfBytes = await buildPdf(rows, title, colKeys);
+      const pdfBuf = Buffer.from(pdfBytes);
+      debugLines.push(`PDF: ${pdfBuf.length} bytes`);
       attachments.push({
         filename: `BZA_${safeTitle}_${dateStr}.pdf`,
-        content: Buffer.from(pdfBytes),
+        content: pdfBuf.toString("base64"),
         contentType: "application/pdf",
+        encoding: "base64",
       });
     }
 
@@ -359,6 +366,7 @@ export async function POST(req: NextRequest) {
             Please find the ${fmtLabel} report attached.
             (${count} invoice${count !== 1 ? "s" : ""})
           </p>
+          <p style="color: #999; font-size: 10px; color: #aaa;">[debug: ${debugLines.join(" | ")}]</p>
           <p style="color: #999; font-size: 11px; margin-top: 32px; border-top: 1px solid #eee; padding-top: 12px;">
             BZA International Services, LLC<br>
             1209 S. 10th St. Suite #583, McAllen, TX 78501
