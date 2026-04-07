@@ -75,7 +75,9 @@ export function DashboardVisuals({
             <YAxis
               tick={{ fontSize: 11, fill: "#a8a29e" }}
               axisLine={false} tickLine={false} width={42}
-              tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}
+              tickCount={5}
+              domain={[0, "auto"]}
+              tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}
             />
             <Tooltip
               contentStyle={{ borderRadius: 8, border: "none", boxShadow: "0 4px 16px rgba(0,0,0,0.10)", fontSize: 13 }}
