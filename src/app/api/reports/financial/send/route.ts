@@ -326,7 +326,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing email" }, { status: 400 });
     }
 
-    const colKeys = cols?.length ? cols : ["invoiceNumber","clientName","product","date","dueDate","days","tons","amount","custPayment"];
+    // Strip internal-only columns — never expose cost/profit/margin in outgoing emails
+    const SENSITIVE = new Set(["cost", "profit", "margin"]);
+    const safeCols = (cols ?? []).filter(c => !SENSITIVE.has(c));
+    const colKeys = safeCols.length ? safeCols : ["invoiceNumber","clientName","product","date","dueDate","days","tons","amount","custPayment"];
     const { rows, count } = await fetchRows(tab ?? "ar-aging", dateFrom ?? "", dateTo ?? "", invoiceNumbers);
 
     const attachments: Array<{ filename: string; content: string; contentType: string; encoding: string }> = [];
