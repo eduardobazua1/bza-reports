@@ -144,6 +144,7 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
   const [paymentClientName, setPaymentClientName] = useState("");
   const [paymentPreSelectedId, setPaymentPreSelectedId] = useState<number | null>(null);
   const [statusDropdownId, setStatusDropdownId] = useState<number | null>(null);
+  const [statusDropdownPos, setStatusDropdownPos] = useState<{ top: number; left: number } | null>(null);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const [isPending, startTransition] = useTransition();
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -155,13 +156,13 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setOpenDropdownId(null);
       }
-      if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
+      if (statusDropdownId !== null && statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
         setStatusDropdownId(null);
       }
     }
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  }, [statusDropdownId]);
 
   function openPanel(row: InvoiceRow, mode: "view" | "edit" | "send" | "payment" = "view") {
     setSelectedId(row.invoice.id);
@@ -343,31 +344,20 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                       )}
                     </td>
                     <td className="px-3 py-1.5 text-xs" onClick={(e) => e.stopPropagation()}>
-                      <div className="relative inline-block" ref={statusDropdownId === row.invoice.id ? statusDropdownRef : undefined}>
-                        <button
-                          onClick={() => setStatusDropdownId(statusDropdownId === row.invoice.id ? null : row.invoice.id)}
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-medium cursor-pointer hover:opacity-80 ${shipmentStatusColors[row.invoice.shipmentStatus] || ""}`}
-                        >
-                          {shipmentStatusLabels[row.invoice.shipmentStatus] || row.invoice.shipmentStatus} ▾
-                        </button>
-                        {statusDropdownId === row.invoice.id && (
-                          <div className="absolute left-full top-0 ml-1 bg-white border border-stone-200 rounded-md shadow-lg z-50 min-w-[130px] py-1">
-                            {(["programado", "en_transito", "en_aduana", "entregado"] as const).map((s) => (
-                              <button
-                                key={s}
-                                onClick={async () => {
-                                  setStatusDropdownId(null);
-                                  await updateInvoice(row.invoice.id, { shipmentStatus: s });
-                                  router.refresh();
-                                }}
-                                className={`w-full text-left px-3 py-1.5 text-xs hover:bg-stone-50 ${row.invoice.shipmentStatus === s ? "font-semibold text-primary" : "text-stone-700"}`}
-                              >
-                                {shipmentStatusLabels[s]}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                      <button
+                        onClick={(e) => {
+                          if (statusDropdownId === row.invoice.id) {
+                            setStatusDropdownId(null);
+                          } else {
+                            const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                            setStatusDropdownPos({ top: rect.top, left: rect.right + 4 });
+                            setStatusDropdownId(row.invoice.id);
+                          }
+                        }}
+                        className={`px-1.5 py-0.5 rounded text-[10px] font-medium cursor-pointer hover:opacity-80 ${shipmentStatusColors[row.invoice.shipmentStatus] || ""}`}
+                      >
+                        {shipmentStatusLabels[row.invoice.shipmentStatus] || row.invoice.shipmentStatus} ▾
+                      </button>
                     </td>
                     <td className="px-3 py-1.5 text-xs">
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${paymentStatusColors[row.invoice.customerPaymentStatus] || ""}`}>
@@ -463,6 +453,32 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
           </table>
         </div>
       </div>
+
+      {/* Status dropdown — fixed positioned to escape overflow-x-auto */}
+      {statusDropdownId !== null && statusDropdownPos && (
+        <div
+          ref={statusDropdownRef}
+          style={{ position: "fixed", top: statusDropdownPos.top, left: statusDropdownPos.left, zIndex: 9999 }}
+          className="bg-white border border-stone-200 rounded-md shadow-lg min-w-[130px] py-1"
+        >
+          {(["programado", "en_transito", "en_aduana", "entregado"] as const).map((s) => {
+            const currentRow = rows.find((r) => r.invoice.id === statusDropdownId);
+            return (
+              <button
+                key={s}
+                onClick={async () => {
+                  setStatusDropdownId(null);
+                  await updateInvoice(statusDropdownId, { shipmentStatus: s });
+                  router.refresh();
+                }}
+                className={`w-full text-left px-3 py-1.5 text-xs hover:bg-stone-50 ${currentRow?.invoice.shipmentStatus === s ? "font-semibold text-primary" : "text-stone-700"}`}
+              >
+                {shipmentStatusLabels[s]}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Side Panel */}
       {selectedRow && (
