@@ -2,6 +2,7 @@
 
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid,
 } from "recharts";
 import Link from "next/link";
 
@@ -37,10 +38,11 @@ function PieLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }: {
 }
 
 export function DashboardVisuals({
+  volumeByMonth,
   volumeByTransport,
   volumeByStatus,
 }: {
-  volumeByMonth?: { month: string; tons: number }[];
+  volumeByMonth: { month: string; tons: number }[];
   volumeByTransport: { name: string; value: number }[];
   volumeByStatus: { name: string; value: number }[];
   volumeByClient?: { name: string; value: number }[];
@@ -50,8 +52,40 @@ export function DashboardVisuals({
   const chartCard = "bg-white rounded-md shadow-sm p-5 hover:shadow-md transition-shadow";
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="space-y-4">
 
+      {/* Volume by Month — area chart */}
+      <Link href="/reports" className={chartCard}>
+        <h3 className="text-sm font-semibold text-stone-600 mb-4">Volume by Month (TN)</h3>
+        <ResponsiveContainer width="100%" height={200}>
+          <AreaChart data={volumeByMonth} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id="volGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#0d3d3b" stopOpacity={0.18} />
+                <stop offset="95%" stopColor="#0d3d3b" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0efed" vertical={false} />
+            <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#a8a29e" }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 11, fill: "#a8a29e" }} axisLine={false} tickLine={false} width={45}
+              tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v} />
+            <Tooltip
+              contentStyle={{ borderRadius: 8, border: "none", boxShadow: "0 4px 16px rgba(0,0,0,0.10)", fontSize: 13 }}
+              formatter={(v) => [`${Number(v).toLocaleString()} TN`, "Volume"]}
+              cursor={{ stroke: "#0d3d3b", strokeWidth: 1, strokeDasharray: "4 2" }}
+            />
+            <Area
+              type="monotone" dataKey="tons"
+              stroke="#0d3d3b" strokeWidth={2.5}
+              fill="url(#volGradient)"
+              dot={{ r: 3, fill: "#0d3d3b", strokeWidth: 0 }}
+              activeDot={{ r: 5, fill: "#4dd9b4", strokeWidth: 0 }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </Link>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* Transport Type */}
       <Link href="/reports" className={chartCard}>
         <h3 className="text-sm font-semibold text-stone-600 mb-4">Volume by Transport</h3>
@@ -108,6 +142,7 @@ export function DashboardVisuals({
         </ResponsiveContainer>
       </Link>
 
+      </div>
     </div>
   );
 }
