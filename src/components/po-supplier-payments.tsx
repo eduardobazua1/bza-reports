@@ -206,8 +206,8 @@ export function POSupplierPayments({
               <tr key={p.id} className="border-t border-stone-100 hover:bg-stone-50">
                 <td className="px-4 py-2.5 text-stone-700">{formatDate(p.paymentDate)}</td>
                 <td className="px-4 py-2.5 text-right font-semibold text-stone-900">{formatCurrency(p.amountUsd)}</td>
-                <td className="px-4 py-2.5 text-xs text-stone-500 font-mono">{p.reference || "—"}</td>
-                <td className="px-4 py-2.5 text-xs text-stone-400">{p.notes || "—"}</td>
+                <td className="px-4 py-2.5 text-stone-600">{p.reference || "—"}</td>
+                <td className="px-4 py-2.5 text-stone-400">{p.notes || "—"}</td>
                 <td className="px-4 py-2.5 text-right">
                   <button
                     onClick={() => handleDelete(p.id)}
