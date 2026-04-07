@@ -142,6 +142,7 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
   const [unpaidLoading, setUnpaidLoading] = useState(false);
   const [paymentClientId, setPaymentClientId] = useState<number | null>(null);
   const [paymentClientName, setPaymentClientName] = useState("");
+  const [paymentPreSelectedId, setPaymentPreSelectedId] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -212,10 +213,11 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
     }
   }
 
-  async function openPayment(row: InvoiceRow) {
+  async function openPayment(row: InvoiceRow, preSelectId?: number) {
     if (!row.clientId) return;
     setPaymentClientId(row.clientId);
     setPaymentClientName(row.clientName || "");
+    setPaymentPreSelectedId(preSelectId ?? row.invoice.id);
     setUnpaidLoading(true);
     try {
       const res = await fetch(`/api/client-unpaid-invoices?clientId=${row.clientId}`);
@@ -353,6 +355,14 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                         >
                           View/Edit
                         </button>
+                        {row.invoice.customerPaymentStatus === "unpaid" && row.clientId && (
+                          <button
+                            onClick={() => openPanel(row, "payment")}
+                            className="text-xs text-emerald-700 font-medium px-2 py-1 hover:bg-emerald-50 border border-l-0 border-stone-200"
+                          >
+                            Receive Payment
+                          </button>
+                        )}
                         <div className="relative" ref={openDropdownId === row.invoice.id ? dropdownRef : undefined}>
                           <button
                             onClick={() => setOpenDropdownId(openDropdownId === row.invoice.id ? null : row.invoice.id)}
@@ -463,6 +473,7 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
               clientName={paymentClientName}
               unpaidInvoices={unpaidInvoices}
               loading={unpaidLoading}
+              preSelectedId={paymentPreSelectedId}
               onClose={closePanel}
               onSaved={() => { closePanel(); router.refresh(); }}
             />
@@ -513,6 +524,7 @@ function ReceivePaymentPanel({
   clientName,
   unpaidInvoices,
   loading,
+  preSelectedId,
   onClose,
   onSaved,
 }: {
@@ -520,11 +532,14 @@ function ReceivePaymentPanel({
   clientName: string;
   unpaidInvoices: UnpaidInvoice[];
   loading: boolean;
+  preSelectedId?: number | null;
   onClose: () => void;
   onSaved: () => void;
 }) {
   const today = new Date().toISOString().split("T")[0];
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [selectedIds, setSelectedIds] = useState<number[]>(() =>
+    preSelectedId ? [preSelectedId] : []
+  );
   const [paymentDate, setPaymentDate] = useState(today);
   const [paymentMethod, setPaymentMethod] = useState("wire_transfer");
   const [customMethod, setCustomMethod] = useState("");
