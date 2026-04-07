@@ -1,11 +1,13 @@
+export const dynamic = "force-dynamic";
+
 import { getDashboardKPIs, getInvoices } from "@/server/queries";
 import { formatCurrency, formatNumber, formatPercent } from "@/lib/utils";
 import { DashboardVisuals } from "@/components/dashboard-visuals";
 import { ShipmentMap } from "@/components/shipment-map";
 import { MarketPricesWidget } from "@/components/market-prices-widget";
 import { db } from "@/db";
-import { scheduledReports, clients as clientsTable, reportTemplates, marketPrices } from "@/db/schema";
-import { eq, sql, desc } from "drizzle-orm";
+import { scheduledReports, clients as clientsTable, reportTemplates, marketPrices, supplierPayments, purchaseOrders, invoices } from "@/db/schema";
+import { eq, sql, desc, gte } from "drizzle-orm";
 import Link from "next/link";
 import { KPIBig } from "@/components/kpi-card";
 
@@ -14,6 +16,25 @@ export default async function DashboardPage() {
     getDashboardKPIs(),
     getInvoices(),
   ]);
+
+  // Supplier balance (from X0022 onwards)
+  const [supplierCosts, supplierPaid] = await Promise.all([
+    db.select({
+      supplierId: purchaseOrders.supplierId,
+      totalCost: sql<number>`coalesce(sum(${invoices.quantityTons} * coalesce(${invoices.buyPriceOverride}, ${purchaseOrders.buyPrice})), 0)`,
+    }).from(invoices)
+      .leftJoin(purchaseOrders, eq(invoices.purchaseOrderId, purchaseOrders.id))
+      .where(gte(purchaseOrders.poNumber, "X0022"))
+      .groupBy(purchaseOrders.supplierId),
+    db.select({
+      supplierId: supplierPayments.supplierId,
+      totalPaid: sql<number>`coalesce(sum(${supplierPayments.amountUsd}), 0)`,
+    }).from(supplierPayments).groupBy(supplierPayments.supplierId),
+  ]);
+  const supplierBalance = supplierCosts.reduce((sum, c) => {
+    const paid = supplierPaid.find(p => p.supplierId === c.supplierId)?.totalPaid ?? 0;
+    return sum + Math.max(0, Number(c.totalCost) - Number(paid));
+  }, 0);
 
   // Market prices for widget
   let allMarketPrices: any[] = [];
@@ -192,7 +213,7 @@ export default async function DashboardPage() {
         <KPIBig label="Active PO's" value={kpis.activePOs.toString()} unit="active orders" color="amber" href="/purchase-orders?status=active" animatedValue={kpis.activePOs} />
         <KPIBig label="Open Invoices" value={kpis.unpaidInvoices.toString()} unit="unpaid" color="amber" href="/invoices?status=unpaid" animatedValue={kpis.unpaidInvoices} />
         <KPIBig label="Accounts Receivable" value={formatCurrency(kpis.accountsReceivable)} unit="clients owe BZA" color="green" href="/invoices?status=unpaid" animatedValue={kpis.accountsReceivable} />
-        <KPIBig label="Suppliers" value={formatCurrency(0)} unit="see supplier details" color="amber" href="/suppliers" animatedValue={0} />
+        <KPIBig label="Suppliers Owed" value={formatCurrency(supplierBalance)} unit="balance due" color="amber" href="/suppliers" animatedValue={supplierBalance} />
       </div>
 
 
