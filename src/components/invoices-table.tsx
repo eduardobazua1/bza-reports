@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { deleteInvoice, markInvoicesPaid, duplicateInvoice, markInvoiceUnpaid } from "@/server/actions";
+import { deleteInvoice, markInvoicesPaid, duplicateInvoice, markInvoiceUnpaid, updateInvoice } from "@/server/actions";
 import { InvoiceForm } from "@/components/invoice-form";
 import {
   formatCurrency,
@@ -143,6 +143,8 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
   const [paymentClientId, setPaymentClientId] = useState<number | null>(null);
   const [paymentClientName, setPaymentClientName] = useState("");
   const [paymentPreSelectedId, setPaymentPreSelectedId] = useState<number | null>(null);
+  const [statusDropdownId, setStatusDropdownId] = useState<number | null>(null);
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
   const [isPending, startTransition] = useTransition();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -152,6 +154,9 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
     function handler(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setOpenDropdownId(null);
+      }
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
+        setStatusDropdownId(null);
       }
     }
     document.addEventListener("mousedown", handler);
@@ -337,10 +342,32 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                         <span className="text-stone-400">-</span>
                       )}
                     </td>
-                    <td className="px-3 py-1.5 text-xs">
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${shipmentStatusColors[row.invoice.shipmentStatus] || ""}`}>
-                        {shipmentStatusLabels[row.invoice.shipmentStatus] || row.invoice.shipmentStatus}
-                      </span>
+                    <td className="px-3 py-1.5 text-xs" onClick={(e) => e.stopPropagation()}>
+                      <div className="relative inline-block" ref={statusDropdownId === row.invoice.id ? statusDropdownRef : undefined}>
+                        <button
+                          onClick={() => setStatusDropdownId(statusDropdownId === row.invoice.id ? null : row.invoice.id)}
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-medium cursor-pointer hover:opacity-80 ${shipmentStatusColors[row.invoice.shipmentStatus] || ""}`}
+                        >
+                          {shipmentStatusLabels[row.invoice.shipmentStatus] || row.invoice.shipmentStatus} ▾
+                        </button>
+                        {statusDropdownId === row.invoice.id && (
+                          <div className="absolute left-0 top-full mt-1 bg-white border border-stone-200 rounded-md shadow-lg z-50 min-w-[130px] py-1">
+                            {(["programado", "en_transito", "en_aduana", "entregado"] as const).map((s) => (
+                              <button
+                                key={s}
+                                onClick={async () => {
+                                  setStatusDropdownId(null);
+                                  await updateInvoice(row.invoice.id, { shipmentStatus: s });
+                                  router.refresh();
+                                }}
+                                className={`w-full text-left px-3 py-1.5 text-xs hover:bg-stone-50 ${row.invoice.shipmentStatus === s ? "font-semibold text-primary" : "text-stone-700"}`}
+                              >
+                                {shipmentStatusLabels[s]}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-3 py-1.5 text-xs">
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${paymentStatusColors[row.invoice.customerPaymentStatus] || ""}`}>
