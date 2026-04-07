@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { getSuppliers } from "@/server/queries";
 import { SupplierActions } from "@/components/supplier-actions";
 import { db } from "@/db";
