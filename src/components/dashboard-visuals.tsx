@@ -66,9 +66,17 @@ export function DashboardVisuals({
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0efed" vertical={false} />
-            <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#a8a29e" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11, fill: "#a8a29e" }} axisLine={false} tickLine={false} width={45}
-              tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v} />
+            <XAxis
+              dataKey="month"
+              tick={{ fontSize: 11, fill: "#a8a29e" }}
+              axisLine={false} tickLine={false}
+              interval="preserveStartEnd"
+            />
+            <YAxis
+              tick={{ fontSize: 11, fill: "#a8a29e" }}
+              axisLine={false} tickLine={false} width={42}
+              tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}
+            />
             <Tooltip
               contentStyle={{ borderRadius: 8, border: "none", boxShadow: "0 4px 16px rgba(0,0,0,0.10)", fontSize: 13 }}
               formatter={(v) => [`${Number(v).toLocaleString()} TN`, "Volume"]}
@@ -78,7 +86,7 @@ export function DashboardVisuals({
               type="monotone" dataKey="tons"
               stroke="#0d3d3b" strokeWidth={2.5}
               fill="url(#volGradient)"
-              dot={{ r: 3, fill: "#0d3d3b", strokeWidth: 0 }}
+              dot={false}
               activeDot={{ r: 5, fill: "#4dd9b4", strokeWidth: 0 }}
             />
           </AreaChart>
