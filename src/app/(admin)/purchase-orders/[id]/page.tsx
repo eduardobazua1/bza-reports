@@ -197,7 +197,6 @@ export default async function PurchaseOrderDetailPage({
           supplierId={po.supplierId}
           payments={po.payments}
           totalCost={totalCost}
-          poNumber={po.poNumber}
         />
       )}
 

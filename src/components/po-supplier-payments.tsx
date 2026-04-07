@@ -17,13 +17,11 @@ export function POSupplierPayments({
   supplierId,
   payments,
   totalCost,
-  poNumber,
 }: {
   purchaseOrderId: number;
   supplierId: number;
   payments: Payment[];
   totalCost: number;
-  poNumber: string;
 }) {
   const router = useRouter();
   const [showForm, setShowForm] = useState(false);
@@ -81,7 +79,7 @@ export function POSupplierPayments({
       {/* Header */}
       <div className="p-4 border-b border-stone-200 flex items-center justify-between">
         <div>
-          <h3 className="font-semibold text-stone-800">Supplier Payments — {poNumber}</h3>
+          <h3 className="font-semibold text-stone-800">Supplier Payments</h3>
           <p className="text-xs text-stone-400 mt-0.5">
             {payments.length} payment{payments.length !== 1 ? "s" : ""} · Total paid:{" "}
             <span className="font-medium text-stone-600">{formatCurrency(totalPaid)}</span>
