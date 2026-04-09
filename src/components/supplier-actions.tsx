@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
-import { createSupplier, updateSupplier, deleteSupplier } from "@/server/actions";
+import { createSupplier, deleteSupplier } from "@/server/actions";
 import { useRouter } from "next/navigation";
 
 type Supplier = {
@@ -123,7 +123,6 @@ function SupplierForm({ initial, onSave, onCancel, isPending }: {
 
 export function SupplierActions({ suppliers }: { suppliers: Supplier[] }) {
   const [showForm, setShowForm] = useState(false);
-  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [isPending, startTransition] = useTransition();
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -151,9 +150,8 @@ export function SupplierActions({ suppliers }: { suppliers: Supplier[] }) {
       fscInputClaim: g("fscInputClaim"), fscOutputClaim: g("fscOutputClaim"), pefc: g("pefc"),
     };
     startTransition(async () => {
-      if (editingSupplier) await updateSupplier(editingSupplier.id, data);
-      else await createSupplier(data);
-      setShowForm(false); setEditingSupplier(null); router.refresh();
+      await createSupplier(data);
+      setShowForm(false); router.refresh();
     });
   }
 
@@ -165,12 +163,12 @@ export function SupplierActions({ suppliers }: { suppliers: Supplier[] }) {
   return (
     <div className="space-y-4">
       {!showForm && (
-        <button onClick={() => { setEditingSupplier(null); setShowForm(true); }} className="bg-[#0d3d3b] text-white px-4 py-2 rounded text-sm font-medium hover:opacity-90">
+        <button onClick={() => setShowForm(true)} className="bg-[#0d3d3b] text-white px-4 py-2 rounded text-sm font-medium hover:opacity-90">
           + New Supplier
         </button>
       )}
       {showForm && (
-        <SupplierForm initial={editingSupplier} onSave={handleSave} onCancel={() => { setShowForm(false); setEditingSupplier(null); }} isPending={isPending} />
+        <SupplierForm initial={null} onSave={handleSave} onCancel={() => setShowForm(false)} isPending={isPending} />
       )}
 
       <div className="bg-white rounded-md shadow-sm overflow-hidden">
@@ -202,7 +200,6 @@ export function SupplierActions({ suppliers }: { suppliers: Supplier[] }) {
                     {openDropdownId === s.id && (
                       <div className="absolute right-0 top-full mt-1 bg-white border border-stone-200 rounded-md shadow-lg z-50 min-w-[130px] py-1 text-left">
                         <a href={`/suppliers/${s.id}`} className="block px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">View Detail</a>
-                        <button onClick={() => { setOpenDropdownId(null); setEditingSupplier(s); setShowForm(true); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">Edit</button>
                         <div className="border-t border-stone-100 my-1" />
                         <button onClick={() => { setOpenDropdownId(null); handleDelete(s.id); }} disabled={isPending} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</button>
                       </div>
