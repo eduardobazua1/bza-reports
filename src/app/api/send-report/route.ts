@@ -4,11 +4,7 @@ import { invoices, purchaseOrders, clients, suppliers } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { sendEmail, isEmailConfigured } from "@/lib/email";
 import * as XLSX from "xlsx";
-import path from "path";
-import fs from "fs";
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const PDFDocument = require("pdfkit");
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 
 export async function POST(req: NextRequest) {
   if (!isEmailConfigured()) {
@@ -34,7 +30,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Client not found" }, { status: 404 });
   }
 
-  // Query data
   let rows = await db
     .select({
       poNumber: purchaseOrders.poNumber,
@@ -67,12 +62,10 @@ export async function POST(req: NextRequest) {
     .where(eq(purchaseOrders.clientId, clientId))
     .orderBy(purchaseOrders.poNumber, invoices.invoiceNumber);
 
-  // Apply filter
   if (filter === "active") {
     rows = rows.filter((r) => r.shipmentStatus !== "entregado");
   }
 
-  // Column mapping
   const colMap: Record<string, { header: string; getValue: (r: typeof rows[0]) => string | number | null }> = {
     currentLocation: { header: "Current Location", getValue: (r) => r.currentLocation },
     lastLocationUpdate: { header: "Last Update", getValue: (r) => r.lastLocationUpdate },
@@ -104,7 +97,6 @@ export async function POST(req: NextRequest) {
   const dateStr = new Date().toISOString().split("T")[0];
   const safeName = client.name.replace(/[^a-zA-Z0-9]/g, "_");
 
-  // Build Excel if needed
   if (format === "excel" || format === "both") {
     const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
     ws["!cols"] = headers.map((h, i) => ({
@@ -119,7 +111,6 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Build PDF if needed
   if (format === "pdf" || format === "both") {
     const pdfBuffer = await generatePdfBuffer(client.name, rows, selectedCols, colMap, filter === "active");
     attachments.push({
@@ -155,7 +146,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Generate PDF buffer using same data as preview
 async function generatePdfBuffer(
   clientName: string,
   rows: Array<Record<string, unknown>>,
@@ -163,18 +153,21 @@ async function generatePdfBuffer(
   colMap: Record<string, { header: string; getValue: (r: never) => string | number | null }>,
   showOnlyActive: boolean
 ): Promise<Buffer> {
-  const DARK_GREEN = "#0d3d3b";
-  const TEAL = "#4dd9b4";
-  const LIGHT_BG = "#f8fafa";
-  const GRAY = "#666666";
-  const WHITE = "#ffffff";
-
   const isLandscape = selectedCols.length > 8;
-  const pageWidth = isLandscape ? 792 : 612;
-  const pageHeight = isLandscape ? 612 : 792;
-  const MARGIN = 50;
-  const TABLE_WIDTH = pageWidth - MARGIN * 2;
-  const MAX_Y = pageHeight - 70;
+  const PAGE_W = isLandscape ? 792 : 612;
+  const PAGE_H = isLandscape ? 612 : 792;
+  const M = 50;
+  const W = PAGE_W - M * 2;
+  const FOOTER_Y = PAGE_H - 70;
+  const ROW_H = 16;
+  const HDR_ROW_H = 18;
+
+  const TEAL  = rgb(0.051, 0.239, 0.231);   // #0d3d3b
+  const CYAN  = rgb(0.302, 0.851, 0.706);   // #4dd9b4
+  const DARK  = rgb(0.2, 0.2, 0.2);
+  const GRAY  = rgb(0.4, 0.4, 0.4);
+  const LGRY  = rgb(0.973, 0.973, 0.973);   // #f8fafa
+  const WHITE = rgb(1, 1, 1);
 
   // Scale column widths
   const baseWidths: Record<string, number> = {
@@ -184,70 +177,78 @@ async function generatePdfBuffer(
     terms: 70, transportType: 55, licenseFsc: 60, chainOfCustody: 55, inputClaim: 60, outputClaim: 60,
   };
   const totalBase = selectedCols.reduce((s, c) => s + (baseWidths[c] || 50), 0);
-  const scale = TABLE_WIDTH / totalBase;
+  const scale = W / totalBase;
   const colWidths = selectedCols.map((c) => Math.max(Math.round((baseWidths[c] || 50) * scale), 25));
-  colWidths[colWidths.length - 1] += TABLE_WIDTH - colWidths.reduce((s, w) => s + w, 0);
+  colWidths[colWidths.length - 1] += W - colWidths.reduce((s, w) => s + w, 0);
 
-  const doc = new PDFDocument({ size: "LETTER", layout: isLandscape ? "landscape" : "portrait", margin: MARGIN, bufferPages: true });
-  const chunks: Buffer[] = [];
-  doc.on("data", (chunk: Buffer) => chunks.push(chunk));
-  const pdfReady = new Promise<Buffer>((resolve) => { doc.on("end", () => resolve(Buffer.concat(chunks))); });
+  const pdfDoc = await PDFDocument.create();
+  let page = pdfDoc.addPage([PAGE_W, PAGE_H]);
+  const font  = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontB = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const CAP = 0.716;
 
-  // Header
-  doc.fillColor(DARK_GREEN).fontSize(18).font("Helvetica-Bold").text("BZA International Services", MARGIN, 40);
-  doc.fillColor(GRAY).fontSize(9).font("Helvetica").text("1209 S. 10th St. Suite #583, McAllen, TX 78501", MARGIN, 62);
-  doc.moveTo(MARGIN, 82).lineTo(pageWidth - MARGIN, 82).strokeColor(TEAL).lineWidth(2).stroke();
+  const BY = (pkY: number) => PAGE_H - pkY;
+  const RY = (pkY: number, h: number) => PAGE_H - pkY - h;
 
-  doc.fillColor(DARK_GREEN).fontSize(14).font("Helvetica-Bold").text("Shipment Report", MARGIN, 92);
-  doc.fillColor(GRAY).fontSize(10).font("Helvetica").text(`Prepared for: ${clientName}`, MARGIN, 110);
-  doc.text(`Date: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`, MARGIN, 124);
-  if (showOnlyActive) doc.text("Filter: Active shipments only", MARGIN + 250, 124);
+  function dt(text: string, x: number, pkY: number, size: number, f: typeof font, color: typeof DARK) {
+    page.drawText(text, { x, y: BY(pkY) - size * CAP, size, font: f, color });
+  }
+  function dr(x: number, pkY: number, w: number, h: number, color: typeof TEAL) {
+    page.drawRectangle({ x, y: RY(pkY, h), width: w, height: h, color });
+  }
+  function trunc(text: string, maxW: number, f: typeof font, size: number): string {
+    if (f.widthOfTextAtSize(text, size) <= maxW) return text;
+    let t = text;
+    while (t.length > 0 && f.widthOfTextAtSize(t + "...", size) > maxW) t = t.slice(0, -1);
+    return t.length > 0 ? t + "..." : text.slice(0, 1);
+  }
+
+  function drawTableHeader(ty: number): number {
+    dr(M, ty, W, HDR_ROW_H, TEAL);
+    let cx = M + 5;
+    for (let i = 0; i < selectedCols.length; i++) {
+      dt(trunc(colMap[selectedCols[i]].header, colWidths[i] - 5, fontB, 6.5), cx, ty + 5, 6.5, fontB, WHITE);
+      cx += colWidths[i];
+    }
+    return ty + HDR_ROW_H;
+  }
+
+  function drawFooter() {
+    page.drawLine({ start: { x: M, y: BY(FOOTER_Y) }, end: { x: PAGE_W - M, y: BY(FOOTER_Y) }, thickness: 1, color: CYAN });
+    dt("BZA International Services, LLC | McAllen, TX | Confidential", M, FOOTER_Y + 5, 7, font, GRAY);
+  }
+
+  // Page 1 header
+  dt("BZA International Services", M, 40, 18, fontB, TEAL);
+  dt("1209 S. 10th St. Suite #583, McAllen, TX 78501", M, 62, 9, font, GRAY);
+  page.drawLine({ start: { x: M, y: BY(82) }, end: { x: PAGE_W - M, y: BY(82) }, thickness: 2, color: CYAN });
+  dt("Shipment Report", M, 92, 14, fontB, TEAL);
+  dt(`Prepared for: ${clientName}`, M, 110, 10, font, GRAY);
+  dt(`Date: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`, M, 124, 10, font, GRAY);
+  if (showOnlyActive) dt("Filter: Active shipments only", M + 250, 124, 10, font, GRAY);
 
   let y = 150;
+  y = drawTableHeader(y);
 
-  // Table header
-  doc.rect(MARGIN, y, TABLE_WIDTH, 18).fillColor(DARK_GREEN).fill();
-  let colX = MARGIN + 5;
-  selectedCols.forEach((col, i) => {
-    doc.fillColor(WHITE).fontSize(6.5).font("Helvetica-Bold").text(colMap[col].header, colX, y + 5, { width: colWidths[i] - 5 });
-    colX += colWidths[i];
-  });
-  y += 18;
-
-  // Rows
   for (let ri = 0; ri < rows.length; ri++) {
-    if (y > MAX_Y) {
-      doc.addPage();
-      y = MARGIN;
-      doc.rect(MARGIN, y, TABLE_WIDTH, 18).fillColor(DARK_GREEN).fill();
-      colX = MARGIN + 5;
-      selectedCols.forEach((col, i) => {
-        doc.fillColor(WHITE).fontSize(6.5).font("Helvetica-Bold").text(colMap[col].header, colX, y + 5, { width: colWidths[i] - 5 });
-        colX += colWidths[i];
-      });
-      y += 18;
+    if (y + ROW_H > FOOTER_Y - 5) {
+      drawFooter();
+      page = pdfDoc.addPage([PAGE_W, PAGE_H]);
+      y = M;
+      y = drawTableHeader(y);
     }
-    if (ri % 2 === 0) doc.rect(MARGIN, y, TABLE_WIDTH, 16).fillColor(LIGHT_BG).fill();
-    colX = MARGIN + 5;
-    selectedCols.forEach((col, i) => {
-      const val = String(colMap[col].getValue(rows[ri] as never) ?? "-");
-      doc.fillColor("#333").fontSize(6.5).font("Helvetica").text(val, colX, y + 4, { width: colWidths[i] - 5, ellipsis: true, lineBreak: false });
-      colX += colWidths[i];
-    });
-    y += 16;
+    if (ri % 2 === 0) dr(M, y, W, ROW_H, LGRY);
+    let cx = M + 5;
+    for (let i = 0; i < selectedCols.length; i++) {
+      const val = String(colMap[selectedCols[i]].getValue(rows[ri] as never) ?? "-");
+      dt(trunc(val, colWidths[i] - 5, font, 6.5), cx, y + 4, 6.5, font, DARK);
+      cx += colWidths[i];
+    }
+    y += ROW_H;
   }
 
-  // Footer
-  const pages = doc.bufferedPageRange();
-  for (let i = 0; i < pages.count; i++) {
-    doc.switchToPage(i);
-    doc.fillColor(GRAY).fontSize(7).font("Helvetica");
-    const footerY = pageHeight - 55;
-    doc.moveTo(MARGIN, footerY).lineTo(pageWidth - MARGIN, footerY).strokeColor(TEAL).lineWidth(1).stroke();
-    doc.text("BZA International Services, LLC | McAllen, TX | Confidential", MARGIN, footerY + 5, { align: "center", width: TABLE_WIDTH });
-    doc.text(`Page ${i + 1} of ${pages.count}`, MARGIN, footerY + 17, { align: "center", width: TABLE_WIDTH });
-  }
+  drawFooter();
 
-  doc.end();
-  return pdfReady;
+  const pdfBytes = await pdfDoc.save();
+  return Buffer.from(pdfBytes);
 }

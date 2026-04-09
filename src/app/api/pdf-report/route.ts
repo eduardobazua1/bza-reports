@@ -2,20 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { invoices, purchaseOrders, clients, suppliers } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import path from "path";
-import fs from "fs";
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 
 export const dynamic = "force-dynamic";
 
-// Use require to ensure pdfkit resolves fonts from node_modules at runtime
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const PDFDocument = require("pdfkit");
-
-const DARK_GREEN = "#0d3d3b";
-const TEAL = "#4dd9b4";
-const LIGHT_BG = "#f8fafa";
-const GRAY = "#666666";
-const WHITE = "#ffffff";
+function hexToRgb(hex: string) {
+  const h = hex.replace("#", "");
+  return rgb(parseInt(h.slice(0,2),16)/255, parseInt(h.slice(2,4),16)/255, parseInt(h.slice(4,6),16)/255);
+}
 
 const statusLabels: Record<string, string> = {
   programado: "Scheduled",
@@ -72,7 +66,6 @@ type Row = {
   estimatedArrival: string | null;
 };
 
-// Column definitions with base widths for proportional scaling
 const columnDefs: Record<string, { header: string; baseWidth: number; align: "left" | "right"; getValue: (r: Row) => string }> = {
   currentLocation: { header: "Location", baseWidth: 75, align: "left", getValue: (r) => r.currentLocation || "-" },
   lastLocationUpdate: { header: "Last Update", baseWidth: 65, align: "left", getValue: (r) => r.lastLocationUpdate ? new Date(r.lastLocationUpdate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "-" },
@@ -119,10 +112,8 @@ const columnDefs: Record<string, { header: string; baseWidth: number; align: "le
   estimatedArrival: { header: "ETA", baseWidth: 60, align: "left", getValue: (r) => r.estimatedArrival || "-" },
 };
 
-// Default columns if none specified (backward compat with old reportType)
 const defaultColumns = ["currentLocation", "poNumber", "clientPoNumber", "invoiceNumber", "vehicleId", "blNumber", "quantityTons", "sellPrice", "shipmentStatus", "shipmentDate"];
 
-// GET handler for AI-generated download links
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const clientId = Number(sp.get("clientId"));
@@ -140,27 +131,28 @@ export async function POST(req: NextRequest) {
     filter?: "active" | "all";
     reportType?: "tracking" | "summary" | "full";
   };
-  return generatePdf({ clientId, columns: columns || (reportType === "tracking" ? defaultColumns : reportType === "summary" ? ["poNumber","invoiceNumber","item","quantityTons","shipmentDate","terms","shipmentStatus"] : undefined), filter });
+  return generatePdf({
+    clientId,
+    columns: columns || (reportType === "tracking" ? defaultColumns : reportType === "summary" ? ["poNumber","invoiceNumber","item","quantityTons","shipmentDate","terms","shipmentStatus"] : undefined),
+    filter,
+  });
 }
 
 async function generatePdf({ clientId, columns: requestedColumns, filter }: { clientId: number; columns?: string[]; filter?: "active" | "all" }) {
   const showOnlyActive = filter === "active";
 
-  // Determine columns to use
   let selectedColKeys: string[];
   if (requestedColumns && requestedColumns.length > 0) {
     selectedColKeys = requestedColumns.filter((c: string) => columnDefs[c]);
   } else {
     selectedColKeys = defaultColumns;
   }
-
   if (selectedColKeys.length === 0) selectedColKeys = defaultColumns;
 
   const client = await db.query.clients.findFirst({ where: eq(clients.id, clientId) });
   if (!client) return NextResponse.json({ error: "Client not found" }, { status: 404 });
   const clientName = client.name;
 
-  // Get client invoices with all possible fields
   const rows: Row[] = await db
     .select({
       invoiceNumber: invoices.invoiceNumber,
@@ -210,119 +202,109 @@ async function generatePdf({ clientId, columns: requestedColumns, filter }: { cl
     .where(eq(purchaseOrders.clientId, clientId))
     .orderBy(purchaseOrders.poNumber, invoices.invoiceNumber);
 
-  // Filter rows
   const filteredRows = showOnlyActive ? rows.filter((r) => r.shipmentStatus !== "entregado") : rows;
 
-  // Calculate KPIs
-  let totalTons = 0, totalRevenue = 0;
-  let deliveredCount = 0;
-  const activeCount = rows.filter((r) => r.shipmentStatus !== "entregado").length;
+  // ── pdf-lib setup (landscape) ─────────────────────────────────
+  const PAGE_W = 792, PAGE_H = 612, M = 24, W = PAGE_W - M * 2;
+  const FOOTER_H = 28;
+  const HEADER_H = 58;
+  const ROW_H = 13;
+  const TABLE_HDR_H = 14;
+  const FOOTER_TOP = PAGE_H - M - 10; // rows must not go below this (top-origin)
 
-  for (const r of rows) {
-    const sell = r.sellPriceOverride ?? r.sellPrice ?? 0;
-    totalTons += r.quantityTons;
-    totalRevenue += r.quantityTons * sell;
-    if (r.shipmentStatus === "entregado") deliveredCount++;
-  }
+  const TEAL  = hexToRgb("#0d3d3b");
+  const CYAN  = hexToRgb("#0d9488");
+  const DARK  = rgb(0.11, 0.098, 0.09);
+  const GRAY  = rgb(0.47, 0.443, 0.424);
+  const LGRY  = rgb(0.961, 0.961, 0.961);
+  const WHITE = rgb(1, 1, 1);
+  const TOTAL_BG = hexToRgb("#166534");
 
-  // Always landscape for reports — more columns fit
-  const M = 24; // margin
-  const pageW = 792; // landscape letter width
-  const pageH = 612; // landscape letter height
-  const TABLE_W = pageW - M * 2;
-  const FOOTER_Y = pageH - M - 10;
-  const HEADER_H = 58; // space taken by page header
-
-  // Scale column widths proportionally
+  // Column width scaling
   const selectedDefs = selectedColKeys.map((k) => ({ key: k, ...columnDefs[k] }));
   const totalBaseWidth = selectedDefs.reduce((s, c) => s + c.baseWidth, 0);
-  const scale = TABLE_W / totalBaseWidth;
+  const scale = W / totalBaseWidth;
   const colWidths = selectedDefs.map((c) => Math.max(Math.round(c.baseWidth * scale), 22));
   const widthSum = colWidths.reduce((s, w) => s + w, 0);
-  colWidths[colWidths.length - 1] += TABLE_W - widthSum;
+  colWidths[colWidths.length - 1] += W - widthSum;
 
-  const doc = new PDFDocument({ size: "LETTER", layout: "landscape", margin: 0, autoFirstPage: true });
-  const chunks: Buffer[] = [];
-  doc.on("data", (chunk: Buffer) => chunks.push(chunk));
-  const pdfReady = new Promise<Buffer>((resolve) => { doc.on("end", () => resolve(Buffer.concat(chunks))); });
+  const pdfDoc = await PDFDocument.create();
+  let page = pdfDoc.addPage([PAGE_W, PAGE_H]);
+  const font  = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontB = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const CAP = 0.716;
 
-  const TEAL_COLOR = "#0d9488";
-  const DARK_COLOR = "#1c1917";
-  const GRAY_COLOR = "#78716c";
-  const ROW_BG = "#f5f5f4";
-  const TOTAL_BG = "#166534";
+  const BY = (pkY: number) => PAGE_H - pkY;
+  const RY = (pkY: number, h: number) => PAGE_H - pkY - h;
 
-  // ── HEADER (drawn once per page) ─────────────────────────────
-  function drawPageHeader() {
-    // Top cyan bar
-    doc.rect(0, 0, pageW, 3).fill(TEAL_COLOR);
-
-    // BZA. logo
-    doc.fontSize(14).font("Helvetica-Bold").fillColor(DARK_GREEN).text("BZA", M, M + 2, { lineBreak: false });
-    doc.fillColor(TEAL_COLOR).text(".", { lineBreak: false });
-
-    // Right: company info
-    const IX = pageW - M - 200;
-    doc.fontSize(6.5).font("Helvetica").fillColor(GRAY_COLOR);
-    doc.text("BZA International Services, LLC", IX, M + 2, { width: 200, align: "right", lineBreak: false });
-    doc.text("1209 S. 10th St. Suite A #583, McAllen, TX 78501", IX, M + 11, { width: 200, align: "right", lineBreak: false });
-    doc.text("accounting@bza-is.com  ·  www.bza-is.com", IX, M + 20, { width: 200, align: "right", lineBreak: false });
-
-    // Teal separator line
-    doc.moveTo(M, M + 32).lineTo(pageW - M, M + 32).strokeColor(TEAL_COLOR).lineWidth(1.5).stroke();
-
-    // Report title
-    doc.fontSize(9).font("Helvetica-Bold").fillColor(DARK_COLOR)
-      .text(`Shipment Report — ${clientName}`, M, M + 37, { lineBreak: false });
-    doc.fontSize(7).font("Helvetica").fillColor(GRAY_COLOR)
-      .text(
-        `${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}  ·  ${filteredRows.length} shipments`,
-        M + 220, M + 38, { lineBreak: false }
-      );
+  function dt(text: string, x: number, pkY: number, size: number, f: typeof font, color: typeof DARK) {
+    page.drawText(text, { x, y: BY(pkY) - size * CAP, size, font: f, color });
+  }
+  function dr(x: number, pkY: number, w: number, h: number, color: typeof TEAL) {
+    page.drawRectangle({ x, y: RY(pkY, h), width: w, height: h, color });
+  }
+  function trunc(text: string, maxW: number, f: typeof font, size: number): string {
+    if (f.widthOfTextAtSize(text, size) <= maxW) return text;
+    let t = text;
+    while (t.length > 0 && f.widthOfTextAtSize(t + "...", size) > maxW) t = t.slice(0, -1);
+    return t.length > 0 ? t + "..." : text.slice(0, 1);
   }
 
-  // ── TABLE HEADER ─────────────────────────────────────────────
-  function drawTableHeader(ty: number) {
-    doc.rect(M, ty, TABLE_W, 14).fill(DARK_GREEN);
+  function drawPageFooter() {
+    dr(0, PAGE_H - FOOTER_H, PAGE_W, FOOTER_H, TEAL);
+    const s = "BZA International Services, LLC  \u00B7  accounting@bza-is.com  \u00B7  www.bza-is.com";
+    const sw = font.widthOfTextAtSize(s, 6.5);
+    dt(s, (PAGE_W - sw) / 2, PAGE_H - FOOTER_H + 18, 6.5, font, CYAN);
+  }
+
+  function drawTableHeader(ty: number): number {
+    dr(M, ty, W, TABLE_HDR_H, TEAL);
     let cx = M + 2;
     for (let i = 0; i < selectedDefs.length; i++) {
-      doc.fontSize(6).font("Helvetica-Bold").fillColor(WHITE)
-        .text(selectedDefs[i].header, cx, ty + 4, { width: colWidths[i] - 2, lineBreak: false, ellipsis: true });
+      dt(trunc(selectedDefs[i].header, colWidths[i] - 4, fontB, 6), cx, ty + 5, 6, fontB, WHITE);
       cx += colWidths[i];
     }
+    return ty + TABLE_HDR_H;
   }
 
-  // ── FOOTER ────────────────────────────────────────────────────
-  function drawPageFooter() {
-    doc.rect(0, pageH - 28, pageW, 28).fill(DARK_GREEN);
-    doc.fontSize(6.5).font("Helvetica").fillColor(TEAL_COLOR)
-      .text("BZA International Services, LLC  ·  accounting@bza-is.com  ·  www.bza-is.com",
-        M, pageH - 18, { width: TABLE_W, align: "center", lineBreak: false });
+  function drawPageHeader() {
+    dr(0, 0, PAGE_W, 3, CYAN);
+    dt("BZA", M, M, 14, fontB, TEAL);
+    dt(".", M + fontB.widthOfTextAtSize("BZA", 14), M, 14, fontB, CYAN);
+    const IX = PAGE_W - M - 200;
+    const infoLines = [
+      "BZA International Services, LLC",
+      "1209 S. 10th St. Suite A #583, McAllen, TX 78501",
+      "accounting@bza-is.com  \u00B7  www.bza-is.com",
+    ];
+    infoLines.forEach((l, i) => {
+      const tw = font.widthOfTextAtSize(l, 6.5);
+      dt(l, Math.max(IX, PAGE_W - M - tw), M + 2 + i * 9, 6.5, font, GRAY);
+    });
+    page.drawLine({ start: { x: M, y: BY(M + 32) }, end: { x: PAGE_W - M, y: BY(M + 32) }, thickness: 1.5, color: CYAN });
+    dt(`Shipment Report \u2014 ${clientName}`, M, M + 37, 9, fontB, DARK);
+    const dateStr = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    dt(`${dateStr}  \u00B7  ${filteredRows.length} shipments`, M + 220, M + 38, 7, font, GRAY);
   }
 
-  const ROW_H = 13;
-
-  // ── RENDER ────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────
   drawPageHeader();
   let y = M + HEADER_H;
-  drawTableHeader(y);
-  y += 14;
+  y = drawTableHeader(y);
 
   for (let ri = 0; ri < filteredRows.length; ri++) {
-    if (y + ROW_H > FOOTER_Y - 14) {
+    if (y + ROW_H > FOOTER_TOP - TABLE_HDR_H) {
       drawPageFooter();
-      doc.addPage({ size: "LETTER", layout: "landscape", margin: 0 });
-      doc.rect(0, 0, pageW, 3).fill(TEAL_COLOR);
+      page = pdfDoc.addPage([PAGE_W, PAGE_H]);
+      dr(0, 0, PAGE_W, 3, CYAN);
       y = M + 8;
-      drawTableHeader(y);
-      y += 14;
+      y = drawTableHeader(y);
     }
-    if (ri % 2 === 0) doc.rect(M, y, TABLE_W, ROW_H).fill(ROW_BG);
+    if (ri % 2 === 0) dr(M, y, W, ROW_H, LGRY);
     let cx = M + 2;
     for (let i = 0; i < selectedDefs.length; i++) {
       const val = String(selectedDefs[i].getValue(filteredRows[ri]) ?? "-");
-      doc.fontSize(6.5).font("Helvetica").fillColor(DARK_COLOR)
-        .text(val, cx, y + 3, { width: colWidths[i] - 2, lineBreak: false, ellipsis: true });
+      dt(trunc(val, colWidths[i] - 4, font, 6.5), cx, y + 3, 6.5, font, DARK);
       cx += colWidths[i];
     }
     y += ROW_H;
@@ -330,29 +312,27 @@ async function generatePdf({ clientId, columns: requestedColumns, filter }: { cl
 
   // Totals row
   if (filteredRows.length > 0) {
-    if (y + ROW_H > FOOTER_Y - 14) {
+    if (y + ROW_H > FOOTER_TOP - TABLE_HDR_H) {
       drawPageFooter();
-      doc.addPage({ size: "LETTER", layout: "landscape", margin: 0 });
-      doc.rect(0, 0, pageW, 3).fill(TEAL_COLOR);
+      page = pdfDoc.addPage([PAGE_W, PAGE_H]);
+      dr(0, 0, PAGE_W, 3, CYAN);
       y = M + 8;
     }
-    doc.rect(M, y, TABLE_W, ROW_H).fill(TOTAL_BG);
-    doc.fontSize(6.5).font("Helvetica-Bold").fillColor(WHITE)
-      .text("TOTAL", M + 2, y + 3, { lineBreak: false });
+    dr(M, y, W, ROW_H, TOTAL_BG);
+    dt("TOTAL", M + 2, y + 3, 6.5, fontB, WHITE);
     const tonsIdx = selectedColKeys.indexOf("quantityTons");
     if (tonsIdx >= 0) {
       let tx = M + 2;
       for (let i = 0; i < tonsIdx; i++) tx += colWidths[i];
-      doc.fontSize(6.5).font("Helvetica-Bold").fillColor(WHITE)
-        .text(`${filteredRows.reduce((s, r) => s + r.quantityTons, 0).toFixed(3)} TN`, tx, y + 3, { width: colWidths[tonsIdx] - 2, lineBreak: false });
+      const total = filteredRows.reduce((s, r) => s + r.quantityTons, 0).toFixed(3);
+      dt(`${total} TN`, tx, y + 3, 6.5, fontB, WHITE);
     }
   }
 
   drawPageFooter();
-  doc.end();
-  const buffer = await pdfReady;
 
-  return new NextResponse(buffer as unknown as BodyInit, {
+  const pdfBytes = await pdfDoc.save();
+  return new NextResponse(Buffer.from(pdfBytes), {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="BZA_Report_${clientName.replace(/[^a-zA-Z0-9]/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf"`,

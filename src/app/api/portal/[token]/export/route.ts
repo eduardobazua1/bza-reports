@@ -3,6 +3,7 @@ import { clients, invoices, purchaseOrders } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import * as XLSX from "xlsx";
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 
 const statusLabels: Record<string, string> = {
   programado: "Scheduled", en_transito: "In Transit", en_aduana: "Customs", entregado: "Delivered",
@@ -117,98 +118,113 @@ function generateExcel(data: Record<string, any>[], safeName: string, dateStr: s
   });
 }
 
-async function generatePDF(data: Record<string, any>[], clientName: string, safeName: string, dateStr: string) {
-  const PDFDocument = (await import("pdfkit")).default;
+async function generatePDF(data: Record<string, unknown>[], clientName: string, safeName: string, dateStr: string) {
+  const PAGE_W = 792, PAGE_H = 612, M = 20;
+  const W = PAGE_W - M * 2; // 752 usable
+  const ROW_H = 15;
+  const HDR_H = 15;
+  const SAFE_BOTTOM = PAGE_H - 30; // stop before this y (top-origin)
 
-  // LETTER landscape = 792 x 612 pts
-  const M = 20; // margin
-  const pageW = 792 - M * 2; // 752 usable
-  const doc = new PDFDocument({ size: "LETTER", layout: "landscape", margin: M });
-  const chunks: Buffer[] = [];
-  doc.on("data", (c: Buffer) => chunks.push(c));
+  const TEAL    = rgb(0.051, 0.584, 0.533);  // #0d9488
+  const DARK    = rgb(0.11, 0.098, 0.09);
+  const GRAY    = rgb(0.47, 0.443, 0.424);
+  const LGRY    = rgb(0.961, 0.961, 0.961);  // #f5f5f4
+  const WHITE   = rgb(1, 1, 1);
+  const TOTBG   = rgb(0.086, 0.396, 0.204);  // #166534
 
-  const TEAL = "#0d9488";
-  const DARK = "#1c1917";
-  const GRAY = "#78716c";
-  const LIGHT_BG = "#f5f5f4";
-
-  if (data.length === 0) {
-    doc.fontSize(14).fillColor(DARK).text("BZA International Services, LLC", M, 30);
-    doc.fontSize(10).fillColor(GRAY).text("No shipments found.", M, 60);
-    doc.end();
-    const buffer = await new Promise<Buffer>(resolve => doc.on("end", () => resolve(Buffer.concat(chunks))));
-    return new NextResponse(buffer, {
-      headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="BZA_Shipments_${safeName}_${dateStr}.pdf"` },
-    });
-  }
-
-  const headers = Object.keys(data[0]);
-  const numCols = headers.length;
-  // Distribute page width proportionally
-  // Invoice(55) PO(55) Product(85) Qty(48) Price(52) ShipDate(58) ETA(58) Status(58) Location(75) Vehicle(58) BL(55) Transport(45)
+  // Fixed column widths proportional to raw widths
   const rawWidths = [55, 55, 85, 48, 52, 58, 58, 58, 75, 58, 55, 45];
   const rawTotal = rawWidths.reduce((a, b) => a + b, 0);
-  const colWidths = rawWidths.map(w => Math.round((w / rawTotal) * pageW));
-  const rowH = 15;
-  let y = 0;
+  const colWidths = rawWidths.map(w => Math.round((w / rawTotal) * W));
+  colWidths[colWidths.length - 1] += W - colWidths.reduce((s, w) => s + w, 0);
 
-  function drawPageHeader() {
-    doc.fontSize(12).fillColor(DARK).text("BZA International Services, LLC", M, M + 5);
-    doc.fontSize(8).fillColor(GRAY).text(`Shipment Report — ${clientName}`, M, M + 20);
-    doc.fontSize(7).fillColor(GRAY).text(`Generated ${dateStr} · ${data.length} shipments`, M, M + 32);
-    doc.moveTo(M, M + 44).lineTo(M + pageW, M + 44).strokeColor(TEAL).lineWidth(1.5).stroke();
-    y = M + 52;
+  const pdfDoc = await PDFDocument.create();
+  let page = pdfDoc.addPage([PAGE_W, PAGE_H]);
+  const font  = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontB = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const CAP = 0.716;
+
+  const BY = (pkY: number) => PAGE_H - pkY;
+  const RY = (pkY: number, h: number) => PAGE_H - pkY - h;
+
+  function dt(text: string, x: number, pkY: number, size: number, f: typeof font, color: typeof DARK) {
+    page.drawText(text, { x, y: BY(pkY) - size * CAP, size, font: f, color });
+  }
+  function dr(x: number, pkY: number, w: number, h: number, color: typeof TEAL) {
+    page.drawRectangle({ x, y: RY(pkY, h), width: w, height: h, color });
+  }
+  function trunc(text: string, maxW: number, f: typeof font, size: number): string {
+    if (f.widthOfTextAtSize(text, size) <= maxW) return text;
+    let t = text;
+    while (t.length > 0 && f.widthOfTextAtSize(t + "...", size) > maxW) t = t.slice(0, -1);
+    return t.length > 0 ? t + "..." : text.slice(0, 1);
   }
 
-  function drawTableHeader() {
-    doc.rect(M, y, pageW, rowH).fill(TEAL);
+  const headers = data.length > 0 ? Object.keys(data[0]) : ["Invoice","PO","Product","Quantity (TN)","Price (USD/TN)","Ship Date","ETA","Status","Location","Vehicle","BL Number","Transport"];
+
+  function drawTableHeader(ty: number): number {
+    dr(M, ty, W, HDR_H, TEAL);
     let x = M;
     headers.forEach((h, i) => {
-      doc.fontSize(6).fillColor("white").text(h, x + 2, y + 4, { width: colWidths[i] - 4, ellipsis: true });
+      dt(trunc(h, colWidths[i] - 4, fontB, 6), x + 2, ty + 4, 6, fontB, WHITE);
       x += colWidths[i];
     });
-    y += rowH;
+    return ty + HDR_H;
   }
 
-  drawPageHeader();
-  drawTableHeader();
+  // Page 1 header
+  dt("BZA International Services, LLC", M, M + 5, 12, fontB, DARK);
+  dt(`Shipment Report \u2014 ${clientName}`, M, M + 20, 8, font, GRAY);
+  dt(`Generated ${dateStr} \u00B7 ${data.length} shipments`, M, M + 32, 7, font, GRAY);
+  page.drawLine({ start: { x: M, y: BY(M + 44) }, end: { x: M + W, y: BY(M + 44) }, thickness: 1.5, color: TEAL });
+
+  let y = M + 52;
+  y = drawTableHeader(y);
 
   let totalTons = 0;
 
-  data.forEach((row, idx) => {
-    if (y > 570) {
-      doc.addPage({ size: "LETTER", layout: "landscape", margin: M });
+  for (let idx = 0; idx < data.length; idx++) {
+    if (y + ROW_H > SAFE_BOTTOM) {
+      page = pdfDoc.addPage([PAGE_W, PAGE_H]);
       y = M;
-      drawTableHeader();
+      y = drawTableHeader(y);
     }
 
-    if (idx % 2 === 0) doc.rect(M, y, pageW, rowH).fill(LIGHT_BG);
+    if (idx % 2 === 0) dr(M, y, W, ROW_H, LGRY);
 
     let x = M;
     headers.forEach((h, i) => {
-      let val = row[h];
+      let val = data[idx][h];
       if (typeof val === "number") {
         val = h.includes("Price") || h.includes("Total") ? "$" + val.toFixed(2) : val.toFixed(3);
       }
-      doc.fontSize(6).fillColor(DARK).text(String(val ?? ""), x + 2, y + 4, { width: colWidths[i] - 4, ellipsis: true });
+      dt(trunc(String(val ?? ""), colWidths[i] - 4, font, 6), x + 2, y + 4, 6, font, DARK);
       x += colWidths[i];
     });
 
-    if (typeof row["Quantity (TN)"] === "number") totalTons += row["Quantity (TN)"];
-    y += rowH;
-  });
+    const qty = data[idx]["Quantity (TN)"];
+    if (typeof qty === "number") totalTons += qty;
+    y += ROW_H;
+  }
 
   // Totals row
-  doc.rect(M, y, pageW, rowH).fill("#166534");
-  let tx = M;
-  doc.fontSize(6).fillColor("white").text("TOTAL", tx + 2, y + 4);
-  tx += colWidths[0] + colWidths[1] + colWidths[2]; // skip to Qty column
-  doc.text(totalTons.toFixed(3) + " TN", tx + 2, y + 4, { width: colWidths[3] + colWidths[4] - 4 });
+  if (data.length > 0) {
+    if (y + ROW_H > SAFE_BOTTOM) {
+      page = pdfDoc.addPage([PAGE_W, PAGE_H]);
+      y = M;
+    }
+    dr(M, y, W, ROW_H, TOTBG);
+    dt("TOTAL", M + 2, y + 4, 6, fontB, WHITE);
+    // Skip to Qty column (cols 0,1,2)
+    const qtyX = M + colWidths[0] + colWidths[1] + colWidths[2];
+    dt(totalTons.toFixed(3) + " TN", qtyX + 2, y + 4, 6, fontB, WHITE);
+  }
 
-  doc.end();
-  const buffer = await new Promise<Buffer>(resolve => doc.on("end", () => resolve(Buffer.concat(chunks))));
-
-  return new NextResponse(buffer, {
-    headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="BZA_Shipments_${safeName}_${dateStr}.pdf"` },
+  const pdfBytes = await pdfDoc.save();
+  return new NextResponse(Buffer.from(pdfBytes) as unknown as BodyInit, {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="BZA_Shipments_${safeName}_${dateStr}.pdf"`,
+    },
   });
 }
