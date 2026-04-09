@@ -359,7 +359,7 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                             setStatusDropdownId(row.invoice.id);
                           }
                         }}
-                        className={`px-1.5 py-0.5 rounded text-[10px] font-medium cursor-pointer hover:opacity-80 ${shipmentStatusColors[row.invoice.shipmentStatus] || ""}`}
+                        className={`px-1.5 py-0.5 rounded text-[10px] font-medium cursor-pointer hover:opacity-80 whitespace-nowrap ${shipmentStatusColors[row.invoice.shipmentStatus] || ""}`}
                       >
                         {shipmentStatusLabels[row.invoice.shipmentStatus] || row.invoice.shipmentStatus} ▾
                       </button>
