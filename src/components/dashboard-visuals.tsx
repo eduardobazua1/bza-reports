@@ -77,7 +77,7 @@ export function DashboardVisuals({
               tick={{ fontSize: 11, fill: "#a8a29e" }}
               axisLine={false} tickLine={false} width={42}
               tickCount={4}
-              domain={["auto", (max: number) => Math.ceil(max * 1.15 / 500) * 500]}
+              domain={[(min: number) => Math.floor(min * 0.85 / 500) * 500, (max: number) => Math.ceil(max * 1.15 / 500) * 500]}
               tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)}
             />
             <Tooltip
