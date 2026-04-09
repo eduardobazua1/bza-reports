@@ -370,19 +370,21 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                       </span>
                     </td>
                     <td className="px-3 py-1.5 text-xs text-right" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-end gap-0">
+                      <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => openPanel(row, "edit")}
-                          className="text-xs text-primary hover:underline font-medium px-2 py-1 hover:bg-blue-50 rounded-l border border-stone-200"
+                          className="text-[11px] text-stone-500 hover:text-[#0d3d3b] font-medium px-2 py-1 hover:bg-stone-100 rounded transition-colors"
+                          title="View / Edit"
                         >
-                          View/Edit
+                          Edit
                         </button>
                         {row.invoice.customerPaymentStatus === "unpaid" && row.clientId && (
                           <button
                             onClick={() => openPanel(row, "payment")}
-                            className="text-xs text-emerald-700 font-medium px-2 py-1 hover:bg-emerald-50 border border-l-0 border-stone-200"
+                            className="text-[11px] text-emerald-700 font-semibold px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 rounded-full border border-emerald-200 transition-colors"
+                            title="Receive Payment"
                           >
-                            Receive Payment
+                            Pay
                           </button>
                         )}
                         <div ref={openDropdownId === row.invoice.id ? dropdownRef : undefined}>
@@ -397,9 +399,10 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                                 setOpenDropdownId(row.invoice.id);
                               }
                             }}
-                            className="text-xs text-primary font-medium px-2 py-1 hover:bg-blue-50 rounded-r border border-l-0 border-stone-200"
+                            className="w-7 h-7 flex items-center justify-center text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-md transition-colors text-base leading-none"
+                            title="More actions"
                           >
-                            ▼
+                            ···
                           </button>
                         </div>
                       </div>
