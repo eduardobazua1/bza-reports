@@ -171,6 +171,29 @@ export default async function DashboardPage() {
     .map(([name, tons]) => ({ name, value: Math.round(tons) }))
     .sort((a, b) => b.value - a.value);
 
+  // Recent shipments for table
+  const recentShipments = [...allInvoices]
+    .filter(r => r.invoice.shipmentDate)
+    .sort((a, b) => (b.invoice.shipmentDate ?? "").localeCompare(a.invoice.shipmentDate ?? ""))
+    .slice(0, 10)
+    .map(r => {
+      const terms = r.terms || "";
+      let destination = "";
+      if (terms.includes("El Paso")) destination = "El Paso";
+      else if (terms.includes("Laredo")) destination = "Laredo";
+      else if (terms.includes("Eagle Pass")) destination = "Eagle Pass";
+      else if (terms.includes("Manzanillo")) destination = "Manzanillo";
+      else if (terms.includes("Veracruz")) destination = "Veracruz";
+      return {
+        invoiceNumber: r.invoice.invoiceNumber ?? "",
+        clientName: r.clientName ?? "",
+        destination,
+        tons: Math.round(r.invoice.quantityTons),
+        shipmentDate: r.invoice.shipmentDate ?? null,
+        status: r.invoice.shipmentStatus ?? "",
+      };
+    });
+
   // KPI gauges
   const deliveryRate = totalCount > 0 ? (deliveredCount / totalCount) * 100 : 0;
   const collectionRate = totalCount > 0 ? (totalPaid / totalCount) * 100 : 0;
@@ -294,6 +317,7 @@ export default async function DashboardPage() {
         {/* Charts take 3 columns */}
         <div className="lg:col-span-3 space-y-4">
           <DashboardVisuals
+            recentShipments={recentShipments}
             volumeByMonth={volumeByMonth}
             volumeByTransport={volumeByTransport}
             volumeByStatus={volumeByStatus}

@@ -1,110 +1,84 @@
 "use client";
 
-import {
-  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
-  AreaChart, Area, XAxis, YAxis, CartesianGrid,
-} from "recharts";
 import Link from "next/link";
 
-const TRANSPORT_COLORS: Record<string, string> = {
-  Railroad: "#2563eb",
-  Maritime: "#059669",
-  Truck: "#d97706",
-  Other: "#a8a29e",
+type RecentShipment = {
+  invoiceNumber: string;
+  clientName: string;
+  destination: string;
+  tons: number;
+  shipmentDate: string | null;
+  status: string;
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  Delivered: "#059669",
-  "In Transit": "#2563eb",
-  Customs: "#d97706",
-  Scheduled: "#a8a29e",
+const STATUS_STYLES: Record<string, { label: string; cls: string }> = {
+  entregado:   { label: "Delivered",  cls: "bg-emerald-100 text-emerald-700" },
+  en_transito: { label: "In Transit", cls: "bg-blue-100 text-blue-700" },
+  en_aduana:   { label: "Customs",    cls: "bg-amber-100 text-amber-700" },
 };
 
-const FALLBACK_COLORS = ["#2563eb", "#059669", "#d97706", "#dc2626", "#7c3aed", "#db2777"];
-
-function PieLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }: {
-  cx: number; cy: number; midAngle: number; innerRadius: number; outerRadius: number; percent: number;
-}) {
-  if (percent < 0.05) return null;
-  const RADIAN = Math.PI / 180;
-  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-  const x = cx + radius * Math.cos(-midAngle * RADIAN);
-  const y = cy + radius * Math.sin(-midAngle * RADIAN);
-  return (
-    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={12} fontWeight={600}>
-      {`${(percent * 100).toFixed(0)}%`}
-    </text>
-  );
+function fmtDate(d: string | null) {
+  if (!d) return "—";
+  const dt = new Date(d + "T12:00:00");
+  return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" });
 }
 
 export function DashboardVisuals({
-  volumeByMonth,
-  volumeByTransport,
-  volumeByStatus,
+  recentShipments,
 }: {
-  volumeByMonth: { month: string; tons: number }[];
-  volumeByTransport: { name: string; value: number }[];
-  volumeByStatus: { name: string; value: number }[];
-  volumeByClient?: { name: string; value: number }[];
-  volumeBySupplier?: { name: string; value: number }[];
-  volumeByIncoterm?: { name: string; value: number }[];
+  recentShipments: RecentShipment[];
+  // keep old props optional so page doesn't need updating all at once
+  volumeByMonth?: unknown[];
+  volumeByTransport?: unknown[];
+  volumeByStatus?: unknown[];
+  volumeByClient?: unknown[];
+  volumeBySupplier?: unknown[];
+  volumeByIncoterm?: unknown[];
 }) {
-  const chartCard = "bg-white rounded-md shadow-sm p-5 hover:shadow-md transition-shadow";
-
-  const volNums = volumeByMonth.map(d => d.tons);
-  const volMin = volNums.length ? Math.min(...volNums) : 0;
-  const volMax = volNums.length ? Math.max(...volNums) : 1000;
-  const yMin = Math.max(0, Math.floor(volMin * 0.85 / 200) * 200);
-  const yMax = Math.ceil(volMax * 1.05 / 200) * 200;
-
   return (
-    <div className="space-y-4">
-
-      {/* Volume by Month — area chart */}
-      <Link href="/reports" className={chartCard}>
-        <h3 className="text-sm font-semibold text-stone-600 mb-2">Volume by Month (TN)</h3>
-        <div className="h-[160px] sm:h-[200px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={volumeByMonth} margin={{ top: 4, right: 8, left: 0, bottom: 16 }}>
-            <defs>
-              <linearGradient id="volGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#0d3d3b" stopOpacity={0.18} />
-                <stop offset="95%" stopColor="#0d3d3b" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0efed" vertical={false} />
-            <XAxis
-              dataKey="month"
-              tick={{ fontSize: 11, fill: "#a8a29e" }}
-              axisLine={false} tickLine={false}
-              interval="preserveStartEnd"
-            />
-            <YAxis
-              tick={{ fontSize: 11, fill: "#a8a29e" }}
-              axisLine={false} tickLine={false} width={42}
-              tickCount={4}
-              domain={[yMin, yMax]}
-              tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)}
-            />
-            <Tooltip
-              contentStyle={{ borderRadius: 8, border: "none", boxShadow: "0 4px 16px rgba(0,0,0,0.10)", fontSize: 13 }}
-              formatter={(v) => [`${Number(v).toLocaleString()} TN`, "Volume"]}
-              cursor={{ stroke: "#0d3d3b", strokeWidth: 1, strokeDasharray: "4 2" }}
-            />
-            <Area
-              type="monotone" dataKey="tons"
-              stroke="#0d3d3b" strokeWidth={2.5}
-              fill="url(#volGradient)"
-              dot={false}
-              activeDot={{ r: 5, fill: "#4dd9b4", strokeWidth: 0 }}
-              isAnimationActive={false}
-              baseValue={yMin}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-        </div>
-      </Link>
-
+    <div className="bg-white rounded-md shadow-sm">
+      <div className="px-4 py-3 border-b border-stone-100 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-stone-700">Recent Shipments</h3>
+        <Link href="/invoices" className="text-xs text-[#0d3d3b] font-medium hover:underline">
+          View all →
+        </Link>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-stone-50 border-b border-stone-100">
+              <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Invoice</th>
+              <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Client</th>
+              <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide hidden sm:table-cell">Destination</th>
+              <th className="text-right px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Tons</th>
+              <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide hidden sm:table-cell">Date</th>
+              <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {recentShipments.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-4 py-8 text-center text-stone-400 text-sm">No shipments found</td>
+              </tr>
+            )}
+            {recentShipments.map((s, i) => {
+              const st = STATUS_STYLES[s.status] ?? { label: "Scheduled", cls: "bg-stone-100 text-stone-500" };
+              return (
+                <tr key={i} className="border-t border-stone-50 hover:bg-stone-50 transition-colors">
+                  <td className="px-4 py-2.5 font-medium text-[#0d3d3b] text-xs">{s.invoiceNumber}</td>
+                  <td className="px-4 py-2.5 text-stone-700 text-xs max-w-[100px] truncate">{s.clientName || "—"}</td>
+                  <td className="px-4 py-2.5 text-stone-500 text-xs hidden sm:table-cell">{s.destination || "—"}</td>
+                  <td className="px-4 py-2.5 text-right font-semibold text-stone-800 text-xs">{s.tons.toLocaleString()}</td>
+                  <td className="px-4 py-2.5 text-stone-400 text-xs hidden sm:table-cell">{fmtDate(s.shipmentDate)}</td>
+                  <td className="px-4 py-2.5">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${st.cls}`}>{st.label}</span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
