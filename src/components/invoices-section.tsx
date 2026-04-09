@@ -306,8 +306,8 @@ export function InvoicesSection({
                     <td className="px-3 py-1.5 border-t border-stone-100 text-xs text-stone-500">
                       {formatDate(calcDueDate(inv, clientTermsDays)) || "—"}
                     </td>
-                    <td className="px-3 py-1.5 border-t border-stone-100">
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${shipmentStatusColors[inv.shipmentStatus] || ""}`}>
+                    <td className="px-3 py-1.5 border-t border-stone-100 whitespace-nowrap">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap ${shipmentStatusColors[inv.shipmentStatus] || ""}`}>
                         {shipmentStatusLabels[inv.shipmentStatus] || inv.shipmentStatus}
                       </span>
                     </td>
