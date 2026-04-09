@@ -237,7 +237,7 @@ export function ClientActions({ clients }: { clients: Client[] }) {
       )}
 
       {/* Clients Table */}
-      <div className="bg-white rounded-md shadow-sm overflow-hidden">
+      <div className="bg-white rounded-md shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-muted">

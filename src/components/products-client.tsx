@@ -265,7 +265,7 @@ export function ProductsClient({ products }: { products: Product[] }) {
   }
 
   return (
-    <div className="bg-white rounded-md shadow-sm overflow-hidden">
+    <div className="bg-white rounded-md shadow-sm">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <span className="text-sm text-muted-foreground">{products.length} product{products.length !== 1 ? "s" : ""}</span>
         {!showAddRow && (

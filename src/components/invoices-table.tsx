@@ -276,7 +276,7 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
   return (
     <div className="relative flex gap-4 items-start">
       {/* Table */}
-      <div className={`bg-white rounded-md shadow-sm overflow-hidden transition-all duration-300 ${selectedId ? "flex-1 min-w-0" : "w-full"}`}>
+      <div className={`bg-white rounded-md shadow-sm transition-all duration-300 ${selectedId ? "flex-1 min-w-0" : "w-full"}`}>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-muted">
