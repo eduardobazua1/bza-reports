@@ -357,9 +357,9 @@ export function SupplierOrdersSection({
                                   setDropdownPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
                                   setOpenDropdownId(order.id);
                                 }}
-                                className="text-xs text-primary font-medium px-2 py-1 hover:bg-blue-50 rounded-r border border-l-0 border-stone-200"
+                                className="w-7 h-7 flex items-center justify-center text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-md transition-colors text-base leading-none"
                               >
-                                ▼
+                                ···
                               </button>
                             </div>
                           </div>

@@ -302,9 +302,9 @@ export function ClientActions({ clients }: { clients: Client[] }) {
                     <div className="relative inline-block" ref={openDropdownId === client.id ? dropdownRef : undefined}>
                       <button
                         onClick={() => setOpenDropdownId(openDropdownId === client.id ? null : client.id)}
-                        className="text-xs text-primary font-medium px-2 py-1 hover:bg-blue-50 rounded border border-stone-200"
+                        className="w-7 h-7 flex items-center justify-center text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-md transition-colors text-base leading-none"
                       >
-                        ▼
+                        ···
                       </button>
                       {openDropdownId === client.id && (
                         <div className="absolute right-0 top-full mt-1 bg-white border border-stone-200 rounded-md shadow-lg z-50 min-w-[140px] py-1 text-left">
