@@ -227,7 +227,7 @@ async function generateInvoicePdf(invoiceNumber: string): Promise<Buffer> {
   dt(formatDate(inv.shipmentDate || invoiceDate), TC.date,    y + 9, 7.5, font, DARK);
   const prodLines = wrapText(productLine, 228, font, 7.5);
   prodLines.forEach((l, i) => dt(l, TC.product, y + 9 + i * 10, 7.5, font, DARK));
-  dt(balesDisplay,               TC.bales,   y + 9, 7.5, font, DARK);
+  if (balesDisplay) dt(balesDisplay, TC.bales, y + 9, 7.5, font, DARK);
   dt(inv.quantityTons.toFixed(3), TC.admt,   y + 9, 7.5, font, DARK);
   dt(`$${price.toFixed(2)}`,     TC.price,   y + 9, 7.5, font, DARK);
   dtR(`$${fmtCurrency(total)}`,  TC.total,   y + 9, 7.5, font, DARK);
