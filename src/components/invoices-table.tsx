@@ -374,9 +374,9 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                         {row.invoice.customerPaymentStatus === "unpaid" && row.clientId && (
                           <button
                             onClick={() => openPanel(row, "payment")}
-                            className="text-[11px] text-emerald-700 font-medium px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 rounded border border-emerald-200 transition-colors whitespace-nowrap"
+                            className="text-[11px] text-emerald-700 font-medium px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 rounded border border-emerald-200 transition-colors"
                           >
-                            Receive Payment
+                            Pay
                           </button>
                         )}
                         <div ref={openDropdownId === row.invoice.id ? dropdownRef : undefined}>
@@ -391,10 +391,10 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                                 setOpenDropdownId(row.invoice.id);
                               }
                             }}
-                            className="w-7 h-7 flex items-center justify-center text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-md transition-colors"
+                            className="w-7 h-7 flex items-center justify-center text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-md transition-colors text-base leading-none"
                             title="More actions"
                           >
-                            ▼
+                            ···
                           </button>
                         </div>
                       </div>
