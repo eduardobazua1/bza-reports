@@ -107,12 +107,12 @@ export function DashboardVisuals({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* Transport Type */}
-      <Link href="/reports" className={chartCard}>
-        <h3 className="text-sm font-semibold text-stone-600 mb-2">Volume by Transport</h3>
-        <div style={{ height: 180 }}>
+      <Link href="/reports" className="bg-white rounded-md shadow-sm p-3 hover:shadow-md transition-shadow">
+        <h3 className="text-xs font-semibold text-stone-500 mb-1">Volume by Transport</h3>
+        <div style={{ height: 130 }}>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie data={volumeByTransport} cx="50%" cy="50%" innerRadius={50} outerRadius={80}
+              <Pie data={volumeByTransport} cx="50%" cy="50%" innerRadius={35} outerRadius={58}
                 paddingAngle={3} dataKey="value" labelLine={false} label={PieLabel as never}>
                 {volumeByTransport.map((d, i) => (
                   <Cell key={i} fill={TRANSPORT_COLORS[d.name] || FALLBACK_COLORS[i % FALLBACK_COLORS.length]} />
@@ -122,23 +122,23 @@ export function DashboardVisuals({
             </PieChart>
           </ResponsiveContainer>
         </div>
-        <div className="flex flex-wrap gap-x-4 gap-y-1 justify-center mt-3">
+        <div className="flex flex-wrap gap-x-3 gap-y-1 justify-center mt-2">
           {volumeByTransport.map((d, i) => (
-            <div key={d.name} className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: TRANSPORT_COLORS[d.name] || FALLBACK_COLORS[i % FALLBACK_COLORS.length] }} />
-              <span className="text-xs text-stone-500">{d.name}</span>
+            <div key={d.name} className="flex items-center gap-1">
+              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: TRANSPORT_COLORS[d.name] || FALLBACK_COLORS[i % FALLBACK_COLORS.length] }} />
+              <span className="text-[11px] text-stone-500">{d.name}</span>
             </div>
           ))}
         </div>
       </Link>
 
       {/* Shipment Status */}
-      <Link href="/shipments" className={chartCard}>
-        <h3 className="text-sm font-semibold text-stone-600 mb-2">Shipments by Status</h3>
-        <div style={{ height: 180 }}>
+      <Link href="/shipments" className="bg-white rounded-md shadow-sm p-3 hover:shadow-md transition-shadow">
+        <h3 className="text-xs font-semibold text-stone-500 mb-1">Shipments by Status</h3>
+        <div style={{ height: 130 }}>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie data={volumeByStatus} cx="50%" cy="50%" innerRadius={50} outerRadius={80}
+              <Pie data={volumeByStatus} cx="50%" cy="50%" innerRadius={35} outerRadius={58}
                 paddingAngle={3} dataKey="value" labelLine={false} label={PieLabel as never}>
                 {volumeByStatus.map((d, i) => (
                   <Cell key={i} fill={STATUS_COLORS[d.name] || FALLBACK_COLORS[i % FALLBACK_COLORS.length]} />
@@ -148,11 +148,11 @@ export function DashboardVisuals({
             </PieChart>
           </ResponsiveContainer>
         </div>
-        <div className="flex flex-wrap gap-x-4 gap-y-1 justify-center mt-3">
+        <div className="flex flex-wrap gap-x-3 gap-y-1 justify-center mt-2">
           {volumeByStatus.map((d, i) => (
-            <div key={d.name} className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: STATUS_COLORS[d.name] || FALLBACK_COLORS[i % FALLBACK_COLORS.length] }} />
-              <span className="text-xs text-stone-500">{d.name}</span>
+            <div key={d.name} className="flex items-center gap-1">
+              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: STATUS_COLORS[d.name] || FALLBACK_COLORS[i % FALLBACK_COLORS.length] }} />
+              <span className="text-[11px] text-stone-500">{d.name}</span>
             </div>
           ))}
         </div>
