@@ -332,7 +332,10 @@ export function InvoicesSection({
                               onClick={(e) => {
                                 if (openDropdownId === inv.id) { setOpenDropdownId(null); return; }
                                 const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                                setDropdownPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+                                const estimatedH = 180;
+                                const spaceBelow = window.innerHeight - r.bottom;
+                                const top = spaceBelow < estimatedH ? r.top - estimatedH - 4 : r.bottom + 4;
+                                setDropdownPos({ top, right: window.innerWidth - r.right });
                                 setOpenDropdownId(inv.id);
                               }}
                               className="w-7 h-7 flex items-center justify-center text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-md transition-colors text-base leading-none"
