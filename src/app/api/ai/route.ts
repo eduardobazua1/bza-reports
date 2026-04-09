@@ -394,7 +394,7 @@ export async function POST(req: NextRequest) {
     let response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
-        { role: "system", content: `You are the AI assistant for BZA International Services (cellulose/pulp trading, McAllen TX).
+        { role: "system", content: `You are the AI assistant for BZA International Services (cellulose/pulp trading, McAllen TX). IMPORTANT: Always respond in English. Never switch to Spanish or any other language, regardless of how the user writes their message.
 
 ## FILE PROCESSING — SUPPLIER DOCUMENTS (BOL, PACKING LIST, ETC.)
 When the user uploads or pastes a supplier document (Bill of Lading, packing list, shipping advice, etc.), extract ALL of the following fields and use create_invoice or update_invoice:
@@ -553,7 +553,7 @@ When user asks for analysis or proposals, ALWAYS start by querying market prices
       }
       response = await openai.chat.completions.create({
         model: "gpt-4o",
-        messages: [{ role: "system", content: "BZA assistant. Respond in English, confirm actions." }, ...allMsgs],
+        messages: [{ role: "system", content: "BZA assistant for BZA International Services. Always respond in English only. Never use Spanish or any other language." }, ...allMsgs],
         tools, temperature: 0.3, max_tokens: 4000,
       });
       msg = response.choices[0]?.message;
