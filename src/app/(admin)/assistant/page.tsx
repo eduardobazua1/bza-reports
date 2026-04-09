@@ -182,14 +182,14 @@ export default function AssistantPage() {
       {dragging && (
         <div className="absolute inset-0 z-50 bg-primary/10 border-2 border-dashed border-primary rounded-xl flex flex-col items-center justify-center gap-3 pointer-events-none">
           <Upload className="w-12 h-12 text-primary" strokeWidth={1.5} />
-          <p className="text-lg font-semibold text-primary">Suelta los archivos aquí</p>
-          <p className="text-sm text-primary/70">Excel, PDF, imágenes</p>
+          <p className="text-lg font-semibold text-primary">Drop files here</p>
+          <p className="text-sm text-primary/70">Excel, PDF, Images</p>
         </div>
       )}
 
       <div className="mb-4">
         <h1 className="text-2xl font-bold">AI Assistant</h1>
-        <p className="text-sm text-muted-foreground">Adjunta archivos arrastrándolos o con el botón (Excel, PDF, imágenes)</p>
+        <p className="text-sm text-muted-foreground">Attach files by dragging or using the button (Excel, PDF, Images)</p>
       </div>
 
       {/* Chat messages */}
@@ -199,19 +199,19 @@ export default function AssistantPage() {
             <div className="bg-white rounded-md shadow-sm p-6 text-center">
               <BotMessageSquare className="w-10 h-10 text-stone-400 mx-auto mb-3" strokeWidth={1.5} />
               <p className="text-sm text-stone-500 mb-3">
-                Tengo acceso a tus datos en tiempo real. Adjunta varios archivos arrastrándolos aquí.
+                I have real-time access to your data. Attach files by dragging them here.
               </p>
               <div className="flex justify-center gap-3 text-xs text-stone-400">
                 <span className="flex items-center gap-1 bg-stone-50 px-2 py-1 rounded"><FileSpreadsheet className="w-3 h-3" /> Excel</span>
                 <span className="flex items-center gap-1 bg-stone-50 px-2 py-1 rounded"><FileText className="w-3 h-3" /> PDF</span>
-                <span className="flex items-center gap-1 bg-stone-50 px-2 py-1 rounded"><Image className="w-3 h-3" /> Imágenes</span>
+                <span className="flex items-center gap-1 bg-stone-50 px-2 py-1 rounded"><Image className="w-3 h-3" /> Images</span>
               </div>
               <p className="text-xs text-stone-400 mt-3 flex items-center justify-center gap-1">
-                <Upload className="w-3 h-3" /> Arrastra archivos a cualquier parte de esta ventana
+                <Upload className="w-3 h-3" /> Drag files anywhere in this window
               </p>
             </div>
             <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2">Prueba:</p>
+              <p className="text-xs font-medium text-muted-foreground mb-2">Try:</p>
               <div className="flex flex-wrap gap-2">
                 {suggestions.map((s, i) => (
                   <button
@@ -298,7 +298,7 @@ export default function AssistantPage() {
           onClick={() => fileRef.current?.click()}
           disabled={loading}
           className="border border-border px-3 py-3 rounded-lg text-sm hover:bg-muted disabled:opacity-50 relative"
-          title="Adjuntar archivos"
+          title="Attach files"
         >
           <Paperclip className="w-4 h-4" />
           {attachedFiles.length > 0 && (
