@@ -152,6 +152,30 @@ export async function generateSupplierPoPdf(poId: number, soId?: number | null):
     page.drawLine({ start: { x: x1, y: BY(y1) }, end: { x: x2, y: BY(pkY2) }, thickness: 0.5, color: RULE });
   }
 
+  // Word-wrap text to fit within maxWidth, returns array of lines
+  function wrapText(text: string, maxWidth: number, f: typeof font, size: number): string[] {
+    const words = text.split(" ");
+    const lines: string[] = [];
+    let current = "";
+    for (const word of words) {
+      const test = current ? `${current} ${word}` : word;
+      if (f.widthOfTextAtSize(test, size) <= maxWidth) {
+        current = test;
+      } else {
+        if (current) lines.push(current);
+        current = word;
+      }
+    }
+    if (current) lines.push(current);
+    return lines;
+  }
+
+  function drawWrapped(text: string, x: number, pkY: number, maxWidth: number, size: number, f: typeof font, color: typeof DARK, lineH: number): number {
+    const lines = wrapText(text, maxWidth, f, size);
+    lines.forEach((line, i) => drawText(line, x, pkY + i * lineH, size, f, color));
+    return lines.length * lineH;
+  }
+
   let y = M;
 
   // Top accent bar
@@ -211,13 +235,20 @@ export async function generateSupplierPoPdf(poId: number, soId?: number | null):
   y += 10;
 
   const addrSize = 7.5;
-  const lineH = addrSize * 1.4;
-  const vendorH = vendorLines.length * lineH;
-  const shipToH = shipToLines.length * lineH;
+  const addrLineH = addrSize * 1.5;
 
-  vendorLines.forEach((line, i) => drawText(line, CA, y + i * lineH, addrSize, font, DARK));
-  shipToLines.forEach((line, i) => drawText(line, CB, y + i * lineH, addrSize, font, DARK));
-  y += Math.max(vendorH, shipToH) + 14;
+  // Draw each address line with wrapping within ADDR_W
+  let vendorTotalH = 0;
+  vendorLines.forEach(line => {
+    vendorTotalH += drawWrapped(line, CA, y + vendorTotalH, ADDR_W, addrSize, font, DARK, addrLineH);
+  });
+
+  let shipToTotalH = 0;
+  shipToLines.forEach(line => {
+    shipToTotalH += drawWrapped(line, CB, y + shipToTotalH, ADDR_W, addrSize, font, DARK, addrLineH);
+  });
+
+  y += Math.max(vendorTotalH, shipToTotalH) + 14;
 
   // Table header
   const TC = { desc: M + 6, qty: M + 355, rate: M + 415, amount: M + 472 };
