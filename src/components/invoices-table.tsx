@@ -344,7 +344,7 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                         <span className="text-stone-400">-</span>
                       )}
                     </td>
-                    <td className="px-3 py-1.5 text-xs" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-3 py-1.5 text-xs whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={(e) => {
                           if (statusDropdownId === row.invoice.id) {
