@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { formatNumber, formatCurrency } from "@/lib/utils";
 
 function PaperclipIcon({ className }: { className?: string }) {
@@ -348,7 +349,10 @@ export function SupplierOrdersSection({
                                 onClick={(e) => {
                                   if (openDropdownId === order.id) { setOpenDropdownId(null); return; }
                                   const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                                  setDropdownPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+                                  const estimatedH = 180;
+                                  const spaceBelow = window.innerHeight - r.bottom;
+                                  const top = spaceBelow < estimatedH ? r.top - estimatedH - 4 : r.bottom + 4;
+                                  setDropdownPos({ top, right: window.innerWidth - r.right });
                                   setOpenDropdownId(order.id);
                                 }}
                                 className="w-7 h-7 flex items-center justify-center text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-md transition-colors text-base leading-none"
@@ -471,13 +475,13 @@ export function SupplierOrdersSection({
         );
       })()}
 
-      {/* Dropdown — fixed position to escape overflow containers */}
+      {/* Dropdown — portal-rendered to escape overflow containers */}
       {openDropdownId !== null && dropdownPos && (() => {
         const order = list.find(o => o.id === openDropdownId);
         if (!order) return null;
         const wasSent = sentId === order.id;
         const isEditing = editingId === order.id;
-        return (
+        return createPortal(
           <div ref={dropdownRef} style={{ position: "fixed", top: dropdownPos.top, right: dropdownPos.right, zIndex: 9999 }} className="bg-white border border-stone-200 rounded-md shadow-lg min-w-[150px] py-1 text-left">
             <button onClick={() => { setOpenDropdownId(null); isEditing ? cancelEdit() : openEdit(order); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">View/Edit</button>
             <a href={`/api/supplier-po-pdf?poId=${purchaseOrderId}&soId=${order.id}`} target="_blank" rel="noopener noreferrer" className="block w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50" onClick={() => setOpenDropdownId(null)}>Print</a>
@@ -488,7 +492,8 @@ export function SupplierOrdersSection({
             )}
             <div className="border-t border-stone-100 my-1" />
             <button onClick={() => { setOpenDropdownId(null); handleDelete(order.id); }} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</button>
-          </div>
+          </div>,
+          document.body
         );
       })()}
 

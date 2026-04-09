@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useTransition, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { updateInvoice } from "@/server/actions";
 import { useRouter } from "next/navigation";
 import { shipmentStatusLabels, shipmentStatusColors } from "@/lib/utils";
@@ -42,7 +43,10 @@ export function ShipmentStatusBadge({
             const left = (rect.right + dropdownW + 4) > window.innerWidth
               ? rect.left - dropdownW - 4
               : rect.right + 4;
-            setPosStyle({ position: "fixed", top: rect.top, left: Math.max(4, left), zIndex: 9999 });
+            const estimatedH = 180;
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const top = spaceBelow < estimatedH ? rect.top - estimatedH - 4 : rect.bottom + 4;
+            setPosStyle({ position: "fixed", top, left: Math.max(4, left), zIndex: 9999 });
           }
           setOpen((v) => !v);
         }}
@@ -50,7 +54,7 @@ export function ShipmentStatusBadge({
       >
         {shipmentStatusLabels[currentStatus]} ▾
       </button>
-      {open && (
+      {open && createPortal(
         <div style={posStyle} className="bg-white border border-stone-200 rounded-md shadow-lg min-w-[130px] py-1">
           {statuses.map((s) => (
             <button
@@ -65,7 +69,8 @@ export function ShipmentStatusBadge({
               {s.label}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

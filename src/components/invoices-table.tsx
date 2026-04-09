@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useTransition } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { deleteInvoice, markInvoicesPaid, duplicateInvoice, markInvoiceUnpaid, updateInvoice } from "@/server/actions";
@@ -355,7 +356,10 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                             const left = (rect.right + dropdownW + 4) > window.innerWidth
                               ? rect.left - dropdownW - 4
                               : rect.right + 4;
-                            setStatusDropdownPos({ top: rect.top, left: Math.max(4, left) });
+                            const estimatedH = 180;
+                            const spaceBelow = window.innerHeight - rect.bottom;
+                            const top = spaceBelow < estimatedH ? rect.top - estimatedH - 4 : rect.bottom + 4;
+                            setStatusDropdownPos({ top, left: Math.max(4, left) });
                             setStatusDropdownId(row.invoice.id);
                           }
                         }}
@@ -387,7 +391,10 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                               } else {
                                 const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
                                 const w = 170;
-                                setActionDropdownPos({ top: rect.bottom + 4, left: Math.max(4, rect.right - w) });
+                                const estimatedH = 180;
+                                const spaceBelow = window.innerHeight - rect.bottom;
+                                const top = spaceBelow < estimatedH ? rect.top - estimatedH - 4 : rect.bottom + 4;
+                                setActionDropdownPos({ top, left: Math.max(4, rect.right - w) });
                                 setOpenDropdownId(row.invoice.id);
                               }
                             }}
@@ -407,11 +414,11 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
         </div>
       </div>
 
-      {/* Action (▼) dropdown — fixed positioned */}
+      {/* Action (▼) dropdown — portal-rendered to escape overflow containers */}
       {openDropdownId !== null && actionDropdownPos && (() => {
         const activeRow = rows.find((r) => r.invoice.id === openDropdownId);
         if (!activeRow) return null;
-        return (
+        return createPortal(
           <div
             ref={dropdownRef}
             style={{ position: "fixed", top: actionDropdownPos.top, left: actionDropdownPos.left, zIndex: 9999 }}
@@ -428,12 +435,13 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
             )}
             <div className="border-t border-stone-100 my-1" />
             <button onClick={() => { handleDelete(activeRow.invoice); setOpenDropdownId(null); }} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</button>
-          </div>
+          </div>,
+          document.body
         );
       })()}
 
-      {/* Status dropdown — fixed positioned to escape overflow-x-auto */}
-      {statusDropdownId !== null && statusDropdownPos && (
+      {/* Status dropdown — portal-rendered to escape overflow-x-auto */}
+      {statusDropdownId !== null && statusDropdownPos && createPortal(
         <div
           ref={statusDropdownRef}
           style={{ position: "fixed", top: statusDropdownPos.top, left: statusDropdownPos.left, zIndex: 9999 }}
@@ -455,7 +463,8 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
               </button>
             );
           })}
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Side Panel */}

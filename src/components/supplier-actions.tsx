@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { createSupplier, deleteSupplier } from "@/server/actions";
 import { useRouter } from "next/navigation";
 
@@ -125,6 +126,7 @@ export function SupplierActions({ suppliers }: { suppliers: Supplier[] }) {
   const [showForm, setShowForm] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -195,22 +197,37 @@ export function SupplierActions({ suppliers }: { suppliers: Supplier[] }) {
                 <td className="px-4 py-3 text-sm text-stone-500">{s.contactEmail || "—"}</td>
                 <td className="px-4 py-3 text-sm text-stone-500">{[s.city, s.country].filter(Boolean).join(", ") || "—"}</td>
                 <td className="px-4 py-3 text-right">
-                  <div className="relative inline-block" ref={openDropdownId === s.id ? dropdownRef : undefined}>
-                    <button onClick={() => setOpenDropdownId(openDropdownId === s.id ? null : s.id)} className="w-7 h-7 flex items-center justify-center text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-md transition-colors text-base leading-none">···</button>
-                    {openDropdownId === s.id && (
-                      <div className="absolute right-0 top-full mt-1 bg-white border border-stone-200 rounded-md shadow-lg z-50 min-w-[130px] py-1 text-left">
-                        <a href={`/suppliers/${s.id}`} className="block px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">View Detail</a>
-                        <div className="border-t border-stone-100 my-1" />
-                        <button onClick={() => { setOpenDropdownId(null); handleDelete(s.id); }} disabled={isPending} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</button>
-                      </div>
-                    )}
-                  </div>
+                  <button
+                    onClick={(e) => {
+                      if (openDropdownId === s.id) { setOpenDropdownId(null); return; }
+                      const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                      const estimatedH = 120;
+                      const spaceBelow = window.innerHeight - r.bottom;
+                      const top = spaceBelow < estimatedH ? r.top - estimatedH - 4 : r.bottom + 4;
+                      setDropdownPos({ top, right: window.innerWidth - r.right });
+                      setOpenDropdownId(s.id);
+                    }}
+                    className="w-7 h-7 flex items-center justify-center text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-md transition-colors text-base leading-none"
+                  >···</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {openDropdownId !== null && dropdownPos && (() => {
+        const supplier = suppliers.find(x => x.id === openDropdownId);
+        if (!supplier) return null;
+        return createPortal(
+          <div ref={dropdownRef} style={{ position: "fixed", top: dropdownPos.top, right: dropdownPos.right, zIndex: 9999 }} className="bg-white border border-stone-200 rounded-md shadow-lg min-w-[130px] py-1 text-left">
+            <a href={`/suppliers/${supplier.id}`} className="block px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">View Detail</a>
+            <div className="border-t border-stone-100 my-1" />
+            <button onClick={() => { setOpenDropdownId(null); handleDelete(supplier.id); }} disabled={isPending} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</button>
+          </div>,
+          document.body
+        );
+      })()}
     </div>
   );
 }
