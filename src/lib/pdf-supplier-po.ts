@@ -223,9 +223,9 @@ export async function generateSupplierPoPdf(poId: number, soId?: number | null):
   y += 10;
 
   // Addresses
-  const ADDR_W = Math.floor((W - 24) / 2);
   const CA = M;
-  const CB = M + ADDR_W + 24;
+  const CB = M + COL2;          // aligns with INCOTERM column
+  const ADDR_W = W - COL2 - 6; // width for right column
 
   const vendorLines = [supplier?.name || "", ...supplierAddress].filter(Boolean);
   const shipToLines = [client?.name || "", ...clientAddress].filter(Boolean);

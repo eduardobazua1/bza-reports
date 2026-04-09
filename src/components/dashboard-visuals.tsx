@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend,
+  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
 } from "recharts";
 import Link from "next/link";
@@ -55,10 +55,11 @@ export function DashboardVisuals({
     <div className="space-y-4">
 
       {/* Volume by Month — area chart */}
-      <Link href="/reports" className={`${chartCard} pb-8`}>
-        <h3 className="text-sm font-semibold text-stone-600 mb-4">Volume by Month (TN)</h3>
-        <ResponsiveContainer width="100%" height={260}>
-          <AreaChart data={volumeByMonth} margin={{ top: 10, right: 16, left: 0, bottom: 24 }}>
+      <Link href="/reports" className={chartCard}>
+        <h3 className="text-sm font-semibold text-stone-600 mb-3">Volume by Month (TN)</h3>
+        <div style={{ height: 220 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={volumeByMonth} margin={{ top: 8, right: 16, left: 0, bottom: 20 }}>
             <defs>
               <linearGradient id="volGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#0d3d3b" stopOpacity={0.18} />
@@ -93,63 +94,60 @@ export function DashboardVisuals({
             />
           </AreaChart>
         </ResponsiveContainer>
+        </div>
       </Link>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* Transport Type */}
       <Link href="/reports" className={chartCard}>
-        <h3 className="text-sm font-semibold text-stone-600 mb-4">Volume by Transport</h3>
-        <ResponsiveContainer width="100%" height={220}>
-          <PieChart>
-            <Pie
-              data={volumeByTransport}
-              cx="50%" cy="50%"
-              innerRadius={55} outerRadius={90}
-              paddingAngle={3}
-              dataKey="value"
-              labelLine={false}
-              label={PieLabel as never}
-            >
-              {volumeByTransport.map((d, i) => (
-                <Cell key={i} fill={TRANSPORT_COLORS[d.name] || FALLBACK_COLORS[i % FALLBACK_COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip formatter={(v) => [`${Number(v).toLocaleString()} TN`, "Volume"]} />
-            <Legend
-              iconType="circle"
-              iconSize={8}
-              formatter={(value) => <span style={{ fontSize: 12, color: "#78716c" }}>{value}</span>}
-            />
-          </PieChart>
-        </ResponsiveContainer>
+        <h3 className="text-sm font-semibold text-stone-600 mb-2">Volume by Transport</h3>
+        <div style={{ height: 180 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie data={volumeByTransport} cx="50%" cy="50%" innerRadius={50} outerRadius={80}
+                paddingAngle={3} dataKey="value" labelLine={false} label={PieLabel as never}>
+                {volumeByTransport.map((d, i) => (
+                  <Cell key={i} fill={TRANSPORT_COLORS[d.name] || FALLBACK_COLORS[i % FALLBACK_COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(v) => [`${Number(v).toLocaleString()} TN`, ""]} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="flex flex-wrap gap-x-4 gap-y-1 justify-center mt-3">
+          {volumeByTransport.map((d, i) => (
+            <div key={d.name} className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: TRANSPORT_COLORS[d.name] || FALLBACK_COLORS[i % FALLBACK_COLORS.length] }} />
+              <span className="text-xs text-stone-500">{d.name}</span>
+            </div>
+          ))}
+        </div>
       </Link>
 
       {/* Shipment Status */}
       <Link href="/shipments" className={chartCard}>
-        <h3 className="text-sm font-semibold text-stone-600 mb-4">Shipments by Status</h3>
-        <ResponsiveContainer width="100%" height={220}>
-          <PieChart>
-            <Pie
-              data={volumeByStatus}
-              cx="50%" cy="50%"
-              innerRadius={55} outerRadius={90}
-              paddingAngle={3}
-              dataKey="value"
-              labelLine={false}
-              label={PieLabel as never}
-            >
-              {volumeByStatus.map((d, i) => (
-                <Cell key={i} fill={STATUS_COLORS[d.name] || FALLBACK_COLORS[i % FALLBACK_COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip formatter={(v) => [`${Number(v).toLocaleString()} TN`, "Volume"]} />
-            <Legend
-              iconType="circle"
-              iconSize={8}
-              formatter={(value) => <span style={{ fontSize: 12, color: "#78716c" }}>{value}</span>}
-            />
-          </PieChart>
-        </ResponsiveContainer>
+        <h3 className="text-sm font-semibold text-stone-600 mb-2">Shipments by Status</h3>
+        <div style={{ height: 180 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie data={volumeByStatus} cx="50%" cy="50%" innerRadius={50} outerRadius={80}
+                paddingAngle={3} dataKey="value" labelLine={false} label={PieLabel as never}>
+                {volumeByStatus.map((d, i) => (
+                  <Cell key={i} fill={STATUS_COLORS[d.name] || FALLBACK_COLORS[i % FALLBACK_COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(v) => [`${Number(v).toLocaleString()} TN`, ""]} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="flex flex-wrap gap-x-4 gap-y-1 justify-center mt-3">
+          {volumeByStatus.map((d, i) => (
+            <div key={d.name} className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: STATUS_COLORS[d.name] || FALLBACK_COLORS[i % FALLBACK_COLORS.length] }} />
+              <span className="text-xs text-stone-500">{d.name}</span>
+            </div>
+          ))}
+        </div>
       </Link>
 
       </div>
