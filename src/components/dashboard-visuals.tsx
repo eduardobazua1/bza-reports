@@ -55,7 +55,7 @@ export function DashboardVisuals({
     <div className="space-y-4">
 
       {/* Volume by Month — area chart */}
-      <Link href="/reports" className={chartCard}>
+      <Link href="/reports" className={`${chartCard} pb-8`}>
         <h3 className="text-sm font-semibold text-stone-600 mb-4">Volume by Month (TN)</h3>
         <ResponsiveContainer width="100%" height={260}>
           <AreaChart data={volumeByMonth} margin={{ top: 10, right: 16, left: 0, bottom: 24 }}>

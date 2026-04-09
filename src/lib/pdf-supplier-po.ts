@@ -4,9 +4,7 @@ import {
   clientPurchaseOrders, supplierOrders, appSettings, products,
 } from "@/db/schema";
 import { eq } from "drizzle-orm";
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const PDFDocument = require("pdfkit");
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 
 const BZA_DEFAULTS = {
   companyName: "BZA International Services, LLC",
@@ -32,6 +30,14 @@ function formatDate(dateStr: string | null | undefined) {
 
 function fmtCurrency(n: number) {
   return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function hexToRgb(hex: string) {
+  const h = hex.replace("#", "");
+  const r = parseInt(h.slice(0, 2), 16) / 255;
+  const g = parseInt(h.slice(2, 4), 16) / 255;
+  const b = parseInt(h.slice(4, 6), 16) / 255;
+  return rgb(r, g, b);
 }
 
 function getCertNote(po: { certType?: string | null; licenseFsc?: string | null; inputClaim?: string | null; pefc?: string | null }): string | null {
@@ -61,7 +67,7 @@ export async function generateSupplierPoPdf(poId: number, soId?: number | null):
     const prod = await db.query.products.findFirst({ where: eq(products.id, po.supplierProductId) });
     supplierProductName = prod?.name ?? null;
   }
-  const effectiveProductName = supplierProductName || po.product;
+  const effectiveProductName = supplierProductName || po.product || "";
 
   const supplierAddress = (supplier?.address || "").split("\n").filter(Boolean);
   const clientAddress = (client?.shipAddress || client?.billAddress || "").split("\n").filter(Boolean);
@@ -79,7 +85,7 @@ export async function generateSupplierPoPdf(poId: number, soId?: number | null):
     const parsedLines = so.lines ? JSON.parse(so.lines) as { destination: string; tons: number; notes: string }[] : null;
     if (parsedLines && parsedLines.length > 0) {
       lineItems = parsedLines.map(l => ({
-        description: `${effectiveProductName}${l.destination ? ` – ${l.destination}` : ""}${l.notes ? `\n${l.notes}` : ""}`,
+        description: `${effectiveProductName}${l.destination ? ` - ${l.destination}` : ""}${l.notes ? `  ${l.notes}` : ""}`,
         qty: l.tons, rate: price, amount: l.tons * price,
       }));
     } else {
@@ -90,7 +96,7 @@ export async function generateSupplierPoPdf(poId: number, soId?: number | null):
       .where(eq(clientPurchaseOrders.purchaseOrderId, poId))
       .orderBy(clientPurchaseOrders.clientPoNumber);
     lineItems = cpos.map(cpo => ({
-      description: `${effectiveProductName}${cpo.destination ? ` – ${cpo.destination}` : ""}`,
+      description: `${effectiveProductName}${cpo.destination ? ` - ${cpo.destination}` : ""}`,
       qty: cpo.plannedTons ?? 0, rate: po.buyPrice, amount: (cpo.plannedTons ?? 0) * po.buyPrice,
     }));
     if (lineItems.length === 0) {
@@ -102,63 +108,97 @@ export async function generateSupplierPoPdf(poId: number, soId?: number | null):
 
   const total = lineItems.reduce((s, l) => s + l.amount, 0);
 
-  const doc = new PDFDocument({ size: "LETTER", margin: 0 });
-  const chunks: Buffer[] = [];
-  doc.on("data", (c: Buffer) => chunks.push(c));
+  // ── pdf-lib setup ─────────────────────────────────────────
+  const PAGE_W = 612;
+  const PAGE_H = 792;
+  const M = 48;
+  const W = PAGE_W - M * 2;
 
-  const M    = 48;
-  const W    = 612 - M * 2;
-  const TEAL = cfg.primaryColor;
-  const CYAN = cfg.accentColor;
-  const DARK = "#1c1917";
-  const GRAY = "#6b7280";
-  const LGRY = "#f3f4f6";
-  const RULE = "#d1d5db";
+  const TEAL = hexToRgb(cfg.primaryColor);
+  const CYAN = hexToRgb(cfg.accentColor);
+  const DARK = rgb(0.11, 0.098, 0.09);
+  const GRAY = rgb(0.42, 0.447, 0.502);
+  const LGRY = rgb(0.953, 0.957, 0.965);
+  const RULE = rgb(0.82, 0.835, 0.859);
+  const WHITE = rgb(1, 1, 1);
+  const GREEN_BG = rgb(0.94, 0.99, 0.957);
+  const GREEN_TXT = rgb(0.086, 0.396, 0.204);
+
+  // y helpers: pk = pdfkit top-origin → pdf-lib bottom-origin
+  const BY = (pkY: number) => PAGE_H - pkY;
+  const RY = (pkY: number, h: number) => PAGE_H - pkY - h;
+
+  const pdfDoc = await PDFDocument.create();
+  const page = pdfDoc.addPage([PAGE_W, PAGE_H]);
+  const font    = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontB   = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const CAP = 0.716; // cap height ratio
+
+  function drawText(text: string, x: number, pkY: number, size: number, f: typeof font, color: typeof DARK) {
+    const capH = size * CAP;
+    page.drawText(text, { x, y: BY(pkY) - capH, size, font: f, color });
+  }
+
+  function drawTextRight(text: string, rightX: number, pkY: number, size: number, f: typeof font, color: typeof DARK) {
+    const tw = f.widthOfTextAtSize(text, size);
+    drawText(text, rightX - tw, pkY, size, f, color);
+  }
+
+  function drawRect(x: number, pkY: number, w: number, h: number, color: typeof TEAL) {
+    page.drawRectangle({ x, y: RY(pkY, h), width: w, height: h, color });
+  }
+
+  function drawLine(x1: number, y1: number, x2: number, pkY2: number) {
+    page.drawLine({ start: { x: x1, y: BY(y1) }, end: { x: x2, y: BY(pkY2) }, thickness: 0.5, color: RULE });
+  }
 
   let y = M;
 
-  doc.rect(0, 0, 612, 3).fill(CYAN);
+  // Top accent bar
+  drawRect(0, 0, PAGE_W, 3, CYAN);
 
-  doc.fontSize(20).font("Helvetica-Bold").fillColor(TEAL)
-    .text("BZA", M, y, { continued: true, lineBreak: false });
-  doc.fillColor(CYAN).text(".", { lineBreak: false });
+  // Logo
+  drawText("BZA", M, y, 20, fontB, TEAL);
+  const bzaW = fontB.widthOfTextAtSize("BZA", 20);
+  drawText(".", M + bzaW, y, 20, fontB, CYAN);
 
+  // Company info (right)
   const IX = 360;
-  const IW = 612 - M - IX;
-  doc.fontSize(7).font("Helvetica").fillColor(GRAY);
-  doc.text(cfg.companyName, IX, y,      { width: IW, align: "right" });
-  doc.text(cfg.address1,    IX, y + 10, { width: IW, align: "right" });
-  doc.text(cfg.address2,    IX, y + 19, { width: IW, align: "right" });
-  doc.text(cfg.email,       IX, y + 28, { width: IW, align: "right" });
-  doc.text(cfg.website,     IX, y + 37, { width: IW, align: "right" });
+  const IW = PAGE_W - M - IX;
+  const infoLines = [cfg.companyName, cfg.address1, cfg.address2, cfg.email, cfg.website];
+  infoLines.forEach((line, i) => {
+    const tw = font.widthOfTextAtSize(line, 7);
+    const x = Math.max(IX, IX + IW - tw);
+    drawText(line, x, y + i * 9, 7, font, GRAY);
+  });
   y += 56;
 
-  doc.moveTo(M, y).lineTo(M + W, y).strokeColor(RULE).lineWidth(0.5).stroke();
+  // Divider
+  drawLine(M, y, M + W, y);
   y += 12;
 
-  doc.fontSize(22).font("Helvetica-Bold").fillColor(TEAL)
-    .text("PURCHASE ORDER", M, y, { lineBreak: false });
+  // Title
+  drawText("PURCHASE ORDER", M, y, 22, fontB, TEAL);
 
+  // PO number badge
   const BW = 150; const BX = M + W - BW;
-  doc.rect(BX, y - 2, BW, 32).fill(TEAL);
-  doc.fontSize(6.5).font("Helvetica-Bold").fillColor(CYAN)
-    .text("PO NUMBER", BX + 8, y + 3, { lineBreak: false });
-  doc.fontSize(9).font("Helvetica-Bold").fillColor("white")
-    .text(po.poNumber, BX + 8, y + 13, { width: BW - 16, lineBreak: false });
+  drawRect(BX, y - 2, BW, 32, TEAL);
+  drawText("PO NUMBER", BX + 8, y + 3, 6.5, fontB, CYAN);
+  drawText(po.poNumber, BX + 8, y + 13, 9, fontB, WHITE);
   y += 40;
 
+  // Date & Incoterm row
   const COL2 = Math.floor(W / 2);
-  doc.fontSize(6).font("Helvetica-Bold").fillColor(GRAY);
-  doc.text("DATE",     M,        y, { width: COL2 - 6, lineBreak: false });
-  doc.text("INCOTERM", M + COL2, y, { width: COL2 - 6, lineBreak: false });
-  doc.fontSize(7.5).font("Helvetica").fillColor(DARK);
-  doc.text(formatDate(poDate),           M,        y + 9, { width: COL2 - 6, lineBreak: false });
-  doc.text(effectiveIncoterm || "—",     M + COL2, y + 9, { width: COL2 - 6, lineBreak: false });
+  drawText("DATE",     M,        y, 6, fontB, GRAY);
+  drawText("INCOTERM", M + COL2, y, 6, fontB, GRAY);
+  drawText(formatDate(poDate),        M,        y + 9, 7.5, font, DARK);
+  drawText(effectiveIncoterm || "—",  M + COL2, y + 9, 7.5, font, DARK);
   y += 26;
 
-  doc.moveTo(M, y).lineTo(M + W, y).strokeColor(RULE).lineWidth(0.5).stroke();
+  drawLine(M, y, M + W, y);
   y += 10;
 
+  // Addresses
   const ADDR_W = Math.floor((W - 24) / 2);
   const CA = M;
   const CB = M + ADDR_W + 24;
@@ -166,76 +206,82 @@ export async function generateSupplierPoPdf(poId: number, soId?: number | null):
   const vendorLines = [supplier?.name || "", ...supplierAddress].filter(Boolean);
   const shipToLines = [client?.name || "", ...clientAddress].filter(Boolean);
 
-  doc.fontSize(6).font("Helvetica-Bold").fillColor(GRAY);
-  doc.text("VENDOR",  CA, y, { lineBreak: false });
-  doc.text("SHIP TO", CB, y, { lineBreak: false });
+  drawText("VENDOR",  CA, y, 6, fontB, GRAY);
+  drawText("SHIP TO", CB, y, 6, fontB, GRAY);
   y += 10;
 
-  const vendorText  = vendorLines.join("\n");
-  const shipToText  = shipToLines.join("\n");
-  const vendorH = doc.heightOfString(vendorText, { width: ADDR_W });
-  const shipToH = doc.heightOfString(shipToText, { width: ADDR_W });
-  doc.fontSize(7.5).font("Helvetica").fillColor(DARK);
-  doc.text(vendorText,  CA, y, { width: ADDR_W });
-  doc.text(shipToText,  CB, y, { width: ADDR_W });
+  const addrSize = 7.5;
+  const lineH = addrSize * 1.4;
+  const vendorH = vendorLines.length * lineH;
+  const shipToH = shipToLines.length * lineH;
+
+  vendorLines.forEach((line, i) => drawText(line, CA, y + i * lineH, addrSize, font, DARK));
+  shipToLines.forEach((line, i) => drawText(line, CB, y + i * lineH, addrSize, font, DARK));
   y += Math.max(vendorH, shipToH) + 14;
 
+  // Table header
   const TC = { desc: M + 6, qty: M + 355, rate: M + 415, amount: M + 472 };
-
-  doc.rect(M, y, W, 17).fill(TEAL);
-  doc.fontSize(6.5).font("Helvetica-Bold").fillColor("white");
-  doc.text("DESCRIPTION",   TC.desc,   y + 5, { lineBreak: false });
-  doc.text("QTY (TN)",      TC.qty,    y + 5, { lineBreak: false });
-  doc.text("RATE (USD/TN)", TC.rate,   y + 5, { lineBreak: false });
-  doc.text("AMOUNT",        TC.amount, y + 5, { lineBreak: false });
+  drawRect(M, y, W, 17, TEAL);
+  drawText("DESCRIPTION",   TC.desc,   y + 5, 6.5, fontB, WHITE);
+  drawText("QTY (TN)",      TC.qty,    y + 5, 6.5, fontB, WHITE);
+  drawText("RATE (USD/TN)", TC.rate,   y + 5, 6.5, fontB, WHITE);
+  drawText("AMOUNT",        TC.amount, y + 5, 6.5, fontB, WHITE);
   y += 17;
 
+  // Table rows
   lineItems.forEach((item, i) => {
-    const descH = doc.heightOfString(item.description, { width: 340 });
-    const rowH = Math.max(26, descH + 14);
-    if (i % 2 === 0) doc.rect(M, y, W, rowH).fill(LGRY);
-    doc.fontSize(7.5).font("Helvetica").fillColor(DARK);
-    doc.text(item.description,              TC.desc,   y + 7, { width: 340, lineGap: 1.5 });
-    doc.text(item.qty.toFixed(0),           TC.qty,    y + 7, { lineBreak: false });
-    doc.text(`$${item.rate.toFixed(2)}`,    TC.rate,   y + 7, { lineBreak: false });
-    doc.text(`$${fmtCurrency(item.amount)}`, TC.amount, y + 7, { lineBreak: false });
+    const rowH = 26;
+    if (i % 2 === 0) drawRect(M, y, W, rowH, LGRY);
+    // Truncate description to fit
+    const maxDescW = 340;
+    let desc = item.description;
+    while (desc.length > 0 && font.widthOfTextAtSize(desc, 7.5) > maxDescW) {
+      desc = desc.slice(0, -1);
+    }
+    drawText(desc,                             TC.desc,   y + 7, 7.5, font, DARK);
+    drawText(item.qty.toFixed(0),              TC.qty,    y + 7, 7.5, font, DARK);
+    drawText(`$${item.rate.toFixed(2)}`,       TC.rate,   y + 7, 7.5, font, DARK);
+    drawText(`$${fmtCurrency(item.amount)}`,   TC.amount, y + 7, 7.5, font, DARK);
     y += rowH;
   });
 
-  doc.moveTo(M, y).lineTo(M + W, y).strokeColor(RULE).lineWidth(0.5).stroke();
+  drawLine(M, y, M + W, y);
   y += 12;
 
+  // Total box
   const TW = 210; const TX = M + W - TW;
-  doc.rect(TX, y, TW, 30).fill(TEAL);
-  doc.fontSize(6.5).font("Helvetica-Bold").fillColor(CYAN)
-    .text("TOTAL (USD)", TX + 10, y + 6, { lineBreak: false });
-  doc.fontSize(12).font("Helvetica-Bold").fillColor("white")
-    .text(`$${fmtCurrency(total)} USD`, TX + 10, y + 16, { width: TW - 28, align: "right", lineBreak: false });
+  drawRect(TX, y, TW, 30, TEAL);
+  drawText("TOTAL (USD)", TX + 10, y + 6, 6.5, fontB, CYAN);
+  const totalStr = `$${fmtCurrency(total)} USD`;
+  drawTextRight(totalStr, TX + TW - 10, y + 16, 12, fontB, WHITE);
   y += 44;
 
+  // Cert note
   const certNote = getCertNote(po);
   if (certNote) {
-    doc.rect(M, y, W * 0.7, 20).fill("#f0fdf4");
-    doc.fontSize(7).font("Helvetica").fillColor("#166534")
-      .text(certNote, M + 8, y + 6, { width: W * 0.7 - 16, lineBreak: false });
+    const noteW = W * 0.7;
+    drawRect(M, y, noteW, 20, GREEN_BG);
+    drawText(certNote, M + 8, y + 6, 7, font, GREEN_TXT);
     y += 28;
   }
 
+  // Signature lines
   y += 6;
-  doc.fontSize(7).font("Helvetica").fillColor(GRAY)
-    .text("Authorized By", M, y, { lineBreak: false });
-  doc.moveTo(M + 76, y + 9).lineTo(M + 270, y + 9).strokeColor(RULE).lineWidth(0.5).stroke();
+  drawText("Authorized By", M, y, 7, font, GRAY);
+  drawLine(M + 76, y + 9, M + 270, y + 9);
   y += 20;
-  doc.text("Date", M, y, { lineBreak: false });
-  doc.moveTo(M + 76, y + 9).lineTo(M + 270, y + 9).strokeColor(RULE).lineWidth(0.5).stroke();
+  drawText("Date", M, y, 7, font, GRAY);
+  drawLine(M + 76, y + 9, M + 270, y + 9);
 
-  doc.rect(0, 746, 612, 46).fill(TEAL);
-  doc.fontSize(7).font("Helvetica").fillColor(CYAN)
-    .text(cfg.companyName, M, 754, { width: W, align: "center" });
-  doc.fillColor("white")
-    .text(`${cfg.email}  ·  ${cfg.website}`, M, 764, { width: W, align: "center" });
-  doc.fontSize(6).text("Page 1 of 1", M, 775, { width: W, align: "center" });
+  // Footer
+  drawRect(0, 746, PAGE_W, 46, TEAL);
+  const compW = font.widthOfTextAtSize(cfg.companyName, 7);
+  drawText(cfg.companyName, (PAGE_W - compW) / 2, 754, 7, font, CYAN);
+  const contactStr = `${cfg.email}  ·  ${cfg.website}`;
+  const contactW = font.widthOfTextAtSize(contactStr, 7);
+  drawText(contactStr, (PAGE_W - contactW) / 2, 764, 7, font, WHITE);
+  drawText("Page 1 of 1", M, 775, 6, font, WHITE);
 
-  doc.end();
-  return new Promise<Buffer>(resolve => doc.on("end", () => resolve(Buffer.concat(chunks))));
+  const pdfBytes = await pdfDoc.save();
+  return Buffer.from(pdfBytes);
 }
