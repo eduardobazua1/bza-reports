@@ -55,17 +55,17 @@ export function DashboardVisuals({
   const volMin = volNums.length ? Math.min(...volNums) : 0;
   const volMax = volNums.length ? Math.max(...volNums) : 1000;
   const yMin = Math.max(0, Math.floor(volMin * 0.85 / 200) * 200);
-  const yMax = Math.ceil(volMax * 1.1 / 200) * 200;
+  const yMax = Math.ceil(volMax * 1.05 / 200) * 200;
 
   return (
     <div className="space-y-4">
 
       {/* Volume by Month — area chart */}
       <Link href="/reports" className={chartCard}>
-        <h3 className="text-sm font-semibold text-stone-600 mb-3">Volume by Month (TN)</h3>
-        <div style={{ height: 220 }}>
+        <h3 className="text-sm font-semibold text-stone-600 mb-2">Volume by Month (TN)</h3>
+        <div className="h-[160px] sm:h-[200px]">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={volumeByMonth} margin={{ top: 8, right: 16, left: 0, bottom: 20 }}>
+          <AreaChart data={volumeByMonth} margin={{ top: 4, right: 8, left: 0, bottom: 16 }}>
             <defs>
               <linearGradient id="volGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#0d3d3b" stopOpacity={0.18} />
