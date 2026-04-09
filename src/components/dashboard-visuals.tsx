@@ -51,6 +51,9 @@ export function DashboardVisuals({
 }) {
   const chartCard = "bg-white rounded-md shadow-sm p-5 hover:shadow-md transition-shadow";
 
+  const volMax = volumeByMonth.length ? Math.max(...volumeByMonth.map(d => d.tons)) : 1000;
+  const yMax = Math.ceil(volMax * 1.1 / 500) * 500;
+
   return (
     <div className="space-y-4">
 
@@ -77,7 +80,7 @@ export function DashboardVisuals({
               tick={{ fontSize: 11, fill: "#a8a29e" }}
               axisLine={false} tickLine={false} width={42}
               tickCount={4}
-              domain={[(min: number) => Math.floor(min * 0.85 / 500) * 500, (max: number) => Math.ceil(max * 1.15 / 500) * 500]}
+              domain={[0, yMax]}
               tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)}
             />
             <Tooltip
@@ -91,6 +94,7 @@ export function DashboardVisuals({
               fill="url(#volGradient)"
               dot={false}
               activeDot={{ r: 5, fill: "#4dd9b4", strokeWidth: 0 }}
+              isAnimationActive={false}
             />
           </AreaChart>
         </ResponsiveContainer>
