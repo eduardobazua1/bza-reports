@@ -171,7 +171,7 @@ export function SupplierActions({ suppliers }: { suppliers: Supplier[] }) {
         <SupplierForm initial={null} onSave={handleSave} onCancel={() => setShowForm(false)} isPending={isPending} />
       )}
 
-      <div className="bg-white rounded-md shadow-sm overflow-hidden">
+      <div className="bg-white rounded-md shadow-sm">
         <table className="w-full">
           <thead className="bg-stone-50">
             <tr>
