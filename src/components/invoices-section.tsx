@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { formatCurrency, formatNumber, formatDate } from "@/lib/utils";
 import { DocumentUpload } from "@/components/document-upload";
@@ -564,11 +565,11 @@ export function InvoicesSection({
         );
       })()}
 
-      {/* Dropdown — fixed position to escape overflow containers */}
-      {openDropdownId !== null && dropdownPos && (() => {
+      {/* Dropdown — rendered in body via portal to escape overflow containers */}
+      {openDropdownId !== null && dropdownPos && typeof document !== "undefined" && (() => {
         const inv = list.find(i => i.id === openDropdownId);
         if (!inv) return null;
-        return (
+        return createPortal(
           <div ref={dropdownRef} style={{ position: "fixed", top: dropdownPos.top, right: dropdownPos.right, zIndex: 9999 }} className="bg-white border border-stone-200 rounded-md shadow-lg min-w-[150px] py-1 text-left">
             <button onClick={() => { setOpenDropdownId(null); openEdit(inv); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">View/Edit</button>
             <a href={`/api/invoice-pdf?invoice=${inv.invoiceNumber}`} target="_blank" rel="noopener noreferrer" className="block w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50" onClick={() => setOpenDropdownId(null)}>Print</a>
@@ -582,7 +583,8 @@ export function InvoicesSection({
             <button onClick={() => { setOpenDropdownId(null); startTransition(async () => { await duplicateInvoice(inv.id); router.refresh(); }); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">Duplicate</button>
             <div className="border-t border-stone-100 my-1" />
             <button onClick={() => { setOpenDropdownId(null); if (!confirm(`Delete invoice ${inv.invoiceNumber}?`)) return; fetch(`/api/invoices/${inv.id}`, { method: "DELETE" }).then(() => router.refresh()); }} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</button>
-          </div>
+          </div>,
+          document.body
         );
       })()}
     </div>
