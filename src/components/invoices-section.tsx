@@ -291,7 +291,9 @@ export function InvoicesSection({
                         <span className="font-medium">{inv.invoiceNumber}</span>
                       )}
                     </td>
-                    <td className="px-3 py-1.5 border-t border-stone-100 text-stone-600 text-xs">{inv.item || "—"}</td>
+                    <td className="px-3 py-1.5 border-t border-stone-100 text-stone-600 text-xs max-w-[140px]">
+                      <span className="block truncate" title={inv.item || ""}>{inv.item || "—"}</span>
+                    </td>
                     <td className="px-3 py-1.5 border-t border-stone-100 text-stone-500">{inv.destination || "—"}</td>
                     <td className="px-3 py-1.5 border-t border-stone-100 text-stone-500 font-mono text-xs">{inv.vehicleId || "—"}</td>
                     <td className="px-3 py-1.5 border-t border-stone-100 text-right">{formatNumber(inv.quantityTons, 3)}</td>
