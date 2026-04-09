@@ -34,15 +34,31 @@ export const clients = sqliteTable("clients", {
 export const suppliers = sqliteTable("suppliers", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
+  country: text("country"),
+  city: text("city"),
+  state: text("state"),
+  zip: text("zip"),
   address: text("address"),
+  website: text("website"),
+  notes: text("notes"),
+  // Contact
   contactName: text("contact_name"),
   contactEmail: text("contact_email"),
   phone: text("phone"),
+  // Bank information
+  bankName: text("bank_name"),
+  bankBeneficiary: text("bank_beneficiary"),
+  bankAccount: text("bank_account"),
+  bankRouting: text("bank_routing"),
+  bankSwift: text("bank_swift"),
+  bankAddress: text("bank_address"),
   // FSC/PEFC certification
+  certType: text("cert_type"),   // "fsc" | "pefc"
   fscLicense: text("fsc_license"),
   fscChainOfCustody: text("fsc_chain_of_custody"),
   fscInputClaim: text("fsc_input_claim"),
   fscOutputClaim: text("fsc_output_claim"),
+  pefc: text("pefc"),            // PEFC number (when certType = "pefc")
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });

@@ -38,26 +38,38 @@ export async function deleteClient(id: number) {
 }
 
 // ---- Suppliers ----
-export async function createSupplier(data: {
+type SupplierData = {
   name: string;
+  country?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  address?: string;
+  website?: string;
+  notes?: string;
   contactName?: string;
   contactEmail?: string;
   phone?: string;
-}) {
-  await db.insert(suppliers).values(data);
-  revalidatePath("/suppliers");
-}
-
-export async function updateSupplier(id: number, data: {
-  name: string;
-  contactName?: string;
-  contactEmail?: string;
-  phone?: string;
+  bankName?: string;
+  bankBeneficiary?: string;
+  bankAccount?: string;
+  bankRouting?: string;
+  bankSwift?: string;
+  bankAddress?: string;
+  certType?: string;
   fscLicense?: string;
   fscChainOfCustody?: string;
   fscInputClaim?: string;
   fscOutputClaim?: string;
-}) {
+  pefc?: string;
+};
+
+export async function createSupplier(data: SupplierData) {
+  await db.insert(suppliers).values(data);
+  revalidatePath("/suppliers");
+}
+
+export async function updateSupplier(id: number, data: SupplierData) {
   await db.update(suppliers).set({ ...data, updatedAt: new Date().toISOString() }).where(eq(suppliers.id, id));
   revalidatePath("/suppliers");
   revalidatePath(`/suppliers/${id}`);
