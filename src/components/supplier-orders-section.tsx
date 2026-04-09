@@ -343,12 +343,6 @@ export function SupplierOrdersSection({
                             <PaperclipIcon className="w-3.5 h-3.5" />
                           </button>
                           <div className="flex items-center gap-0">
-                            <button
-                              onClick={() => isEditing ? cancelEdit() : openEdit(order)}
-                              className="text-xs text-primary font-medium px-2 py-1 hover:bg-blue-50 rounded-l border border-stone-200"
-                            >
-                              {isEditing ? "Cancel" : "View/Edit"}
-                            </button>
                             <div ref={openDropdownId === order.id ? dropdownRef : undefined}>
                               <button
                                 onClick={(e) => {

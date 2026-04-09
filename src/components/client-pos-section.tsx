@@ -372,12 +372,6 @@ export function ClientPOsSection({
                       </td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right">
                         <div className="flex items-center justify-end gap-0">
-                          <button
-                            onClick={() => openEdit(cpo)}
-                            className="text-xs text-primary font-medium px-2 py-1 hover:bg-blue-50 rounded-l border border-stone-200"
-                          >
-                            View/Edit
-                          </button>
                           <div ref={openDropdownId === cpo.id ? dropdownRef : undefined}>
                             <button
                               onClick={(e) => {
