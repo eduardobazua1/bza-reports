@@ -149,7 +149,16 @@ export default async function DashboardPage() {
   const volumeByMonth = Object.entries(byMonth)
     .sort(([a], [b]) => a.localeCompare(b))
     .slice(-12)
-    .map(([month, tons]) => ({ month: month.substring(2), tons: Math.round(tons) }));
+    .map(([month, tons]) => {
+      const m = marginByMonth[month] || { revenue: 0, cost: 0 };
+      return {
+        month: month.substring(2),
+        tons: Math.round(tons),
+        revenue: Math.round(m.revenue),
+        cost: Math.round(m.cost),
+        profit: Math.round(m.revenue - m.cost),
+      };
+    });
 
   const volumeByTransport = Object.entries(byTransport)
     .map(([name, tons]) => ({ name, value: Math.round(tons) }))

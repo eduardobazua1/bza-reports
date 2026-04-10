@@ -14,7 +14,7 @@ type RecentShipment = {
   status: string;
 };
 
-type MonthVolume = { month: string; tons: number };
+type MonthVolume = { month: string; tons: number; revenue?: number; cost?: number; profit?: number };
 
 const STATUS_STYLES: Record<string, { label: string; cls: string }> = {
   entregado:   { label: "Delivered",  cls: "bg-emerald-100 text-emerald-700" },
@@ -42,29 +42,57 @@ export function DashboardVisuals({
 }) {
   return (
     <div className="space-y-4">
-      {/* Monthly Volume Chart */}
+      {/* Monthly Volume Chart + Breakdown */}
       {volumeByMonth.length > 0 && (
-        <div className="bg-white rounded-md shadow-sm p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-stone-700">Monthly Volume (TN)</h3>
-            <Link href="/reports/financial?report=pl-monthly" className="text-xs text-[#0d3d3b] font-medium hover:underline">
-              View monthly →
-            </Link>
+        <div className="bg-white rounded-md shadow-sm">
+          <div className="px-4 pt-4 pb-2">
+            <h3 className="text-sm font-semibold text-stone-700 mb-3">Monthly Volume (TN)</h3>
+            <div className="h-44">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={volumeByMonth} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                  <XAxis dataKey="month" fontSize={10} tick={{ fill: "#a8a29e" }} axisLine={false} tickLine={false} />
+                  <YAxis fontSize={10} tick={{ fill: "#a8a29e" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip
+                    formatter={(v) => [`${Number(v).toLocaleString()} TN`, "Volume"]}
+                    contentStyle={{ background: "#fff", border: "1px solid #e7e5e4", borderRadius: 6, fontSize: 11 }}
+                    cursor={{ fill: "#f5f5f4" }}
+                  />
+                  <Bar dataKey="tons" fill="#0d3d3b" radius={[3, 3, 0, 0]} maxBarSize={32} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-          <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={volumeByMonth} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-                <XAxis dataKey="month" fontSize={10} tick={{ fill: "#a8a29e" }} axisLine={false} tickLine={false} />
-                <YAxis fontSize={10} tick={{ fill: "#a8a29e" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                <Tooltip
-                  formatter={(v) => [`${Number(v).toLocaleString()} TN`, "Volume"]}
-                  contentStyle={{ background: "#fff", border: "1px solid #e7e5e4", borderRadius: 6, fontSize: 11 }}
-                  cursor={{ fill: "#f5f5f4" }}
-                />
-                <Bar dataKey="tons" fill="#0d3d3b" radius={[3, 3, 0, 0]} maxBarSize={32} />
-              </BarChart>
-            </ResponsiveContainer>
+          {/* Monthly breakdown table */}
+          <div className="overflow-x-auto border-t border-stone-100">
+            <table className="w-full text-xs">
+              <thead className="bg-stone-50">
+                <tr>
+                  <th className="text-left px-4 py-2 text-[10px] font-semibold text-stone-400 uppercase tracking-wide">Month</th>
+                  <th className="text-right px-4 py-2 text-[10px] font-semibold text-stone-400 uppercase tracking-wide">Volume (TN)</th>
+                  <th className="text-right px-4 py-2 text-[10px] font-semibold text-stone-400 uppercase tracking-wide">Revenue</th>
+                  <th className="text-right px-4 py-2 text-[10px] font-semibold text-stone-400 uppercase tracking-wide">Cost</th>
+                  <th className="text-right px-4 py-2 text-[10px] font-semibold text-stone-400 uppercase tracking-wide">Profit</th>
+                  <th className="text-right px-4 py-2 text-[10px] font-semibold text-stone-400 uppercase tracking-wide">Margin</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...volumeByMonth].reverse().map((m) => {
+                  const margin = m.revenue ? ((m.profit ?? 0) / m.revenue) * 100 : 0;
+                  const fmt = (v?: number) => v != null ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v) : "—";
+                  return (
+                    <tr key={m.month} className="border-t border-stone-50 hover:bg-stone-50">
+                      <td className="px-4 py-2 font-medium text-stone-700">{m.month}</td>
+                      <td className="px-4 py-2 text-right text-stone-600">{m.tons.toLocaleString()}</td>
+                      <td className="px-4 py-2 text-right text-stone-600">{fmt(m.revenue)}</td>
+                      <td className="px-4 py-2 text-right text-stone-500">{fmt(m.cost)}</td>
+                      <td className={`px-4 py-2 text-right font-semibold ${(m.profit ?? 0) >= 0 ? "text-emerald-600" : "text-red-500"}`}>{fmt(m.profit)}</td>
+                      <td className={`px-4 py-2 text-right font-medium ${margin >= 10 ? "text-emerald-600" : "text-amber-600"}`}>{margin.toFixed(1)}%</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
