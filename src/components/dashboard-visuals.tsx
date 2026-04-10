@@ -47,8 +47,8 @@ export function DashboardVisuals({
         <div className="bg-white rounded-md shadow-sm p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-stone-700">Monthly Volume (TN)</h3>
-            <Link href="/reports" className="text-xs text-[#0d3d3b] font-medium hover:underline">
-              View reports →
+            <Link href="/reports/financial?report=pl-monthly" className="text-xs text-[#0d3d3b] font-medium hover:underline">
+              View monthly →
             </Link>
           </div>
           <div className="h-48">

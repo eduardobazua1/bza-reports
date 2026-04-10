@@ -946,7 +946,9 @@ const REPORT_LABELS: Record<Tab,string> = { "ar-aging":"Accounts Receivable Agin
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function FinancialReports({ data }: { data: InvoiceRow[] }) {
-  const [activeReport, setActiveReport] = useState<Tab | null>(null);
+  const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+  const initialReport = (searchParams?.get("report") as Tab | null) ?? null;
+  const [activeReport, setActiveReport] = useState<Tab | null>(initialReport);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo,   setDateTo]   = useState("");
   const [conditions, setConditions] = useState<FilterCondition[]>([]);
