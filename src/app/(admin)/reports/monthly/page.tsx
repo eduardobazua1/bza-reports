@@ -1,7 +1,6 @@
 export const dynamic = "force-dynamic";
 
 import { getInvoices } from "@/server/queries";
-import { ReportsTabs } from "@/components/reports-tabs";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
 export default async function MonthlyBreakdownPage() {
@@ -43,9 +42,7 @@ export default async function MonthlyBreakdownPage() {
   }), { tons: 0, revenue: 0, cost: 0, profit: 0 });
 
   return (
-    <div className="space-y-4">
-      <ReportsTabs />
-      <div className="bg-white rounded-md shadow-sm">
+    <div className="bg-white rounded-md shadow-sm">
         <div className="px-5 py-4 border-b border-stone-100">
           <h2 className="text-base font-semibold text-stone-800">Monthly Summary</h2>
           <p className="text-xs text-stone-400 mt-0.5">Volume, revenue, cost and profit by shipment month</p>
@@ -89,6 +86,5 @@ export default async function MonthlyBreakdownPage() {
           </table>
         </div>
       </div>
-    </div>
   );
 }
