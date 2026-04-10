@@ -346,8 +346,36 @@ async function exec(name: string, args: Record<string, unknown>): Promise<string
     }
 
     if (name === "run_calculation") {
-      const query = (args.sql_query as string).trim();
+      let query = (args.sql_query as string).trim();
       if (!query.toUpperCase().startsWith("SELECT")) return "Error: Only SELECT queries allowed.";
+
+      // Resolve client/supplier aliases in the SQL query
+      // Replace any alias with the real DB name so LIKE filters work
+      const SQL_ALIASES: Record<string, string> = {
+        "kcm": "Kimberly-Clark", "kc": "Kimberly-Clark", "kimberly": "Kimberly-Clark",
+        "kim": "Kimberly-Clark", "kimberly clark": "Kimberly-Clark",
+        "biopappel": "Biopappel", "scribe": "Biopappel Scribe", "bio": "Biopappel",
+        "copamex": "Copamex", "copa": "Copamex",
+        "gcp": "Grupo Corporativo", "grupo corporativo": "Grupo Corporativo",
+        "pch": "Papelera de Chihuahua", "chihuahua": "Papelera de Chihuahua",
+        "sanitate": "Sanitate", "sani": "Sanitate",
+        "cascade": "Cascade Pacific", "cpp": "Cascade Pacific",
+        "arauco": "Arauco",
+        "app china": "APP China", "app": "APP China",
+      };
+      // Replace LIKE '%alias%' patterns with real name
+      for (const [alias, realName] of Object.entries(SQL_ALIASES)) {
+        const aliasPattern = new RegExp(`LIKE\\s+'%${alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}%'`, "gi");
+        if (aliasPattern.test(query)) {
+          query = query.replace(aliasPattern, `LIKE '%${realName}%'`);
+        }
+        // Also replace = 'alias' patterns
+        const eqPattern = new RegExp(`=\\s+'${alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}'`, "gi");
+        if (eqPattern.test(query)) {
+          query = query.replace(eqPattern, `LIKE '%${realName}%'`);
+        }
+      }
+
       try {
         const rawDb = createClient({
           url: process.env.TURSO_DATABASE_URL || "file:sqlite.db",
@@ -356,7 +384,7 @@ async function exec(name: string, args: Record<string, unknown>): Promise<string
         const result = await rawDb.execute(query);
         return JSON.stringify(result.rows);
       } catch (sqlErr: unknown) {
-        return `SQL Error: ${sqlErr instanceof Error ? sqlErr.message : "unknown"}`;
+        return `SQL Error: ${sqlErr instanceof Error ? sqlErr.message : "unknown"}. Query was: ${query}`;
       }
     }
 
@@ -447,18 +475,26 @@ Tables and columns:
 - report_templates: id, name, description, format, columns, subject, message, is_system
 - scheduled_reports: id, client_id, template_id, send_date, reminder_email, status, sent_at, notes
 
-## CLIENT/SUPPLIER ALIASES
-The system auto-resolves abbreviations. These all work:
-- "kimberly", "kcm", "kc", "kim" → Kimberly Clark de México
-- "biopappel", "scribe", "bio" → Biopappel Scribe
-- "copamex", "copa" → Copamex Industrias
-- "gcp", "grupo corporativo", "papelera" → GRUPO CORPORATIVO PAPELERA
-- "pch", "chihuahua" → Papelera de Chihuahua
-- "sanitate", "sani" → Sanitate
-- "cascade", "cpp" → Cascade Pacific Pulp (CPP)
-- "arauco" → Arauco
-- "app" → APP of China
-Always use the clientName/supplierName as the user provides it — the system will resolve it.
+## CLIENT/SUPPLIER ALIASES & EXACT DB NAMES
+When the user mentions a client/supplier by abbreviation, resolve it to the exact DB name below.
+ALWAYS use LIKE '%name%' (never =) when filtering by client/supplier name in SQL.
+
+Clients (exact DB names):
+- "Kimberly-Clark de México, S.A.B. De C.V." → aliases: kimberly, kcm, kc, kim, kimberly clark
+- "Biopappel Scribe, S.A. de C.V." → aliases: biopappel, scribe, bio, biopapel
+- "Copamex Industrias, S.A. De C.V." → aliases: copamex, copa
+- "Grupo Corporativo Papelera, S.A. DE C.V." → aliases: gcp, grupo corporativo, gcptissue
+- "Papelera de Chihuahua, S.A. De C.V." → aliases: pch, chihuahua, papelera chihuahua
+- "Sanitate S. De R.L. De C.V." → aliases: sanitate, sani
+
+Suppliers (exact DB names):
+- "Cascade Pacific Pulp, LLC" → aliases: cascade, cpp, cascade pacific
+- "Celulosa Arauco y Constitucion S.A." → aliases: arauco
+- "APP China Trading Limited" → aliases: app, app china
+
+When writing SQL for a specific client like "KCM" or "Kimberly Clark", always use:
+WHERE c.name LIKE '%Kimberly-Clark%'
+The system also auto-resolves aliases server-side, so you can pass the user's term and it will be resolved.
 
 ## CREATING RECORDS
 - Before create_po: the system automatically reads FSC data from the supplier (fscLicense, fscChainOfCustody, fscInputClaim) and client (fscOutputClaim). You do NOT need to query previous POs for FSC — it comes from the client/supplier record directly.
