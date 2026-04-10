@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 
 type RecentShipment = {
@@ -49,17 +49,23 @@ export function DashboardVisuals({
             <h3 className="text-sm font-semibold text-stone-700 mb-3">Monthly Volume (TN)</h3>
             <div className="h-44">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={volumeByMonth} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
+                <AreaChart data={volumeByMonth} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="volGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#0d3d3b" stopOpacity={0.15} />
+                      <stop offset="95%" stopColor="#0d3d3b" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
                   <XAxis dataKey="month" fontSize={10} tick={{ fill: "#a8a29e" }} axisLine={false} tickLine={false} />
                   <YAxis fontSize={10} tick={{ fill: "#a8a29e" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                   <Tooltip
                     formatter={(v) => [`${Number(v).toLocaleString()} TN`, "Volume"]}
                     contentStyle={{ background: "#fff", border: "1px solid #e7e5e4", borderRadius: 6, fontSize: 11 }}
-                    cursor={{ fill: "#f5f5f4" }}
+                    cursor={{ stroke: "#e7e5e4" }}
                   />
-                  <Bar dataKey="tons" fill="#0d3d3b" radius={[3, 3, 0, 0]} maxBarSize={32} />
-                </BarChart>
+                  <Area type="monotone" dataKey="tons" stroke="#0d3d3b" strokeWidth={2} fill="url(#volGradient)" dot={false} activeDot={{ r: 4, fill: "#0d3d3b" }} />
+                </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
