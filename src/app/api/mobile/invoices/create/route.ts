@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   const {
     purchaseOrderId, invoiceNumber, quantityTons, shipmentDate,
     destination, vehicleId, blNumber, sellPriceOverride,
-    shipmentStatus, notes,
+    shipmentStatus, notes, clientPoId,
   } = body;
 
   if (!purchaseOrderId || !invoiceNumber || !quantityTons) {
@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
     sellPriceOverride: sellPriceOverride ? Number(sellPriceOverride) : null,
     shipmentStatus: shipmentStatus || "programado",
     notes: notes || null,
+    clientPoId: clientPoId ? Number(clientPoId) : null,
     customerPaymentStatus: "unpaid",
     supplierPaymentStatus: "unpaid",
   }).returning();
