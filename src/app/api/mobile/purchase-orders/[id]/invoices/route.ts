@@ -18,6 +18,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       shipmentStatus: invoices.shipmentStatus,
       customerPaymentStatus: invoices.customerPaymentStatus,
       sellPrice: sql<number>`coalesce(${invoices.sellPriceOverride}, ${purchaseOrders.sellPrice}, 0)`,
+      clientPoId: invoices.clientPoId,
     })
     .from(invoices)
     .leftJoin(purchaseOrders, eq(invoices.purchaseOrderId, purchaseOrders.id))
