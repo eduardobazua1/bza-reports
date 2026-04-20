@@ -27,10 +27,12 @@ export async function POST(req: NextRequest) {
     }
 
     const clientResult = await turso.execute({
-      sql: "SELECT name FROM clients WHERE id = ? LIMIT 1",
+      sql: "SELECT name, access_token FROM clients WHERE id = ? LIMIT 1",
       args: [user.client_id],
     });
-    const clientName = clientResult.rows[0]?.name || "";
+    const clientRow = clientResult.rows[0];
+    const clientName = clientRow?.name || "";
+    const clientToken = clientRow?.access_token || "";
 
     const token = signMobileToken(Number(user.id), email.toLowerCase().trim());
 
@@ -40,6 +42,7 @@ export async function POST(req: NextRequest) {
       email: email.toLowerCase().trim(),
       clientId: user.client_id,
       clientName,
+      clientToken,
     });
   } catch (err) {
     console.error("client-auth error:", err);
