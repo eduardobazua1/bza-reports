@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { clients, invoices, purchaseOrders, documents } from "@/db/schema";
+import { clients, invoices, purchaseOrders, documents, shipmentUpdates } from "@/db/schema";
 import { eq, desc, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
@@ -44,10 +44,22 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
         .from(documents).where(inArray(documents.invoiceId, ids))
     : [];
 
+  const allUpdates = ids.length > 0
+    ? await db.select({ invoiceId: shipmentUpdates.invoiceId, createdAt: shipmentUpdates.createdAt })
+        .from(shipmentUpdates).where(inArray(shipmentUpdates.invoiceId, ids))
+    : [];
+
   const docMap = new Map<number, { id: number; type: string }[]>();
   for (const d of allDocs) {
     if (!docMap.has(d.invoiceId)) docMap.set(d.invoiceId, []);
     docMap.get(d.invoiceId)!.push({ id: d.id, type: d.type });
+  }
+
+  // Latest status change per invoice
+  const updateMap = new Map<number, string>();
+  for (const u of allUpdates) {
+    const existing = updateMap.get(u.invoiceId);
+    if (!existing || u.createdAt > existing) updateMap.set(u.invoiceId, u.createdAt);
   }
 
   const shipments = rows.map(r => ({
@@ -63,6 +75,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
     vehicle: r.vehicleId,
     bl: r.blNumber,
     transport: r.transportType,
+    statusUpdatedAt: updateMap.get(r.id) || null,
     docs: (docMap.get(r.id) || []).map(d => ({ id: d.id, type: d.type })),
   }));
 

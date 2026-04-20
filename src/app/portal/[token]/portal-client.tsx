@@ -9,7 +9,7 @@ type Shipment = {
   id: number; inv: string; po: string | null; product: string | null;
   tons: number; date: string | null; eta: string | null; status: string;
   loc: string | null; vehicle: string | null; bl: string | null;
-  transport: string | null; docs: DocInfo[];
+  transport: string | null; statusUpdatedAt: string | null; docs: DocInfo[];
 };
 
 const statusSteps = ["programado", "en_transito", "en_aduana", "entregado"];
@@ -36,11 +36,71 @@ function StatusStepper({ status }: { status: string }) {
   );
 }
 
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+
 function StatusBadge({ status }: { status: string }) {
   const c = status === "en_transito" ? "bg-blue-50 text-blue-600" :
     status === "en_aduana" ? "bg-amber-50 text-amber-600" :
     status === "entregado" ? "bg-emerald-50 text-emerald-600" : "bg-stone-100 text-stone-500";
   return <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${c}`}>{shipmentStatusLabels[status] || status}</span>;
+}
+
+function DocPill({ href, label, colorClass }: { href: string; label: string; colorClass: string }) {
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer"
+      className={`flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-md font-medium ${colorClass}`}>
+      <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+      </svg>
+      {label}
+    </a>
+  );
+}
+
+function DeliveredCard({ s }: { s: Shipment }) {
+  const [expanded, setExpanded] = useState(false);
+  const hasDocs = s.docs.length > 0 || s.inv;
+  return (
+    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <button onClick={() => setExpanded(!expanded)} className="w-full p-3 flex items-center justify-between text-left">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-stone-800 truncate">{s.product}</p>
+          <p className="text-[11px] text-stone-400">{s.po || ""} · {formatNumber(s.tons, 3)} TN · {formatDate(s.date)}</p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0 ml-2">
+          <StatusBadge status={s.status} />
+          {hasDocs && (
+            <svg className={`w-4 h-4 text-stone-400 transition-transform ${expanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          )}
+        </div>
+      </button>
+      {expanded && hasDocs && (
+        <div className="px-3 pb-3 pt-1 border-t border-stone-100">
+          <p className="text-[10px] text-stone-400 uppercase tracking-wide mb-1.5">Documents</p>
+          <div className="flex flex-wrap gap-1.5">
+            {s.inv && <DocPill href={`/api/invoice-pdf?invoice=${s.inv}`} label="Invoice" colorClass="bg-orange-50 text-orange-600" />}
+            {s.docs.map(d => (
+              <DocPill key={d.id}
+                href={`/api/documents/download/${d.id}`}
+                label={typeLabels[d.type] || d.type}
+                colorClass={typeColors[d.type] || typeColors.other}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function PortalClient({ token, userName }: { token: string; userName?: string }) {
@@ -218,6 +278,17 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
                 <StatusBadge status={s.status} />
               </div>
               <StatusStepper status={s.status} />
+              {s.statusUpdatedAt && (() => {
+                const diff = Date.now() - new Date(s.statusUpdatedAt).getTime();
+                const days = diff / 86400000;
+                if (days > 14) return null;
+                return (
+                  <div className="flex items-center gap-1 mt-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                    <span className="text-[10px] text-blue-500 font-medium">Status updated {timeAgo(s.statusUpdatedAt)}</span>
+                  </div>
+                );
+              })()}
             </div>
             <div className="px-4 py-3 bg-stone-50 grid grid-cols-2 gap-2 text-[11px]">
               <div><p className="text-stone-400">Quantity</p><p className="font-semibold text-stone-800">{formatNumber(s.tons, 3)} TN</p></div>
@@ -230,18 +301,15 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
             </div>
             {(s.docs.length > 0 || s.inv) && (
               <div className="px-4 py-2 border-t border-stone-100">
+                <p className="text-[10px] text-stone-400 uppercase tracking-wide mb-1.5">Documents</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {/* Generated invoice PDF */}
-                  <a href={`/api/invoice-pdf?invoice=${s.inv}`} target="_blank" rel="noopener noreferrer"
-                    className="text-[10px] px-2 py-1 rounded-md font-medium bg-orange-50 text-orange-600">
-                    Invoice PDF
-                  </a>
+                  {s.inv && <DocPill href={`/api/invoice-pdf?invoice=${s.inv}`} label="Invoice" colorClass="bg-orange-50 text-orange-600" />}
                   {s.docs.map((d) => (
-                    <a key={d.id} href={`/api/documents/download/${d.id}`} target="_blank" rel="noopener noreferrer"
-                      className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-md font-medium ${typeColors[d.type] || typeColors.other}`}>
-                      <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
-                      {typeLabels[d.type] || d.type}
-                    </a>
+                    <DocPill key={d.id}
+                      href={`/api/documents/download/${d.id}`}
+                      label={typeLabels[d.type] || d.type}
+                      colorClass={typeColors[d.type] || typeColors.other}
+                    />
                   ))}
                 </div>
               </div>
@@ -249,15 +317,9 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
           </div>
         ))}
 
-        {/* Delivered cards (compact) */}
+        {/* Delivered cards (expandable) */}
         {filtered.filter(s => s.status === "entregado").map((s) => (
-          <div key={s.id} className="bg-white rounded-xl shadow-sm p-3 flex items-center justify-between">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-stone-800 truncate">{s.product}</p>
-              <p className="text-[11px] text-stone-400">{s.po || ""} · {formatNumber(s.tons, 3)} TN · {formatDate(s.date)}</p>
-            </div>
-            <StatusBadge status={s.status} />
-          </div>
+          <DeliveredCard key={s.id} s={s} />
         ))}
       </main>
 
