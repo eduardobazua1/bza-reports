@@ -86,7 +86,10 @@ function DeliveredCard({ s }: { s: Shipment }) {
       </button>
       {expanded && hasDocs && (
         <div className="px-3 pb-3 pt-1 border-t border-stone-100">
-          <p className="text-[10px] text-stone-400 uppercase tracking-wide mb-1.5">Documents</p>
+          <p className="text-[10px] text-stone-400 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+            Documents
+          </p>
           <div className="flex flex-wrap gap-1.5">
             {s.inv && <DocPill href={`/api/invoice-pdf?invoice=${s.inv}`} label="Invoice" colorClass="bg-orange-50 text-orange-600" />}
             {s.docs.map(d => (
@@ -301,7 +304,10 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
             </div>
             {(s.docs.length > 0 || s.inv) && (
               <div className="px-4 py-2 border-t border-stone-100">
-                <p className="text-[10px] text-stone-400 uppercase tracking-wide mb-1.5">Documents</p>
+                <p className="text-[10px] text-stone-400 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+            Documents
+          </p>
                 <div className="flex flex-wrap gap-1.5">
                   {s.inv && <DocPill href={`/api/invoice-pdf?invoice=${s.inv}`} label="Invoice" colorClass="bg-orange-50 text-orange-600" />}
                   {s.docs.map((d) => (

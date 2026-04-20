@@ -32,6 +32,7 @@ export async function GET(req: NextRequest) {
       city: c.city,
       country: c.country,
       portalEnabled: c.portalEnabled,
+      accessToken: c.accessToken || null,
       totalRevenue: Number(s?.totalRevenue) || 0,
       totalTons: Number(s?.totalTons) || 0,
       activeShipments: Number(s?.activeShipments) || 0,
