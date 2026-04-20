@@ -291,7 +291,7 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
             <div className="px-4 py-3 bg-stone-50 grid grid-cols-2 gap-2 text-[11px]">
               <div><p className="text-stone-400">Quantity</p><p className="font-semibold text-stone-800">{formatNumber(s.tons, 3)} TN</p></div>
               <div><p className="text-stone-400">Ship Date</p><p className="font-semibold text-stone-800">{formatDate(s.date)}</p></div>
-              {s.vehicle && <div><p className="text-stone-400">Vehicle</p><p className="font-semibold text-stone-800 font-mono text-[10px]">{s.vehicle}</p></div>}
+              {s.vehicle && <div><p className="text-stone-400">Vehicle</p><p className="font-semibold text-stone-800">{s.vehicle}</p></div>}
               {s.bl && <div><p className="text-stone-400">BL#</p><p className="font-semibold text-stone-800">{s.bl}</p></div>}
               {s.loc && <div><p className="text-stone-400">Location</p><p className="font-semibold text-stone-800">{s.loc}</p></div>}
               {s.eta && <div><p className="text-stone-400">ETA</p><p className="font-semibold text-stone-800">{formatDate(s.eta)}</p></div>}
