@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     .from(purchaseOrders)
     .leftJoin(clients, eq(purchaseOrders.clientId, clients.id))
     .leftJoin(suppliers, eq(purchaseOrders.supplierId, suppliers.id))
-    .orderBy(desc(purchaseOrders.id))
+    .orderBy(desc(purchaseOrders.poNumber))
     .limit(100);
 
   // Get invoiced tons per PO
