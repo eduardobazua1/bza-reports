@@ -14,7 +14,6 @@ type Shipment = {
 
 const statusSteps = ["programado", "en_transito", "en_aduana", "entregado"];
 const typeLabels: Record<string, string> = { invoice: "Invoice", bl: "Bill of Lading", pl: "Packing List", other: "Other" };
-const typeColors: Record<string, string> = { invoice: "bg-blue-50 text-blue-600", bl: "bg-emerald-50 text-emerald-600", pl: "bg-amber-50 text-amber-600", other: "bg-stone-100 text-stone-500" };
 
 function StatusStepper({ status }: { status: string }) {
   const idx = statusSteps.indexOf(status);
@@ -25,7 +24,7 @@ function StatusStepper({ status }: { status: string }) {
         <div key={label} className="flex items-center flex-1 last:flex-none">
           <div className="flex flex-col items-center">
             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${
-              i <= idx ? i === idx ? "bg-blue-500 text-white" : "bg-emerald-500 text-white" : "bg-stone-200 text-stone-400"
+              i <= idx ? i === idx ? "bg-[#0d9488] text-white" : "bg-emerald-500 text-white" : "bg-stone-200 text-stone-400"
             }`}>{i < idx ? "✓" : i + 1}</div>
             <span className={`text-[9px] mt-0.5 ${i <= idx ? "text-stone-700 font-medium" : "text-stone-400"}`}>{label}</span>
           </div>
@@ -53,10 +52,10 @@ function StatusBadge({ status }: { status: string }) {
   return <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${c}`}>{shipmentStatusLabels[status] || status}</span>;
 }
 
-function DocPill({ href, label, colorClass }: { href: string; label: string; colorClass: string }) {
+function DocPill({ href, label }: { href: string; label: string }) {
   return (
     <a href={href} target="_blank" rel="noopener noreferrer"
-      className={`flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-md font-medium ${colorClass}`}>
+      className="flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-lg font-semibold bg-stone-100 text-stone-600 hover:bg-stone-200 transition-colors">
       <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
       </svg>
@@ -91,13 +90,9 @@ function DeliveredCard({ s }: { s: Shipment }) {
             Documents
           </p>
           <div className="flex flex-wrap gap-1.5">
-            {s.inv && <DocPill href={`/api/invoice-pdf?invoice=${s.inv}`} label="Invoice" colorClass="bg-orange-50 text-orange-600" />}
+            {s.inv && <DocPill href={`/api/invoice-pdf?invoice=${s.inv}`} label="Invoice" />}
             {s.docs.map(d => (
-              <DocPill key={d.id}
-                href={`/api/documents/download/${d.id}`}
-                label={typeLabels[d.type] || d.type}
-                colorClass={typeColors[d.type] || typeColors.other}
-              />
+              <DocPill key={d.id} href={`/api/documents/download/${d.id}`} label={typeLabels[d.type] || d.type} />
             ))}
           </div>
         </div>
@@ -196,7 +191,7 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
         <div className="max-w-lg mx-auto flex">
           {(["active", "delivered", "all"] as const).map(t => (
             <button key={t} onClick={() => setFilter(t)}
-              className={`flex-1 py-3 text-sm font-medium text-center border-b-2 ${filter === t ? "border-blue-500 text-blue-600" : "border-transparent text-stone-400"}`}>
+              className={`flex-1 py-3 text-sm font-medium text-center border-b-2 ${filter === t ? "border-[#0d9488] text-[#0d9488]" : "border-transparent text-stone-400"}`}>
               {t === "active" ? `Active (${activeCount})` : t === "delivered" ? `Delivered (${deliveredCount})` : `All (${data.shipments.length})`}
             </button>
           ))}
@@ -209,7 +204,7 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
           <button onClick={() => setShowFilters(!showFilters)}
             className="w-full px-4 py-3 flex items-center justify-between text-sm">
             <span className="font-medium text-stone-700">
-              Filters {activeFilters > 0 && <span className="ml-1 bg-blue-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">{activeFilters}</span>}
+              Filters {activeFilters > 0 && <span className="ml-1 bg-[#0d9488] text-white text-[10px] px-1.5 py-0.5 rounded-full">{activeFilters}</span>}
             </span>
             <svg className={`w-4 h-4 text-stone-400 transition-transform ${showFilters ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -235,7 +230,7 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
                 className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm" />
               {activeFilters > 0 && (
                 <button onClick={() => { setDateFrom(""); setDateTo(""); setPoSearch(""); setProductSearch(""); }}
-                  className="text-xs text-blue-600 font-medium">Clear filters</button>
+                  className="text-xs text-[#0d9488] font-medium">Clear filters</button>
               )}
             </div>
           )}
@@ -243,11 +238,11 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
 
         {/* Download buttons */}
         <div className="flex gap-2">
-          <a href={downloadUrl("pdf")} className="flex-1 flex items-center justify-center gap-2 bg-white border border-blue-500 text-blue-600 rounded-xl py-2.5 text-sm font-medium shadow-sm hover:bg-blue-50">
+          <a href={downloadUrl("pdf")} className="flex-1 flex items-center justify-center gap-2 bg-white border-[1.5px] border-[#0d9488] text-[#0d9488] rounded-xl py-2.5 text-sm font-bold shadow-sm hover:bg-[#f0fdfa]">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v3a2 2 0 002 2h14a2 2 0 002-2v-3" /></svg>
             PDF
           </a>
-          <a href={downloadUrl("xlsx")} className="flex-1 flex items-center justify-center gap-2 bg-white border border-emerald-500 text-emerald-600 rounded-xl py-2.5 text-sm font-medium shadow-sm hover:bg-emerald-50">
+          <a href={downloadUrl("xlsx")} className="flex-1 flex items-center justify-center gap-2 bg-white border-[1.5px] border-[#0d9488] text-[#0d9488] rounded-xl py-2.5 text-sm font-bold shadow-sm hover:bg-[#f0fdfa]">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v3a2 2 0 002 2h14a2 2 0 002-2v-3" /></svg>
             Excel
           </a>
@@ -287,8 +282,8 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
                 if (days > 14) return null;
                 return (
                   <div className="flex items-center gap-1 mt-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                    <span className="text-[10px] text-blue-500 font-medium">Status updated {timeAgo(s.statusUpdatedAt)}</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#0d9488] animate-pulse" />
+                    <span className="text-[10px] text-[#0d9488] font-medium">Status updated {timeAgo(s.statusUpdatedAt)}</span>
                   </div>
                 );
               })()}
@@ -309,13 +304,9 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
             Documents
           </p>
                 <div className="flex flex-wrap gap-1.5">
-                  {s.inv && <DocPill href={`/api/invoice-pdf?invoice=${s.inv}`} label="Invoice" colorClass="bg-orange-50 text-orange-600" />}
+                  {s.inv && <DocPill href={`/api/invoice-pdf?invoice=${s.inv}`} label="Invoice" />}
                   {s.docs.map((d) => (
-                    <DocPill key={d.id}
-                      href={`/api/documents/download/${d.id}`}
-                      label={typeLabels[d.type] || d.type}
-                      colorClass={typeColors[d.type] || typeColors.other}
-                    />
+                    <DocPill key={d.id} href={`/api/documents/download/${d.id}`} label={typeLabels[d.type] || d.type} />
                   ))}
                 </div>
               </div>
@@ -329,7 +320,7 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
         ))}
       </main>
 
-      <footer className="text-center text-[10px] text-stone-300 py-6">BZA International Services, LLC · McAllen, TX</footer>
+      <footer className="text-center text-[10px] text-stone-300 py-6">BZA International Services, LLC</footer>
     </div>
   );
 }
