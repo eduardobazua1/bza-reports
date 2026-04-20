@@ -19,6 +19,8 @@ export const clients = sqliteTable("clients", {
   billAddress: text("bill_address"),
   shipAddress: text("ship_address"),
   rfc: text("rfc"),
+  city: text("city"),
+  country: text("country"),
   paymentTermsDays: integer("payment_terms_days"), // e.g. 60 = Net 60
   // FSC/PEFC certification
   fscLicense: text("fsc_license"),
@@ -99,6 +101,9 @@ export const purchaseOrders = sqliteTable("purchase_orders", {
   outputClaim: text("output_claim"),
   certType: text("cert_type", { enum: ["fsc", "pefc"] }), // which certification applies to this PO
   pefc: text("pefc"), // PEFC certificate number (used when certType = 'pefc')
+  plannedTons: real("planned_tons").notNull().default(0),
+  startDate: text("start_date"),
+  endDate: text("end_date"),
   status: text("status", { enum: ["active", "completed", "cancelled"] }).notNull().default("active"),
   notes: text("notes"),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
