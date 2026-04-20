@@ -20,6 +20,8 @@ export async function GET(req: NextRequest) {
       clientName: clients.name,
       clientEmail: clients.contactEmail,
       poNumber: purchaseOrders.poNumber,
+      dueDate: invoices.dueDate,
+      invoiceDate: invoices.invoiceDate,
       sellPrice: sql<number>`coalesce(${invoices.sellPriceOverride}, ${purchaseOrders.sellPrice}, 0)`,
     })
     .from(invoices)
