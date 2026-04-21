@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
       sellPriceOverride,
       buyPriceOverride,
       freightCost,
+      clientPoId,
     } = body;
 
     if (!purchaseOrderId || !invoiceNumber || !quantityTons) {
@@ -63,6 +64,7 @@ export async function POST(req: NextRequest) {
       sellPriceOverride: sellPriceOverride ? Number(sellPriceOverride) : null,
       buyPriceOverride: buyPriceOverride ? Number(buyPriceOverride) : null,
       freightCost: freightCost ? Number(freightCost) : null,
+      clientPoId: clientPoId ? Number(clientPoId) : null,
       paymentTermsDays: TERMS,
       dueDate: computedDueDate,
       customerPaymentStatus: "unpaid",

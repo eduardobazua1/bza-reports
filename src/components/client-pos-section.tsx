@@ -32,7 +32,7 @@ type ConvertForm = {
 };
 
 type Product = { id: number; name: string };
-type InvoiceRef = { salesDocument: string | null; quantityTons: number };
+type InvoiceRef = { salesDocument: string | null; quantityTons: number; clientPoId: number | null };
 
 export function ClientPOsSection({
   purchaseOrderId,
@@ -144,6 +144,7 @@ export function ClientPOsSection({
         purchaseOrderId,
         invoiceNumber: convertForm.invoiceNumber,
         salesDocument: cpo.clientPoNumber,
+        clientPoId: cpo.id,
         destination: cpo.destination,
         vehicleId: convertForm.vehicleId || null,
         blNumber: convertForm.blNumber || null,
@@ -351,7 +352,7 @@ export function ClientPOsSection({
                 const isConverting = convertingId === cpo.id;
                 invoiceCounter++;
                 const convertedTons = invoices
-                  .filter(inv => inv.salesDocument === cpo.clientPoNumber)
+                  .filter(inv => inv.clientPoId === cpo.id || inv.salesDocument === cpo.clientPoNumber)
                   .reduce((s, inv) => s + inv.quantityTons, 0);
 
                 return (
