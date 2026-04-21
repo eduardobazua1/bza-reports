@@ -695,7 +695,7 @@ function ReceivePaymentPanel({
         ) : unpaidInvoices.length === 0 ? (
           <div className="p-6 text-center text-sm text-stone-400 italic">No outstanding invoices.</div>
         ) : (
-          <table className="w-full text-xs">
+          <table className="w-full text-sm">
             <thead>
               <tr className="bg-stone-50 border-b border-stone-100">
                 <th className="w-8 p-2 text-center">

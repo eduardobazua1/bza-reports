@@ -234,7 +234,7 @@ export function InvoicesSection({
         <h3 className="text-sm font-semibold text-stone-500 uppercase tracking-wide">Invoices ({list.length})</h3>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-xs">
+        <table className="w-full text-sm">
           <thead className="bg-stone-50">
             <tr>
               <th className="text-left px-3 py-1.5 font-medium text-stone-500">Client PO</th>

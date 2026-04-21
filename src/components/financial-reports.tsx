@@ -352,7 +352,7 @@ function DrillDownModal({
 
         {/* Table */}
         <div className="overflow-auto flex-1">
-          <table className="w-full text-xs">
+          <table className="w-full text-sm">
             <thead className="bg-white sticky top-0 border-b-2 border-gray-200">
               <tr>
                 {v("invoiceNumber") && <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">Invoice #</th>}
