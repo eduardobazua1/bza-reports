@@ -269,11 +269,11 @@ export function InvoicesSection({
                 <>
                   <tr key={inv.id} className={`hover:bg-stone-50 align-middle ${isEditing ? "bg-amber-50/40" : ""}`}>
                     <td className="px-3 py-1.5 border-t border-stone-100 text-sm font-medium text-stone-800">{inv.salesDocument || "—"}</td>
-                    <td className="px-3 py-1.5 border-t border-stone-100 whitespace-nowrap">
+                    <td className="px-3 py-1.5 border-t border-stone-100 text-sm font-medium text-stone-800 whitespace-nowrap">
                       {inv.invoiceNumber.startsWith("PEND-") ? (
-                        <span className="text-amber-500 italic">Pending</span>
+                        <span className="text-amber-500 italic font-normal">Pending</span>
                       ) : (
-                        <span className="font-medium">{inv.invoiceNumber}</span>
+                        inv.invoiceNumber
                       )}
                     </td>
                     <td className="px-3 py-1.5 border-t border-stone-100 text-stone-600 text-xs max-w-[140px]">
