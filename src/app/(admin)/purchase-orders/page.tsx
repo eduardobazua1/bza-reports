@@ -74,7 +74,7 @@ export default async function PurchaseOrdersPage({ searchParams }: { searchParam
                 <th className="text-right p-3 text-sm font-medium text-muted-foreground">Sell</th>
                 <th className="text-right p-3 text-sm font-medium text-muted-foreground">Buy</th>
                 <th className="text-right p-3 text-sm font-medium text-muted-foreground">Inv.</th>
-                <th className="text-right p-3 text-sm font-medium text-muted-foreground">Tons</th>
+                <th className="text-right p-3 text-sm font-medium text-muted-foreground">Real TN</th>
                 <th className="text-right p-3 text-sm font-medium text-muted-foreground">Revenue</th>
                 <th className="text-right p-3 text-sm font-medium text-muted-foreground">Profit</th>
                 <th className="text-left p-3 text-sm font-medium text-muted-foreground">Status</th>

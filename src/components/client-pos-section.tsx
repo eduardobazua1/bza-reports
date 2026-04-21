@@ -32,6 +32,7 @@ type ConvertForm = {
 };
 
 type Product = { id: number; name: string };
+type InvoiceRef = { salesDocument: string | null; quantityTons: number };
 
 export function ClientPOsSection({
   purchaseOrderId,
@@ -41,6 +42,7 @@ export function ClientPOsSection({
   poTerms,
   product,
   products,
+  invoices = [],
 }: {
   purchaseOrderId: number;
   clientPos: ClientPO[];
@@ -49,6 +51,7 @@ export function ClientPOsSection({
   poTerms?: string | null;
   product?: string;
   products?: Product[];
+  invoices?: InvoiceRef[];
 }) {
   const [list, setList] = useState<ClientPO[]>(clientPos);
   const [adding, setAdding] = useState(false);
@@ -333,7 +336,8 @@ export function ClientPOsSection({
                 <th className="text-left px-4 py-2.5 font-medium text-stone-500">Product</th>
                 <th className="text-left px-4 py-2.5 font-medium text-stone-500">Destination</th>
                 <th className="text-left px-4 py-2.5 font-medium text-stone-500">Incoterm</th>
-                <th className="text-right px-4 py-2.5 font-medium text-stone-500">Tons</th>
+                <th className="text-right px-4 py-2.5 font-medium text-stone-500">Estimated</th>
+                <th className="text-right px-4 py-2.5 font-medium text-stone-500">Real</th>
                 <th className="text-right px-4 py-2.5 font-medium text-stone-500">Price/TN</th>
                 <th className="text-right px-4 py-2.5 font-medium text-stone-500">Est. Amount</th>
                 <th className="text-left px-4 py-2.5 font-medium text-stone-500">Status</th>
@@ -346,6 +350,9 @@ export function ClientPOsSection({
                 const amount = effectivePrice && cpo.plannedTons ? cpo.plannedTons * effectivePrice : null;
                 const isConverting = convertingId === cpo.id;
                 invoiceCounter++;
+                const convertedTons = invoices
+                  .filter(inv => inv.salesDocument === cpo.clientPoNumber)
+                  .reduce((s, inv) => s + inv.quantityTons, 0);
 
                 return (
                   <>
@@ -358,6 +365,16 @@ export function ClientPOsSection({
                       <td className="px-4 py-3 border-t border-stone-100 text-stone-500 text-xs">{cpo.incoterm || "—"}</td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right">
                         {cpo.plannedTons ? formatNumber(cpo.plannedTons, 1) : "—"}
+                      </td>
+                      <td className="px-4 py-3 border-t border-stone-100 text-right">
+                        {convertedTons > 0 ? (
+                          <span className={`font-semibold ${cpo.plannedTons && convertedTons >= cpo.plannedTons ? "text-emerald-600" : "text-[#0d9488]"}`}>
+                            {formatNumber(convertedTons, 2)}
+                            {cpo.plannedTons ? <span className="text-stone-400 font-normal"> / {formatNumber(cpo.plannedTons, 1)}</span> : null}
+                          </span>
+                        ) : (
+                          <span className="text-stone-300">—</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right text-xs text-stone-500">
                         {cpo.sellPriceOverride ? formatCurrency(cpo.sellPriceOverride) : (sellPrice ? formatCurrency(sellPrice) : "—")}
@@ -398,7 +415,7 @@ export function ClientPOsSection({
                     {/* Convert to Invoice inline form */}
                     {isConverting && (
                       <tr key={`convert-${cpo.id}`}>
-                        <td colSpan={9} className="p-0">
+                        <td colSpan={10} className="p-0">
                           <div className="bg-emerald-50 border-t border-emerald-200 p-4 space-y-3">
                             <p className="text-xs font-semibold text-emerald-800 uppercase">
                               New Invoice — {cpo.clientPoNumber} · {cpo.destination}
