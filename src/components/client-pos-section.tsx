@@ -360,7 +360,7 @@ export function ClientPOsSection({
                 return (
                   <>
                     <tr key={cpo.id} className={`hover:bg-stone-50 ${editingId === cpo.id ? "bg-amber-50/40" : ""}`}>
-                      <td className="px-4 py-3 border-t border-stone-100 font-mono text-xs font-semibold text-[#0d3d3b]">
+                      <td className="px-4 py-3 border-t border-stone-100 text-sm font-semibold text-stone-800">
                         {cpo.clientPoNumber}
                       </td>
                       <td className="px-4 py-3 border-t border-stone-100 text-stone-600 text-xs">{cpo.item || "—"}</td>
