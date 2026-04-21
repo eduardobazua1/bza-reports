@@ -371,9 +371,8 @@ export function ClientPOsSection({
                       </td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right">
                         {convertedTons > 0 ? (
-                          <span className={`font-semibold ${cpo.plannedTons && convertedTons >= cpo.plannedTons ? "text-emerald-600" : "text-[#0d9488]"}`}>
+                          <span className="font-semibold text-stone-800">
                             {formatNumber(convertedTons, 2)}
-                            {cpo.plannedTons ? <span className="text-stone-400 font-normal"> / {formatNumber(cpo.plannedTons, 1)}</span> : null}
                           </span>
                         ) : (
                           <span className="text-stone-300">—</span>
