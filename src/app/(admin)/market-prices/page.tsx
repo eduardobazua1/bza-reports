@@ -83,7 +83,7 @@ export default function MarketPricesPage() {
       {/* TTO Net Prices */}
       {currentMonth && (
         <div>
-          <h2 className="text-sm font-medium text-blue-600 uppercase tracking-wide mb-3">TTO Key Indicators — {monthLabel(currentMonth)}</h2>
+          <h2 className="text-sm font-medium text-[#0d9488] uppercase tracking-wide mb-3">TTO Key Indicators — {monthLabel(currentMonth)}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {GRADES.map(grade => {
               const p = currentPrices.find(p => p.source === "TTO" && p.grade === grade && p.priceType === "net");

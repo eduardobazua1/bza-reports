@@ -23,13 +23,14 @@ const C_WHITE = rgb(1, 1, 1), C_RED = hx("#dc2626"), C_TOTBG = hx("#e0f5f2");
 
 const SHIP_LABELS: Record<string, string> = {
   programado: "Scheduled", en_transito: "In Transit",
-  en_aduana: "In Customs", entregado: "Delivered",
+  en_aduana: "Customs", entregado: "Delivered",
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function fmtDate(d: string | null | undefined) {
   if (!d) return "—";
-  return new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+  const p = d.split("T")[0].split("-");
+  return `${p[1].padStart(2,"0")}/${p[2].padStart(2,"0")}/${p[0]}`;
 }
 function todayCST() {
   return new Date().toLocaleDateString("en-CA", { timeZone: "America/Chicago" });
@@ -156,7 +157,7 @@ async function buildPdf(rows: Row[], title: string, colKeys: string[]): Promise<
   const widths = cols.map(c => Math.floor(c.w * TW / baseW));
   widths[widths.length - 1] += TW - widths.reduce((s, w) => s + w, 0);
 
-  const dateStr = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "America/Chicago" });
+  const _td2 = new Date(); const dateStr = `${String(_td2.getMonth()+1).padStart(2,"0")}/${String(_td2.getDate()).padStart(2,"0")}/${_td2.getFullYear()}`;
   const subtitle = `${dateStr}  ·  ${rows.length} invoice${rows.length !== 1 ? "s" : ""}`;
 
   const MAX_Y = PAGE_H - 44;

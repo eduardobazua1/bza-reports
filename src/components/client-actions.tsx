@@ -14,6 +14,11 @@ type Client = {
   paymentTermsDays: number | null;
   accessToken: string;
   portalEnabled: boolean;
+  billAddress: string | null;
+  shipAddress: string | null;
+  rfc: string | null;
+  city: string | null;
+  country: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -102,6 +107,11 @@ export function ClientActions({ clients }: { clients: Client[] }) {
       contactEmail: (formData.get("contactEmail") as string) || undefined,
       phone: (formData.get("phone") as string) || undefined,
       paymentTermsDays: formData.get("paymentTermsDays") ? Number(formData.get("paymentTermsDays")) : null,
+      billAddress: (formData.get("billAddress") as string) || undefined,
+      shipAddress: (formData.get("shipAddress") as string) || undefined,
+      rfc: (formData.get("rfc") as string) || undefined,
+      city: (formData.get("city") as string) || undefined,
+      country: (formData.get("country") as string) || undefined,
     };
 
     startTransition(async () => {
@@ -216,6 +226,53 @@ export function ClientActions({ clients }: { clients: Client[] }) {
                 defaultValue={editingClient?.paymentTermsDays || ""}
                 className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
                 placeholder="e.g. 60 for Net 60"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">RFC / Tax ID</label>
+              <input
+                name="rfc"
+                defaultValue={editingClient?.rfc || ""}
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
+                placeholder="PAPX123456ABC"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">City</label>
+              <input
+                name="city"
+                defaultValue={editingClient?.city || ""}
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
+                placeholder="Ciudad de Mexico"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Country</label>
+              <input
+                name="country"
+                defaultValue={editingClient?.country || ""}
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
+                placeholder="MEXICO"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium mb-1">Billing Address</label>
+              <textarea
+                name="billAddress"
+                rows={2}
+                defaultValue={editingClient?.billAddress || ""}
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
+                placeholder="Street, Col. Neighborhood, CP 12345"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium mb-1">Ship Address <span className="text-xs text-muted-foreground">(leave blank to use Billing)</span></label>
+              <textarea
+                name="shipAddress"
+                rows={2}
+                defaultValue={editingClient?.shipAddress || ""}
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
+                placeholder="Same as billing or different delivery address"
               />
             </div>
             <div className="sm:col-span-2 flex gap-2">

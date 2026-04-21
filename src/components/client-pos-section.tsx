@@ -316,7 +316,7 @@ export function ClientPOsSection({
             });
             setAdding(true);
           }}
-          className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition"
+          className="text-xs bg-[#0d9488] text-white px-3 py-1.5 rounded hover:bg-[#0a7970] transition"
         >
           + Add Order
         </button>
@@ -620,7 +620,7 @@ export function ClientPOsSection({
             <button
               onClick={handleAdd}
               disabled={loading || !addForm.clientPoNumber}
-              className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 disabled:opacity-50"
+              className="text-xs bg-[#0d9488] text-white px-3 py-1.5 rounded hover:bg-[#0a7970] disabled:opacity-50"
             >
               {loading ? "Saving..." : "Save"}
             </button>

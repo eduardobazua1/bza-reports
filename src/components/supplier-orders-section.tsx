@@ -219,8 +219,8 @@ export function SupplierOrdersSection({
 
   function fmtDate(d: string | null) {
     if (!d) return "—";
-    const dt = new Date(d + "T12:00:00");
-    return dt.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+    const p = d.split("T")[0].split("-");
+    return `${p[1].padStart(2,"0")}/${p[2].padStart(2,"0")}/${p[0]}`;
   }
 
   function parsedLines(order: SupplierOrder) {
@@ -370,7 +370,7 @@ export function SupplierOrdersSection({
                       <tr key={`send-${order.id}`}>
                         <td colSpan={8} className="p-0">
                           <div className="bg-blue-50 border-t border-blue-200 px-4 py-3 flex items-center gap-3">
-                            <span className="text-xs text-blue-700 font-medium whitespace-nowrap">Send to:</span>
+                            <span className="text-xs text-[#0d9488] font-medium whitespace-nowrap">Send to:</span>
                             <input
                               type="email"
                               className="border border-blue-200 rounded px-2 py-1 text-sm flex-1 max-w-xs"
@@ -418,7 +418,7 @@ export function SupplierOrdersSection({
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-semibold text-stone-500 uppercase">Lines</label>
-              <button onClick={addLine} className="text-xs text-blue-600 hover:text-blue-800 font-medium">+ Add line</button>
+              <button onClick={addLine} className="text-xs text-[#0d9488] hover:text-[#0d9488] font-medium">+ Add line</button>
             </div>
             <div className="space-y-2">
               {lines.map((line, i) => (

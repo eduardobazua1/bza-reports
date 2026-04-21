@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { getDashboardKPIs, getInvoices } from "@/server/queries";
-import { formatCurrency, formatNumber, formatPercent } from "@/lib/utils";
+import { formatCurrency, formatNumber, formatPercent, shipmentStatusLabels } from "@/lib/utils";
 import { DashboardVisuals } from "@/components/dashboard-visuals";
 import { ShipmentMap } from "@/components/shipment-map";
 import { MarketPricesWidget } from "@/components/market-prices-widget";
@@ -86,7 +86,7 @@ export default async function DashboardPage() {
     const transport = r.transportType === "ffcc" ? "Rail" : r.transportType === "ship" ? "Ocean" : r.transportType === "truck" ? "Truck" : "Other";
     byTransport[transport] = (byTransport[transport] || 0) + tons;
     // By status
-    const status = r.invoice.shipmentStatus === "entregado" ? "Delivered" : r.invoice.shipmentStatus === "en_transito" ? "In Transit" : r.invoice.shipmentStatus === "en_aduana" ? "Customs" : "Scheduled";
+    const status = shipmentStatusLabels[r.invoice.shipmentStatus] ?? "Scheduled";
     byStatus[status] = (byStatus[status] || 0) + tons;
     // By client
     const client = r.clientName || "Other";
@@ -246,7 +246,7 @@ export default async function DashboardPage() {
         <KPIBig label="Active PO's" value={kpis.activePOs.toString()} unit="active orders" color="amber" href="/purchase-orders?status=active" animatedValue={kpis.activePOs} />
         <KPIBig label="Open Invoices" value={kpis.unpaidInvoices.toString()} unit="unpaid" color="amber" href="/invoices?status=unpaid" animatedValue={kpis.unpaidInvoices} />
         <KPIBig label="Accounts Receivable" value={formatCurrency(kpis.accountsReceivable)} unit="clients owe BZA" color="green" href="/invoices?status=unpaid" animatedValue={kpis.accountsReceivable} />
-        <KPIBig label="Suppliers Owed" value={formatCurrency(supplierBalance)} unit={supplierBalanceNet > 0 ? "you owe" : supplierBalanceNet < 0 ? "they owe you" : "settled"} color={supplierBalanceNet > 0 ? "red" : supplierBalanceNet < 0 ? "green" : "amber"} href="/suppliers" animatedValue={supplierBalance} />
+        <KPIBig label="Accounts Payable" value={formatCurrency(supplierBalance)} unit={supplierBalanceNet > 0 ? "you owe" : supplierBalanceNet < 0 ? "they owe you" : "settled"} color={supplierBalanceNet > 0 ? "red" : supplierBalanceNet < 0 ? "green" : "amber"} href="/suppliers" animatedValue={supplierBalance} />
       </div>
 
 

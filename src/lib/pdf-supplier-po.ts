@@ -24,8 +24,8 @@ async function getSettings() {
 
 function formatDate(dateStr: string | null | undefined) {
   if (!dateStr) return "";
-  const d = new Date(dateStr + "T12:00:00");
-  return d.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
+  const p = dateStr.split("T")[0].split("-");
+  return `${p[1].padStart(2,"0")}/${p[2].padStart(2,"0")}/${p[0]}`;
 }
 
 function fmtCurrency(n: number) {

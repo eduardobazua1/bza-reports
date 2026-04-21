@@ -2,6 +2,7 @@
 
 import { MapContainer, TileLayer, CircleMarker, Popup, Polyline } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import { formatNumber } from "@/lib/utils";
 
 type MarkerData = {
   name: string;
@@ -53,7 +54,7 @@ export default function MapInner({ markers }: { markers: MarkerData[] }) {
               <strong>{m.name}</strong>
               {m.tons > 0 && (
                 <>
-                  <br />{Math.round(m.tons).toLocaleString()} TN
+                  <br />{formatNumber(m.tons, 0)} TN
                   <br />{m.shipments} shipments
                 </>
               )}

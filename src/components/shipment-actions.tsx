@@ -24,10 +24,14 @@ export function ShipmentStatusBadge({
   const [posStyle, setPosStyle] = useState<React.CSSProperties>({});
   const router = useRouter();
   const ref = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      const insideTrigger = ref.current?.contains(t);
+      const insideDropdown = dropdownRef.current?.contains(t);
+      if (!insideTrigger && !insideDropdown) setOpen(false);
     }
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -55,7 +59,7 @@ export function ShipmentStatusBadge({
         {shipmentStatusLabels[currentStatus]} ▾
       </button>
       {open && createPortal(
-        <div style={posStyle} className="bg-white border border-stone-200 rounded-md shadow-lg min-w-[130px] py-1">
+        <div style={posStyle} onMouseDown={(e) => e.stopPropagation()} className="bg-white border border-stone-200 rounded-md shadow-lg min-w-[130px] py-1">
           {statuses.map((s) => (
             <button
               key={s.value}
@@ -92,120 +96,120 @@ export function ShipmentActions({
   currentEta?: string | null;
 }) {
   const [open, setOpen] = useState(false);
+  const [posStyle, setPosStyle] = useState<React.CSSProperties>({});
   const [status, setStatus] = useState(currentStatus);
   const [location, setLocation] = useState(currentLocation || "");
   const [vehicleId, setVehicleId] = useState(currentVehicleId || "");
   const [blNumber, setBlNumber] = useState(currentBlNumber || "");
   const [eta, setEta] = useState(currentEta || "");
   const [isPending, startTransition] = useTransition();
+  const panelRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  // Reset state from fresh props every time the form opens
-  function handleOpen() {
+  // Close when clicking outside
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // Close when another ShipmentActions opens
+  useEffect(() => {
+    function handler(e: Event) {
+      if ((e as CustomEvent).detail !== invoiceId) setOpen(false);
+    }
+    document.addEventListener("shipment-panel-open", handler);
+    return () => document.removeEventListener("shipment-panel-open", handler);
+  }, [invoiceId]);
+
+  function handleOpen(e: React.MouseEvent) {
     setStatus(currentStatus);
     setLocation(currentLocation || "");
     setVehicleId(currentVehicleId || "");
     setBlNumber(currentBlNumber || "");
     setEta(currentEta || "");
+
+    // Compute portal position with flip logic
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const panelW = 240, panelH = 280;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const top = spaceBelow < panelH ? rect.top - panelH - 6 : rect.bottom + 4;
+    const right = window.innerWidth - rect.right;
+    setPosStyle({ position: "fixed", top, right: Math.max(4, right), zIndex: 9999, width: panelW });
+
+    // Notify other instances to close
+    document.dispatchEvent(new CustomEvent("shipment-panel-open", { detail: invoiceId }));
     setOpen(true);
   }
 
   function handleSave() {
     startTransition(async () => {
-      const updates: Record<string, string | null> = {};
-      if (status !== currentStatus) updates.shipmentStatus = status;
-      // Use null when clearing a field (empty string → null)
-      if (location !== (currentLocation || "")) updates.currentLocation = location || null;
-      if (vehicleId !== (currentVehicleId || "")) updates.vehicleId = vehicleId || null;
-      if (blNumber !== (currentBlNumber || "")) updates.blNumber = blNumber || null;
-      if (eta !== (currentEta || "")) updates.estimatedArrival = eta || null;
-
-      if (Object.keys(updates).length > 0) {
-        await updateInvoice(invoiceId, updates as Parameters<typeof updateInvoice>[1]);
-      }
+      await updateInvoice(invoiceId, {
+        shipmentStatus: status as "programado" | "en_transito" | "en_aduana" | "entregado",
+        currentLocation: location || null,
+        vehicleId: vehicleId || null,
+        blNumber: blNumber || null,
+        estimatedArrival: eta || null,
+      });
       setOpen(false);
       router.refresh();
     });
   }
 
-  if (!open) {
-    return (
-      <button
-        onClick={handleOpen}
-        className="text-xs text-primary hover:underline"
-      >
+  return (
+    <>
+      <button onClick={handleOpen} className="text-xs text-primary hover:underline">
         Update
       </button>
-    );
-  }
-
-  return (
-    <div className="absolute right-2 top-0 z-20 bg-white rounded-md shadow-sm shadow-lg p-3 space-y-2 w-60">
-      <div>
-        <label className="block text-xs font-medium text-muted-foreground mb-1">Status</label>
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          className="w-full text-xs border border-border rounded px-2 py-1.5 bg-background"
-        >
-          {statuses.map((s) => (
-            <option key={s.value} value={s.value}>{s.label}</option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label className="block text-xs font-medium text-muted-foreground mb-1">Location</label>
-        <input
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          className="w-full text-xs border border-border rounded px-2 py-1.5 bg-background"
-          placeholder="e.g. Laredo, TX"
-        />
-      </div>
-      <div>
-        <label className="block text-xs font-medium text-muted-foreground mb-1">Vehicle ID</label>
-        <input
-          value={vehicleId}
-          onChange={(e) => setVehicleId(e.target.value)}
-          className="w-full text-xs border border-border rounded px-2 py-1.5 bg-background"
-          placeholder="e.g. TBOX666789"
-        />
-      </div>
-      <div>
-        <label className="block text-xs font-medium text-muted-foreground mb-1">BL Number</label>
-        <input
-          value={blNumber}
-          onChange={(e) => setBlNumber(e.target.value)}
-          className="w-full text-xs border border-border rounded px-2 py-1.5 bg-background"
-          placeholder="e.g. BL-12345"
-        />
-      </div>
-      <div>
-        <label className="block text-xs font-medium text-muted-foreground mb-1">ETA</label>
-        <input
-          type="date"
-          value={eta}
-          onChange={(e) => setEta(e.target.value)}
-          className="w-full text-xs border border-border rounded px-2 py-1.5 bg-background"
-        />
-      </div>
-      <div className="flex gap-2 pt-1">
-        <button
-          onClick={handleSave}
-          disabled={isPending}
-          className="flex-1 text-xs bg-primary text-primary-foreground rounded px-2 py-1.5 font-medium hover:opacity-90 disabled:opacity-50"
-        >
-          {isPending ? "Saving..." : "Save"}
-        </button>
-        <button
-          onClick={() => {
-            setOpen(false);
-          }}
-          className="flex-1 text-xs border border-border rounded px-2 py-1.5 hover:bg-muted"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
+      {open && createPortal(
+        <div ref={panelRef} style={posStyle} className="bg-white border border-stone-200 rounded-lg shadow-xl p-3 space-y-2">
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Status</label>
+            <select value={status} onChange={(e) => setStatus(e.target.value)}
+              className="w-full text-xs border border-border rounded px-2 py-1.5 bg-background">
+              {statuses.map((s) => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Location</label>
+            <input value={location} onChange={(e) => setLocation(e.target.value)}
+              className="w-full text-xs border border-border rounded px-2 py-1.5 bg-background"
+              placeholder="e.g. Laredo, TX" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Vehicle ID</label>
+            <input value={vehicleId} onChange={(e) => setVehicleId(e.target.value)}
+              className="w-full text-xs border border-border rounded px-2 py-1.5 bg-background"
+              placeholder="e.g. TBOX666789" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">BL Number</label>
+            <input value={blNumber} onChange={(e) => setBlNumber(e.target.value)}
+              className="w-full text-xs border border-border rounded px-2 py-1.5 bg-background"
+              placeholder="e.g. BL-12345" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">ETA</label>
+            <input type="date" value={eta} onChange={(e) => setEta(e.target.value)}
+              className="w-full text-xs border border-border rounded px-2 py-1.5 bg-background" />
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button onClick={handleSave} disabled={isPending}
+              className="flex-1 text-xs bg-primary text-primary-foreground rounded px-2 py-1.5 font-medium hover:opacity-90 disabled:opacity-50">
+              {isPending ? "Saving..." : "Save"}
+            </button>
+            <button onClick={() => setOpen(false)}
+              className="flex-1 text-xs border border-border rounded px-2 py-1.5 hover:bg-muted">
+              Cancel
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
   );
 }

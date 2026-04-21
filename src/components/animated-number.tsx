@@ -52,9 +52,10 @@ export function AnimatedNumber({
     requestAnimationFrame(step);
   }
 
-  const formatted = decimals > 0
-    ? display.toFixed(decimals)
-    : Math.round(display).toLocaleString();
+  const formatted = new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(decimals > 0 ? display : Math.round(display));
 
   return (
     <span ref={ref} className={className}>

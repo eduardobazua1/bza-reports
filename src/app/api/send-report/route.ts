@@ -224,7 +224,7 @@ async function generatePdfBuffer(
   page.drawLine({ start: { x: M, y: BY(82) }, end: { x: PAGE_W - M, y: BY(82) }, thickness: 2, color: CYAN });
   dt("Shipment Report", M, 92, 14, fontB, TEAL);
   dt(`Prepared for: ${clientName}`, M, 110, 10, font, GRAY);
-  dt(`Date: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`, M, 124, 10, font, GRAY);
+  const _sr = new Date(); dt(`Date: ${String(_sr.getMonth()+1).padStart(2,"0")}/${String(_sr.getDate()).padStart(2,"0")}/${_sr.getFullYear()}`, M, 124, 10, font, GRAY);
   if (showOnlyActive) dt("Filter: Active shipments only", M + 250, 124, 10, font, GRAY);
 
   let y = 150;

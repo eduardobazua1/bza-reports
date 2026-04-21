@@ -62,11 +62,11 @@ export function KPIBig({
       const current = eased * animatedValue;
 
       if (value.includes("M")) {
-        setDisplay(`$${(current / 1000000).toFixed(2)}M`);
+        setDisplay(`$${new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(current / 1000000)}M`);
       } else if (value.includes("K")) {
-        setDisplay(`$${Math.round(current / 1000).toLocaleString()}K`);
+        setDisplay(`$${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.round(current / 1000))}K`);
       } else {
-        setDisplay(Math.round(current).toLocaleString());
+        setDisplay(new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.round(current)));
       }
 
       if (progress < 1) requestAnimationFrame(step);

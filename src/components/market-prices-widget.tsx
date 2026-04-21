@@ -67,7 +67,7 @@ export function MarketPricesWidget({ prices }: { prices: Price[] }) {
 
       {/* TTO Section */}
       <div className="mb-4">
-        <p className="text-[10px] font-semibold text-blue-600 uppercase tracking-wide mb-2">TTO Net</p>
+        <p className="text-[10px] font-semibold text-[#0d9488] uppercase tracking-wide mb-2">TTO Net</p>
         <div className="grid grid-cols-3 gap-3">
           {GRADES.map(grade => {
             const p = getPrice("TTO", grade, "net");

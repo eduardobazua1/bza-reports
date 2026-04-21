@@ -9,7 +9,8 @@ function daysOverdue(dueDate: string | null): number {
 
 function fmtDate(d: string | null) {
   if (!d) return "";
-  return new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+  const p = d.split("T")[0].split("-");
+  return `${p[1].padStart(2,"0")}/${p[2].padStart(2,"0")}/${p[0]}`;
 }
 
 export async function GET(req: NextRequest) {

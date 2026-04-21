@@ -15,11 +15,11 @@ export function formatNumber(n: number, decimals = 2): string {
 
 export function formatDate(date: string | null | undefined): string {
   if (!date) return "-";
-  // Parse YYYY-MM-DD as local date (not UTC) to avoid off-by-one timezone bug
   const parts = date.split("T")[0].split("-");
   if (parts.length === 3) {
-    const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-    return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+    const mm = parts[1].padStart(2, "0");
+    const dd = parts[2].padStart(2, "0");
+    return `${mm}/${dd}/${parts[0]}`;
   }
   return date;
 }
@@ -36,10 +36,10 @@ export const shipmentStatusLabels: Record<string, string> = {
 };
 
 export const shipmentStatusColors: Record<string, string> = {
-  programado: "bg-gray-100 text-gray-700",
+  programado: "bg-stone-100 text-stone-600",
   en_transito: "bg-blue-100 text-blue-700",
-  en_aduana: "bg-yellow-100 text-yellow-700",
-  entregado: "bg-green-100 text-green-700",
+  en_aduana: "bg-amber-100 text-amber-700",
+  entregado: "bg-emerald-100 text-emerald-700",
 };
 
 export const paymentStatusLabels: Record<string, string> = {

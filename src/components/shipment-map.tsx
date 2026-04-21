@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { formatNumber } from "@/lib/utils";
 
 type LocationData = { name: string; tons: number; shipments: number };
 
@@ -72,7 +73,7 @@ export function ShipmentMap({ locationData }: { locationData: Record<string, Loc
             .map(([name, data]) => (
               <Link key={name} href={`/invoices?destination=${encodeURIComponent(name)}`} className="text-center p-2 rounded-md hover:shadow-md transition-shadow cursor-pointer block" style={{ background: `${locationColors[name] || "#94a3b8"}10`, borderLeft: `3px solid ${locationColors[name] || "#94a3b8"}` }}>
                 <p className="text-xs font-medium text-stone-700">{displayNames[name] || name}</p>
-                <p className="text-sm font-bold text-stone-900">{Math.round(data.tons).toLocaleString()} TN</p>
+                <p className="text-sm font-bold text-stone-900">{formatNumber(data.tons, 0)} TN</p>
                 <p className="text-xs text-stone-400">{data.shipments} shipments</p>
               </Link>
             ))}

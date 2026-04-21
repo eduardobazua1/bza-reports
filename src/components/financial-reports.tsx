@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { formatCurrency, formatNumber, formatPercent } from "@/lib/utils";
+import { formatCurrency, formatNumber, formatPercent, shipmentStatusLabels } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -42,7 +42,8 @@ type FilterCondition = {
 
 function fmtDate(d: string | null) {
   if (!d) return "—";
-  return new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+  const p = d.split("T")[0].split("-");
+  return `${p[1].padStart(2,"0")}/${p[2].padStart(2,"0")}/${p[0]}`;
 }
 
 function daysOverdue(dueDate: string | null): number {
@@ -61,10 +62,6 @@ const FIELD_MAP: Record<string, { label: string; get: (r: InvoiceRow) => string 
   suppPay:    { label: "Supp. Payment",   get: r => r.supplierPaymentStatus },
 };
 
-const SHIP_LABELS: Record<string, string> = {
-  programado: "Scheduled", en_transito: "In Transit",
-  en_aduana: "In Customs", entregado: "Delivered",
-};
 
 function applyConditions(data: InvoiceRow[], conditions: FilterCondition[]): InvoiceRow[] {
   return data.filter(r => {
@@ -244,7 +241,7 @@ function DrillDownModal({
           tons: r.quantityTons.toFixed(3), amount: r.revenue.toFixed(2),
           cost: r.cost.toFixed(2), profit: r.profit.toFixed(2),
           margin: r.revenue > 0 ? ((r.profit / r.revenue) * 100).toFixed(2) : "0",
-          shipStatus: SHIP_LABELS[r.shipmentStatus] ?? r.shipmentStatus,
+          shipStatus: shipmentStatusLabels[r.shipmentStatus] ?? r.shipmentStatus,
           custPayment: r.customerPaymentStatus === "paid" ? "Paid" : "Unpaid",
         };
         return activeCols.map(c => vals[c.key]);
@@ -382,7 +379,7 @@ function DrillDownModal({
                 const margin = r.revenue > 0 ? (r.profit / r.revenue) * 100 : 0;
                 return (
                   <tr key={i} className="border-b border-gray-100 hover:bg-gray-50">
-                    {v("invoiceNumber") && <td className="px-3 py-1.5 font-mono font-medium text-blue-700 whitespace-nowrap">{r.invoiceNumber}</td>}
+                    {v("invoiceNumber") && <td className="px-3 py-1.5 font-mono font-medium text-[#0d9488] whitespace-nowrap">{r.invoiceNumber}</td>}
                     {v("clientName")    && <td className="px-3 py-1.5 font-medium whitespace-nowrap">{r.clientName}</td>}
                     {v("supplierName")  && <td className="px-3 py-1.5 text-gray-500 whitespace-nowrap">{r.supplierName}</td>}
                     {v("poNumber")      && <td className="px-3 py-1.5 text-gray-500 whitespace-nowrap">{r.poNumber || "—"}</td>}
@@ -396,7 +393,7 @@ function DrillDownModal({
                     {v("cost")          && <td className="px-3 py-1.5 text-right text-gray-600">{formatCurrency(r.cost)}</td>}
                     {v("profit")        && <td className={`px-3 py-1.5 text-right font-medium ${r.profit < 0 ? "text-red-600" : ""}`}>{formatCurrency(r.profit)}</td>}
                     {v("margin")        && <td className={`px-3 py-1.5 text-right ${margin < 0 ? "text-red-600" : "text-gray-600"}`}>{formatPercent(margin)}</td>}
-                    {v("shipStatus")    && <td className="px-3 py-1.5 text-gray-600 whitespace-nowrap">{SHIP_LABELS[r.shipmentStatus] ?? r.shipmentStatus}</td>}
+                    {v("shipStatus")    && <td className="px-3 py-1.5 text-gray-600 whitespace-nowrap">{shipmentStatusLabels[r.shipmentStatus] ?? r.shipmentStatus}</td>}
                     {v("custPayment")   && <td className={`px-3 py-1.5 font-medium ${r.customerPaymentStatus === "paid" ? "text-gray-600" : "text-red-600"}`}>{r.customerPaymentStatus === "paid" ? "Paid" : "Unpaid"}</td>}
                   </tr>
                 );
@@ -455,7 +452,7 @@ function CustomizePanel({
         <div className="flex border-b border-stone-100">
           {(["data","visual"] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
-              className={`flex-1 py-2.5 text-sm font-medium capitalize border-b-2 transition-colors ${tab===t ? "border-blue-600 text-blue-600" : "border-transparent text-stone-500 hover:text-stone-700"}`}>
+              className={`flex-1 py-2.5 text-sm font-medium capitalize border-b-2 transition-colors ${tab===t ? "border-blue-600 text-[#0d9488]" : "border-transparent text-stone-500 hover:text-stone-700"}`}>
               {t === "data" ? "Data" : "Visual"}
             </button>
           ))}
@@ -472,7 +469,7 @@ function CustomizePanel({
                     <span className="text-[10px] bg-stone-100 text-stone-500 rounded-full w-4 h-4 flex items-center justify-center">?</span>
                   </h3>
                   {conditions.length > 0 && (
-                    <button onClick={onClear} className="text-xs text-blue-600 hover:underline">Clear all</button>
+                    <button onClick={onClear} className="text-xs text-[#0d9488] hover:underline">Clear all</button>
                   )}
                 </div>
                 <p className="text-xs text-stone-400 mb-3">Select how you want to filter your data.</p>
@@ -502,7 +499,7 @@ function CustomizePanel({
                 ))}
 
                 <button onClick={onAdd}
-                  className="text-xs text-blue-600 hover:underline font-medium">
+                  className="text-xs text-[#0d9488] hover:underline font-medium">
                   + Add another filter
                 </button>
               </div>
@@ -545,7 +542,7 @@ function AmountCell({ value, rows, onDrillDown, className }: {
   return (
     <td className={`px-3 py-1.5 text-right ${className??""}`}>
       <button onClick={() => onDrillDown(rows, `${rows.length} invoices`)}
-        className="text-blue-600 hover:underline cursor-pointer">
+        className="text-[#0d9488] hover:underline cursor-pointer">
         {formatCurrency(value)}
       </button>
     </td>
@@ -563,7 +560,7 @@ function ARAgingReport({ data, visible, onDrillDown }: {
   const [sortDir, setSortDir] = useState<"asc"|"desc">("desc");
   const v = (k: string) => visible.has(k);
 
-  const today = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  const _tn = new Date(); const today = `${String(_tn.getMonth()+1).padStart(2,"0")}/${String(_tn.getDate()).padStart(2,"0")}/${_tn.getFullYear()}`;
 
   // Group by client
   const clientMap = new Map<string, { current: InvoiceRow[]; d30: InvoiceRow[]; d60: InvoiceRow[]; d90: InvoiceRow[]; d91: InvoiceRow[] }>();
@@ -636,7 +633,7 @@ function ARAgingReport({ data, visible, onDrillDown }: {
             {rows.map(r => (
               <tr key={r.name} className="border-b border-gray-100 hover:bg-gray-50">
                 <td className="px-3 py-1.5 font-medium">
-                  <button onClick={() => onDrillDown(r.allRows, r.name)} className="text-blue-600 hover:underline">
+                  <button onClick={() => onDrillDown(r.allRows, r.name)} className="text-[#0d9488] hover:underline">
                     {r.name}
                   </button>
                 </td>
@@ -646,7 +643,7 @@ function ARAgingReport({ data, visible, onDrillDown }: {
                 {v("d90")     && <AmountCell value={r.d90_v}     rows={r.d90}     onDrillDown={(rows) => onDrillDown(rows, `${r.name} — 61-90 days`)} />}
                 {v("d91")     && <AmountCell value={r.d91_v}     rows={r.d91}     onDrillDown={(rows) => onDrillDown(rows, `${r.name} — 91+ days`)} className="text-red-600" />}
                 <td className="px-3 py-1.5 text-right font-medium">
-                  <button onClick={() => onDrillDown(r.allRows, r.name)} className="text-blue-600 hover:underline">
+                  <button onClick={() => onDrillDown(r.allRows, r.name)} className="text-[#0d9488] hover:underline">
                     {formatCurrency(r.total)}
                   </button>
                 </td>
@@ -755,10 +752,10 @@ function PLMonthlyReport({ data, visible, onDrillDown }: {
             {months.map(m => (
               <tr key={m.key} className="border-b border-gray-100 hover:bg-gray-50">
                 <td className="px-3 py-1.5 font-medium">
-                  <button onClick={()=>onDrillDown(m.rows, m.label)} className="text-blue-600 hover:underline">{m.label}</button>
+                  <button onClick={()=>onDrillDown(m.rows, m.label)} className="text-[#0d9488] hover:underline">{m.label}</button>
                 </td>
                 {v("invoices") && <td className="px-3 py-1.5 text-right">
-                  <button onClick={()=>onDrillDown(m.rows,m.label)} className="text-blue-600 hover:underline">{m.invoices}</button>
+                  <button onClick={()=>onDrillDown(m.rows,m.label)} className="text-[#0d9488] hover:underline">{m.invoices}</button>
                 </td>}
                 {v("tons")     && <td className="px-3 py-1.5 text-right text-gray-700">{formatNumber(m.tons,1)}</td>}
                 {v("revenue")  && <AmountCell value={m.revenue} rows={m.rows} onDrillDown={r=>onDrillDown(r,`${m.label} — Revenue`)} />}
@@ -883,9 +880,9 @@ function PLEntityReport({ data, isClient, visible, onDrillDown }: {
             {entities.map(e => (
               <tr key={e.name} className="border-b border-gray-100 hover:bg-gray-50">
                 <td className="px-3 py-1.5 font-medium">
-                  <button onClick={()=>onDrillDown(e.rows, e.name)} className="text-blue-600 hover:underline">{e.name}</button>
+                  <button onClick={()=>onDrillDown(e.rows, e.name)} className="text-[#0d9488] hover:underline">{e.name}</button>
                 </td>
-                {v("invoices")      && <td className="px-3 py-1.5 text-right"><button onClick={()=>onDrillDown(e.rows,e.name)} className="text-blue-600 hover:underline">{e.rows.length}</button></td>}
+                {v("invoices")      && <td className="px-3 py-1.5 text-right"><button onClick={()=>onDrillDown(e.rows,e.name)} className="text-[#0d9488] hover:underline">{e.rows.length}</button></td>}
                 {v("tons")          && <td className="px-3 py-1.5 text-right text-gray-700">{formatNumber(e.tons,1)}</td>}
                 {v("revenue")       && <AmountCell value={e.revenue} rows={e.rows} onDrillDown={r=>onDrillDown(r,`${e.name} — Revenue`)} />}
                 {v("costNoFreight") && <AmountCell value={e.costNoFreight} rows={e.rows} onDrillDown={r=>onDrillDown(r,`${e.name} — Cost`)} />}
@@ -1039,7 +1036,7 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
                 <button key={r.id} onClick={() => { setActiveReport(r.id); setConditions([]); setDateFrom(""); setDateTo(""); }}
                   className="w-full flex items-center justify-between px-5 py-3 hover:bg-stone-50 text-left group">
                   <div>
-                    <p className="text-sm text-blue-600 group-hover:underline font-medium">{r.label}</p>
+                    <p className="text-sm text-[#0d9488] group-hover:underline font-medium">{r.label}</p>
                     <p className="text-xs text-stone-400 mt-0.5">{r.description}</p>
                   </div>
                   <svg className="w-4 h-4 text-stone-300 group-hover:text-stone-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1121,7 +1118,7 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
             className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md font-medium border transition-colors ${hasFilters ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700" : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"}`}>
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
             Customize
-            {hasFilters && <span className="bg-white text-blue-600 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold">{conditions.length + (dateFrom?1:0) + (dateTo?1:0)}</span>}
+            {hasFilters && <span className="bg-white text-[#0d9488] rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold">{conditions.length + (dateFrom?1:0) + (dateTo?1:0)}</span>}
           </button>
         </div>
       </div>

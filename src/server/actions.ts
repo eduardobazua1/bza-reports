@@ -12,6 +12,11 @@ export async function createClient(data: {
   contactName?: string;
   contactEmail?: string;
   phone?: string;
+  billAddress?: string;
+  shipAddress?: string;
+  rfc?: string;
+  city?: string;
+  country?: string;
 }) {
   await db.insert(clients).values({
     ...data,
@@ -27,6 +32,11 @@ export async function updateClient(id: number, data: {
   phone?: string;
   portalEnabled?: boolean;
   paymentTermsDays?: number | null;
+  billAddress?: string;
+  shipAddress?: string;
+  rfc?: string;
+  city?: string;
+  country?: string;
 }) {
   await db.update(clients).set({ ...data, updatedAt: new Date().toISOString() }).where(eq(clients.id, id));
   revalidatePath("/clients");
@@ -252,6 +262,7 @@ export async function updateInvoice(id: number, data: Partial<{
   await db.update(invoices).set(updates).where(eq(invoices.id, id));
   revalidatePath("/invoices");
   revalidatePath("/purchase-orders");
+  revalidatePath("/shipments");
 }
 
 export async function markInvoicesPaid(

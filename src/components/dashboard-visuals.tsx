@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
+import { formatNumber, formatDate, shipmentStatusLabels, shipmentStatusColors } from "@/lib/utils";
 
 type RecentShipment = {
   invoiceNumber: string;
@@ -15,18 +16,6 @@ type RecentShipment = {
 };
 
 type MonthVolume = { month: string; tons: number; revenue?: number; cost?: number; profit?: number };
-
-const STATUS_STYLES: Record<string, { label: string; cls: string }> = {
-  entregado:   { label: "Delivered",  cls: "bg-emerald-100 text-emerald-700" },
-  en_transito: { label: "In Transit", cls: "bg-blue-100 text-blue-700" },
-  en_aduana:   { label: "Customs",    cls: "bg-amber-100 text-amber-700" },
-};
-
-function fmtDate(d: string | null) {
-  if (!d) return "—";
-  const dt = new Date(d + "T12:00:00");
-  return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" });
-}
 
 export function DashboardVisuals({
   recentShipments,
@@ -61,9 +50,9 @@ export function DashboardVisuals({
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
                   <XAxis dataKey="month" fontSize={10} tick={{ fill: "#a8a29e" }} axisLine={false} tickLine={false} />
-                  <YAxis fontSize={10} tick={{ fill: "#a8a29e" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                  <YAxis fontSize={10} tick={{ fill: "#a8a29e" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
                   <Tooltip
-                    formatter={(v) => [`${Number(v).toLocaleString()} TN`, "Volume"]}
+                    formatter={(v) => [`${formatNumber(Number(v), 0)} TN`, "Volume"]}
                     contentStyle={{ background: "#fff", border: "1px solid #e7e5e4", borderRadius: 6, fontSize: 11 }}
                     cursor={{ stroke: "#e7e5e4" }}
                   />
@@ -102,16 +91,17 @@ export function DashboardVisuals({
                 </tr>
               )}
               {recentShipments.map((s, i) => {
-                const st = STATUS_STYLES[s.status] ?? { label: "Scheduled", cls: "bg-stone-100 text-stone-500" };
+                const label = shipmentStatusLabels[s.status] ?? "Scheduled";
+                const cls = shipmentStatusColors[s.status] ?? "bg-stone-100 text-stone-600";
                 return (
                   <tr key={i} className="border-t border-stone-50 hover:bg-stone-50 transition-colors">
                     <td className="px-4 py-2.5 font-medium text-[#0d3d3b] text-xs">{s.invoiceNumber}</td>
                     <td className="px-4 py-2.5 text-stone-700 text-xs max-w-[100px] truncate">{s.clientName || "—"}</td>
                     <td className="px-4 py-2.5 text-stone-500 text-xs hidden sm:table-cell">{s.destination || "—"}</td>
-                    <td className="px-4 py-2.5 text-right font-semibold text-stone-800 text-xs">{s.tons.toLocaleString()}</td>
-                    <td className="px-4 py-2.5 text-stone-400 text-xs hidden sm:table-cell">{fmtDate(s.shipmentDate)}</td>
+                    <td className="px-4 py-2.5 text-right font-semibold text-stone-800 text-xs">{formatNumber(s.tons, 0)}</td>
+                    <td className="px-4 py-2.5 text-stone-400 text-xs hidden sm:table-cell">{formatDate(s.shipmentDate)}</td>
                     <td className="px-4 py-2.5">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${st.cls}`}>{st.label}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${cls}`}>{label}</span>
                     </td>
                   </tr>
                 );

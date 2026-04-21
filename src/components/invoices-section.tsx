@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { formatCurrency, formatNumber, formatDate } from "@/lib/utils";
+import { formatCurrency, formatNumber, formatDate, shipmentStatusLabels, shipmentStatusColors, paymentStatusColors } from "@/lib/utils";
 import { DocumentUpload } from "@/components/document-upload";
 import { duplicateInvoice } from "@/server/actions";
 
@@ -40,22 +40,6 @@ type Invoice = {
 
 type Product = { id: number; name: string };
 
-const shipmentStatusLabels: Record<string, string> = {
-  programado: "Scheduled",
-  en_transito: "In Transit",
-  en_aduana: "In Customs",
-  entregado: "Delivered",
-};
-const shipmentStatusColors: Record<string, string> = {
-  programado: "bg-amber-100 text-amber-700",
-  en_transito: "bg-blue-100 text-blue-700",
-  en_aduana: "bg-purple-100 text-purple-700",
-  entregado: "bg-emerald-100 text-emerald-700",
-};
-const paymentStatusColors: Record<string, string> = {
-  paid: "bg-emerald-100 text-emerald-700",
-  unpaid: "bg-red-100 text-red-700",
-};
 
 function calcDueDate(inv: Invoice, clientTermsDays: number): string | null {
   const base = inv.invoiceDate || inv.shipmentDate;
@@ -353,10 +337,10 @@ export function InvoicesSection({
                     <tr key={`send-${inv.id}`}>
                       <td colSpan={14} className="p-0">
                         <div className="bg-blue-50 border-t border-blue-200 px-4 py-3 space-y-2">
-                          <p className="text-xs font-semibold text-blue-800">Send Invoice {inv.invoiceNumber}</p>
+                          <p className="text-xs font-semibold text-[#0d9488]">Send Invoice {inv.invoiceNumber}</p>
                           <div className="flex items-center gap-3 flex-wrap">
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-blue-700 font-medium whitespace-nowrap">To:</span>
+                              <span className="text-xs text-[#0d9488] font-medium whitespace-nowrap">To:</span>
                               <input
                                 type="email"
                                 className="border border-blue-200 rounded px-2 py-1 text-sm w-56"
@@ -366,7 +350,7 @@ export function InvoicesSection({
                               />
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-blue-700 font-medium whitespace-nowrap">CC:</span>
+                              <span className="text-xs text-[#0d9488] font-medium whitespace-nowrap">CC:</span>
                               <input
                                 type="email"
                                 className="border border-blue-200 rounded px-2 py-1 text-sm w-56"
@@ -397,7 +381,7 @@ export function InvoicesSection({
                                     checked={selectedDocIds.includes(d.id)}
                                     onChange={() => toggleSendDoc(d.id)}
                                   />
-                                  <svg className="w-3 h-3 text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                                  <svg className="w-3 h-3 text-[#5eead4] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
                                   <span className="text-xs text-stone-600">{d.fileName}</span>
                                 </label>
                               ))}
@@ -499,7 +483,7 @@ export function InvoicesSection({
                               <select className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white" value={editForm.shipmentStatus || "programado"} onChange={f("shipmentStatus")}>
                                 <option value="programado">Scheduled</option>
                                 <option value="en_transito">In Transit</option>
-                                <option value="en_aduana">In Customs</option>
+                                <option value="en_aduana">Customs</option>
                                 <option value="entregado">Delivered</option>
                               </select>
                             </div>

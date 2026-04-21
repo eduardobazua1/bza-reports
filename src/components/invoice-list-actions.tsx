@@ -40,8 +40,8 @@ type EmailLog = {
 function fmtDateTime(iso: string | null) {
   if (!iso) return "—";
   const d = new Date(iso);
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-    + " " + d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+  const p = iso.split("T")[0].split("-");
+  return `${p[1].padStart(2,"0")}/${p[2].padStart(2,"0")}/${p[0]} ` + d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 }
 
 export function InvoiceListActions({
@@ -185,7 +185,7 @@ export function InvoiceListActions({
                   checked={selectedDocIds.includes(d.id)}
                   onChange={() => toggleDoc(d.id)}
                 />
-                <svg className="w-3 h-3 text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                <svg className="w-3 h-3 text-[#5eead4] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
                 <span className="text-[10px] text-stone-600">{d.fileName}</span>
               </label>
             ))}
@@ -256,7 +256,7 @@ export function InvoiceListActions({
           sent ? (
             <span className="text-xs text-emerald-600 font-medium">Sent ✓</span>
           ) : (
-            <button onClick={openSendPanel} className="text-xs text-blue-600 hover:underline font-medium">
+            <button onClick={openSendPanel} className="text-xs text-[#0d9488] hover:underline font-medium">
               Send
             </button>
           )

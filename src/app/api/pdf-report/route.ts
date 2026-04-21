@@ -68,7 +68,7 @@ type Row = {
 
 const columnDefs: Record<string, { header: string; baseWidth: number; align: "left" | "right"; getValue: (r: Row) => string }> = {
   currentLocation: { header: "Location", baseWidth: 75, align: "left", getValue: (r) => r.currentLocation || "-" },
-  lastLocationUpdate: { header: "Last Update", baseWidth: 65, align: "left", getValue: (r) => r.lastLocationUpdate ? new Date(r.lastLocationUpdate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "-" },
+  lastLocationUpdate: { header: "Last Update", baseWidth: 65, align: "left", getValue: (r) => { if (!r.lastLocationUpdate) return "-"; const p = r.lastLocationUpdate.split("T")[0].split("-"); return `${p[1]}/${p[2]}/${p[0]}`; } },
   poNumber: { header: "PO #", baseWidth: 50, align: "left", getValue: (r) => r.poNumber || "" },
   poDate: { header: "PO Date", baseWidth: 55, align: "left", getValue: (r) => r.poDate || "-" },
   clientPoNumber: { header: "Client PO", baseWidth: 55, align: "left", getValue: (r) => r.salesDocument || r.clientPoNumber || "-" },
@@ -283,7 +283,7 @@ async function generatePdf({ clientId, columns: requestedColumns, filter }: { cl
     });
     page.drawLine({ start: { x: M, y: BY(M + 32) }, end: { x: PAGE_W - M, y: BY(M + 32) }, thickness: 1.5, color: CYAN });
     dt(`Shipment Report \u2014 ${clientName}`, M, M + 37, 9, fontB, DARK);
-    const dateStr = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    const _td = new Date(); const dateStr = `${String(_td.getMonth()+1).padStart(2,"0")}/${String(_td.getDate()).padStart(2,"0")}/${_td.getFullYear()}`;
     dt(`${dateStr}  \u00B7  ${filteredRows.length} shipments`, M + 220, M + 38, 7, font, GRAY);
   }
 

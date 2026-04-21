@@ -256,7 +256,7 @@ export default function AssistantPage() {
         {loading && (
           <div className="flex justify-start">
             <div className="bg-card border border-border rounded-lg p-3 text-sm text-muted-foreground">
-              {attachedFiles.length > 0 ? `Procesando ${attachedFiles.length} archivo(s)...` : "Pensando..."}
+              {attachedFiles.length > 0 ? `Processing ${attachedFiles.length} file(s)...` : "Thinking..."}
             </div>
           </div>
         )}

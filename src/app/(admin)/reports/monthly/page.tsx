@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { getInvoices } from "@/server/queries";
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { formatCurrency, formatNumber, formatPercent } from "@/lib/utils";
 
 export default async function MonthlyBreakdownPage() {
   const allInvoices = await getInvoices();
@@ -67,7 +67,7 @@ export default async function MonthlyBreakdownPage() {
                   <td className="px-5 py-3 text-right text-stone-600">{formatCurrency(r.revenue)}</td>
                   <td className="px-5 py-3 text-right text-stone-500">{formatCurrency(r.cost)}</td>
                   <td className={`px-5 py-3 text-right font-semibold ${r.profit >= 0 ? "text-emerald-600" : "text-red-500"}`}>{formatCurrency(r.profit)}</td>
-                  <td className={`px-5 py-3 text-right font-medium ${r.margin >= 10 ? "text-emerald-600" : "text-amber-600"}`}>{r.margin.toFixed(1)}%</td>
+                  <td className={`px-5 py-3 text-right font-medium ${r.margin >= 10 ? "text-emerald-600" : "text-amber-600"}`}>{formatPercent(r.margin)}</td>
                 </tr>
               ))}
             </tbody>
@@ -79,7 +79,7 @@ export default async function MonthlyBreakdownPage() {
                 <td className="px-5 py-3 text-right">{formatCurrency(totals.cost)}</td>
                 <td className={`px-5 py-3 text-right ${totals.profit >= 0 ? "text-emerald-600" : "text-red-500"}`}>{formatCurrency(totals.profit)}</td>
                 <td className={`px-5 py-3 text-right ${totals.revenue > 0 && (totals.profit / totals.revenue) * 100 >= 10 ? "text-emerald-600" : "text-amber-600"}`}>
-                  {totals.revenue > 0 ? ((totals.profit / totals.revenue) * 100).toFixed(1) : "0.0"}%
+                  {formatPercent(totals.revenue > 0 ? (totals.profit / totals.revenue) * 100 : 0)}
                 </td>
               </tr>
             </tfoot>
