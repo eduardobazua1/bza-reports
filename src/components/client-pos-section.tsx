@@ -351,9 +351,11 @@ export function ClientPOsSection({
                 const amount = effectivePrice && cpo.plannedTons ? cpo.plannedTons * effectivePrice : null;
                 const isConverting = convertingId === cpo.id;
                 invoiceCounter++;
-                const convertedTons = invoices
-                  .filter(inv => inv.clientPoId === cpo.id || inv.salesDocument === cpo.clientPoNumber)
-                  .reduce((s, inv) => s + inv.quantityTons, 0);
+                const convertedTons = list.length === 1
+                  ? invoices.reduce((s, inv) => s + inv.quantityTons, 0)
+                  : invoices
+                      .filter(inv => inv.clientPoId === cpo.id || inv.salesDocument === cpo.clientPoNumber)
+                      .reduce((s, inv) => s + inv.quantityTons, 0);
 
                 return (
                   <>
