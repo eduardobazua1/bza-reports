@@ -336,8 +336,8 @@ export function ClientPOsSection({
                 <th className="text-left px-4 py-2.5 font-medium text-stone-500">Product</th>
                 <th className="text-left px-4 py-2.5 font-medium text-stone-500">Destination</th>
                 <th className="text-left px-4 py-2.5 font-medium text-stone-500">Incoterm</th>
-                <th className="text-right px-4 py-2.5 font-medium text-stone-500">Estimated</th>
-                <th className="text-right px-4 py-2.5 font-medium text-stone-500">Real</th>
+                <th className="text-right px-4 py-2.5 font-medium text-stone-500">TN</th>
+                <th className="text-right px-4 py-2.5 font-medium text-stone-500">Converted</th>
                 <th className="text-right px-4 py-2.5 font-medium text-stone-500">Price/TN</th>
                 <th className="text-right px-4 py-2.5 font-medium text-stone-500">Est. Amount</th>
                 <th className="text-left px-4 py-2.5 font-medium text-stone-500">Status</th>
