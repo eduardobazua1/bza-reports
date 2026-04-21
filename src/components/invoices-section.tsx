@@ -268,8 +268,8 @@ export function InvoicesSection({
               return (
                 <>
                   <tr key={inv.id} className={`hover:bg-stone-50 align-middle ${isEditing ? "bg-amber-50/40" : ""}`}>
-                    <td className="px-3 py-1.5 border-t border-stone-100 text-sm font-medium text-stone-800">{inv.salesDocument || "—"}</td>
-                    <td className="px-3 py-1.5 border-t border-stone-100 text-sm font-medium text-stone-800 whitespace-nowrap">
+                    <td className="px-3 py-1.5 border-t border-stone-100 font-medium text-stone-800">{inv.salesDocument || "—"}</td>
+                    <td className="px-3 py-1.5 border-t border-stone-100 font-medium text-stone-800 whitespace-nowrap">
                       {inv.invoiceNumber.startsWith("PEND-") ? (
                         <span className="text-amber-500 italic font-normal">Pending</span>
                       ) : (
@@ -280,7 +280,7 @@ export function InvoicesSection({
                       <span className="block truncate" title={inv.item || ""}>{inv.item || "—"}</span>
                     </td>
                     <td className="px-3 py-1.5 border-t border-stone-100 text-stone-500">{inv.destination || "—"}</td>
-                    <td className="px-3 py-1.5 border-t border-stone-100 text-sm text-stone-600">{inv.vehicleId || "—"}</td>
+                    <td className="px-3 py-1.5 border-t border-stone-100 text-stone-600">{inv.vehicleId || "—"}</td>
                     <td className="px-3 py-1.5 border-t border-stone-100 text-right">{formatNumber(inv.quantityTons, 3)}</td>
                     <td className="px-3 py-1.5 border-t border-stone-100 text-right">{formatCurrency(revenue)}</td>
                     <td className="px-3 py-1.5 border-t border-stone-100 text-right">{formatCurrency(inv.quantityTons * buy)}</td>
