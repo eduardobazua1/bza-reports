@@ -26,7 +26,7 @@ import {
 
 const navItems: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/assistant", label: "AI Assistant", icon: BotMessageSquare },
+  { href: "/assistant", label: "BZA Intelligence", icon: BotMessageSquare },
   { href: "/market-prices", label: "Market Prices", icon: TrendingUp },
   { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/purchase-orders", label: "Purchase Orders", icon: ClipboardList },

@@ -188,7 +188,7 @@ export default function AssistantPage() {
       )}
 
       <div className="mb-4">
-        <h1 className="text-2xl font-bold">AI Assistant</h1>
+        <h1 className="text-2xl font-bold">BZA Intelligence</h1>
         <p className="text-sm text-muted-foreground">Attach files by dragging or using the button (Excel, PDF, Images)</p>
       </div>
 
