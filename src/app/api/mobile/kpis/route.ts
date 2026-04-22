@@ -19,5 +19,10 @@ export async function GET(req: NextRequest) {
     accountsReceivable: kpis.accountsReceivable,
     overdueAR: kpis.overdueAR,
     onTimeAR: kpis.onTimeAR,
+    ar0to30: kpis.ar0to30,
+    ar31to60: kpis.ar31to60,
+    ar61plus: kpis.ar61plus,
+    overdueCount: kpis.overdueCount,
+    onTimeCount: kpis.onTimeCount,
   });
 }

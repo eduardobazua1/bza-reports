@@ -143,7 +143,12 @@ export async function getDashboardKPIs() {
   let accountsPayable = 0;
   let overdueAR = 0;
   let onTimeAR = 0;
-  const today = new Date().toISOString().split("T")[0];
+  let ar0to30 = 0;
+  let ar31to60 = 0;
+  let ar61plus = 0;
+  let overdueCount = 0;
+  let onTimeCount = 0;
+  const today = new Date();
 
   for (const inv of allInvoices) {
     const revenue = inv.quantityTons * inv.sellPrice;
@@ -154,10 +159,24 @@ export async function getDashboardKPIs() {
     if (inv.customerPaymentStatus === "unpaid") {
       unpaidCount++;
       accountsReceivable += revenue;
-      if (inv.dueDate && inv.dueDate < today) {
-        overdueAR += revenue;
+      const todayStr = today.toISOString().split("T")[0];
+      if (inv.dueDate) {
+        const due = new Date(inv.dueDate);
+        const days = Math.floor((today.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
+        if (days > 0) {
+          overdueAR += revenue;
+          overdueCount++;
+        } else {
+          onTimeAR += revenue;
+          onTimeCount++;
+          const daysLeft = Math.abs(days);
+          if (daysLeft <= 30) ar0to30 += revenue;
+          else if (daysLeft <= 60) ar31to60 += revenue;
+          else ar61plus += revenue;
+        }
       } else {
         onTimeAR += revenue;
+        onTimeCount++;
       }
     }
     if (inv.supplierPaymentStatus === "unpaid") {
@@ -184,6 +203,11 @@ export async function getDashboardKPIs() {
     accountsPayable,     // BZA owes suppliers
     overdueAR,
     onTimeAR,
+    ar0to30,
+    ar31to60,
+    ar61plus,
+    overdueCount,
+    onTimeCount,
   };
 }
 
