@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { db } from "@/db";
 import { createClient } from "@libsql/client";
-import { invoices, purchaseOrders, clients, suppliers, supplierPayments, scheduledReports, reportTemplates, shipmentUpdates } from "@/db/schema";
-import { eq, sql, count, like, desc } from "drizzle-orm";
+import { invoices, purchaseOrders, clients, suppliers, supplierPayments, scheduledReports, reportTemplates, shipmentUpdates, marketPrices } from "@/db/schema";
+import { eq, sql, count, like, desc, and } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
@@ -21,6 +21,7 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   { type: "function", function: { name: "update_supplier", description: "Update supplier info including FSC/PEFC certification fields", parameters: { type: "object", properties: { supplierName: { type: "string" }, fscLicense: { type: "string" }, fscChainOfCustody: { type: "string" }, fscInputClaim: { type: "string" }, fscOutputClaim: { type: "string" }, contactName: { type: "string" }, contactEmail: { type: "string" }, phone: { type: "string" } }, required: ["supplierName"] } } },
   { type: "function", function: { name: "delete_record", description: "Delete a PO, invoice, client, supplier, or payment", parameters: { type: "object", properties: { type: { type: "string", enum: ["po", "invoice", "client", "supplier", "payment"] }, identifier: { type: "string", description: "PO number, invoice number, client name, supplier name, or payment ID" } }, required: ["type", "identifier"] } } },
   { type: "function", function: { name: "update_shipment_tracking", description: "Update location, ETA, and status for one or more railcars/containers using their vehicle IDs. Use this ALWAYS when processing tracking screenshots, emails, or reports. Pass all vehicles at once in the updates array.", parameters: { type: "object", properties: { updates: { type: "array", description: "List of railcar updates extracted from the document", items: { type: "object", properties: { vehicleId: { type: "string", description: "Railcar or container number exactly as shown (e.g. TBOX636255, SMW608012)" }, currentLocation: { type: "string", description: "Current location city/state as shown" }, estimatedArrival: { type: "string", description: "ETA date in YYYY-MM-DD format" }, shipmentStatus: { type: "string", enum: ["programado", "en_transito", "en_aduana", "entregado"], description: "en_transito for Train Arrived/Departed, en_aduana for customs hold, entregado for delivered" } }, required: ["vehicleId"] } } }, required: ["updates"] } } },
+  { type: "function", function: { name: "update_market_price", description: "Update or set a market reference price from TTO or RISI for a grade and region. Use current month if month not specified.", parameters: { type: "object", properties: { source: { type: "string", enum: ["TTO", "RISI"], description: "Price source" }, grade: { type: "string", description: "Pulp grade e.g. NBSK, SBSK, BHK" }, region: { type: "string", description: "Region e.g. North America, Europe, China" }, price: { type: "number", description: "Price in USD/ADMT" }, priceType: { type: "string", enum: ["list", "net", "derived"], description: "Price type, default net" }, changeValue: { type: "number", description: "Change from previous month (positive or negative)" }, month: { type: "string", description: "Month in YYYY-MM format, defaults to current month" } }, required: ["source", "grade", "region", "price"] } } },
   { type: "function", function: { name: "schedule_report", description: "Schedule a report to be sent to a client", parameters: { type: "object", properties: { clientName: { type: "string" }, templateName: { type: "string" }, sendDate: { type: "string" }, notes: { type: "string" } }, required: ["clientName", "sendDate"] } } },
   { type: "function", function: { name: "generate_report", description: "Generate a PDF or Excel report for a client. Returns a download link. Use when user asks for a report, export, or document.", parameters: { type: "object", properties: { clientName: { type: "string", description: "Client name (fuzzy match)" }, format: { type: "string", enum: ["pdf", "excel"], description: "Report format" }, filter: { type: "string", enum: ["active", "all"], description: "active = only active shipments, all = include delivered" }, columns: { type: "string", description: "Comma-separated column keys. Options: currentLocation,poNumber,invoiceNumber,vehicleId,blNumber,quantityTons,sellPrice,shipmentStatus,shipmentDate,item,terms,transportType,customerPaymentStatus,estimatedArrival,salesDocument,billingDocument,clientPoNumber. Leave empty for defaults." } }, required: ["clientName", "format"] } } },
   { type: "function", function: { name: "run_calculation", description: "Run a SQL query on the database for exact calculations. Use this for any math: sums, totals, averages, counts, filtering. Tables: invoices (invoice_number, purchase_order_id, quantity_tons, sell_price_override, buy_price_override, shipment_date, due_date, customer_payment_status, supplier_payment_status, shipment_status, item, vehicle_id, current_location), purchase_orders (po_number, po_date, client_id, supplier_id, sell_price, buy_price, product, terms, transport_type, status), clients (id, name), suppliers (id, name), supplier_payments (supplier_id, purchase_order_id, amount_usd, payment_date, estimated_tons, notes), market_prices (source, grade, region, month, price, price_type, change_value, unit). Revenue = quantity_tons * COALESCE(sell_price_override, sell_price). Cost = quantity_tons * COALESCE(buy_price_override, buy_price).", parameters: { type: "object", properties: { sql_query: { type: "string", description: "SELECT SQL query to run. Only SELECT allowed, no INSERT/UPDATE/DELETE." } }, required: ["sql_query"] } } },
@@ -285,6 +286,30 @@ async function exec(name: string, args: Record<string, unknown>): Promise<string
         return `Payment ${id} deleted`;
       }
       return `Delete type "${t}" not supported. Use: po, invoice, or payment`;
+    }
+
+    if (name === "update_market_price") {
+      const now = new Date();
+      const targetMonth = (args.month as string) || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      await db.delete(marketPrices).where(
+        and(
+          eq(marketPrices.source, args.source as string),
+          eq(marketPrices.grade, args.grade as string),
+          eq(marketPrices.region, args.region as string),
+          eq(marketPrices.month, targetMonth),
+        )
+      );
+      await db.insert(marketPrices).values({
+        source: args.source as string,
+        grade: args.grade as string,
+        region: args.region as string,
+        month: targetMonth,
+        price: args.price as number,
+        priceType: (args.priceType as string) || "net",
+        changeValue: args.changeValue != null ? args.changeValue as number : null,
+      });
+      const changeStr = args.changeValue != null ? ` (${(args.changeValue as number) > 0 ? "+" : ""}${args.changeValue})` : "";
+      return `Market price updated: ${args.source} ${args.grade} ${args.region} for ${targetMonth} = $${args.price}/ADMT${changeStr}`;
     }
 
     if (name === "schedule_report") {

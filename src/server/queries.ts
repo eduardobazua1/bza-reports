@@ -142,6 +142,12 @@ export async function getDashboardKPIs() {
   // AP = what BZA owes suppliers (received/shipped but not paid to supplier)
   let accountsPayable = 0;
   let overdueAR = 0;
+  // Current month
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  let monthRevenue = 0;
+  let monthCost = 0;
+  let monthTons = 0;
   let onTimeAR = 0;
   let ar0to30 = 0;
   let ar31to60 = 0;
@@ -183,6 +189,11 @@ export async function getDashboardKPIs() {
       accountsPayable += cost;
     }
     if (inv.shipmentStatus === "en_transito" || inv.shipmentStatus === "programado") inTransitCount++;
+    if (inv.shipmentDate?.startsWith(currentMonth)) {
+      monthRevenue += revenue;
+      monthCost += cost;
+      monthTons += inv.quantityTons;
+    }
   }
 
   const activePOs = await db
@@ -208,6 +219,11 @@ export async function getDashboardKPIs() {
     ar61plus,
     overdueCount,
     onTimeCount,
+    monthRevenue,
+    monthCost,
+    monthProfit: monthRevenue - monthCost,
+    monthMargin: monthRevenue > 0 ? ((monthRevenue - monthCost) / monthRevenue) * 100 : 0,
+    monthTons,
   };
 }
 

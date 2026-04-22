@@ -24,5 +24,9 @@ export async function GET(req: NextRequest) {
     ar61plus: kpis.ar61plus,
     overdueCount: kpis.overdueCount,
     onTimeCount: kpis.onTimeCount,
+    monthRevenue: kpis.monthRevenue,
+    monthProfit: kpis.monthProfit,
+    monthMargin: kpis.monthMargin,
+    monthTons: kpis.monthTons,
   });
 }
