@@ -201,6 +201,21 @@ export async function getDashboardKPIs() {
     .from(purchaseOrders)
     .where(eq(purchaseOrders.status, "active"));
 
+  const monthByPO = await db
+    .select({
+      poNumber: purchaseOrders.poNumber,
+      clientName: clients.name,
+      tons: sql<number>`coalesce(sum(${invoices.quantityTons}), 0)`,
+      revenue: sql<number>`coalesce(sum(${invoices.quantityTons} * coalesce(${invoices.sellPriceOverride}, ${purchaseOrders.sellPrice})), 0)`,
+      cost: sql<number>`coalesce(sum(${invoices.quantityTons} * coalesce(${invoices.buyPriceOverride}, ${purchaseOrders.buyPrice}) + coalesce(${invoices.freightCost}, 0)), 0)`,
+    })
+    .from(invoices)
+    .leftJoin(purchaseOrders, eq(invoices.purchaseOrderId, purchaseOrders.id))
+    .leftJoin(clients, eq(purchaseOrders.clientId, clients.id))
+    .where(sql`${invoices.shipmentDate} LIKE ${currentMonth + "%"}`)
+    .groupBy(purchaseOrders.id)
+    .orderBy(purchaseOrders.poNumber);
+
   return {
     totalRevenue,
     totalCost,
@@ -224,6 +239,7 @@ export async function getDashboardKPIs() {
     monthProfit: monthRevenue - monthCost,
     monthMargin: monthRevenue > 0 ? ((monthRevenue - monthCost) / monthRevenue) * 100 : 0,
     monthTons,
+    monthByPO,
   };
 }
 

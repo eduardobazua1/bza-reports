@@ -28,5 +28,12 @@ export async function GET(req: NextRequest) {
     monthProfit: kpis.monthProfit,
     monthMargin: kpis.monthMargin,
     monthTons: kpis.monthTons,
+    monthByPO: kpis.monthByPO.map(r => ({
+      poNumber: r.poNumber,
+      clientName: r.clientName,
+      tons: Math.round(r.tons * 10) / 10,
+      revenue: Math.round(r.revenue),
+      profit: Math.round(r.revenue - r.cost),
+    })),
   });
 }
