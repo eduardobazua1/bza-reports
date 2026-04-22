@@ -16,5 +16,8 @@ export async function GET(req: NextRequest) {
     activeShipments: kpis.pendingShipments,
     pendingInvoices: kpis.unpaidInvoices,
     suppliersOwed: kpis.accountsPayable,
+    accountsReceivable: kpis.accountsReceivable,
+    overdueAR: kpis.overdueAR,
+    onTimeAR: kpis.onTimeAR,
   });
 }

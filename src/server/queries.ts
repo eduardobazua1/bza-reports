@@ -125,6 +125,7 @@ export async function getDashboardKPIs() {
       supplierPaymentStatus: invoices.supplierPaymentStatus,
       shipmentStatus: invoices.shipmentStatus,
       shipmentDate: invoices.shipmentDate,
+      dueDate: invoices.dueDate,
       poNumber: purchaseOrders.poNumber,
       clientId: purchaseOrders.clientId,
     })
@@ -140,6 +141,9 @@ export async function getDashboardKPIs() {
   let accountsReceivable = 0;
   // AP = what BZA owes suppliers (received/shipped but not paid to supplier)
   let accountsPayable = 0;
+  let overdueAR = 0;
+  let onTimeAR = 0;
+  const today = new Date().toISOString().split("T")[0];
 
   for (const inv of allInvoices) {
     const revenue = inv.quantityTons * inv.sellPrice;
@@ -150,6 +154,11 @@ export async function getDashboardKPIs() {
     if (inv.customerPaymentStatus === "unpaid") {
       unpaidCount++;
       accountsReceivable += revenue;
+      if (inv.dueDate && inv.dueDate < today) {
+        overdueAR += revenue;
+      } else {
+        onTimeAR += revenue;
+      }
     }
     if (inv.supplierPaymentStatus === "unpaid") {
       accountsPayable += cost;
@@ -173,6 +182,8 @@ export async function getDashboardKPIs() {
     activePOs: activePOs[0]?.count || 0,
     accountsReceivable,  // clients owe BZA
     accountsPayable,     // BZA owes suppliers
+    overdueAR,
+    onTimeAR,
   };
 }
 
