@@ -280,7 +280,7 @@ export function SupplierOrdersSection({
               setAddItem(product || "");
               setLines([emptyLine()]);
             }}
-            className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition"
+            className="text-xs bg-[#0d9488] text-white px-3 py-1.5 rounded hover:bg-[#0d9488] transition"
           >
             + New Order to Supplier
           </button>
@@ -318,7 +318,7 @@ export function SupplierOrdersSection({
 
                 return (
                   <>
-                    <tr key={order.id} className={`hover:bg-stone-50 align-top ${isEditing ? "bg-amber-50/40" : ""}`}>
+                    <tr key={order.id} className={`hover:bg-stone-50 align-top ${isEditing ? "bg-[#0d9488]/40" : ""}`}>
                       <td className="px-4 py-3 border-t border-stone-100">{fmtDate(order.orderDate)}</td>
                       <td className="px-4 py-3 border-t border-stone-100 text-stone-600">{order.item || "—"}</td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right font-medium">{formatNumber(order.tons, 1)}</td>
@@ -369,7 +369,7 @@ export function SupplierOrdersSection({
                     {isSending && (
                       <tr key={`send-${order.id}`}>
                         <td colSpan={8} className="p-0">
-                          <div className="bg-blue-50 border-t border-blue-200 px-4 py-3 flex items-center gap-3">
+                          <div className="bg-[#0d9488] border-t border-blue-200 px-4 py-3 flex items-center gap-3">
                             <span className="text-xs text-[#0d9488] font-medium whitespace-nowrap">Send to:</span>
                             <input
                               type="email"
@@ -378,7 +378,7 @@ export function SupplierOrdersSection({
                               value={sendEmail}
                               onChange={(e) => setSendEmail(e.target.value)}
                             />
-                            <button onClick={() => handleSend(order)} disabled={sendLoading || !sendEmail} className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 disabled:opacity-50 font-medium">
+                            <button onClick={() => handleSend(order)} disabled={sendLoading || !sendEmail} className="text-xs bg-[#0d9488] text-white px-3 py-1.5 rounded hover:bg-[#0d9488] disabled:opacity-50 font-medium">
                               {sendLoading ? "Sending..." : "Send PDF"}
                             </button>
                             <button onClick={() => setSendingId(null)} className="text-xs text-stone-400 hover:text-stone-600">Cancel</button>
@@ -426,7 +426,7 @@ export function SupplierOrdersSection({
                   <input className="border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="Destination (e.g. Morelia)" value={line.destination} onChange={(e) => updateLine(i, "destination", e.target.value)} />
                   <input type="number" step="0.1" className="border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="TN" value={line.tons} onChange={(e) => updateLine(i, "tons", e.target.value)} />
                   <input className="border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="Notes (e.g. 90 tons week 6-12)" value={line.notes} onChange={(e) => updateLine(i, "notes", e.target.value)} />
-                  {lines.length > 1 && <button onClick={() => removeLine(i)} className="text-red-400 hover:text-red-600 text-sm text-center">✕</button>}
+                  {lines.length > 1 && <button onClick={() => removeLine(i)} className="text-[#0d3d3b] hover:text-[#0d3d3b] text-sm text-center">✕</button>}
                 </div>
               ))}
             </div>
@@ -438,7 +438,7 @@ export function SupplierOrdersSection({
           </div>
 
           <div className="flex gap-2">
-            <button onClick={handleAdd} disabled={loading || formTotalTons === 0} className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 disabled:opacity-50">
+            <button onClick={handleAdd} disabled={loading || formTotalTons === 0} className="text-xs bg-[#0d9488] text-white px-3 py-1.5 rounded hover:bg-[#0d9488] disabled:opacity-50">
               {loading ? "Saving..." : "Save"}
             </button>
             <button onClick={() => { setAdding(false); setLines([emptyLine()]); }} className="text-xs text-stone-500 hover:text-stone-700 px-3 py-1.5">
@@ -465,7 +465,7 @@ export function SupplierOrdersSection({
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 w-full bg-stone-50 border border-stone-200 rounded-lg px-4 py-3 hover:bg-stone-100 transition"
               >
-                <svg className="w-5 h-5 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-[#0d3d3b] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                 </svg>
                 <span className="text-sm font-medium text-stone-700">View Supplier PO PDF</span>
@@ -491,7 +491,7 @@ export function SupplierOrdersSection({
               <button onClick={() => { setOpenDropdownId(null); openSend(order); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">Send</button>
             )}
             <div className="border-t border-stone-100 my-1" />
-            <button onClick={() => { setOpenDropdownId(null); handleDelete(order.id); }} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</button>
+            <button onClick={() => { setOpenDropdownId(null); handleDelete(order.id); }} className="w-full text-left px-4 py-2 text-sm text-[#0d3d3b] hover:bg-[#0d3d3b]">Delete</button>
           </div>,
           document.body
         );
@@ -528,7 +528,7 @@ export function SupplierOrdersSection({
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-semibold text-stone-500 uppercase">Lines</label>
-                  <button onClick={addEditLine} className="text-xs text-amber-700 hover:text-amber-900 font-medium">+ Add line</button>
+                  <button onClick={addEditLine} className="text-xs text-[#0d9488] hover:text-[#0d9488] font-medium">+ Add line</button>
                 </div>
                 <div className="space-y-2">
                   {editLines.map((line, i) => (
@@ -536,7 +536,7 @@ export function SupplierOrdersSection({
                       <input className="border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="Destination" value={line.destination} onChange={(e) => updateEditLine(i, "destination", e.target.value)} />
                       <input type="number" step="0.1" className="border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="TN" value={line.tons} onChange={(e) => updateEditLine(i, "tons", e.target.value)} />
                       <input className="border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="Notes" value={line.notes} onChange={(e) => updateEditLine(i, "notes", e.target.value)} />
-                      {editLines.length > 1 && <button onClick={() => removeEditLine(i)} className="text-red-400 hover:text-red-600 text-sm text-center">✕</button>}
+                      {editLines.length > 1 && <button onClick={() => removeEditLine(i)} className="text-[#0d3d3b] hover:text-[#0d3d3b] text-sm text-center">✕</button>}
                     </div>
                   ))}
                 </div>
@@ -546,7 +546,7 @@ export function SupplierOrdersSection({
               </div>
 
               <div className="flex gap-2 pt-1">
-                <button onClick={() => handleEdit(order)} disabled={editLoading || editTotalTons === 0} className="text-sm bg-amber-600 text-white px-4 py-1.5 rounded hover:bg-amber-700 disabled:opacity-50 font-medium">
+                <button onClick={() => handleEdit(order)} disabled={editLoading || editTotalTons === 0} className="text-sm bg-[#0d9488] text-white px-4 py-1.5 rounded hover:bg-[#0d9488] disabled:opacity-50 font-medium">
                   {editLoading ? "Saving..." : "Save changes"}
                 </button>
                 <button onClick={cancelEdit} className="text-sm text-stone-500 hover:text-stone-700 px-4 py-1.5">Cancel</button>

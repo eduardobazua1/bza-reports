@@ -130,7 +130,7 @@ function EmailModal({
             </div>
             <p className="font-semibold text-stone-800">Email sent!</p>
             <p className="text-xs text-stone-500 mt-1">Report delivered to {email}</p>
-            <button onClick={onClose} className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">Done</button>
+            <button onClick={onClose} className="mt-4 px-4 py-2 bg-[#0d9488] text-white text-sm rounded-lg hover:bg-[#0d9488]">Done</button>
           </div>
         ) : (
           <div className="px-5 py-4 space-y-3">
@@ -158,7 +158,7 @@ function EmailModal({
               <div className="flex gap-2">
                 {(["excel","pdf","both"] as const).map(f => (
                   <button key={f} onClick={() => setFormat(f)}
-                    className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-colors capitalize ${format===f ? "bg-blue-600 text-white border-blue-600" : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"}`}>
+                    className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-colors capitalize ${format===f ? "bg-[#0d9488] text-white border-[#0d9488]" : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"}`}>
                     {f === "both" ? "PDF + Excel" : f === "excel" ? "Excel" : "PDF"}
                   </button>
                 ))}
@@ -166,7 +166,7 @@ function EmailModal({
             </div>
             {/* Error */}
             {status === "error" && (
-              <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{errMsg}</p>
+              <p className="text-xs text-[#0d3d3b] bg-[#0d3d3b] rounded-lg px-3 py-2">{errMsg}</p>
             )}
             {/* Actions */}
             <div className="flex gap-2 pt-1">
@@ -174,7 +174,7 @@ function EmailModal({
                 Cancel
               </button>
               <button onClick={send} disabled={!email || status==="sending"}
-                className="flex-1 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2">
+                className="flex-1 py-2 rounded-lg bg-[#0d9488] text-white text-sm font-medium hover:bg-[#0d9488] disabled:opacity-50 flex items-center justify-center gap-2">
                 {status === "sending" ? (
                   <><svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>Sending…</>
                 ) : (
@@ -387,14 +387,14 @@ function DrillDownModal({
                     {v("destination")   && <td className="px-3 py-1.5 text-gray-600">{r.destination || "—"}</td>}
                     {v("date")          && <td className="px-3 py-1.5 whitespace-nowrap text-gray-600">{fmtDate(r.invoiceDate ?? r.shipmentDate)}</td>}
                     {v("dueDate")       && <td className="px-3 py-1.5 whitespace-nowrap text-gray-600">{fmtDate(r.dueDate)}</td>}
-                    {v("days")          && <td className={`px-3 py-1.5 text-right font-medium whitespace-nowrap ${days > 90 ? "text-red-600" : days > 30 ? "text-orange-500" : days > 0 ? "text-amber-500" : "text-gray-400"}`}>{days <= 0 ? "—" : `${days}d`}</td>}
+                    {v("days")          && <td className={`px-3 py-1.5 text-right font-medium whitespace-nowrap ${days > 90 ? "text-[#0d3d3b]" : days > 30 ? "text-[#0d9488]" : days > 0 ? "text-[#0d9488]" : "text-gray-400"}`}>{days <= 0 ? "—" : `${days}d`}</td>}
                     {v("tons")          && <td className="px-3 py-1.5 text-right text-gray-700">{formatNumber(r.quantityTons, 1)}</td>}
                     {v("amount")        && <td className="px-3 py-1.5 text-right font-medium">{formatCurrency(r.revenue)}</td>}
                     {v("cost")          && <td className="px-3 py-1.5 text-right text-gray-600">{formatCurrency(r.cost)}</td>}
-                    {v("profit")        && <td className={`px-3 py-1.5 text-right font-medium ${r.profit < 0 ? "text-red-600" : ""}`}>{formatCurrency(r.profit)}</td>}
-                    {v("margin")        && <td className={`px-3 py-1.5 text-right ${margin < 0 ? "text-red-600" : "text-gray-600"}`}>{formatPercent(margin)}</td>}
+                    {v("profit")        && <td className={`px-3 py-1.5 text-right font-medium ${r.profit < 0 ? "text-[#0d3d3b]" : ""}`}>{formatCurrency(r.profit)}</td>}
+                    {v("margin")        && <td className={`px-3 py-1.5 text-right ${margin < 0 ? "text-[#0d3d3b]" : "text-gray-600"}`}>{formatPercent(margin)}</td>}
                     {v("shipStatus")    && <td className="px-3 py-1.5 text-gray-600 whitespace-nowrap">{shipmentStatusLabels[r.shipmentStatus] ?? r.shipmentStatus}</td>}
-                    {v("custPayment")   && <td className={`px-3 py-1.5 font-medium ${r.customerPaymentStatus === "paid" ? "text-gray-600" : "text-red-600"}`}>{r.customerPaymentStatus === "paid" ? "Paid" : "Unpaid"}</td>}
+                    {v("custPayment")   && <td className={`px-3 py-1.5 font-medium ${r.customerPaymentStatus === "paid" ? "text-gray-600" : "text-[#0d3d3b]"}`}>{r.customerPaymentStatus === "paid" ? "Paid" : "Unpaid"}</td>}
                   </tr>
                 );
               })}
@@ -407,8 +407,8 @@ function DrillDownModal({
                 {v("tons")    && <td className="px-3 py-2 text-right font-semibold">{formatNumber(totTons, 1)}</td>}
                 {v("amount")  && <td className="px-3 py-2 text-right font-semibold">{formatCurrency(totRev)}</td>}
                 {v("cost")    && <td className="px-3 py-2 text-right font-semibold">{formatCurrency(totCost)}</td>}
-                {v("profit")  && <td className={`px-3 py-2 text-right font-semibold ${totProfit < 0 ? "text-red-600" : ""}`}>{formatCurrency(totProfit)}</td>}
-                {v("margin")  && <td className={`px-3 py-2 text-right font-semibold ${totProfit < 0 ? "text-red-600" : ""}`}>{formatPercent(totRev > 0 ? (totProfit / totRev) * 100 : 0)}</td>}
+                {v("profit")  && <td className={`px-3 py-2 text-right font-semibold ${totProfit < 0 ? "text-[#0d3d3b]" : ""}`}>{formatCurrency(totProfit)}</td>}
+                {v("margin")  && <td className={`px-3 py-2 text-right font-semibold ${totProfit < 0 ? "text-[#0d3d3b]" : ""}`}>{formatPercent(totRev > 0 ? (totProfit / totRev) * 100 : 0)}</td>}
                 {v("shipStatus")  && <td />}
                 {v("custPayment") && <td />}
               </tr>
@@ -452,7 +452,7 @@ function CustomizePanel({
         <div className="flex border-b border-stone-100">
           {(["data","visual"] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
-              className={`flex-1 py-2.5 text-sm font-medium capitalize border-b-2 transition-colors ${tab===t ? "border-blue-600 text-[#0d9488]" : "border-transparent text-stone-500 hover:text-stone-700"}`}>
+              className={`flex-1 py-2.5 text-sm font-medium capitalize border-b-2 transition-colors ${tab===t ? "border-[#0d9488] text-[#0d9488]" : "border-transparent text-stone-500 hover:text-stone-700"}`}>
               {t === "data" ? "Data" : "Visual"}
             </button>
           ))}
@@ -484,7 +484,7 @@ function CustomizePanel({
                           <option key={k} value={k}>{v.label}</option>
                         ))}
                       </select>
-                      <button onClick={() => onRemove(c.id)} className="text-stone-300 hover:text-red-400 text-lg leading-none shrink-0">⊗</button>
+                      <button onClick={() => onRemove(c.id)} className="text-stone-300 hover:text-[#0d3d3b] text-lg leading-none shrink-0">⊗</button>
                     </div>
                     <select value={c.operator} onChange={e => onUpdate(c.id,"operator",e.target.value)}
                       className="w-full border border-stone-200 rounded px-2 py-1.5 text-xs bg-white">
@@ -524,7 +524,7 @@ function CustomizePanel({
         </div>
 
         <div className="p-4 border-t border-stone-100">
-          <button onClick={onClose} className="w-full bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700">
+          <button onClick={onClose} className="w-full bg-[#0d9488] text-white rounded-lg py-2 text-sm font-medium hover:bg-[#0d9488]">
             Apply
           </button>
         </div>
@@ -641,7 +641,7 @@ function ARAgingReport({ data, visible, onDrillDown }: {
                 {v("d30")     && <AmountCell value={r.d30_v}     rows={r.d30}     onDrillDown={(rows) => onDrillDown(rows, `${r.name} — 1-30 days`)} />}
                 {v("d60")     && <AmountCell value={r.d60_v}     rows={r.d60}     onDrillDown={(rows) => onDrillDown(rows, `${r.name} — 31-60 days`)} />}
                 {v("d90")     && <AmountCell value={r.d90_v}     rows={r.d90}     onDrillDown={(rows) => onDrillDown(rows, `${r.name} — 61-90 days`)} />}
-                {v("d91")     && <AmountCell value={r.d91_v}     rows={r.d91}     onDrillDown={(rows) => onDrillDown(rows, `${r.name} — 91+ days`)} className="text-red-600" />}
+                {v("d91")     && <AmountCell value={r.d91_v}     rows={r.d91}     onDrillDown={(rows) => onDrillDown(rows, `${r.name} — 91+ days`)} className="text-[#0d3d3b]" />}
                 <td className="px-3 py-1.5 text-right font-medium">
                   <button onClick={() => onDrillDown(r.allRows, r.name)} className="text-[#0d9488] hover:underline">
                     {formatCurrency(r.total)}
@@ -657,7 +657,7 @@ function ARAgingReport({ data, visible, onDrillDown }: {
               {v("d30")     && <td className="px-3 py-2 text-right font-semibold">{formatCurrency(totals.d30)}</td>}
               {v("d60")     && <td className="px-3 py-2 text-right font-semibold">{formatCurrency(totals.d60)}</td>}
               {v("d90")     && <td className="px-3 py-2 text-right font-semibold">{formatCurrency(totals.d90)}</td>}
-              {v("d91")     && <td className="px-3 py-2 text-right font-semibold text-red-600">{formatCurrency(totals.d91)}</td>}
+              {v("d91")     && <td className="px-3 py-2 text-right font-semibold text-[#0d3d3b]">{formatCurrency(totals.d91)}</td>}
               <td className="px-3 py-2 text-right font-semibold">{formatCurrency(totals.total)}</td>
             </tr>
           </tfoot>
@@ -763,9 +763,9 @@ function PLMonthlyReport({ data, visible, onDrillDown }: {
                 {v("freight")  && <AmountCell value={m.freight} rows={m.rows} onDrillDown={r=>onDrillDown(r,`${m.label} — Freight`)} />}
                 {v("totalCost")&& <AmountCell value={m.cost} rows={m.rows} onDrillDown={r=>onDrillDown(r,`${m.label} — Total Cost`)} />}
                 {v("profit")   && <td className="px-3 py-1.5 text-right">
-                  <button onClick={()=>onDrillDown(m.rows,`${m.label} — Profit`)} className={`hover:underline ${m.profit<0?"text-red-600":""}`}>{formatCurrency(m.profit)}</button>
+                  <button onClick={()=>onDrillDown(m.rows,`${m.label} — Profit`)} className={`hover:underline ${m.profit<0?"text-[#0d3d3b]":""}`}>{formatCurrency(m.profit)}</button>
                 </td>}
-                {v("margin")   && <td className={`px-3 py-1.5 text-right ${m.margin<0?"text-red-600":"text-gray-700"}`}>{formatPercent(m.margin)}</td>}
+                {v("margin")   && <td className={`px-3 py-1.5 text-right ${m.margin<0?"text-[#0d3d3b]":"text-gray-700"}`}>{formatPercent(m.margin)}</td>}
                 {v("avgSell")  && <td className="px-3 py-1.5 text-right text-gray-700">{formatCurrency(m.avgSell)}</td>}
               </tr>
             ))}
@@ -779,8 +779,8 @@ function PLMonthlyReport({ data, visible, onDrillDown }: {
               {v("costNoFreight") && <td className="px-3 py-2 text-right font-semibold">{formatCurrency(months.reduce((s,m)=>s+m.costNoFreight,0))}</td>}
               {v("freight")  && <td className="px-3 py-2 text-right font-semibold">{formatCurrency(totals.freight)}</td>}
               {v("totalCost")&& <td className="px-3 py-2 text-right font-semibold">{formatCurrency(totals.cost)}</td>}
-              {v("profit")   && <td className={`px-3 py-2 text-right font-semibold ${totals.profit<0?"text-red-600":""}`}>{formatCurrency(totals.profit)}</td>}
-              {v("margin")   && <td className={`px-3 py-2 text-right font-semibold ${totals.profit<0?"text-red-600":""}`}>{formatPercent(totals.revenue>0?(totals.profit/totals.revenue)*100:0)}</td>}
+              {v("profit")   && <td className={`px-3 py-2 text-right font-semibold ${totals.profit<0?"text-[#0d3d3b]":""}`}>{formatCurrency(totals.profit)}</td>}
+              {v("margin")   && <td className={`px-3 py-2 text-right font-semibold ${totals.profit<0?"text-[#0d3d3b]":""}`}>{formatPercent(totals.revenue>0?(totals.profit/totals.revenue)*100:0)}</td>}
               {v("avgSell")  && <td className="px-3 py-2 text-right font-semibold">{formatCurrency(totals.tons>0?totals.revenue/totals.tons:0)}</td>}
             </tr>
           </tfoot>
@@ -888,14 +888,14 @@ function PLEntityReport({ data, isClient, visible, onDrillDown }: {
                 {v("costNoFreight") && <AmountCell value={e.costNoFreight} rows={e.rows} onDrillDown={r=>onDrillDown(r,`${e.name} — Cost`)} />}
                 {v("freight")       && <AmountCell value={e.freight} rows={e.rows} onDrillDown={r=>onDrillDown(r,`${e.name} — Freight`)} />}
                 {v("totalCost")     && <AmountCell value={e.cost} rows={e.rows} onDrillDown={r=>onDrillDown(r,`${e.name} — Total Cost`)} />}
-                {v("profit")        && <td className="px-3 py-1.5 text-right"><button onClick={()=>onDrillDown(e.rows,`${e.name} — Profit`)} className={`hover:underline ${e.profit<0?"text-red-600":""}`}>{formatCurrency(e.profit)}</button></td>}
-                {v("margin")        && <td className={`px-3 py-1.5 text-right ${e.margin<0?"text-red-600":"text-gray-700"}`}>{formatPercent(e.margin)}</td>}
+                {v("profit")        && <td className="px-3 py-1.5 text-right"><button onClick={()=>onDrillDown(e.rows,`${e.name} — Profit`)} className={`hover:underline ${e.profit<0?"text-[#0d3d3b]":""}`}>{formatCurrency(e.profit)}</button></td>}
+                {v("margin")        && <td className={`px-3 py-1.5 text-right ${e.margin<0?"text-[#0d3d3b]":"text-gray-700"}`}>{formatPercent(e.margin)}</td>}
                 {v("avgSell")       && <td className="px-3 py-1.5 text-right text-gray-700">{formatCurrency(e.avgSell)}</td>}
                 {v("avgBuy")        && <td className="px-3 py-1.5 text-right text-gray-700">{formatCurrency(e.avgBuy)}</td>}
-                {v("marginTon")     && <td className={`px-3 py-1.5 text-right ${e.marginTon<0?"text-red-600":"text-gray-700"}`}>{formatCurrency(e.marginTon)}</td>}
-                {(v("receivable")||v("payable")) && <AmountCell value={e.receivable} rows={e.rows.filter(r=>r[payKey]==="unpaid")} onDrillDown={r=>onDrillDown(r,`${e.name} — ${isClient?"Receivable":"Payable"}`)} className="text-red-600" />}
+                {v("marginTon")     && <td className={`px-3 py-1.5 text-right ${e.marginTon<0?"text-[#0d3d3b]":"text-gray-700"}`}>{formatCurrency(e.marginTon)}</td>}
+                {(v("receivable")||v("payable")) && <AmountCell value={e.receivable} rows={e.rows.filter(r=>r[payKey]==="unpaid")} onDrillDown={r=>onDrillDown(r,`${e.name} — ${isClient?"Receivable":"Payable"}`)} className="text-[#0d3d3b]" />}
                 {v("paidInv")       && <td className="px-3 py-1.5 text-right text-gray-700">{e.paidInv}</td>}
-                {v("unpaidInv")     && <td className={`px-3 py-1.5 text-right ${e.unpaidInv>0?"text-red-600":"text-gray-400"}`}>{e.unpaidInv}</td>}
+                {v("unpaidInv")     && <td className={`px-3 py-1.5 text-right ${e.unpaidInv>0?"text-[#0d3d3b]":"text-gray-400"}`}>{e.unpaidInv}</td>}
               </tr>
             ))}
           </tbody>
@@ -908,14 +908,14 @@ function PLEntityReport({ data, isClient, visible, onDrillDown }: {
               {v("costNoFreight") && <td className="px-3 py-2 text-right font-semibold">{formatCurrency(T.costNoFreight)}</td>}
               {v("freight")       && <td className="px-3 py-2 text-right font-semibold">{formatCurrency(T.freight)}</td>}
               {v("totalCost")     && <td className="px-3 py-2 text-right font-semibold">{formatCurrency(T.cost)}</td>}
-              {v("profit")        && <td className={`px-3 py-2 text-right font-semibold ${T.profit<0?"text-red-600":""}`}>{formatCurrency(T.profit)}</td>}
-              {v("margin")        && <td className={`px-3 py-2 text-right font-semibold ${T.profit<0?"text-red-600":""}`}>{formatPercent(T.revenue>0?(T.profit/T.revenue)*100:0)}</td>}
+              {v("profit")        && <td className={`px-3 py-2 text-right font-semibold ${T.profit<0?"text-[#0d3d3b]":""}`}>{formatCurrency(T.profit)}</td>}
+              {v("margin")        && <td className={`px-3 py-2 text-right font-semibold ${T.profit<0?"text-[#0d3d3b]":""}`}>{formatPercent(T.revenue>0?(T.profit/T.revenue)*100:0)}</td>}
               {v("avgSell")       && <td className="px-3 py-2 text-right font-semibold">{formatCurrency(T.tons>0?T.revenue/T.tons:0)}</td>}
               {v("avgBuy")        && <td className="px-3 py-2 text-right font-semibold">{formatCurrency(T.tons>0?T.costNoFreight/T.tons:0)}</td>}
-              {v("marginTon")     && <td className={`px-3 py-2 text-right font-semibold ${T.profit<0?"text-red-600":""}`}>{formatCurrency(T.tons>0?T.profit/T.tons:0)}</td>}
-              {(v("receivable")||v("payable")) && <td className="px-3 py-2 text-right font-semibold text-red-600">{formatCurrency(T.receivable)}</td>}
+              {v("marginTon")     && <td className={`px-3 py-2 text-right font-semibold ${T.profit<0?"text-[#0d3d3b]":""}`}>{formatCurrency(T.tons>0?T.profit/T.tons:0)}</td>}
+              {(v("receivable")||v("payable")) && <td className="px-3 py-2 text-right font-semibold text-[#0d3d3b]">{formatCurrency(T.receivable)}</td>}
               {v("paidInv")       && <td className="px-3 py-2 text-right font-semibold">{entities.reduce((s,e)=>s+e.paidInv,0)}</td>}
-              {v("unpaidInv")     && <td className="px-3 py-2 text-right font-semibold text-red-600">{entities.reduce((s,e)=>s+e.unpaidInv,0)}</td>}
+              {v("unpaidInv")     && <td className="px-3 py-2 text-right font-semibold text-[#0d3d3b]">{entities.reduce((s,e)=>s+e.unpaidInv,0)}</td>}
             </tr>
           </tfoot>
         </table>
@@ -1064,7 +1064,7 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
           <span className="text-stone-300">/</span>
           <h2 className="text-base font-semibold text-stone-800">{REPORT_LABELS[activeReport]}</h2>
           {filtered.length !== data.length && (
-            <span className="text-xs bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 rounded-full font-medium">{filtered.length} of {data.length} rows</span>
+            <span className="text-xs bg-[#0d9488] text-[#0d9488] border border-blue-200 px-2 py-0.5 rounded-full font-medium">{filtered.length} of {data.length} rows</span>
           )}
         </div>
 
@@ -1115,7 +1115,7 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
 
           {/* Customize */}
           <button onClick={()=>setCustomizeOpen(true)}
-            className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md font-medium border transition-colors ${hasFilters ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700" : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"}`}>
+            className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md font-medium border transition-colors ${hasFilters ? "bg-[#0d9488] text-white border-[#0d9488] hover:bg-[#0d9488]" : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"}`}>
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
             Customize
             {hasFilters && <span className="bg-white text-[#0d9488] rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold">{conditions.length + (dateFrom?1:0) + (dateTo?1:0)}</span>}

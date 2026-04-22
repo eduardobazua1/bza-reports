@@ -77,7 +77,7 @@ export function SupplierDetailEdit({ supplier }: { supplier: Supplier }) {
         <button
           onClick={handleDelete}
           disabled={isPending}
-          className="border border-red-200 px-3 py-1.5 rounded text-sm text-red-600 hover:bg-red-50 font-medium disabled:opacity-50"
+          className="border border-[#0d3d3b] px-3 py-1.5 rounded text-sm text-[#0d3d3b] hover:bg-[#0d3d3b] font-medium disabled:opacity-50"
         >
           Delete
         </button>

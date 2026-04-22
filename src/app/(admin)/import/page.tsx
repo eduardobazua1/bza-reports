@@ -178,12 +178,12 @@ export default function ImportPage() {
 
       {/* Error / Result Messages */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
+        <div className="bg-[#0d3d3b] border border-[#0d3d3b] rounded-lg p-4 text-sm text-[#0d3d3b]">
           {error}
         </div>
       )}
       {result && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-sm text-green-700">
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-sm text-[#0d9488]">
           {result}
         </div>
       )}

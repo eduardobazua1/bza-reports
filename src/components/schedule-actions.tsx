@@ -106,13 +106,13 @@ export function ScheduleActions({
     <div className="space-y-6">
       {/* Overdue alerts */}
       {overdue.length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <h3 className="text-sm font-bold text-red-700 mb-3">
+        <div className="bg-[#0d3d3b] border border-[#0d3d3b] rounded-lg p-4">
+          <h3 className="text-sm font-bold text-[#0d3d3b] mb-3">
             {overdue.length} report{overdue.length > 1 ? "s" : ""} pending to send
           </h3>
           <div className="space-y-2">
             {overdue.map((item) => (
-              <div key={item.id} className="flex items-center justify-between bg-white rounded-lg p-3 border border-red-100">
+              <div key={item.id} className="flex items-center justify-between bg-white rounded-lg p-3 border border-[#0d3d3b]">
                 <div>
                   <p className="text-sm font-medium">{item.clientName}</p>
                   <p className="text-xs text-muted-foreground">
@@ -255,7 +255,7 @@ export function ScheduleActions({
                     {item.templateName} &middot; Sent: {item.sentAt?.split("T")[0] || item.sendDate}
                   </p>
                 </div>
-                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Sent</span>
+                <span className="text-xs bg-green-100 text-[#0d9488] px-2 py-1 rounded-full">Sent</span>
               </div>
             ))}
           </div>

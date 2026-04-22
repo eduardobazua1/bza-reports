@@ -66,8 +66,8 @@ export default async function MonthlyBreakdownPage() {
                   <td className="px-5 py-3 text-right text-stone-600">{formatNumber(r.tons, 1)}</td>
                   <td className="px-5 py-3 text-right text-stone-600">{formatCurrency(r.revenue)}</td>
                   <td className="px-5 py-3 text-right text-stone-500">{formatCurrency(r.cost)}</td>
-                  <td className={`px-5 py-3 text-right font-semibold ${r.profit >= 0 ? "text-emerald-600" : "text-red-500"}`}>{formatCurrency(r.profit)}</td>
-                  <td className={`px-5 py-3 text-right font-medium ${r.margin >= 10 ? "text-emerald-600" : "text-amber-600"}`}>{formatPercent(r.margin)}</td>
+                  <td className={`px-5 py-3 text-right font-semibold ${r.profit >= 0 ? "text-emerald-600" : "text-[#0d3d3b]"}`}>{formatCurrency(r.profit)}</td>
+                  <td className={`px-5 py-3 text-right font-medium ${r.margin >= 10 ? "text-emerald-600" : "text-[#0d9488]"}`}>{formatPercent(r.margin)}</td>
                 </tr>
               ))}
             </tbody>
@@ -77,8 +77,8 @@ export default async function MonthlyBreakdownPage() {
                 <td className="px-5 py-3 text-right">{formatNumber(totals.tons, 1)}</td>
                 <td className="px-5 py-3 text-right">{formatCurrency(totals.revenue)}</td>
                 <td className="px-5 py-3 text-right">{formatCurrency(totals.cost)}</td>
-                <td className={`px-5 py-3 text-right ${totals.profit >= 0 ? "text-emerald-600" : "text-red-500"}`}>{formatCurrency(totals.profit)}</td>
-                <td className={`px-5 py-3 text-right ${totals.revenue > 0 && (totals.profit / totals.revenue) * 100 >= 10 ? "text-emerald-600" : "text-amber-600"}`}>
+                <td className={`px-5 py-3 text-right ${totals.profit >= 0 ? "text-emerald-600" : "text-[#0d3d3b]"}`}>{formatCurrency(totals.profit)}</td>
+                <td className={`px-5 py-3 text-right ${totals.revenue > 0 && (totals.profit / totals.revenue) * 100 >= 10 ? "text-emerald-600" : "text-[#0d9488]"}`}>
                   {formatPercent(totals.revenue > 0 ? (totals.profit / totals.revenue) * 100 : 0)}
                 </td>
               </tr>

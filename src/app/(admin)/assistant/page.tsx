@@ -264,7 +264,7 @@ export default function AssistantPage() {
 
       {/* Error */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700 mb-3">
+        <div className="bg-[#0d3d3b] border border-[#0d3d3b] rounded-lg p-3 text-sm text-[#0d3d3b] mb-3">
           {error}
         </div>
       )}

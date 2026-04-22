@@ -21,9 +21,9 @@ const typeLabels: Record<string, string> = {
 };
 
 const typeColors: Record<string, string> = {
-  invoice: "bg-blue-50 text-blue-600",
+  invoice: "bg-[#0d9488] text-[#0d9488]",
   bl: "bg-emerald-50 text-emerald-600",
-  pl: "bg-amber-50 text-amber-600",
+  pl: "bg-[#0d9488] text-[#0d9488]",
   other: "bg-stone-100 text-stone-500",
 };
 
@@ -93,7 +93,7 @@ export function DocumentUpload({ invoiceId, invoiceNumber }: { invoiceId: number
         {/* Invoice PDF link — always shown unless pending */}
         {!isPending && (
           <div className="flex items-center gap-1.5 bg-stone-50 rounded-md px-2 py-1">
-            <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-orange-50 text-orange-600">Invoice</span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-[#0d9488] text-[#0d9488]">Invoice</span>
             <a
               href={`/api/invoice-pdf?invoice=${invoiceNumber}`}
               target="_blank"
@@ -123,7 +123,7 @@ export function DocumentUpload({ invoiceId, invoiceNumber }: { invoiceId: number
             <span className="text-[9px] text-stone-300">{formatSize(doc.fileSize)}</span>
             <button
               onClick={() => handleDelete(doc)}
-              className="text-stone-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="text-stone-300 hover:text-[#0d3d3b] opacity-0 group-hover:opacity-100 transition-opacity"
             >
               <Trash2 className="w-3 h-3" />
             </button>
@@ -162,7 +162,7 @@ export function DocumentUpload({ invoiceId, invoiceNumber }: { invoiceId: number
           <button
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
-            className="text-[11px] bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 disabled:opacity-50"
+            className="text-[11px] bg-[#0d9488] text-white px-2 py-1 rounded hover:bg-[#0d9488] disabled:opacity-50"
           >
             {uploading ? "Uploading..." : "Choose file"}
           </button>

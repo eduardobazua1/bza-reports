@@ -76,7 +76,7 @@ export function PortalLogin({ token }: { token: string }) {
               className="w-full bg-[#fafaf9] border-[1.5px] border-[#e7e5e4] rounded-xl px-4 py-4 text-[15px] text-[#1c1917] focus:outline-none focus:border-[#0d9488] focus:bg-white transition-colors mb-5"
             />
 
-            {error && <p className="text-red-500 text-xs mb-3">{error}</p>}
+            {error && <p className="text-[#0d3d3b] text-xs mb-3">{error}</p>}
 
             <button
               type="submit"
@@ -107,7 +107,7 @@ export function PortalLogin({ token }: { token: string }) {
               className="w-full bg-[#fafaf9] border-[1.5px] border-[#e7e5e4] rounded-xl px-4 py-4 text-[22px] text-center tracking-[10px] font-mono text-[#1c1917] focus:outline-none focus:border-[#0d9488] focus:bg-white transition-colors mb-5"
             />
 
-            {error && <p className="text-red-500 text-xs mb-3">{error}</p>}
+            {error && <p className="text-[#0d3d3b] text-xs mb-3">{error}</p>}
 
             <button
               type="submit"

@@ -26,7 +26,7 @@ function monthLabel(m: string) {
 
 function Change({ value, price }: { value: number; price: number }) {
   const pct = price > 0 ? (value / (price - value)) * 100 : 0;
-  const color = value > 0 ? "text-emerald-600" : value < 0 ? "text-red-500" : "text-stone-400";
+  const color = value > 0 ? "text-emerald-600" : value < 0 ? "text-[#0d3d3b]" : "text-stone-400";
   const Icon = value > 0 ? TrendingUp : value < 0 ? TrendingDown : Minus;
   return (
     <span className={`flex items-center gap-0.5 text-[10px] font-medium ${color}`}>
@@ -87,7 +87,7 @@ export function MarketPricesWidget({ prices }: { prices: Price[] }) {
 
       {/* RISI Section */}
       <div className="mb-4">
-        <p className="text-[10px] font-semibold text-purple-600 uppercase tracking-wide mb-2">RISI (Fastmarkets)</p>
+        <p className="text-[10px] font-semibold text-[#0d3d3b] uppercase tracking-wide mb-2">RISI (Fastmarkets)</p>
         <div className="grid grid-cols-3 gap-3">
           {GRADES.map(grade => {
             const list = getPrice("RISI", grade, "list");

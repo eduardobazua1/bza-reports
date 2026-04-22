@@ -72,7 +72,7 @@ function KPICard({ e, type }: { e: EntityKPI; type: "client" | "supplier" }) {
             </span>
           )}
           {e.unpaidInvoices > 0 && (
-            <span className="text-xs bg-stone-100 text-amber-600 px-2 py-1 rounded-full">
+            <span className="text-xs bg-stone-100 text-[#0d9488] px-2 py-1 rounded-full">
               {e.unpaidInvoices} pending
             </span>
           )}
@@ -91,14 +91,14 @@ function KPICard({ e, type }: { e: EntityKPI; type: "client" | "supplier" }) {
           </div>
           <div>
             <p className="text-xs text-stone-500 uppercase tracking-wide">Profit</p>
-            <p className={`text-sm md:text-base font-bold ${e.profit >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+            <p className={`text-sm md:text-base font-bold ${e.profit >= 0 ? "text-emerald-600" : "text-[#0d3d3b]"}`}>
               {formatCurrency(e.profit)}
             </p>
             <p className="text-[10px] text-stone-400">Margin: {formatPercent(e.margin)}</p>
           </div>
           <div>
             <p className="text-xs text-stone-500 uppercase tracking-wide">Margin/TN</p>
-            <p className={`text-sm md:text-base font-bold ${e.marginPerTon >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+            <p className={`text-sm md:text-base font-bold ${e.marginPerTon >= 0 ? "text-emerald-600" : "text-[#0d3d3b]"}`}>
               ${formatNumber(e.marginPerTon, 0)}
             </p>
           </div>
@@ -113,7 +113,7 @@ function KPICard({ e, type }: { e: EntityKPI; type: "client" | "supplier" }) {
           </div>
           <div>
             <p className="text-xs text-stone-500 uppercase tracking-wide">Receivable</p>
-            <p className="text-sm md:text-base font-semibold text-amber-600">
+            <p className="text-sm md:text-base font-semibold text-[#0d9488]">
               {e.unpaidInvoices > 0 ? formatCurrency(e.unpaidRevenue) : "$0"}
             </p>
             <p className="text-xs text-muted-foreground">
@@ -131,7 +131,7 @@ function KPICard({ e, type }: { e: EntityKPI; type: "client" | "supplier" }) {
                 .sort((a, b) => b[1] - a[1])
                 .map(([name, tons]) => {
                   const pct = e.totalTons > 0 ? (tons / e.totalTons) * 100 : 0;
-                  const dotColors: Record<string, string> = { Railroad: "bg-blue-500", Maritime: "bg-emerald-500", Truck: "bg-amber-500", Other: "bg-stone-400" };
+                  const dotColors: Record<string, string> = { Railroad: "bg-[#0d9488]", Maritime: "bg-emerald-500", Truck: "bg-[#0d9488]", Other: "bg-stone-400" };
                   return (
                     <div key={name} className="bg-stone-50 px-3 py-2 rounded-md">
                       <div className="flex items-center gap-1.5 mb-0.5">
@@ -170,7 +170,7 @@ function KPICard({ e, type }: { e: EntityKPI; type: "client" | "supplier" }) {
                       <td className="py-1 px-2 text-right">{y.shipments}</td>
                       <td className="py-1 px-2 text-right">${formatNumber(y.avgSell, 0)}</td>
                       <td className="py-1 px-2 text-right">${formatNumber(y.avgBuy, 0)}</td>
-                      <td className={`py-1 px-2 text-right font-medium ${y.margin >= 0 ? "text-green-600" : "text-red-600"}`}>
+                      <td className={`py-1 px-2 text-right font-medium ${y.margin >= 0 ? "text-[#0d9488]" : "text-[#0d3d3b]"}`}>
                         ${formatNumber(y.margin, 0)}
                       </td>
                     </tr>
@@ -280,7 +280,7 @@ export default async function ReportsPage() {
         </div>
         <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-amber-500 p-3">
           <p className="text-[10px] font-medium text-stone-500 uppercase tracking-wide">Receivable</p>
-          <p className="text-sm md:text-lg font-semibold text-amber-600 mt-1">{formatCurrency(totals.unpaidRev)}</p>
+          <p className="text-sm md:text-lg font-semibold text-[#0d9488] mt-1">{formatCurrency(totals.unpaidRev)}</p>
           <p className="text-[10px] text-stone-400 mt-0.5">{totals.unpaid} invoices</p>
         </div>
       </div>

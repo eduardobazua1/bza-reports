@@ -46,8 +46,8 @@ function timeAgo(iso: string): string {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const c = status === "en_transito" ? "bg-blue-50 text-blue-600" :
-    status === "en_aduana" ? "bg-amber-50 text-amber-600" :
+  const c = status === "en_transito" ? "bg-[#0d9488] text-[#0d9488]" :
+    status === "en_aduana" ? "bg-[#0d9488] text-[#0d9488]" :
     status === "entregado" ? "bg-emerald-50 text-emerald-600" : "bg-stone-100 text-stone-500";
   return <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${c}`}>{shipmentStatusLabels[status] || status}</span>;
 }
@@ -153,7 +153,7 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
   if (!data) return (
     <div className="min-h-screen bg-stone-100 flex items-center justify-center">
       <div className="text-center">
-        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <div className="w-8 h-8 border-2 border-[#0d9488] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
         <p className="text-stone-400 text-sm">Loading shipments...</p>
       </div>
     </div>

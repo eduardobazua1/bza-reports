@@ -79,7 +79,7 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
         </div>
         <div className={`bg-white rounded-md shadow-sm p-4 border-l-4 ${balance > 0 ? "border-l-red-400" : balance < 0 ? "border-l-emerald-400" : "border-l-stone-200"}`}>
           <p className="text-[10px] text-stone-400 uppercase tracking-wide mb-1">Open Balance</p>
-          <p className={`text-xl font-bold ${balance > 0 ? "text-red-600" : balance < 0 ? "text-emerald-600" : "text-stone-400"}`}>{formatCurrency(Math.abs(balance))}</p>
+          <p className={`text-xl font-bold ${balance > 0 ? "text-[#0d3d3b]" : balance < 0 ? "text-emerald-600" : "text-stone-400"}`}>{formatCurrency(Math.abs(balance))}</p>
           <p className="text-xs text-stone-400 mt-0.5">{balance > 0 ? "You owe supplier" : balance < 0 ? "Overpaid" : "Settled"}</p>
         </div>
       </div>

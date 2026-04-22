@@ -105,7 +105,7 @@ export function POSupplierPayments({
         </div>
         <div className={`p-3 text-center border-l-4 ${balance > 0.01 ? "border-l-red-400" : balance < -0.01 ? "border-l-emerald-400" : "border-l-stone-200"}`}>
           <p className="text-[10px] text-stone-400 uppercase tracking-wide">Balance</p>
-          <p className={`text-base font-semibold mt-0.5 ${balance > 0.01 ? "text-red-600" : balance < -0.01 ? "text-emerald-600" : "text-stone-400"}`}>
+          <p className={`text-base font-semibold mt-0.5 ${balance > 0.01 ? "text-[#0d3d3b]" : balance < -0.01 ? "text-emerald-600" : "text-stone-400"}`}>
             {balance > 0.01 ? `−${formatCurrency(balance)}` : balance < -0.01 ? `+${formatCurrency(Math.abs(balance))}` : "Settled"}
           </p>
           <p className="text-[10px] text-stone-400">
@@ -116,7 +116,7 @@ export function POSupplierPayments({
 
       {/* Add Payment Form */}
       {showForm && (
-        <form onSubmit={handleAdd} className="p-4 border-b border-stone-200 bg-blue-50/50">
+        <form onSubmit={handleAdd} className="p-4 border-b border-stone-200 bg-[#0d9488]/50">
           <p className="text-xs font-semibold text-stone-600 uppercase tracking-wide mb-3">New Payment</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>
@@ -212,7 +212,7 @@ export function POSupplierPayments({
                   <button
                     onClick={() => handleDelete(p.id)}
                     disabled={deleting === p.id}
-                    className="text-xs text-red-400 hover:text-red-600 disabled:opacity-50 transition-colors"
+                    className="text-xs text-[#0d3d3b] hover:text-[#0d3d3b] disabled:opacity-50 transition-colors"
                   >
                     {deleting === p.id ? "..." : "Delete"}
                   </button>

@@ -24,7 +24,7 @@ export function KPIBig({
     blue: "text-stone-900",
     green: "text-emerald-700",
     amber: "text-stone-900",
-    red: "text-red-700",
+    red: "text-[#0d3d3b]",
   };
 
   const [display, setDisplay] = useState("0");

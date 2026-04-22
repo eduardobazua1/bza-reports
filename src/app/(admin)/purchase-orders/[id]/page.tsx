@@ -51,8 +51,8 @@ export default async function PurchaseOrderDetailPage({
 
   const statusColors: Record<string, string> = {
     active: "bg-emerald-100 text-emerald-700",
-    completed: "bg-blue-100 text-blue-700",
-    cancelled: "bg-red-100 text-red-700",
+    completed: "bg-blue-100 text-[#0d9488]",
+    cancelled: "bg-[#0d3d3b] text-[#0d3d3b]",
   };
   const statusLabelsMap: Record<string, string> = {
     active: "Active",
@@ -92,10 +92,10 @@ export default async function PurchaseOrderDetailPage({
             <div className="flex items-center gap-2 mt-1">
               <p className="text-sm font-semibold text-stone-800">{po.supplier?.name || "—"}</p>
               {certType === "fsc" && (
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 uppercase tracking-wide">FSC</span>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-100 text-[#0d9488] uppercase tracking-wide">FSC</span>
               )}
               {certType === "pefc" && (
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 uppercase tracking-wide">PEFC</span>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-[#0d9488] uppercase tracking-wide">PEFC</span>
               )}
               {!certType && (
                 <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-stone-100 text-stone-400">None</span>
@@ -181,7 +181,7 @@ export default async function PurchaseOrderDetailPage({
           </div>
           <div>
             <p className="text-xs text-stone-400 uppercase tracking-wide">Profit</p>
-            <p className={`text-xl font-semibold mt-1 ${totalProfit >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+            <p className={`text-xl font-semibold mt-1 ${totalProfit >= 0 ? "text-emerald-600" : "text-[#0d3d3b]"}`}>
               {formatCurrency(totalProfit)}
             </p>
           </div>

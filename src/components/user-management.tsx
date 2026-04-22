@@ -79,7 +79,7 @@ export function UserManagement({ users, isAdmin }: { users: User[]; isAdmin: boo
   return (
     <div className="space-y-4">
       {message && (
-        <div className={`rounded-lg p-3 text-sm ${message.ok ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+        <div className={`rounded-lg p-3 text-sm ${message.ok ? "bg-green-50 text-[#0d9488] border border-green-200" : "bg-[#0d3d3b] text-[#0d3d3b] border border-[#0d3d3b]"}`}>
           {message.text}
         </div>
       )}
@@ -137,7 +137,7 @@ export function UserManagement({ users, isAdmin }: { users: User[]; isAdmin: boo
                     <span className={`text-xs px-2 py-0.5 rounded ${user.role === "admin" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
                       {user.role}
                     </span>
-                    {!user.isActive && <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded">Inactive</span>}
+                    {!user.isActive && <span className="text-xs bg-[#0d3d3b] text-[#0d3d3b] px-2 py-0.5 rounded">Inactive</span>}
                   </div>
                   <p className="text-xs text-muted-foreground">{user.email}</p>
                 </div>
@@ -145,7 +145,7 @@ export function UserManagement({ users, isAdmin }: { users: User[]; isAdmin: boo
                   <button
                     onClick={() => handleToggleActive(user)}
                     disabled={isPending}
-                    className={`text-xs px-2 py-1 rounded ${user.isActive ? "text-amber-600 hover:bg-amber-50" : "text-green-600 hover:bg-green-50"}`}
+                    className={`text-xs px-2 py-1 rounded ${user.isActive ? "text-[#0d9488] hover:bg-[#0d9488]" : "text-[#0d9488] hover:bg-green-50"}`}
                   >
                     {user.isActive ? "Deactivate" : "Activate"}
                   </button>

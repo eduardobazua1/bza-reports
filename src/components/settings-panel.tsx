@@ -269,7 +269,7 @@ function FieldManager({ fields, onChange }: {
         )}
         {!f.isDefault ? (
           <button onClick={() => removeField(f.id)}
-            className="w-6 h-6 flex items-center justify-center rounded text-stone-300 hover:text-red-400 hover:bg-red-50 transition-colors shrink-0 text-base leading-none"
+            className="w-6 h-6 flex items-center justify-center rounded text-stone-300 hover:text-[#0d3d3b] hover:bg-[#0d3d3b] transition-colors shrink-0 text-base leading-none"
             title="Remove">×</button>
         ) : (
           <span className="w-6 shrink-0" />
@@ -521,7 +521,7 @@ function SectionUsers({ users, isAdmin }: { users: UserRow[]; isAdmin: boolean }
               </div>
               <div className="flex items-center gap-2">
                 <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${u.role === "admin" ? "bg-[#0d3d3b]/10 text-[#0d3d3b]" : "bg-stone-100 text-stone-500"}`}>{u.role}</span>
-                <span className={`text-[11px] px-2 py-0.5 rounded-full ${u.isActive ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-500"}`}>{u.isActive ? "Active" : "Inactive"}</span>
+                <span className={`text-[11px] px-2 py-0.5 rounded-full ${u.isActive ? "bg-emerald-50 text-emerald-600" : "bg-[#0d3d3b] text-[#0d3d3b]"}`}>{u.isActive ? "Active" : "Inactive"}</span>
               </div>
             </div>
           ))}
@@ -543,7 +543,7 @@ function SectionIntegrations() {
           <TF label="SMTP User"     value="" onChange={() => {}} placeholder="no-reply@bza-is.com" hint="Set via SMTP_USER in Vercel env vars" />
           <TF label="SMTP Password" value="" onChange={() => {}} type="password" placeholder="••••••••" hint="Set via SMTP_PASS in Vercel env vars" />
         </div>
-        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg p-3">
+        <p className="text-xs text-[#0d9488] bg-[#0d9488] border border-[#0d9488] rounded-lg p-3">
           Credentials must be set as environment variables in Vercel → Project → Settings → Environment Variables.
         </p>
       </Card>

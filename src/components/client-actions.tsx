@@ -332,7 +332,7 @@ export function ClientActions({ clients }: { clients: Client[] }) {
                       disabled={isPending}
                       className={`px-2 py-1 rounded text-xs font-medium ${
                         client.portalEnabled
-                          ? "bg-green-100 text-green-700"
+                          ? "bg-green-100 text-[#0d9488]"
                           : "bg-gray-100 text-gray-500"
                       }`}
                     >
@@ -350,7 +350,7 @@ export function ClientActions({ clients }: { clients: Client[] }) {
                         </button>
                         <button
                           onClick={() => setPortalUsersClientId(portalUsersClientId === client.id ? null : client.id)}
-                          className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded hover:bg-blue-100"
+                          className="text-xs bg-[#0d9488] text-[#0d9488] px-2 py-0.5 rounded hover:bg-blue-100"
                         >
                           Users
                         </button>
@@ -388,7 +388,7 @@ export function ClientActions({ clients }: { clients: Client[] }) {
             <a href={`/clients/${client.id}/send-report`} className="block w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50" onClick={() => setOpenDropdownId(null)}>Send Report</a>
             <button onClick={() => { setOpenDropdownId(null); handleEdit(client); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">Edit</button>
             <div className="border-t border-stone-100 my-1" />
-            <button onClick={() => { setOpenDropdownId(null); handleDelete(client.id); }} disabled={isPending} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</button>
+            <button onClick={() => { setOpenDropdownId(null); handleDelete(client.id); }} disabled={isPending} className="w-full text-left px-4 py-2 text-sm text-[#0d3d3b] hover:bg-[#0d3d3b]">Delete</button>
           </div>,
           document.body
         );

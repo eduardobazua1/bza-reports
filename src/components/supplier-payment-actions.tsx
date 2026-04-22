@@ -164,7 +164,7 @@ export function SupplierPaymentActions({
                   <button
                     onClick={() => handleDelete(p.id)}
                     disabled={isPending}
-                    className="text-red-400 hover:text-red-600 text-xs"
+                    className="text-[#0d3d3b] hover:text-[#0d3d3b] text-xs"
                   >
                     ×
                   </button>

@@ -25,7 +25,7 @@ function monthLabel(m: string) {
 
 function Change({ value, price }: { value: number; price: number }) {
   const pct = price - value !== 0 ? (value / (price - value)) * 100 : 0;
-  const color = value > 0 ? "text-emerald-600" : value < 0 ? "text-red-500" : "text-stone-400";
+  const color = value > 0 ? "text-emerald-600" : value < 0 ? "text-[#0d3d3b]" : "text-stone-400";
   const Icon = value > 0 ? TrendingUp : value < 0 ? TrendingDown : Minus;
   return (
     <span className={`flex items-center gap-1 text-sm font-medium ${color}`}>
@@ -102,7 +102,7 @@ export default function MarketPricesPage() {
       {/* RISI Prices */}
       {currentMonth && currentPrices.some(p => p.source === "RISI") && (
         <div>
-          <h2 className="text-sm font-medium text-purple-600 uppercase tracking-wide mb-3">RISI (Fastmarkets) — {monthLabel(currentMonth)}</h2>
+          <h2 className="text-sm font-medium text-[#0d3d3b] uppercase tracking-wide mb-3">RISI (Fastmarkets) — {monthLabel(currentMonth)}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {GRADES.map(grade => {
               const list = currentPrices.find(p => p.source === "RISI" && p.grade === grade && p.priceType === "list");
@@ -231,16 +231,16 @@ export default function MarketPricesPage() {
                 <tr key={p.id} className="hover:bg-muted/50 transition-colors">
                   <td className="p-3 text-sm border-t border-border font-medium">{monthLabel(p.month)}</td>
                   <td className="p-3 text-sm border-t border-border">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${p.source === "TTO" ? "bg-blue-50 text-blue-600" : "bg-purple-50 text-purple-600"}`}>{p.source}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${p.source === "TTO" ? "bg-[#0d9488] text-[#0d9488]" : "bg-[#0d3d3b] text-[#0d3d3b]"}`}>{p.source}</span>
                   </td>
                   <td className="p-3 text-sm border-t border-border font-medium">{p.grade}</td>
                   <td className="p-3 text-sm border-t border-border">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${p.priceType === "list" ? "bg-amber-50 text-amber-600" : "bg-stone-100 text-stone-500"}`}>{p.priceType}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${p.priceType === "list" ? "bg-[#0d9488] text-[#0d9488]" : "bg-stone-100 text-stone-500"}`}>{p.priceType}</span>
                   </td>
                   <td className="p-3 text-sm border-t border-border text-right font-medium">${formatNumber(p.price, 2)}</td>
                   <td className="p-3 text-sm border-t border-border text-right">
                     {p.changeValue != null && (
-                      <span className={`text-sm font-medium ${p.changeValue > 0 ? "text-emerald-600" : p.changeValue < 0 ? "text-red-500" : "text-muted-foreground"}`}>
+                      <span className={`text-sm font-medium ${p.changeValue > 0 ? "text-emerald-600" : p.changeValue < 0 ? "text-[#0d3d3b]" : "text-muted-foreground"}`}>
                         {p.changeValue > 0 ? "+" : ""}{formatNumber(p.changeValue, 2)}
                       </span>
                     )}

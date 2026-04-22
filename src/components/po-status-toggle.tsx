@@ -5,9 +5,9 @@ import { updatePurchaseOrder } from "@/server/actions";
 import { useRouter } from "next/navigation";
 
 const statuses = [
-  { value: "active", label: "Active", color: "bg-green-100 text-green-700" },
-  { value: "completed", label: "Completed", color: "bg-blue-100 text-blue-700" },
-  { value: "cancelled", label: "Cancelled", color: "bg-red-100 text-red-700" },
+  { value: "active", label: "Active", color: "bg-green-100 text-[#0d9488]" },
+  { value: "completed", label: "Completed", color: "bg-blue-100 text-[#0d9488]" },
+  { value: "cancelled", label: "Cancelled", color: "bg-[#0d3d3b] text-[#0d3d3b]" },
 ] as const;
 
 export function POStatusToggle({ poId, currentStatus }: { poId: number; currentStatus: string }) {

@@ -110,7 +110,7 @@ export default async function PurchaseOrdersPage({ searchParams }: { searchParam
                     <td className="p-3 text-sm border-t border-border text-right">{formatNumber(row.totalTons, 1)}</td>
                     <td className="p-3 text-sm border-t border-border text-right">{formatCurrency(revenue)}</td>
                     <td className="p-3 text-sm border-t border-border text-right font-medium">
-                      <span className={profit >= 0 ? "text-green-600" : "text-red-600"}>
+                      <span className={profit >= 0 ? "text-[#0d9488]" : "text-[#0d3d3b]"}>
                         {formatCurrency(profit)}
                       </span>
                     </td>

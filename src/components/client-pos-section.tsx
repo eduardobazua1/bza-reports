@@ -253,8 +253,8 @@ export function ClientPOsSection({
   }
 
   const statusColors: Record<string, string> = {
-    pending: "bg-amber-100 text-amber-700",
-    partial: "bg-blue-100 text-blue-700",
+    pending: "bg-[#0d9488] text-[#0d9488]",
+    partial: "bg-blue-100 text-[#0d9488]",
     complete: "bg-emerald-100 text-emerald-700",
   };
   const statusLabels: Record<string, string> = {
@@ -359,7 +359,7 @@ export function ClientPOsSection({
 
                 return (
                   <>
-                    <tr key={cpo.id} className={`hover:bg-stone-50 ${editingId === cpo.id ? "bg-amber-50/40" : ""}`}>
+                    <tr key={cpo.id} className={`hover:bg-stone-50 ${editingId === cpo.id ? "bg-[#0d9488]/40" : ""}`}>
                       <td className="px-4 py-3 border-t border-stone-100 text-sm font-semibold text-stone-800">
                         {cpo.clientPoNumber}
                       </td>
@@ -380,7 +380,7 @@ export function ClientPOsSection({
                       </td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right text-xs text-stone-500">
                         {cpo.sellPriceOverride ? formatCurrency(cpo.sellPriceOverride) : (sellPrice ? formatCurrency(sellPrice) : "—")}
-                        {cpo.sellPriceOverride && <span className="ml-1 text-amber-500">*</span>}
+                        {cpo.sellPriceOverride && <span className="ml-1 text-[#0d9488]">*</span>}
                       </td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right font-medium">
                         {amount ? formatCurrency(amount) : "—"}
@@ -642,7 +642,7 @@ export function ClientPOsSection({
               <button onClick={() => { setOpenDropdownId(null); openConvert(cpo, dropdownInvoiceCounter); }} className="w-full text-left px-4 py-2 text-sm text-emerald-700 hover:bg-emerald-50 font-medium">Convert →</button>
             )}
             <div className="border-t border-stone-100 my-1" />
-            <button onClick={() => { setOpenDropdownId(null); handleDelete(cpo.id); }} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</button>
+            <button onClick={() => { setOpenDropdownId(null); handleDelete(cpo.id); }} className="w-full text-left px-4 py-2 text-sm text-[#0d3d3b] hover:bg-[#0d3d3b]">Delete</button>
           </div>,
           document.body
         );
@@ -688,7 +688,7 @@ export function ClientPOsSection({
                 </div>
               </div>
               <div className="flex gap-2 pt-1">
-                <button onClick={() => handleEdit(cpo)} disabled={editLoading || !editForm.clientPoNumber} className="text-sm bg-amber-600 text-white px-4 py-1.5 rounded hover:bg-amber-700 disabled:opacity-50 font-medium">
+                <button onClick={() => handleEdit(cpo)} disabled={editLoading || !editForm.clientPoNumber} className="text-sm bg-[#0d9488] text-white px-4 py-1.5 rounded hover:bg-[#0d9488] disabled:opacity-50 font-medium">
                   {editLoading ? "Saving..." : "Save changes"}
                 </button>
                 <button onClick={cancelEdit} className="text-sm text-stone-500 hover:text-stone-700 px-4 py-1.5">Cancel</button>

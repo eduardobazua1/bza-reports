@@ -320,7 +320,7 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                     key={row.invoice.id}
                     onClick={() => openPanel(row)}
                     className={`cursor-pointer transition-colors border-t border-border ${
-                      isSelected ? "bg-blue-50" : isOverdue ? "bg-red-50/40 hover:bg-red-50/70" : "hover:bg-muted/40"
+                      isSelected ? "bg-[#0d9488]" : isOverdue ? "bg-[#0d3d3b]/40 hover:bg-[#0d3d3b]/70" : "hover:bg-muted/40"
                     }`}
                   >
                     <td className="px-3 py-1.5 text-xs font-medium text-stone-800 whitespace-nowrap">{row.invoice.invoiceNumber}</td>
@@ -337,7 +337,7 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                     <td className="px-3 py-1.5 text-xs whitespace-nowrap">
                       {dueDate ? (
                         row.invoice.customerPaymentStatus === "unpaid" && daysOverdue > 0 ? (
-                          <span className="text-red-600 font-medium">{formatDate(dueDate)} <span className="font-bold">+{daysOverdue}d</span></span>
+                          <span className="text-[#0d3d3b] font-medium">{formatDate(dueDate)} <span className="font-bold">+{daysOverdue}d</span></span>
                         ) : (
                           <span className="text-stone-600">{formatDate(dueDate)}</span>
                         )
@@ -431,10 +431,10 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
             )}
             <button onClick={async () => { setOpenDropdownId(null); await duplicateInvoice(activeRow.invoice.id); router.refresh(); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">Duplicate</button>
             {activeRow.invoice.customerPaymentStatus === "paid" && (
-              <button onClick={async () => { setOpenDropdownId(null); await markInvoiceUnpaid(activeRow.invoice.id); router.refresh(); }} className="w-full text-left px-4 py-2 text-sm text-amber-700 hover:bg-amber-50">Mark as Unpaid</button>
+              <button onClick={async () => { setOpenDropdownId(null); await markInvoiceUnpaid(activeRow.invoice.id); router.refresh(); }} className="w-full text-left px-4 py-2 text-sm text-[#0d9488] hover:bg-[#0d9488]">Mark as Unpaid</button>
             )}
             <div className="border-t border-stone-100 my-1" />
-            <button onClick={() => { handleDelete(activeRow.invoice); setOpenDropdownId(null); }} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</button>
+            <button onClick={() => { handleDelete(activeRow.invoice); setOpenDropdownId(null); }} className="w-full text-left px-4 py-2 text-sm text-[#0d3d3b] hover:bg-[#0d3d3b]">Delete</button>
           </div>,
           document.body
         );
@@ -750,7 +750,7 @@ function ReceivePaymentPanel({
                     <td className="p-2">
                       {due ? (
                         daysOverdue > 0 ? (
-                          <span className="text-red-600 font-semibold">{formatDate(due)}<br /><span className="text-[10px]">+{daysOverdue}d overdue</span></span>
+                          <span className="text-[#0d3d3b] font-semibold">{formatDate(due)}<br /><span className="text-[10px]">+{daysOverdue}d overdue</span></span>
                         ) : (
                           <span className="text-stone-600">{formatDate(due)}</span>
                         )
@@ -831,7 +831,7 @@ function ViewPanel({
         <div>
           <p className="text-xs text-stone-500 mb-0.5">Invoice {row.invoice.invoiceNumber}</p>
           {isOverdue ? (
-            <span className="text-xs font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">Overdue {daysOverdue} days</span>
+            <span className="text-xs font-semibold text-[#0d3d3b] bg-[#0d3d3b] px-2 py-0.5 rounded-full">Overdue {daysOverdue} days</span>
           ) : (
             <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${paymentStatusColors[row.invoice.customerPaymentStatus]}`}>
               {paymentStatusLabels[row.invoice.customerPaymentStatus]}
@@ -858,7 +858,7 @@ function ViewPanel({
           {dueDate && (
             <>
               <span className="text-stone-500">Due date</span>
-              <span className={`font-medium ${isOverdue ? "text-red-600" : "text-stone-800"}`}>{formatDate(dueDate)}</span>
+              <span className={`font-medium ${isOverdue ? "text-[#0d3d3b]" : "text-stone-800"}`}>{formatDate(dueDate)}</span>
             </>
           )}
           {row.poNumber && (
@@ -1081,7 +1081,7 @@ function SendPanel({
         <button
           onClick={onSend}
           disabled={sendLoading || !sendTo}
-          className="flex-1 text-xs bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 disabled:opacity-50 font-medium"
+          className="flex-1 text-xs bg-[#0d9488] text-white px-3 py-2 rounded hover:bg-[#0d9488] disabled:opacity-50 font-medium"
         >
           {sendLoading ? "Sending..." : "Send invoice"}
         </button>
