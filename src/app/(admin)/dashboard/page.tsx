@@ -227,10 +227,10 @@ export default async function DashboardPage() {
       {overdueReports.length > 0 && (
         <div className="bg-white border-l-[3px] border-l-red-500 rounded-md shadow-sm p-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-bold text-red-700">
+            <span className="text-sm font-bold text-[#0d3d3b]">
               {overdueReports.length} pending report{overdueReports.length > 1 ? "s" : ""}
             </span>
-            <Link href="/reports/schedule" className="text-xs text-red-600 hover:underline">View →</Link>
+            <Link href="/reports/schedule" className="text-xs text-[#0d3d3b] hover:underline">View →</Link>
           </div>
         </div>
       )}
@@ -293,14 +293,14 @@ export default async function DashboardPage() {
                 <span className="text-lg font-bold">{formatCurrency(arTotal)}</span>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                <div className={`rounded-lg p-2 ${arOverdue > 0 ? "bg-white border-l-[3px] border-l-red-500" : "bg-muted/50"}`}>
+                <div className={`rounded-lg p-2 ${arOverdue > 0 ? "bg-white border-l-[3px] border-l-[#0d3d3b]" : "bg-muted/50"}`}>
                   <p className="text-xs text-muted-foreground">Overdue</p>
-                  <p className={`text-sm font-bold ${arOverdue > 0 ? "text-red-600" : ""}`}>{formatCurrency(arOverdue)}</p>
+                  <p className={`text-sm font-bold ${arOverdue > 0 ? "text-[#0d3d3b]" : ""}`}>{formatCurrency(arOverdue)}</p>
                   <p className="text-xs text-muted-foreground">{overdueCount} invoices</p>
                 </div>
-                <div className="bg-white border-l-[3px] border-l-emerald-500 rounded-lg p-2">
+                <div className="bg-white border-l-[3px] border-l-[#0d9488] rounded-lg p-2">
                   <p className="text-xs text-muted-foreground">Current</p>
-                  <p className="text-sm font-bold text-green-600">{formatCurrency(arCurrent)}</p>
+                  <p className="text-sm font-bold text-[#0d9488]">{formatCurrency(arCurrent)}</p>
                   <p className="text-xs text-muted-foreground">{currentCount} invoices</p>
                 </div>
                 <div className="bg-muted/50 rounded-lg p-2">
@@ -352,13 +352,13 @@ export default async function DashboardPage() {
               <div key={m.year} className="space-y-0.5">
                 <div className="flex justify-between text-sm">
                   <span className={m.year === currentYear ? "font-bold" : ""}>{m.year}</span>
-                  <span className={`font-medium ${m.margin >= 10 ? "text-green-600" : "text-amber-600"}`}>
+                  <span className={`font-medium ${m.margin >= 10 ? "text-[#0d9488]" : "text-[#0d9488]"}`}>
                     {formatPercent(m.margin)}
                   </span>
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Profit</span>
-                  <span className="text-green-600 font-medium">${formatNumber(m.profit, 0)}</span>
+                  <span className="text-[#0d9488] font-medium">${formatNumber(m.profit, 0)}</span>
                 </div>
               </div>
             ))}
@@ -370,28 +370,28 @@ export default async function DashboardPage() {
             <div>
               <div className="flex justify-between text-sm">
                 <span>This Year ({currentYear})</span>
-                <span className="font-bold text-green-600">
+                <span className="font-bold text-[#0d9488]">
                   {currentYearMargin ? formatPercent((currentYearMargin.revenue - currentYearMargin.cost) / (currentYearMargin.revenue || 1) * 100) : "N/A"}
                 </span>
               </div>
               {currentYearMargin && (
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Profit</span>
-                  <span className="text-green-600 font-medium">${formatNumber(currentYearMargin.revenue - currentYearMargin.cost, 0)}</span>
+                  <span className="text-[#0d9488] font-medium">${formatNumber(currentYearMargin.revenue - currentYearMargin.cost, 0)}</span>
                 </div>
               )}
             </div>
             <div>
               <div className="flex justify-between text-sm">
                 <span>This Month</span>
-                <span className="font-bold text-green-600">
+                <span className="font-bold text-[#0d9488]">
                   {currentMonthMargin ? formatPercent((currentMonthMargin.revenue - currentMonthMargin.cost) / (currentMonthMargin.revenue || 1) * 100) : "N/A"}
                 </span>
               </div>
               {currentMonthMargin && (
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Profit</span>
-                  <span className="text-green-600 font-medium">${formatNumber(currentMonthMargin.revenue - currentMonthMargin.cost, 0)}</span>
+                  <span className="text-[#0d9488] font-medium">${formatNumber(currentMonthMargin.revenue - currentMonthMargin.cost, 0)}</span>
                 </div>
               )}
             </div>
