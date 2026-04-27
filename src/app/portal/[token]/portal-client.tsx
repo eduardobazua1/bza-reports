@@ -24,11 +24,11 @@ function StatusStepper({ status }: { status: string }) {
         <div key={label} className="flex items-center flex-1 last:flex-none">
           <div className="flex flex-col items-center">
             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${
-              i <= idx ? i === idx ? "bg-[#0d9488] text-white" : "bg-emerald-500 text-white" : "bg-stone-200 text-stone-400"
+              i <= idx ? i === idx ? "bg-[#0d9488] text-white" : "bg-[#0d9488] text-white" : "bg-stone-200 text-stone-400"
             }`}>{i < idx ? "✓" : i + 1}</div>
             <span className={`text-[9px] mt-0.5 ${i <= idx ? "text-stone-700 font-medium" : "text-stone-400"}`}>{label}</span>
           </div>
-          {i < 3 && <div className={`flex-1 h-0.5 mx-0.5 mt-[-14px] ${i < idx ? "bg-emerald-400" : "bg-stone-200"}`} />}
+          {i < 3 && <div className={`flex-1 h-0.5 mx-0.5 mt-[-14px] ${i < idx ? "bg-[#0d9488]" : "bg-stone-200"}`} />}
         </div>
       ))}
     </div>
