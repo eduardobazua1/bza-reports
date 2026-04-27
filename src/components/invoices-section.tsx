@@ -459,7 +459,7 @@ export function InvoicesSection({
                               <input type="number" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.balesCount || ""} onChange={f("balesCount")} placeholder="250" />
                             </div>
                             <div>
-                              <label className="block text-xs text-stone-500 mb-1">Units/Bale</label>
+                              <label className="block text-xs text-stone-500 mb-1">Unit</label>
                               <input type="number" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.unitsPerBale || ""} onChange={f("unitsPerBale")} placeholder="1" />
                             </div>
                             <div>

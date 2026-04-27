@@ -507,7 +507,7 @@ export function ClientPOsSection({
                                 <input type="number" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="250" value={convertForm.balesCount} onChange={(e) => setConvertForm((f) => ({ ...f, balesCount: e.target.value }))} />
                               </div>
                               <div>
-                                <label className="block text-xs text-stone-500 mb-1">Units/Bale</label>
+                                <label className="block text-xs text-stone-500 mb-1">Unit</label>
                                 <input type="number" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="1" value={convertForm.unitsPerBale} onChange={(e) => setConvertForm((f) => ({ ...f, unitsPerBale: e.target.value }))} />
                               </div>
                             </div>

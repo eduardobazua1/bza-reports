@@ -21,9 +21,9 @@ const typeLabels: Record<string, string> = {
 };
 
 const typeColors: Record<string, string> = {
-  invoice: "bg-[#0d9488] text-[#0d9488]",
-  bl: "bg-emerald-50 text-emerald-600",
-  pl: "bg-[#0d9488] text-[#0d9488]",
+  invoice: "bg-[#ccfbf1] text-[#0d3d3b]",
+  bl: "bg-[#ccfbf1] text-[#0d3d3b]",
+  pl: "bg-[#ccfbf1] text-[#0d3d3b]",
   other: "bg-stone-100 text-stone-500",
 };
 
@@ -93,7 +93,7 @@ export function DocumentUpload({ invoiceId, invoiceNumber }: { invoiceId: number
         {/* Invoice PDF link — always shown unless pending */}
         {!isPending && (
           <div className="flex items-center gap-1.5 bg-stone-50 rounded-md px-2 py-1">
-            <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-[#0d9488] text-[#0d9488]">Invoice</span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-[#ccfbf1] text-[#0d3d3b]">Invoice</span>
             <a
               href={`/api/invoice-pdf?invoice=${invoiceNumber}`}
               target="_blank"

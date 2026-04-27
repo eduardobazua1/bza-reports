@@ -159,7 +159,7 @@ export function InvoiceForm({
             <Field label="Bales">
               <input name="balesCount" type="number" defaultValue={invoice?.balesCount ?? ""} className={inputCls} placeholder="378" />
             </Field>
-            <Field label="Units per Bale">
+            <Field label="Unit">
               <input name="unitsPerBale" type="number" defaultValue={invoice?.unitsPerBale ?? ""} className={inputCls} placeholder="63" />
             </Field>
           </div>
