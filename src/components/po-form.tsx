@@ -272,21 +272,21 @@ export function POForm({
     purchaseOrder?.clientProductId ? String(purchaseOrder.clientProductId) : ""
   );
 
-  // Fill cert fields from supplier (primary) and client (fallback for any blank fields)
+  // Fill cert fields: License/Chain/InputClaim from supplier; OutputClaim from client (BZA's output to client)
   function fillFromCerts(type: "fsc" | "pefc", supplierId: number | "", clientId: number | "") {
     const sup = suppliers.find(s => s.id === supplierId);
     const cl = clients.find(c => c.id === clientId);
     if (type === "fsc") {
-      setLicenseFsc(sup?.fscLicense || cl?.fscLicense || "");
-      setChainOfCustody(sup?.fscChainOfCustody || cl?.fscChainOfCustody || "");
-      setInputClaim(sup?.fscInputClaim || cl?.fscInputClaim || "");
-      setOutputClaim(sup?.fscOutputClaim || cl?.fscOutputClaim || "");
+      setLicenseFsc(sup?.fscLicense || "");
+      setChainOfCustody(sup?.fscChainOfCustody || "");
+      setInputClaim(sup?.fscInputClaim || "");
+      setOutputClaim(cl?.fscOutputClaim || "");
       setPefc("");
     } else {
-      setPefc(sup?.pefc || cl?.pefc || "");
-      setChainOfCustody(sup?.fscChainOfCustody || cl?.fscChainOfCustody || "");
-      setInputClaim(sup?.fscInputClaim || cl?.fscInputClaim || "");
-      setOutputClaim(sup?.fscOutputClaim || cl?.fscOutputClaim || "");
+      setPefc(sup?.pefc || "");
+      setChainOfCustody(sup?.fscChainOfCustody || "");
+      setInputClaim(sup?.fscInputClaim || "");
+      setOutputClaim(cl?.fscOutputClaim || "");
       setLicenseFsc("");
     }
   }

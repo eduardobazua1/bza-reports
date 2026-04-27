@@ -354,6 +354,7 @@ export function ClientActions({ clients }: { clients: Client[] }) {
                 <th className="text-left p-3 text-sm font-medium text-muted-foreground">Contact</th>
                 <th className="text-left p-3 text-sm font-medium text-muted-foreground">Email</th>
                 <th className="text-center p-3 text-sm font-medium text-muted-foreground">Terms</th>
+                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Cert</th>
                 <th className="text-left p-3 text-sm font-medium text-muted-foreground">Portal</th>
                 <th className="text-left p-3 text-sm font-medium text-muted-foreground">Portal Link</th>
                 <th className="text-right p-3 text-sm font-medium text-muted-foreground">Action</th>
@@ -362,7 +363,7 @@ export function ClientActions({ clients }: { clients: Client[] }) {
             <tbody>
               {clients.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-6 text-center text-sm text-muted-foreground">
+                  <td colSpan={8} className="p-6 text-center text-sm text-muted-foreground">
                     No clients registered.
                   </td>
                 </tr>
@@ -374,6 +375,17 @@ export function ClientActions({ clients }: { clients: Client[] }) {
                   <td className="p-3 text-sm border-t border-border">{client.contactEmail || "-"}</td>
                   <td className="p-3 text-sm border-t border-border text-center">
                     {client.paymentTermsDays ? `Net ${client.paymentTermsDays}` : "-"}
+                  </td>
+                  <td className="p-3 text-sm border-t border-border">
+                    {client.certType === "fsc" ? (
+                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800">FSC</span>
+                    ) : client.certType === "pefc" ? (
+                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800">PEFC</span>
+                    ) : (client.fscLicense || client.fscChainOfCustody) ? (
+                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800">FSC</span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </td>
                   <td className="p-3 text-sm border-t border-border">
                     <button

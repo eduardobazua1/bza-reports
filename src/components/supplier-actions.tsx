@@ -181,12 +181,13 @@ export function SupplierActions({ suppliers }: { suppliers: Supplier[] }) {
               <th className="text-left px-4 py-2.5 text-[10px] font-semibold text-stone-500 uppercase tracking-wide">Contact</th>
               <th className="text-left px-4 py-2.5 text-[10px] font-semibold text-stone-500 uppercase tracking-wide">Email</th>
               <th className="text-left px-4 py-2.5 text-[10px] font-semibold text-stone-500 uppercase tracking-wide">Location</th>
+              <th className="text-left px-4 py-2.5 text-[10px] font-semibold text-stone-500 uppercase tracking-wide">Cert</th>
               <th className="text-right px-4 py-2.5 text-[10px] font-semibold text-stone-500 uppercase tracking-wide">Action</th>
             </tr>
           </thead>
           <tbody>
             {suppliers.length === 0 && (
-              <tr><td colSpan={5} className="p-6 text-center text-sm text-stone-400">No suppliers registered.</td></tr>
+              <tr><td colSpan={6} className="p-6 text-center text-sm text-stone-400">No suppliers registered.</td></tr>
             )}
             {suppliers.map(s => (
               <tr key={s.id} className="border-t border-stone-100 hover:bg-stone-50/60">
@@ -196,6 +197,15 @@ export function SupplierActions({ suppliers }: { suppliers: Supplier[] }) {
                 <td className="px-4 py-3 text-sm text-stone-600">{s.contactName || "—"}</td>
                 <td className="px-4 py-3 text-sm text-stone-500">{s.contactEmail || "—"}</td>
                 <td className="px-4 py-3 text-sm text-stone-500">{[s.city, s.country].filter(Boolean).join(", ") || "—"}</td>
+                <td className="px-4 py-3 text-sm">
+                  {s.certType === "fsc" || s.fscLicense ? (
+                    <span className="px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800">FSC</span>
+                  ) : s.certType === "pefc" || s.pefc ? (
+                    <span className="px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800">PEFC</span>
+                  ) : (
+                    <span className="text-stone-300">—</span>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-right">
                   <button
                     onClick={(e) => {
