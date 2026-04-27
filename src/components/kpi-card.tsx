@@ -9,22 +9,22 @@ export function KPIBig({
   label: string;
   value: string;
   unit: string;
-  color: "blue" | "green" | "amber" | "red";
+  color?: "blue" | "green" | "amber" | "red";
   href?: string;
   animatedValue?: number;
 }) {
   const accentColors = {
     blue: "border-l-[#0d3d3b]",
-    green: "border-l-[#0d9488]",
-    amber: "border-l-[#0d9488]",
+    green: "border-l-[#0d3d3b]",
+    amber: "border-l-[#0d3d3b]",
     red: "border-l-[#0d3d3b]",
   };
 
   const valueColors = {
     blue: "text-stone-900",
-    green: "text-[#0d9488]",
+    green: "text-stone-900",
     amber: "text-stone-900",
-    red: "text-[#0d3d3b]",
+    red: "text-stone-900",
   };
 
   const [display, setDisplay] = useState("0");
@@ -75,12 +75,12 @@ export function KPIBig({
     requestAnimationFrame(step);
   }
 
-  const cardClasses = `bg-white rounded-md shadow-sm border-l-[3px] ${accentColors[color]} p-4`;
+  const cardClasses = `bg-white rounded-md shadow-sm border-l-[3px] ${accentColors[color ?? "blue"]} p-4`;
 
   const content = (
     <div ref={ref}>
       <p className="text-xs font-medium text-stone-500 uppercase tracking-wide">{label}</p>
-      <p className={`text-2xl font-semibold mt-1 ${valueColors[color]}`}>{display}</p>
+      <p className={`text-2xl font-semibold mt-1 ${valueColors[color ?? "blue"]}`}>{display}</p>
       <p className="text-xs text-stone-400 mt-0.5">{unit}</p>
     </div>
   );

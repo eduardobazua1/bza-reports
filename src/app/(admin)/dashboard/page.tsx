@@ -237,16 +237,16 @@ export default async function DashboardPage() {
 
       {/* Row 1: KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KPIBig label="Total Volume" value={formatNumber(kpis.totalTons, 0)} unit="TN" color="blue" href="/reports" animatedValue={kpis.totalTons} />
-        <KPIBig label="Total Shipments" value={totalCount.toString()} unit="shipments" color="blue" href="/reports" animatedValue={totalCount} />
-        <KPIBig label="Total Sales" value={`$${formatNumber(kpis.totalRevenue / 1000000, 2)}M`} unit="USD" color="green" href="/reports" animatedValue={kpis.totalRevenue} />
-        <KPIBig label="Total Margin" value={`$${formatNumber(kpis.grossProfit / 1000000, 2)}M`} unit={`${formatPercent(kpis.grossMargin)} margin`} color="green" href="/reports" animatedValue={kpis.grossProfit} />
+        <KPIBig label="Total Volume" value={formatNumber(kpis.totalTons, 0)} unit="TN" href="/reports" animatedValue={kpis.totalTons} />
+        <KPIBig label="Total Shipments" value={totalCount.toString()} unit="shipments" href="/reports" animatedValue={totalCount} />
+        <KPIBig label="Total Sales" value={`$${formatNumber(kpis.totalRevenue / 1000000, 2)}M`} unit="USD" href="/reports" animatedValue={kpis.totalRevenue} />
+        <KPIBig label="Total Margin" value={`$${formatNumber(kpis.grossProfit / 1000000, 2)}M`} unit={`${formatPercent(kpis.grossMargin)} margin`} href="/reports" animatedValue={kpis.grossProfit} />
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KPIBig label="Active PO's" value={kpis.activePOs.toString()} unit="active orders" color="amber" href="/purchase-orders?status=active" animatedValue={kpis.activePOs} />
-        <KPIBig label="Open Invoices" value={kpis.unpaidInvoices.toString()} unit="unpaid" color="amber" href="/invoices?status=unpaid" animatedValue={kpis.unpaidInvoices} />
-        <KPIBig label="Accounts Receivable" value={formatCurrency(kpis.accountsReceivable)} unit="clients owe BZA" color="green" href="/invoices?status=unpaid" animatedValue={kpis.accountsReceivable} />
-        <KPIBig label="Accounts Payable" value={formatCurrency(supplierBalance)} unit={supplierBalanceNet > 0 ? "you owe" : supplierBalanceNet < 0 ? "they owe you" : "settled"} color={supplierBalanceNet > 0 ? "red" : supplierBalanceNet < 0 ? "green" : "amber"} href="/suppliers" animatedValue={supplierBalance} />
+        <KPIBig label="Active PO's" value={kpis.activePOs.toString()} unit="active orders" href="/purchase-orders?status=active" animatedValue={kpis.activePOs} />
+        <KPIBig label="Open Invoices" value={kpis.unpaidInvoices.toString()} unit="unpaid" href="/invoices?status=unpaid" animatedValue={kpis.unpaidInvoices} />
+        <KPIBig label="Accounts Receivable" value={formatCurrency(kpis.accountsReceivable)} unit="clients owe BZA" href="/invoices?status=unpaid" animatedValue={kpis.accountsReceivable} />
+        <KPIBig label="Accounts Payable" value={formatCurrency(supplierBalance)} unit={supplierBalanceNet > 0 ? "you owe" : supplierBalanceNet < 0 ? "they owe you" : "settled"} href="/suppliers" animatedValue={supplierBalance} />
       </div>
 
 
