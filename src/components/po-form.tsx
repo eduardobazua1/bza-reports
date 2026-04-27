@@ -5,19 +5,11 @@ import { createPurchaseOrder, updatePurchaseOrder } from "@/server/actions";
 import { useRouter } from "next/navigation";
 
 const INCOTERMS = [
-  "DAP Eagle Pass",
   "DAP Laredo",
+  "DAP Eagle Pass",
   "DAP El Paso",
-  "DAP Manzanillo",
-  "DAP Veracruz",
-  "DAP Ciudad de México",
-  "DAP Monterrey",
   "CIF Manzanillo",
   "CIF Veracruz",
-  "FOB",
-  "FCA",
-  "CFR",
-  "EXW",
 ];
 
 function Combobox({
