@@ -24,6 +24,11 @@ import {
   Database,
   HelpCircle,
   ChevronDown,
+  CreditCard,
+  LineChart,
+  FolderOpen,
+  UserCog,
+  Bell,
   type LucideIcon,
 } from "lucide-react";
 
@@ -39,6 +44,7 @@ const navEntries: NavEntry[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/purchase-orders", label: "Purchase Orders", icon: ClipboardList },
   { href: "/invoices", label: "Invoices", icon: FileText },
+  { href: "/payments", label: "Payments", icon: CreditCard },
   { href: "/clients", label: "Clients", icon: Users },
   { href: "/suppliers", label: "Suppliers", icon: Truck },
   { href: "/products", label: "Products", icon: Package },
@@ -47,10 +53,12 @@ const navEntries: NavEntry[] = [
     icon: BarChart3,
     children: [
       { href: "/reports", label: "Reports", icon: BarChart3 },
+      { href: "/analytics", label: "Analytics", icon: LineChart },
       { href: "/shipments", label: "Shipments", icon: Ship },
       { href: "/market-prices", label: "Market Prices", icon: TrendingUp },
     ],
   },
+  { href: "/documents", label: "Documents", icon: FolderOpen },
   {
     label: "Data",
     icon: Database,
@@ -59,6 +67,8 @@ const navEntries: NavEntry[] = [
       { href: "/export", label: "Export Excel", icon: Download },
     ],
   },
+  { href: "/portal-users", label: "Portal Users", icon: UserCog },
+  { href: "/notifications", label: "Notifications", icon: Bell },
   { href: "/settings", label: "Settings", icon: Settings },
   { href: "/help", label: "Help & Support", icon: HelpCircle },
 ];

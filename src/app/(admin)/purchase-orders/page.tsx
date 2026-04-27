@@ -22,6 +22,14 @@ export default async function PurchaseOrdersPage({ searchParams }: { searchParam
     db.select({ id: products.id, name: products.name, grade: products.grade, fscLicense: products.fscLicense, chainOfCustody: products.chainOfCustody, inputClaim: products.inputClaim, outputClaim: products.outputClaim, pefc: products.pefc }).from(products).orderBy(products.name),
   ]);
 
+  // Compute next sequential PO number (X0044, X0045, ...)
+  const allPoNumbers = allPOs.map(r => r.po.poNumber).filter(n => /^X\d+$/.test(n));
+  const maxPoNum = allPoNumbers.reduce((max, n) => {
+    const num = parseInt(n.slice(1), 10);
+    return num > max ? num : max;
+  }, 0);
+  const nextPoNumber = `X${String(maxPoNum + 1).padStart(4, "0")}`;
+
   const filterStatus = params.status || "";
 
   const counts: Record<string, number> = {
@@ -59,7 +67,7 @@ export default async function PurchaseOrdersPage({ searchParams }: { searchParam
         })}
       </div>
 
-      <POListActions clients={clientsList} suppliers={suppliersList} products={productsList} />
+      <POListActions clients={clientsList} suppliers={suppliersList} products={productsList} nextPoNumber={nextPoNumber} />
 
       <div className="bg-white rounded-md shadow-sm overflow-hidden">
         <div className="overflow-x-auto">

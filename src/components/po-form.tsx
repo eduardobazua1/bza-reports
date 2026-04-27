@@ -4,6 +4,22 @@ import { useState, useTransition, useRef, useEffect } from "react";
 import { createPurchaseOrder, updatePurchaseOrder } from "@/server/actions";
 import { useRouter } from "next/navigation";
 
+const INCOTERMS = [
+  "DAP Eagle Pass",
+  "DAP Laredo",
+  "DAP El Paso",
+  "DAP Manzanillo",
+  "DAP Veracruz",
+  "DAP Ciudad de México",
+  "DAP Monterrey",
+  "CIF Manzanillo",
+  "CIF Veracruz",
+  "FOB",
+  "FCA",
+  "CFR",
+  "EXW",
+];
+
 function Combobox({
   name,
   options,
@@ -92,12 +108,10 @@ type Product = {
   id: number;
   name: string;
   grade?: string | null;
-  // FSC
   fscLicense?: string | null;
   chainOfCustody?: string | null;
   inputClaim?: string | null;
   outputClaim?: string | null;
-  // PEFC
   pefc?: string | null;
 };
 
@@ -125,15 +139,16 @@ type PurchaseOrder = {
   notes: string | null;
 };
 
-// Button to trigger inline form on the list page
 export function POListActions({
   clients,
   suppliers,
   products,
+  nextPoNumber,
 }: {
   clients: Client[];
   suppliers: Supplier[];
   products: Product[];
+  nextPoNumber?: string;
 }) {
   const [showForm, setShowForm] = useState(false);
 
@@ -144,7 +159,7 @@ export function POListActions({
           onClick={() => setShowForm(true)}
           className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
         >
-          + New PO
+          + New Purchase Order
         </button>
       )}
       {showForm && (
@@ -152,6 +167,7 @@ export function POListActions({
           clients={clients}
           suppliers={suppliers}
           products={products}
+          nextPoNumber={nextPoNumber}
           onCancel={() => setShowForm(false)}
         />
       )}
@@ -159,18 +175,19 @@ export function POListActions({
   );
 }
 
-// Full PO form for create and edit
 export function POForm({
   purchaseOrder,
   clients,
   suppliers,
   products,
+  nextPoNumber,
   onCancel,
 }: {
   purchaseOrder?: PurchaseOrder;
   clients: Client[];
   suppliers: Supplier[];
   products: Product[];
+  nextPoNumber?: string;
   onCancel?: () => void;
 }) {
   const [isPending, startTransition] = useTransition();
@@ -178,15 +195,13 @@ export function POForm({
 
   const inp = "w-full border border-border rounded-lg px-3 py-2 text-sm bg-background";
 
-  // Cert state
   const [certType, setCertType] = useState<"" | "fsc" | "pefc">(purchaseOrder?.certType || "");
-  const [licenseFsc, setLicenseFsc]     = useState(purchaseOrder?.licenseFsc || "");
+  const [licenseFsc, setLicenseFsc]         = useState(purchaseOrder?.licenseFsc || "");
   const [chainOfCustody, setChainOfCustody] = useState(purchaseOrder?.chainOfCustody || "");
-  const [inputClaim, setInputClaim]     = useState(purchaseOrder?.inputClaim || "");
-  const [outputClaim, setOutputClaim]   = useState(purchaseOrder?.outputClaim || "");
-  const [pefc, setPefc]                 = useState(purchaseOrder?.pefc || "");
+  const [inputClaim, setInputClaim]         = useState(purchaseOrder?.inputClaim || "");
+  const [outputClaim, setOutputClaim]       = useState(purchaseOrder?.outputClaim || "");
+  const [pefc, setPefc]                     = useState(purchaseOrder?.pefc || "");
 
-  // Product selects (kept for PDF naming)
   const [supplierProductId, setSupplierProductId] = useState<string>(
     purchaseOrder?.supplierProductId ? String(purchaseOrder.supplierProductId) : ""
   );
@@ -216,7 +231,6 @@ export function POForm({
       setLicenseFsc(""); setChainOfCustody(""); setInputClaim(""); setOutputClaim(""); setPefc("");
       return;
     }
-    // Auto-fill from selected supplier product if available
     const prod = products.find(p => String(p.id) === supplierProductId);
     if (prod) fillFromProduct(type, prod);
     else if (type === "fsc") setPefc("");
@@ -235,25 +249,25 @@ export function POForm({
     const formData = new FormData(e.currentTarget);
 
     const data = {
-      poNumber:        formData.get("poNumber") as string,
-      poDate:          (formData.get("poDate") as string) || undefined,
-      clientId:        Number(formData.get("clientId")),
-      supplierId:      Number(formData.get("supplierId")),
-      clientPoNumber:  (formData.get("clientPoNumber") as string) || undefined,
-      sellPrice:       Number(formData.get("sellPrice")),
-      buyPrice:        Number(formData.get("buyPrice")),
-      product:         (formData.get("product") as string) || purchaseOrder?.product || "—",
+      poNumber:          formData.get("poNumber") as string,
+      poDate:            (formData.get("poDate") as string) || undefined,
+      clientId:          Number(formData.get("clientId")),
+      supplierId:        Number(formData.get("supplierId")),
+      clientPoNumber:    (formData.get("clientPoNumber") as string) || undefined,
+      sellPrice:         Number(formData.get("sellPrice")),
+      buyPrice:          Number(formData.get("buyPrice")),
+      product:           (formData.get("product") as string) || purchaseOrder?.product || "—",
       supplierProductId: supplierProductId ? Number(supplierProductId) : undefined,
       clientProductId:   clientProductId   ? Number(clientProductId)   : undefined,
-      terms:           (formData.get("terms") as string) || undefined,
-      transportType:   (formData.get("transportType") as "ffcc" | "ship" | "truck") || undefined,
-      certType:        (certType as "fsc" | "pefc") || undefined,
-      licenseFsc:      licenseFsc      || undefined,
-      chainOfCustody:  chainOfCustody  || undefined,
-      inputClaim:      inputClaim      || undefined,
-      outputClaim:     outputClaim     || undefined,
-      pefc:            pefc            || undefined,
-      notes:           (formData.get("notes") as string) || undefined,
+      terms:             (formData.get("terms") as string) || undefined,
+      transportType:     (formData.get("transportType") as "ffcc" | "ship" | "truck") || undefined,
+      certType:          (certType as "fsc" | "pefc") || undefined,
+      licenseFsc:        licenseFsc      || undefined,
+      chainOfCustody:    chainOfCustody  || undefined,
+      inputClaim:        inputClaim      || undefined,
+      outputClaim:       outputClaim     || undefined,
+      pefc:              pefc            || undefined,
+      notes:             (formData.get("notes") as string) || undefined,
     };
 
     startTransition(async () => {
@@ -279,6 +293,8 @@ export function POForm({
     </button>
   );
 
+  const incotermId = "incoterm-list";
+
   return (
     <div className="bg-white rounded-md shadow-sm p-4">
       <h3 className="text-lg font-semibold mb-4">
@@ -286,19 +302,27 @@ export function POForm({
       </h3>
       <form onSubmit={handleSubmit} className="space-y-4">
 
-        {/* Row 1: PO#, Date, Client PO# */}
+        {/* Row 1: Purchase Order #, Date, Client Purchase Order # */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">PO Number *</label>
-            <input name="poNumber" required defaultValue={purchaseOrder?.poNumber || ""} className={inp} placeholder="OC-001" />
+            <label className="block text-sm font-medium mb-1">Purchase Order Number *</label>
+            <input
+              name="poNumber"
+              required
+              defaultValue={purchaseOrder?.poNumber || nextPoNumber || ""}
+              className={inp}
+              placeholder="X0001"
+            />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Date</label>
-            <input name="poDate" type="date" defaultValue={purchaseOrder?.poDate || ""} className={inp} />
+            <input name="poDate" type="date" defaultValue={purchaseOrder?.poDate || new Date().toISOString().slice(0, 10)} className={inp} />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Client PO #</label>
-            <input name="clientPoNumber" defaultValue={purchaseOrder?.clientPoNumber || ""} className={inp} />
+            <label className="block text-sm font-medium mb-1">
+              Client Purchase Order # <span className="text-muted-foreground font-normal">(optional)</span>
+            </label>
+            <input name="clientPoNumber" defaultValue={purchaseOrder?.clientPoNumber || ""} className={inp} placeholder="e.g. X192151" />
           </div>
         </div>
 
@@ -319,7 +343,7 @@ export function POForm({
           </div>
         </div>
 
-        {/* Cert fields — only shown when FSC or PEFC selected */}
+        {/* Cert fields */}
         {certType === "fsc" && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-3 bg-muted/30 rounded-lg">
             <div>
@@ -361,10 +385,10 @@ export function POForm({
           </div>
         )}
 
-        {/* Row 3: Product (for supplier PO), Client Product label, Sell Price, Buy Price, Incoterm, Transport */}
+        {/* Row 3: Products, Sell Price, Cost, Incoterm, Transport */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Product (Supplier PO)</label>
+            <label className="block text-sm font-medium mb-1">Product (Supplier Purchase Order)</label>
             <select value={supplierProductId} onChange={(e) => handleSupplierProductChange(e.target.value)} className={inp}>
               <option value="">— Free text —</option>
               {products.map((p) => (
@@ -376,7 +400,7 @@ export function POForm({
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Product (Client Invoice)</label>
+            <label className="block text-sm font-medium mb-1">Product (Client Purchase Order)</label>
             <select value={clientProductId} onChange={(e) => setClientProductId(e.target.value)} className={inp}>
               <option value="">— Same as supplier —</option>
               {products.map((p) => (
@@ -394,7 +418,16 @@ export function POForm({
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Incoterm</label>
-            <input name="terms" defaultValue={purchaseOrder?.terms || ""} className={inp} placeholder="DAP, CIF, FOB..." />
+            <input
+              name="terms"
+              list={incotermId}
+              defaultValue={purchaseOrder?.terms || ""}
+              className={inp}
+              placeholder="Select or type..."
+            />
+            <datalist id={incotermId}>
+              {INCOTERMS.map(t => <option key={t} value={t} />)}
+            </datalist>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Transport</label>
@@ -415,7 +448,7 @@ export function POForm({
 
         <div className="flex gap-2">
           <button type="submit" disabled={isPending} className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
-            {isPending ? "Saving..." : purchaseOrder ? "Update" : "Create PO"}
+            {isPending ? "Saving..." : purchaseOrder ? "Update Purchase Order" : "Create Purchase Order"}
           </button>
           {onCancel && (
             <button type="button" onClick={onCancel} className="border border-border px-4 py-2 rounded-lg text-sm hover:bg-muted transition-colors">

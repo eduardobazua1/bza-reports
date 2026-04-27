@@ -428,6 +428,32 @@ export async function POST(req: NextRequest) {
 
   const { messages: rawMessages } = await req.json();
 
+  // Pre-fetch any PO/invoice numbers mentioned in the last user message
+  // This guarantees the AI always has the data — no need to rely on GPT calling the right tool
+  let preContext = "";
+  const lastUserMsg = [...rawMessages].reverse().find((m: { role: string; content: string }) => m.role === "user");
+  if (lastUserMsg?.content) {
+    const poMatches = (lastUserMsg.content as string).match(/\bX\d{4}\b/gi) || [];
+    const invMatches = (lastUserMsg.content as string).match(/\bIX\d{4}-\d+\b/gi) || [];
+    const rawDb = createClient({ url: process.env.TURSO_DATABASE_URL || "file:sqlite.db", authToken: process.env.TURSO_AUTH_TOKEN });
+    if (poMatches.length > 0) {
+      const poNums = [...new Set(poMatches.map((p: string) => p.toUpperCase()))];
+      try {
+        const inList = poNums.map(() => "?").join(",");
+        const result = await rawDb.execute({ sql: `SELECT po.po_number, po.sell_price, po.buy_price, po.product, po.terms, po.transport_type, po.status, po.license_fsc, po.chain_of_custody, po.input_claim, po.output_claim, c.name as client_name, s.name as supplier_name FROM purchase_orders po JOIN clients c ON po.client_id = c.id JOIN suppliers s ON po.supplier_id = s.id WHERE po.po_number IN (${inList})`, args: poNums });
+        if (result.rows.length > 0) preContext += `\n\n[AUTO-FETCHED PO DATA — use this directly, no need to query]:\n${JSON.stringify(result.rows, null, 2)}`;
+      } catch { /* ignore pre-fetch errors */ }
+    }
+    if (invMatches.length > 0) {
+      const invNums = [...new Set(invMatches.map((i: string) => i.toUpperCase()))];
+      try {
+        const inList = invNums.map(() => "?").join(",");
+        const result = await rawDb.execute({ sql: `SELECT i.*, po.po_number, po.sell_price, po.buy_price, po.product, c.name as client_name FROM invoices i JOIN purchase_orders po ON i.purchase_order_id = po.id JOIN clients c ON po.client_id = c.id WHERE i.invoice_number IN (${inList})`, args: invNums });
+        if (result.rows.length > 0) preContext += `\n\n[AUTO-FETCHED INVOICE DATA — use this directly]:\n${JSON.stringify(result.rows, null, 2)}`;
+      } catch { /* ignore */ }
+    }
+  }
+
   // Convert messages with imageUrl/imageUrls to OpenAI vision format
   const messages = rawMessages.map((m: { role: string; content: string; imageUrl?: string; imageUrls?: string[] }) => {
     const imgUrls: string[] = m.imageUrls?.length ? m.imageUrls : m.imageUrl ? [m.imageUrl] : [];
@@ -447,7 +473,18 @@ export async function POST(req: NextRequest) {
     let response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
-        { role: "system", content: `You are the AI assistant for BZA International Services (cellulose/pulp trading, McAllen TX). IMPORTANT: Always respond in English. Never switch to Spanish or any other language, regardless of how the user writes their message.
+        { role: "system", content: `${preContext ? `[SYSTEM PRE-FETCH]${preContext}\n\nThe above data was automatically pulled from the database for records mentioned in this conversation. Use it directly — do not query for these records again.\n\n` : ""}You are the AI assistant for BZA International Services (cellulose/pulp trading, McAllen TX). IMPORTANT: Always respond in English. Never switch to Spanish or any other language, regardless of how the user writes their message.
+
+## CRITICAL RULE — ALWAYS USE TOOLS. NEVER ANSWER FROM MEMORY.
+Your ONLY source of truth is the database. You have NO knowledge of BZA's POs, invoices, clients, or data except what tools return.
+
+MANDATORY: For ANY question or task involving BZA data, call a tool FIRST. No exceptions.
+- User mentions a PO number → call run_calculation: SELECT po.*, c.name as client_name, s.name as supplier_name FROM purchase_orders po JOIN clients c ON po.client_id = c.id JOIN suppliers s ON po.supplier_id = s.id WHERE po.po_number = 'XNNNN'
+- User asks about an invoice → query it
+- User asks how many shipments, how much revenue, what clients → query it
+- User asks to copy/duplicate a record → look it up FIRST, then create
+- NEVER say "not found", "I don't have information", or "could you provide details" for something that may exist in the DB — query first, then respond based on what the tool returns
+- Only after a tool returns empty results (rows = []) may you say it doesn't exist
 
 ## FILE PROCESSING — INVOICE & BILLING DOCUMENTS
 
@@ -562,6 +599,13 @@ When writing SQL for a specific client like "KCM" or "Kimberly Clark", always us
 WHERE c.name LIKE '%Kimberly-Clark%'
 The system also auto-resolves aliases server-side, so you can pass the user's term and it will be resolved.
 
+## LOOKING UP A SPECIFIC PO BY NUMBER
+When the user references a specific PO (e.g. "same as X0043", "copy of X0036", "like PO X0040"):
+1. ALWAYS use run_calculation first to look it up regardless of status:
+   SELECT po.po_number, po.sell_price, po.buy_price, po.product, po.terms, po.transport_type, po.license_fsc, po.chain_of_custody, po.input_claim, po.output_claim, c.name as client_name, s.name as supplier_name FROM purchase_orders po JOIN clients c ON po.client_id = c.id JOIN suppliers s ON po.supplier_id = s.id WHERE po.po_number = 'X0043'
+2. Use that data to propose or create the new PO with any modifications the user asked for.
+3. NEVER say a PO doesn't exist without first running this SQL lookup. query_data active_pos only returns active ones — always use run_calculation for specific PO lookups.
+
 ## CREATING RECORDS
 - Before create_po: the system automatically reads FSC data from the supplier (fscLicense, fscChainOfCustody, fscInputClaim) and client (fscOutputClaim). You do NOT need to query previous POs for FSC — it comes from the client/supplier record directly.
 - If the user says "FSC" or "PEFC" without specifying details, the FSC will be auto-filled from the supplier and client records.
@@ -633,7 +677,7 @@ When user asks to do something, DO IT immediately using tools. Always confirm wi
 When user asks for analysis or proposals, ALWAYS start by querying market prices AND current PO prices, then provide a data-driven recommendation.` },
         ...messages,
       ],
-      tools, temperature: 0.3, max_tokens: 4000,
+      tools, temperature: 0.1, max_tokens: 4000,
     });
 
     let msg = response.choices[0]?.message;
@@ -656,7 +700,7 @@ When user asks for analysis or proposals, ALWAYS start by querying market prices
       response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [{ role: "system", content: "BZA assistant for BZA International Services. Always respond in English only. Never use Spanish or any other language." }, ...allMsgs],
-        tools, temperature: 0.3, max_tokens: 4000,
+        tools, temperature: 0.1, max_tokens: 4000,
       });
       msg = response.choices[0]?.message;
     }
