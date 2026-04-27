@@ -85,6 +85,11 @@ function Combobox({
 type Client = {
   id: number;
   name: string;
+  fscLicense?: string | null;
+  fscChainOfCustody?: string | null;
+  fscInputClaim?: string | null;
+  fscOutputClaim?: string | null;
+  pefc?: string | null;
 };
 
 type Supplier = {
@@ -207,6 +212,8 @@ export function POForm({
 
   const inp = "w-full border border-border rounded-lg px-3 py-2 text-sm bg-background";
 
+  const [selectedClientId, setSelectedClientId] = useState<number | "">(purchaseOrder?.clientId ?? "");
+  const [selectedSupplierId, setSelectedSupplierId] = useState<number | "">(purchaseOrder?.supplierId ?? "");
   const [certType, setCertType] = useState<"" | "fsc" | "pefc">(purchaseOrder?.certType || "");
   const [licenseFsc, setLicenseFsc]         = useState(purchaseOrder?.licenseFsc || "");
   const [chainOfCustody, setChainOfCustody] = useState(purchaseOrder?.chainOfCustody || "");
@@ -221,18 +228,21 @@ export function POForm({
     purchaseOrder?.clientProductId ? String(purchaseOrder.clientProductId) : ""
   );
 
-  function fillFromProduct(type: "fsc" | "pefc", prod: Product) {
+  // Fill cert fields from the currently selected client + supplier records
+  function fillFromClientSupplier(type: "fsc" | "pefc", clientId: number | "", supplierId: number | "") {
+    const cl = clients.find(c => c.id === clientId);
+    const su = suppliers.find(s => s.id === supplierId);
     if (type === "fsc") {
-      setLicenseFsc(prod.fscLicense || "");
-      setChainOfCustody(prod.chainOfCustody || "");
-      setInputClaim(prod.inputClaim || "");
-      setOutputClaim(prod.outputClaim || "");
+      setLicenseFsc(su?.fscLicense || "");
+      setChainOfCustody(su?.fscChainOfCustody || "");
+      setInputClaim(su?.fscInputClaim || "");
+      setOutputClaim(cl?.fscOutputClaim || "");
       setPefc("");
     } else {
-      setPefc(prod.pefc || "");
-      setInputClaim(prod.inputClaim || "");
-      setChainOfCustody(prod.chainOfCustody || "");
-      setOutputClaim(prod.outputClaim || "");
+      setPefc(su?.pefc || cl?.pefc || "");
+      setInputClaim(su?.fscInputClaim || "");
+      setChainOfCustody(su?.fscChainOfCustody || "");
+      setOutputClaim(cl?.fscOutputClaim || "");
       setLicenseFsc("");
     }
   }
@@ -243,17 +253,22 @@ export function POForm({
       setLicenseFsc(""); setChainOfCustody(""); setInputClaim(""); setOutputClaim(""); setPefc("");
       return;
     }
-    const prod = products.find(p => String(p.id) === supplierProductId);
-    if (prod) fillFromProduct(type, prod);
-    else if (type === "fsc") setPefc("");
-    else { setLicenseFsc(""); setChainOfCustody(""); setInputClaim(""); setOutputClaim(""); }
+    fillFromClientSupplier(type, selectedClientId, selectedSupplierId);
+  }
+
+  function handleClientSelect(id: number) {
+    setSelectedClientId(id);
+    if (certType) fillFromClientSupplier(certType as "fsc" | "pefc", id, selectedSupplierId);
+  }
+
+  function handleSupplierSelect(id: number) {
+    setSelectedSupplierId(id);
+    if (certType) fillFromClientSupplier(certType as "fsc" | "pefc", selectedClientId, id);
   }
 
   function handleSupplierProductChange(id: string) {
     setSupplierProductId(id);
-    if (!id || !certType) return;
-    const prod = products.find(p => String(p.id) === id);
-    if (prod) fillFromProduct(certType as "fsc" | "pefc", prod);
+    // Product change no longer drives cert fields
   }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -342,11 +357,11 @@ export function POForm({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">Client *</label>
-            <Combobox name="clientId" options={clients} defaultId={purchaseOrder?.clientId} placeholder="Search client..." required />
+            <Combobox name="clientId" options={clients} defaultId={purchaseOrder?.clientId} placeholder="Search client..." required onSelect={handleClientSelect} />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Supplier *</label>
-            <Combobox name="supplierId" options={suppliers} defaultId={purchaseOrder?.supplierId} placeholder="Search supplier..." required />
+            <Combobox name="supplierId" options={suppliers} defaultId={purchaseOrder?.supplierId} placeholder="Search supplier..." required onSelect={handleSupplierSelect} />
             <div className="flex gap-1 mt-2">
               {certBtn("", "None")}
               {certBtn("fsc", "FSC")}
