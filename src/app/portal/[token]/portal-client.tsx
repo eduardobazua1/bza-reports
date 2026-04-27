@@ -46,9 +46,9 @@ function timeAgo(iso: string): string {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const c = status === "en_transito" ? "bg-[#0d9488] text-[#0d9488]" :
-    status === "en_aduana" ? "bg-[#0d9488] text-[#0d9488]" :
-    status === "entregado" ? "bg-emerald-50 text-emerald-600" : "bg-stone-100 text-stone-500";
+  const c = status === "en_transito" ? "bg-[#ccfbf1] text-[#0d3d3b]" :
+    status === "en_aduana" ? "bg-[#ccfbf1] text-[#0d3d3b]" :
+    status === "entregado" ? "bg-[#0d3d3b] text-[#6ee7b7]" : "bg-stone-100 text-stone-500";
   return <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${c}`}>{shipmentStatusLabels[status] || status}</span>;
 }
 
