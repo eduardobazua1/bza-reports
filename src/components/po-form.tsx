@@ -167,6 +167,23 @@ export function POListActions({
   );
 }
 
+const STORAGE_KEY = "bza_custom_incoterms";
+
+function useIncoterms() {
+  const [custom, setCustom] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); } catch { return []; }
+  });
+  function addTerm(term: string) {
+    const t = term.trim();
+    if (!t || INCOTERMS.includes(t) || custom.includes(t)) return;
+    const next = [...custom, t];
+    setCustom(next);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  }
+  return { all: [...INCOTERMS, ...custom], addTerm };
+}
+
 export function POForm({
   purchaseOrder,
   clients,
@@ -184,6 +201,9 @@ export function POForm({
 }) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const { all: allIncoterms, addTerm } = useIncoterms();
+  const [addingTerm, setAddingTerm] = useState(false);
+  const [newTerm, setNewTerm] = useState("");
 
   const inp = "w-full border border-border rounded-lg px-3 py-2 text-sm bg-background";
 
@@ -409,7 +429,12 @@ export function POForm({
             <input name="buyPrice" type="number" step="0.01" required defaultValue={purchaseOrder?.buyPrice || ""} className={inp} placeholder="0.00" />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Incoterm</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium">Incoterm</label>
+              {!addingTerm && (
+                <button type="button" onClick={() => setAddingTerm(true)} className="text-xs text-[#0d9488] hover:underline">+ Add</button>
+              )}
+            </div>
             <input
               name="terms"
               list={incotermId}
@@ -418,8 +443,22 @@ export function POForm({
               placeholder="Select or type..."
             />
             <datalist id={incotermId}>
-              {INCOTERMS.map(t => <option key={t} value={t} />)}
+              {allIncoterms.map(t => <option key={t} value={t} />)}
             </datalist>
+            {addingTerm && (
+              <div className="flex gap-1 mt-1">
+                <input
+                  value={newTerm}
+                  onChange={e => setNewTerm(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addTerm(newTerm); setNewTerm(""); setAddingTerm(false); } }}
+                  placeholder="e.g. DAP Monterrey"
+                  className="flex-1 border border-border rounded-lg px-3 py-1.5 text-sm bg-background"
+                  autoFocus
+                />
+                <button type="button" onClick={() => { addTerm(newTerm); setNewTerm(""); setAddingTerm(false); }} className="px-3 py-1.5 text-xs bg-[#0d3d3b] text-white rounded-lg">Save</button>
+                <button type="button" onClick={() => { setNewTerm(""); setAddingTerm(false); }} className="px-3 py-1.5 text-xs border border-border rounded-lg text-muted-foreground">Cancel</button>
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Transport</label>
