@@ -35,14 +35,14 @@ function StatusStepper({ status }: { status: string }) {
   );
 }
 
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
+function formatDateTime(iso: string): string {
+  const d = new Date(iso);
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  const hh = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  return `${mm}/${dd}/${yyyy} ${hh}:${min}`;
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -276,17 +276,12 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
                 <StatusBadge status={s.status} />
               </div>
               <StatusStepper status={s.status} />
-              {s.statusUpdatedAt && (() => {
-                const diff = Date.now() - new Date(s.statusUpdatedAt).getTime();
-                const days = diff / 86400000;
-                if (days > 14) return null;
-                return (
-                  <div className="flex items-center gap-1 mt-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#0d9488] animate-pulse" />
-                    <span className="text-[10px] text-[#0d9488] font-medium">Status updated {timeAgo(s.statusUpdatedAt)}</span>
-                  </div>
-                );
-              })()}
+              {s.statusUpdatedAt && (
+                <div className="flex items-center gap-1 mt-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#0d9488] animate-pulse" />
+                  <span className="text-[10px] text-[#0d9488] font-medium">Updated {formatDateTime(s.statusUpdatedAt)}</span>
+                </div>
+              )}
             </div>
             <div className="px-4 py-3 bg-stone-50 grid grid-cols-2 gap-2 text-[11px]">
               <div><p className="text-stone-400">Quantity</p><p className="font-semibold text-stone-800">{formatNumber(s.tons, 3)} TN</p></div>
