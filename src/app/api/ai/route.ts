@@ -464,7 +464,7 @@ EXACT field labels as they appear in CPP documents:
 | "Units" per bale (e.g. 62) | unitsPerBale | Found on BOL |
 | Net weight in kg → DIVIDE BY 1000 for TN | quantityTons | e.g. 89865 kg = 89.865 TN |
 | Loading date / dispatch date (same value) | shipmentDate AND invoiceDate | Use same date for both fields |
-| Consignee city (from Consignee field) | destination | Extract city only, e.g. "Morelia" |
+| Final Destination field (or from Consignee address) | destination | Use the final destination city, e.g. "Morelia" |
 | Client PO # | salesDocument | NOT in document — always ask user before saving |
 | Invoice # / reference # | invoiceNumber | BZA assigns this — ask if not provided |
 | Origin / mill location | currentLocation | e.g. Halsey, OR |
