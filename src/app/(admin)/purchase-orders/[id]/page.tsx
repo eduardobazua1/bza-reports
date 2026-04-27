@@ -224,7 +224,7 @@ export default async function PurchaseOrderDetailPage({
         poTerms={po.terms}
         product={clientProduct?.name ?? po.product}
         products={productsList}
-        invoices={po.invoices.map(inv => ({ salesDocument: inv.salesDocument ?? null, quantityTons: inv.quantityTons, clientPoId: inv.clientPoId ?? null }))}
+        invoices={po.invoices.map(inv => ({ invoiceNumber: inv.invoiceNumber, salesDocument: inv.salesDocument ?? null, quantityTons: inv.quantityTons, clientPoId: inv.clientPoId ?? null }))}
       />
 
       {/* ── Section 7: Invoices ─────────────────────────────── */}

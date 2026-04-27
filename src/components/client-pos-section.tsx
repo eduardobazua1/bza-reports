@@ -32,7 +32,7 @@ type ConvertForm = {
 };
 
 type Product = { id: number; name: string };
-type InvoiceRef = { salesDocument: string | null; quantityTons: number; clientPoId: number | null };
+type InvoiceRef = { invoiceNumber: string; salesDocument: string | null; quantityTons: number; clientPoId: number | null };
 
 export function ClientPOsSection({
   purchaseOrderId,
@@ -110,17 +110,23 @@ export function ClientPOsSection({
     ? list.reduce((s, p) => s + (p.plannedTons || 0) * (p.sellPriceOverride ?? sellPrice), 0)
     : 0;
 
-  function suggestInvoiceNumber(invoiceCount: number) {
+  function suggestInvoiceNumber() {
     if (!poNumber) return "";
     const base = poNumber.replace("X", "IX");
-    return `${base}-${invoiceCount + 1}`;
+    // Find the highest existing suffix for this PO
+    const maxSeq = invoices.reduce((max, inv) => {
+      const match = inv.invoiceNumber.match(new RegExp(`^${base.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}-(\\d+)$`));
+      if (match) return Math.max(max, parseInt(match[1]));
+      return max;
+    }, 0);
+    return `${base}-${maxSeq + 1}`;
   }
 
   // When "Convert to Invoice" is clicked, pre-fill from the client order's stored fields
-  function openConvert(cpo: ClientPO, invoiceCount: number) {
+  function openConvert(cpo: ClientPO) {
     setConvertingId(cpo.id);
     setConvertForm({
-      invoiceNumber: suggestInvoiceNumber(invoiceCount),
+      invoiceNumber: suggestInvoiceNumber(),
       vehicleId: "",
       blNumber: "",
       shipmentDate: new Date().toISOString().split("T")[0],
@@ -639,7 +645,7 @@ export function ClientPOsSection({
           <div ref={dropdownRef} style={{ position: "fixed", top: dropdownPos.top, right: dropdownPos.right, zIndex: 9999 }} className="bg-white border border-stone-200 rounded-md shadow-lg min-w-[150px] py-1 text-left">
             <button onClick={() => { setOpenDropdownId(null); openEdit(cpo); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">View/Edit</button>
             {cpo.status !== "complete" && (
-              <button onClick={() => { setOpenDropdownId(null); openConvert(cpo, dropdownInvoiceCounter); }} className="w-full text-left px-4 py-2 text-sm text-emerald-700 hover:bg-emerald-50 font-medium">Convert →</button>
+              <button onClick={() => { setOpenDropdownId(null); openConvert(cpo); }} className="w-full text-left px-4 py-2 text-sm text-emerald-700 hover:bg-emerald-50 font-medium">Convert →</button>
             )}
             <div className="border-t border-stone-100 my-1" />
             <button onClick={() => { setOpenDropdownId(null); handleDelete(cpo.id); }} className="w-full text-left px-4 py-2 text-sm text-[#0d3d3b] hover:bg-[#0d3d3b]">Delete</button>
