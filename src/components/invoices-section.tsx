@@ -336,11 +336,11 @@ export function InvoicesSection({
                   {sendingId === inv.id && (
                     <tr key={`send-${inv.id}`}>
                       <td colSpan={14} className="p-0">
-                        <div className="bg-[#0d9488] border-t border-stone-200 px-4 py-3 space-y-2">
-                          <p className="text-xs font-semibold text-[#0d9488]">Send Invoice {inv.invoiceNumber}</p>
+                        <div className="bg-stone-50 border-t border-stone-200 px-4 py-3 space-y-2">
+                          <p className="text-xs font-semibold text-[#0d3d3b]">Send Invoice {inv.invoiceNumber}</p>
                           <div className="flex items-center gap-3 flex-wrap">
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-[#0d9488] font-medium whitespace-nowrap">To:</span>
+                              <span className="text-xs text-stone-600 font-medium whitespace-nowrap">To:</span>
                               <input
                                 type="email"
                                 className="border border-stone-200 rounded px-2 py-1 text-sm w-56"
@@ -350,7 +350,7 @@ export function InvoicesSection({
                               />
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-[#0d9488] font-medium whitespace-nowrap">CC:</span>
+                              <span className="text-xs text-stone-600 font-medium whitespace-nowrap">CC:</span>
                               <input
                                 type="email"
                                 className="border border-stone-200 rounded px-2 py-1 text-sm w-56"
