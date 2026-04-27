@@ -4,6 +4,102 @@ import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { formatNumber, formatCurrency } from "@/lib/utils";
 
+const PRESET_DESTINATIONS = [
+  "Laredo, TX",
+  "Eagle Pass, TX",
+  "El Paso, TX",
+  "Manzanillo, Col.",
+  "Veracruz, Ver.",
+];
+const DEST_KEY = "bza_custom_destinations";
+
+function useDestinations() {
+  const [custom, setCustom] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try { return JSON.parse(localStorage.getItem(DEST_KEY) || "[]"); } catch { return []; }
+  });
+  function add(val: string) {
+    const t = val.trim();
+    if (!t || PRESET_DESTINATIONS.includes(t) || custom.includes(t)) return;
+    const next = [...custom, t];
+    setCustom(next);
+    localStorage.setItem(DEST_KEY, JSON.stringify(next));
+  }
+  return { all: [...PRESET_DESTINATIONS, ...custom], add };
+}
+
+function DestinationSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { all, add } = useDestinations();
+  const [open, setOpen] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [newVal, setNewVal] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+  const filtered = value ? all.filter(o => o.toLowerCase().includes(value.toLowerCase())) : all;
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) { setOpen(false); setAdding(false); }
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <input
+        className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
+        placeholder="Select or type..."
+        value={value}
+        onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        autoComplete="off"
+      />
+      {open && (
+        <div className="absolute z-50 mt-1 w-full bg-white border border-stone-200 rounded-md shadow-lg overflow-hidden min-w-[180px]">
+          {filtered.map(o => (
+            <div
+              key={o}
+              onMouseDown={() => { onChange(o); setOpen(false); }}
+              className={`px-3 py-2 text-sm cursor-pointer hover:bg-stone-50 ${value === o ? "bg-stone-100 font-medium" : ""}`}
+            >
+              {o}
+            </div>
+          ))}
+          {!adding ? (
+            <div
+              onMouseDown={(e) => { e.preventDefault(); setAdding(true); setNewVal(""); }}
+              className="px-3 py-2 text-xs text-[#0d9488] font-medium cursor-pointer hover:bg-stone-50 border-t border-stone-100"
+            >
+              + Add destination
+            </div>
+          ) : (
+            <div className="px-2 py-2 border-t border-stone-100 flex gap-1" onMouseDown={e => e.preventDefault()}>
+              <input
+                autoFocus
+                className="flex-1 border border-stone-200 rounded px-2 py-1 text-xs"
+                placeholder="New destination"
+                value={newVal}
+                onChange={(e) => setNewVal(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && newVal.trim()) { add(newVal.trim()); onChange(newVal.trim()); setOpen(false); setAdding(false); }
+                  if (e.key === "Escape") setAdding(false);
+                }}
+              />
+              <button
+                type="button"
+                className="text-xs bg-[#0d9488] text-white px-2 py-1 rounded"
+                onClick={() => { if (newVal.trim()) { add(newVal.trim()); onChange(newVal.trim()); setOpen(false); setAdding(false); } }}
+              >
+                Add
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 type ClientPO = {
   id: number;
   purchaseOrderId: number;
@@ -570,12 +666,7 @@ export function ClientPOsSection({
             </div>
             <div>
               <label className="block text-xs text-stone-500 mb-1">Destination</label>
-              <input
-                className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
-                placeholder="Morelia, Ecatepec..."
-                value={addForm.destination}
-                onChange={(e) => setAddForm((f) => ({ ...f, destination: e.target.value }))}
-              />
+              <DestinationSelect value={addForm.destination} onChange={(v) => setAddForm((f) => ({ ...f, destination: v }))} />
             </div>
             <div>
               <label className="block text-xs text-stone-500 mb-1">Planned Tons</label>
@@ -672,7 +763,7 @@ export function ClientPOsSection({
                 </div>
                 <div>
                   <label className="block text-xs text-stone-500 mb-1">Destination</label>
-                  <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="Morelia..." value={editForm.destination} onChange={(e) => setEditForm(f => ({ ...f, destination: e.target.value }))} />
+                  <DestinationSelect value={editForm.destination} onChange={(v) => setEditForm(f => ({ ...f, destination: v }))} />
                 </div>
                 <div>
                   <label className="block text-xs text-stone-500 mb-1">Planned Tons</label>
