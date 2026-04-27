@@ -95,10 +95,12 @@ type Client = {
 type Supplier = {
   id: number;
   name: string;
+  certType?: string | null;
   fscLicense?: string | null;
   fscChainOfCustody?: string | null;
   fscInputClaim?: string | null;
   fscOutputClaim?: string | null;
+  pefc?: string | null;
 };
 
 type Product = {
@@ -270,21 +272,21 @@ export function POForm({
     purchaseOrder?.clientProductId ? String(purchaseOrder.clientProductId) : ""
   );
 
-  // Fill cert fields from the selected CLIENT — clients hold the certification data
-  function fillFromClient(type: "fsc" | "pefc", clientId: number | "") {
+  // Fill cert fields from supplier (primary) and client (fallback for any blank fields)
+  function fillFromCerts(type: "fsc" | "pefc", supplierId: number | "", clientId: number | "") {
+    const sup = suppliers.find(s => s.id === supplierId);
     const cl = clients.find(c => c.id === clientId);
-    if (!cl) return;
     if (type === "fsc") {
-      if (cl.fscLicense)       setLicenseFsc(cl.fscLicense);
-      if (cl.fscChainOfCustody) setChainOfCustody(cl.fscChainOfCustody);
-      if (cl.fscInputClaim)    setInputClaim(cl.fscInputClaim);
-      if (cl.fscOutputClaim)   setOutputClaim(cl.fscOutputClaim);
+      setLicenseFsc(sup?.fscLicense || cl?.fscLicense || "");
+      setChainOfCustody(sup?.fscChainOfCustody || cl?.fscChainOfCustody || "");
+      setInputClaim(sup?.fscInputClaim || cl?.fscInputClaim || "");
+      setOutputClaim(sup?.fscOutputClaim || cl?.fscOutputClaim || "");
       setPefc("");
     } else {
-      if (cl.pefc)              setPefc(cl.pefc);
-      if (cl.fscInputClaim)     setInputClaim(cl.fscInputClaim);
-      if (cl.fscChainOfCustody) setChainOfCustody(cl.fscChainOfCustody);
-      if (cl.fscOutputClaim)    setOutputClaim(cl.fscOutputClaim);
+      setPefc(sup?.pefc || cl?.pefc || "");
+      setChainOfCustody(sup?.fscChainOfCustody || cl?.fscChainOfCustody || "");
+      setInputClaim(sup?.fscInputClaim || cl?.fscInputClaim || "");
+      setOutputClaim(sup?.fscOutputClaim || cl?.fscOutputClaim || "");
       setLicenseFsc("");
     }
   }
@@ -295,17 +297,17 @@ export function POForm({
       setLicenseFsc(""); setChainOfCustody(""); setInputClaim(""); setOutputClaim(""); setPefc("");
       return;
     }
-    fillFromClient(type, selectedClientId);
+    fillFromCerts(type, selectedSupplierId, selectedClientId);
   }
 
   function handleClientSelect(id: number) {
     setSelectedClientId(id);
-    if (certType) fillFromClient(certType as "fsc" | "pefc", id);
+    if (certType) fillFromCerts(certType as "fsc" | "pefc", selectedSupplierId, id);
   }
 
   function handleSupplierSelect(id: number) {
     setSelectedSupplierId(id);
-    // Supplier selection no longer drives cert fields — certs come from client
+    if (certType) fillFromCerts(certType as "fsc" | "pefc", id, selectedClientId);
   }
 
   function handleSupplierProductChange(id: string) {

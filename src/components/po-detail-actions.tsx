@@ -6,14 +6,24 @@ import { POForm } from "@/components/po-form";
 import { InvoiceForm } from "@/components/invoice-form";
 import { deletePurchaseOrder } from "@/server/actions";
 
-type Client = { id: number; name: string };
-type Supplier = {
+type Client = {
   id: number;
   name: string;
   fscLicense?: string | null;
   fscChainOfCustody?: string | null;
   fscInputClaim?: string | null;
   fscOutputClaim?: string | null;
+  pefc?: string | null;
+};
+type Supplier = {
+  id: number;
+  name: string;
+  certType?: string | null;
+  fscLicense?: string | null;
+  fscChainOfCustody?: string | null;
+  fscInputClaim?: string | null;
+  fscOutputClaim?: string | null;
+  pefc?: string | null;
 };
 type Product = { id: number; name: string; grade?: string | null };
 
