@@ -5,8 +5,8 @@ import { updatePurchaseOrder } from "@/server/actions";
 import { useRouter } from "next/navigation";
 
 const statuses = [
-  { value: "active", label: "Active", color: "bg-green-100 text-[#0d9488]" },
-  { value: "completed", label: "Completed", color: "bg-blue-100 text-[#0d9488]" },
+  { value: "active", label: "Active", color: "bg-stone-100 text-[#0d9488]" },
+  { value: "completed", label: "Completed", color: "bg-stone-100 text-[#0d9488]" },
   { value: "cancelled", label: "Cancelled", color: "bg-[#0d3d3b] text-[#0d3d3b]" },
 ] as const;
 

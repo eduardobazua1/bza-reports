@@ -16,7 +16,7 @@ type Price = {
 };
 
 const GRADES = ["NBSK", "SBSK", "BHK"];
-const gradeColors: Record<string, string> = { NBSK: "#3b82f6", SBSK: "#f59e0b", BHK: "#10b981" };
+const gradeColors: Record<string, string> = { NBSK: "#0d3d3b", SBSK: "#0d9488", BHK: "#6ee7b7" };
 
 function monthLabel(m: string) {
   const [y, mo] = m.split("-");
@@ -26,7 +26,7 @@ function monthLabel(m: string) {
 
 function Change({ value, price }: { value: number; price: number }) {
   const pct = price > 0 ? (value / (price - value)) * 100 : 0;
-  const color = value > 0 ? "text-emerald-600" : value < 0 ? "text-[#0d3d3b]" : "text-stone-400";
+  const color = value > 0 ? "text-[#0d9488]" : value < 0 ? "text-[#0d3d3b]" : "text-stone-400";
   const Icon = value > 0 ? TrendingUp : value < 0 ? TrendingDown : Minus;
   return (
     <span className={`flex items-center gap-0.5 text-[10px] font-medium ${color}`}>

@@ -285,7 +285,7 @@ export function InvoicesSection({
                     <td className="px-3 py-1.5 border-t border-stone-100 text-right">{formatCurrency(revenue)}</td>
                     <td className="px-3 py-1.5 border-t border-stone-100 text-right">{formatCurrency(inv.quantityTons * buy)}</td>
                     <td className="px-3 py-1.5 border-t border-stone-100 text-right font-medium">
-                      <span className={profit >= 0 ? "text-emerald-600" : "text-[#0d3d3b]"}>{formatCurrency(profit)}</span>
+                      <span className={profit >= 0 ? "text-[#0d9488]" : "text-[#0d3d3b]"}>{formatCurrency(profit)}</span>
                     </td>
                     <td className="px-3 py-1.5 border-t border-stone-100">{formatDate(inv.shipmentDate)}</td>
                     <td className="px-3 py-1.5 border-t border-stone-100 text-xs text-stone-500">
@@ -336,14 +336,14 @@ export function InvoicesSection({
                   {sendingId === inv.id && (
                     <tr key={`send-${inv.id}`}>
                       <td colSpan={14} className="p-0">
-                        <div className="bg-[#0d9488] border-t border-blue-200 px-4 py-3 space-y-2">
+                        <div className="bg-[#0d9488] border-t border-stone-200 px-4 py-3 space-y-2">
                           <p className="text-xs font-semibold text-[#0d9488]">Send Invoice {inv.invoiceNumber}</p>
                           <div className="flex items-center gap-3 flex-wrap">
                             <div className="flex items-center gap-2">
                               <span className="text-xs text-[#0d9488] font-medium whitespace-nowrap">To:</span>
                               <input
                                 type="email"
-                                className="border border-blue-200 rounded px-2 py-1 text-sm w-56"
+                                className="border border-stone-200 rounded px-2 py-1 text-sm w-56"
                                 placeholder="client@example.com"
                                 value={sendTo}
                                 onChange={(e) => setSendTo(e.target.value)}
@@ -353,7 +353,7 @@ export function InvoicesSection({
                               <span className="text-xs text-[#0d9488] font-medium whitespace-nowrap">CC:</span>
                               <input
                                 type="email"
-                                className="border border-blue-200 rounded px-2 py-1 text-sm w-56"
+                                className="border border-stone-200 rounded px-2 py-1 text-sm w-56"
                                 placeholder="optional"
                                 value={sendCc}
                                 onChange={(e) => setSendCc(e.target.value)}
@@ -526,7 +526,7 @@ export function InvoicesSection({
                 <td className="px-3 py-2 border-t border-stone-200 text-right font-semibold">{formatCurrency(totalRevenue)}</td>
                 <td className="px-3 py-2 border-t border-stone-200 text-right font-semibold">{formatCurrency(totalCostNoFreight)}</td>
                 <td className="px-3 py-2 border-t border-stone-200 text-right font-semibold">
-                  <span className={totalProfit >= 0 ? "text-emerald-600" : "text-[#0d3d3b]"}>{formatCurrency(totalProfit)}</span>
+                  <span className={totalProfit >= 0 ? "text-[#0d9488]" : "text-[#0d3d3b]"}>{formatCurrency(totalProfit)}</span>
                 </td>
                 <td colSpan={5} className="px-3 py-2 border-t border-stone-200"></td>
               </tr>
@@ -562,7 +562,7 @@ export function InvoicesSection({
             <a href={`/api/invoice-pdf?invoice=${inv.invoiceNumber}`} target="_blank" rel="noopener noreferrer" className="block w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50" onClick={() => setOpenDropdownId(null)}>Print</a>
             {!inv.invoiceNumber.startsWith("PEND-") && (
               sentId === inv.id ? (
-                <span className="block px-4 py-2 text-sm text-emerald-600 font-medium">Sent ✓</span>
+                <span className="block px-4 py-2 text-sm text-[#0d9488] font-medium">Sent ✓</span>
               ) : (
                 <button onClick={() => { setOpenDropdownId(null); openSend(inv); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">Send</button>
               )

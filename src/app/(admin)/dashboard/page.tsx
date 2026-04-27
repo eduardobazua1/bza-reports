@@ -225,7 +225,7 @@ export default async function DashboardPage() {
     <div className="space-y-4">
       {/* Report Reminders */}
       {overdueReports.length > 0 && (
-        <div className="bg-white border-l-[3px] border-l-red-500 rounded-md shadow-sm p-3">
+        <div className="bg-white border-l-[3px] border-l-[#0d3d3b] rounded-md shadow-sm p-3">
           <div className="flex items-center justify-between">
             <span className="text-sm font-bold text-[#0d3d3b]">
               {overdueReports.length} pending report{overdueReports.length > 1 ? "s" : ""}
@@ -407,7 +407,7 @@ export default async function DashboardPage() {
 
 function GaugeCard({ label, value, description }: { label: string; value: number; description: string }) {
   const pct = Math.min(Math.max(value, 0), 100);
-  const color = pct >= 80 ? "#059669" : pct >= 50 ? "#d97706" : "#dc2626";
+  const color = pct >= 80 ? "#0d9488" : pct >= 50 ? "#0d9488" : "#0d3d3b";
 
   return (
     <div className="bg-white rounded-md shadow-sm p-4 flex flex-col items-center">

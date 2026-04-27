@@ -123,8 +123,8 @@ function EmailModal({
 
         {status === "ok" ? (
           <div className="px-5 py-10 text-center">
-            <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-3">
-              <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mx-auto mb-3">
+              <svg className="w-6 h-6 text-[#0d9488]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
               </svg>
             </div>
@@ -138,19 +138,19 @@ function EmailModal({
             <div>
               <label className="block text-xs font-medium text-stone-600 mb-1">To</label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="recipient@example.com"
-                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]"/>
             </div>
             {/* Subject */}
             <div>
               <label className="block text-xs font-medium text-stone-600 mb-1">Subject</label>
               <input type="text" value={subject} onChange={e => setSubject(e.target.value)}
-                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]"/>
             </div>
             {/* Message */}
             <div>
               <label className="block text-xs font-medium text-stone-600 mb-1">Message <span className="text-stone-400">(optional)</span></label>
               <textarea value={message} onChange={e => setMessage(e.target.value)} rows={3} placeholder="Add a note..."
-                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#0d9488]"/>
             </div>
             {/* Format */}
             <div>
@@ -303,7 +303,7 @@ function DrillDownModal({
                   {DD_COL_DEFS.map(c => (
                     <label key={c.key} className="flex items-center gap-2 px-2 py-1.5 hover:bg-stone-50 rounded cursor-pointer">
                       <input type="checkbox" checked={visible.has(c.key)} onChange={() => toggleCol(c.key)}
-                        className="w-3.5 h-3.5 accent-blue-600 shrink-0"/>
+                        className="w-3.5 h-3.5 accent-[#0d9488] shrink-0"/>
                       <span className="text-sm text-stone-700">{c.label}</span>
                     </label>
                   ))}
@@ -513,7 +513,7 @@ function CustomizePanel({
               <div className="space-y-1">
                 {cols.map(c => (
                   <label key={c.key} className="flex items-center gap-2 cursor-pointer hover:bg-stone-50 px-1 py-1.5 rounded">
-                    <input type="checkbox" className="w-3.5 h-3.5 accent-blue-600"
+                    <input type="checkbox" className="w-3.5 h-3.5 accent-[#0d9488]"
                       checked={visible.has(c.key)} onChange={() => onToggleCol(c.key)} />
                     <span className="text-sm text-stone-700">{c.label}</span>
                   </label>
@@ -1064,7 +1064,7 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
           <span className="text-stone-300">/</span>
           <h2 className="text-base font-semibold text-stone-800">{REPORT_LABELS[activeReport]}</h2>
           {filtered.length !== data.length && (
-            <span className="text-xs bg-[#0d9488] text-[#0d9488] border border-blue-200 px-2 py-0.5 rounded-full font-medium">{filtered.length} of {data.length} rows</span>
+            <span className="text-xs bg-stone-100 text-[#0d9488] border border-stone-200 px-2 py-0.5 rounded-full font-medium">{filtered.length} of {data.length} rows</span>
           )}
         </div>
 

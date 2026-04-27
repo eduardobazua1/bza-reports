@@ -369,11 +369,11 @@ export function SupplierOrdersSection({
                     {isSending && (
                       <tr key={`send-${order.id}`}>
                         <td colSpan={8} className="p-0">
-                          <div className="bg-[#0d9488] border-t border-blue-200 px-4 py-3 flex items-center gap-3">
+                          <div className="bg-[#0d9488] border-t border-stone-200 px-4 py-3 flex items-center gap-3">
                             <span className="text-xs text-[#0d9488] font-medium whitespace-nowrap">Send to:</span>
                             <input
                               type="email"
-                              className="border border-blue-200 rounded px-2 py-1 text-sm flex-1 max-w-xs"
+                              className="border border-stone-200 rounded px-2 py-1 text-sm flex-1 max-w-xs"
                               placeholder={supplierEmail || "supplier@example.com"}
                               value={sendEmail}
                               onChange={(e) => setSendEmail(e.target.value)}
@@ -486,7 +486,7 @@ export function SupplierOrdersSection({
             <button onClick={() => { setOpenDropdownId(null); isEditing ? cancelEdit() : openEdit(order); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">View/Edit</button>
             <a href={`/api/supplier-po-pdf?poId=${purchaseOrderId}&soId=${order.id}`} target="_blank" rel="noopener noreferrer" className="block w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50" onClick={() => setOpenDropdownId(null)}>Print</a>
             {wasSent ? (
-              <span className="block px-4 py-2 text-sm text-emerald-600 font-medium">Sent ✓</span>
+              <span className="block px-4 py-2 text-sm text-[#0d9488] font-medium">Sent ✓</span>
             ) : (
               <button onClick={() => { setOpenDropdownId(null); openSend(order); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">Send</button>
             )}

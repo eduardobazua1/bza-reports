@@ -14,15 +14,15 @@ export function KPIBig({
   animatedValue?: number;
 }) {
   const accentColors = {
-    blue: "border-l-blue-500",
-    green: "border-l-emerald-500",
-    amber: "border-l-amber-500",
-    red: "border-l-red-500",
+    blue: "border-l-[#0d3d3b]",
+    green: "border-l-[#0d9488]",
+    amber: "border-l-[#0d9488]",
+    red: "border-l-[#0d3d3b]",
   };
 
   const valueColors = {
     blue: "text-stone-900",
-    green: "text-emerald-700",
+    green: "text-[#0d9488]",
     amber: "text-stone-900",
     red: "text-[#0d3d3b]",
   };

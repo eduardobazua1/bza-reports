@@ -259,9 +259,9 @@ export function ClientPOsSection({
   }
 
   const statusColors: Record<string, string> = {
-    pending: "bg-[#0d9488] text-[#0d9488]",
-    partial: "bg-blue-100 text-[#0d9488]",
-    complete: "bg-emerald-100 text-emerald-700",
+    pending: "bg-stone-100 text-[#0d9488]",
+    partial: "bg-stone-100 text-[#0d9488]",
+    complete: "bg-stone-100 text-[#0d9488]",
   };
   const statusLabels: Record<string, string> = {
     pending: "Pending",
@@ -424,8 +424,8 @@ export function ClientPOsSection({
                     {isConverting && (
                       <tr key={`convert-${cpo.id}`}>
                         <td colSpan={10} className="p-0">
-                          <div className="bg-emerald-50 border-t border-emerald-200 p-4 space-y-3">
-                            <p className="text-xs font-semibold text-emerald-800 uppercase">
+                          <div className="bg-stone-50 border-t border-stone-200 p-4 space-y-3">
+                            <p className="text-xs font-semibold text-[#0d3d3b] uppercase">
                               New Invoice — {cpo.clientPoNumber} · {cpo.destination}
                             </p>
 
@@ -520,7 +520,7 @@ export function ClientPOsSection({
 
                             {/* Amount preview */}
                             {convertForm.quantityTons && (
-                              <div className="text-sm text-emerald-800 font-medium">
+                              <div className="text-sm text-[#0d9488] font-medium">
                                 Invoice total: {formatCurrency(
                                   parseFloat(convertForm.quantityTons) * (convertForm.sellPriceOverride ? parseFloat(convertForm.sellPriceOverride) : (sellPrice ?? 0))
                                 )}
@@ -532,7 +532,7 @@ export function ClientPOsSection({
                               <button
                                 onClick={() => handleConvert(cpo)}
                                 disabled={convertLoading || !convertForm.invoiceNumber || !convertForm.quantityTons}
-                                className="text-sm bg-emerald-600 text-white px-4 py-1.5 rounded hover:bg-emerald-700 disabled:opacity-50 font-medium"
+                                className="text-sm bg-[#0d9488] text-white px-4 py-1.5 rounded hover:bg-[#0a7970] disabled:opacity-50 font-medium"
                               >
                                 {convertLoading ? "Creating..." : "Create Invoice"}
                               </button>
@@ -645,7 +645,7 @@ export function ClientPOsSection({
           <div ref={dropdownRef} style={{ position: "fixed", top: dropdownPos.top, right: dropdownPos.right, zIndex: 9999 }} className="bg-white border border-stone-200 rounded-md shadow-lg min-w-[150px] py-1 text-left">
             <button onClick={() => { setOpenDropdownId(null); openEdit(cpo); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">View/Edit</button>
             {cpo.status !== "complete" && (
-              <button onClick={() => { setOpenDropdownId(null); openConvert(cpo); }} className="w-full text-left px-4 py-2 text-sm text-emerald-700 hover:bg-emerald-50 font-medium">Convert →</button>
+              <button onClick={() => { setOpenDropdownId(null); openConvert(cpo); }} className="w-full text-left px-4 py-2 text-sm text-[#0d9488] hover:bg-stone-50 font-medium">Convert →</button>
             )}
             <div className="border-t border-stone-100 my-1" />
             <button onClick={() => { setOpenDropdownId(null); handleDelete(cpo.id); }} className="w-full text-left px-4 py-2 text-sm text-[#0d3d3b] hover:bg-[#0d3d3b]">Delete</button>
