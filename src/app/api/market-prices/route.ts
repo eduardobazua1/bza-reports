@@ -13,7 +13,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { source, grade, region, month, price, priceType } = body;
+  const { source, grade, region, month, price, priceType, changeValue } = body;
 
   if (!source || !grade || !region || !month || price == null || !priceType) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
@@ -37,6 +37,7 @@ export async function POST(req: Request) {
     month,
     price: parseFloat(price),
     priceType,
+    changeValue: changeValue != null ? parseFloat(changeValue) : null,
   }).returning();
 
   return NextResponse.json(inserted);

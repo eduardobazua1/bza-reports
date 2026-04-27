@@ -35,15 +35,38 @@ function Change({ value, price }: { value: number; price: number }) {
   );
 }
 
+const SOURCES = ["TTO", "RISI"];
+const PRICE_TYPES = ["net", "list"];
+const REGIONS = ["North America", "Europe", "Asia"];
+
 export default function MarketPricesPage() {
   const [prices, setPrices] = useState<Price[]>([]);
   const [loading, setLoading] = useState(true);
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    source: "TTO", grade: "NBSK", region: "North America",
+    month: new Date().toISOString().slice(0, 7),
+    price: "", priceType: "net", changeValue: "",
+  });
 
   async function load() {
     const res = await fetch("/api/market-prices");
     if (res.ok) setPrices(await res.json());
     setLoading(false);
+  }
+
+  async function savePrice() {
+    setSaving(true);
+    await fetch("/api/market-prices", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...form, price: parseFloat(form.price), changeValue: form.changeValue ? parseFloat(form.changeValue) : null }),
+    });
+    await load();
+    setSaving(false);
+    setShowForm(false);
   }
 
   useEffect(() => { load(); }, []);
@@ -75,10 +98,76 @@ export default function MarketPricesPage() {
 
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-6xl">
-      <div>
-        <h1 className="text-2xl font-bold text-stone-900">Market Prices</h1>
-        <p className="text-sm text-stone-400">TTO & RISI pulp price indices — North America</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-stone-900">Market Prices</h1>
+          <p className="text-sm text-stone-400">TTO & RISI pulp price indices — North America</p>
+        </div>
+        <button onClick={() => setShowForm(!showForm)}
+          className="flex items-center gap-2 bg-[#0d3d3b] text-[#6ee7b7] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#0d9488] transition-colors">
+          + Add Price
+        </button>
       </div>
+
+      {showForm && (
+        <div className="bg-white rounded-xl shadow-sm p-5 space-y-4">
+          <h2 className="font-semibold text-stone-800">Add / Update Price</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div>
+              <label className="text-xs text-stone-400 uppercase">Month</label>
+              <input type="month" value={form.month} onChange={e => setForm(f => ({ ...f, month: e.target.value }))}
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm mt-1" />
+            </div>
+            <div>
+              <label className="text-xs text-stone-400 uppercase">Source</label>
+              <select value={form.source} onChange={e => setForm(f => ({ ...f, source: e.target.value }))}
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm mt-1">
+                {SOURCES.map(s => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-stone-400 uppercase">Grade</label>
+              <select value={form.grade} onChange={e => setForm(f => ({ ...f, grade: e.target.value }))}
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm mt-1">
+                {GRADES.map(g => <option key={g}>{g}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-stone-400 uppercase">Type</label>
+              <select value={form.priceType} onChange={e => setForm(f => ({ ...f, priceType: e.target.value }))}
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm mt-1">
+                {PRICE_TYPES.map(t => <option key={t}>{t}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-stone-400 uppercase">Region</label>
+              <select value={form.region} onChange={e => setForm(f => ({ ...f, region: e.target.value }))}
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm mt-1">
+                {REGIONS.map(r => <option key={r}>{r}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-stone-400 uppercase">Price (USD/ADMT)</label>
+              <input type="number" step="0.01" placeholder="0.00" value={form.price}
+                onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm mt-1" />
+            </div>
+            <div>
+              <label className="text-xs text-stone-400 uppercase">Change vs prev</label>
+              <input type="number" step="0.01" placeholder="0.00" value={form.changeValue}
+                onChange={e => setForm(f => ({ ...f, changeValue: e.target.value }))}
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm mt-1" />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={savePrice} disabled={saving || !form.price}
+              className="bg-[#0d3d3b] text-[#6ee7b7] px-5 py-2 rounded-lg text-sm font-medium disabled:opacity-50">
+              {saving ? "Saving..." : "Save"}
+            </button>
+            <button onClick={() => setShowForm(false)} className="text-stone-500 px-4 py-2 text-sm">Cancel</button>
+          </div>
+        </div>
+      )}
 
       {/* TTO Net Prices */}
       {currentMonth && (
@@ -231,11 +320,11 @@ export default function MarketPricesPage() {
                 <tr key={p.id} className="hover:bg-muted/50 transition-colors">
                   <td className="p-3 text-sm border-t border-border font-medium">{monthLabel(p.month)}</td>
                   <td className="p-3 text-sm border-t border-border">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${p.source === "TTO" ? "bg-[#0d9488] text-[#0d9488]" : "bg-[#0d3d3b] text-[#0d3d3b]"}`}>{p.source}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${p.source === "TTO" ? "bg-[#ccfbf1] text-[#0d3d3b]" : "bg-[#0d3d3b] text-[#6ee7b7]"}`}>{p.source}</span>
                   </td>
                   <td className="p-3 text-sm border-t border-border font-medium">{p.grade}</td>
                   <td className="p-3 text-sm border-t border-border">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${p.priceType === "list" ? "bg-[#0d9488] text-[#0d9488]" : "bg-stone-100 text-stone-500"}`}>{p.priceType}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${p.priceType === "list" ? "bg-[#ccfbf1] text-[#0d3d3b]" : "bg-stone-100 text-stone-500"}`}>{p.priceType}</span>
                   </td>
                   <td className="p-3 text-sm border-t border-border text-right font-medium">${formatNumber(p.price, 2)}</td>
                   <td className="p-3 text-sm border-t border-border text-right">
