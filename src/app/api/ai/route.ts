@@ -451,27 +451,38 @@ export async function POST(req: NextRequest) {
 
 ## FILE PROCESSING — INVOICE & BILLING DOCUMENTS
 
-### SUPPLIER DOCUMENTS (BOL, PACKING LIST, SHIPPING ADVICE)
-When the user uploads a supplier document, extract ALL available fields and call create_invoice (or update_invoice if it already exists):
+### SUPPLIER DOCUMENTS (BOL, PACKING LIST, SHIPPING ADVICE) — CASCADE PACIFIC PULP FORMAT
+When the user uploads a supplier document, extract ALL available fields and call create_invoice (or update_invoice if it already exists).
 
-| Document field | System field |
-|---|---|
-| Railcar / container / truck # | vehicleId |
-| BOL # / Bill of Lading # | blNumber |
-| Bales count | balesCount |
-| Units per bale | unitsPerBale |
-| Net weight / ADMT / metric tons | quantityTons |
-| Ship date / dispatch date | shipmentDate |
-| Destination / consignee city | destination |
-| Client PO # / purchase order # | salesDocument |
-| Invoice # / reference # | invoiceNumber |
-| Origin / loading location | currentLocation |
-| ETA / estimated arrival | estimatedArrival |
-| BZA PO # (e.g. X0043) | poNumber (required for create_invoice) |
+EXACT field labels as they appear in CPP documents:
 
-- If multiple railcars/containers in one document → create one invoice per vehicle.
-- If the BZA PO number is not in the document, ask the user before creating.
-- Always confirm every field extracted and every record created/updated.
+| Label in document | System field | Notes |
+|---|---|---|
+| Railcar # / container # (e.g. TBOX631440) | vehicleId | Found on BOL and PL |
+| Delivery Note # (e.g. 300142) | blNumber | Found on BOL and PL — NOT the BOL# header |
+| "Bales" or "Bales in Unit" (e.g. 372) | balesCount | Found on Packing List |
+| "Units" per bale (e.g. 62) | unitsPerBale | Found on BOL |
+| Net weight in kg → DIVIDE BY 1000 for TN | quantityTons | e.g. 89865 kg = 89.865 TN |
+| Loading date / dispatch date (same value) | shipmentDate AND invoiceDate | Use same date for both fields |
+| Consignee city (from Consignee field) | destination | Extract city only, e.g. "Morelia" |
+| Client PO # | salesDocument | NOT in document — always ask user before saving |
+| Invoice # / reference # | invoiceNumber | BZA assigns this — ask if not provided |
+| Origin / mill location | currentLocation | e.g. Halsey, OR |
+| BZA PO # (e.g. X0043) | poNumber | Required for create_invoice — ask if not provided |
+
+FIELDS THE USER ENTERS MANUALLY (do NOT try to extract from document):
+- estimatedArrival (ETA) — user sets this manually after
+- salesDocument (client PO) — always ask the user for this
+
+IMPORTANT — common mistakes to avoid:
+- "Bales in Unit" or "Bales" = balesCount (can be large, e.g. 372)
+- "Units" = unitsPerBale (sheets per bale, e.g. 62) — do NOT confuse these two
+- Weight is in kg in CPP docs → always divide by 1000 to get metric tons
+- blNumber = "Delivery Note" number, NOT the document header "BOL #"
+- destination = city extracted from Consignee address field
+
+- If multiple railcars in one document → create one invoice per vehicle.
+- After extracting, show the user a summary table and ask: 1) BZA PO number, 2) Client PO (salesDocument), 3) Invoice number (IX____). Then confirm before saving.
 
 ### CLIENT BILLING DOCUMENTS (FACTURAS, SAP BILLING DOCS)
 When the user uploads a client invoice, billing document, or SAP output (factura):
