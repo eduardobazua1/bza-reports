@@ -387,7 +387,7 @@ export function POForm({
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">
-              Client Purchase Order # <span className="text-muted-foreground font-normal">(optional)</span>
+              Client Purchase Order <span className="text-muted-foreground font-normal">(optional)</span>
             </label>
             <input name="clientPoNumber" defaultValue={purchaseOrder?.clientPoNumber || ""} className={inp} placeholder="e.g. X192151" />
           </div>
