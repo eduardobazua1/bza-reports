@@ -274,17 +274,19 @@ export function POForm({
   function fillFromClientSupplier(type: "fsc" | "pefc", clientId: number | "", supplierId: number | "") {
     const cl = clients.find(c => c.id === clientId);
     const su = suppliers.find(s => s.id === supplierId);
+    // Only overwrite a field if the source record actually has a value
     if (type === "fsc") {
-      setLicenseFsc(su?.fscLicense || "");
-      setChainOfCustody(su?.fscChainOfCustody || "");
-      setInputClaim(su?.fscInputClaim || "");
-      setOutputClaim(cl?.fscOutputClaim || "");
+      if (su?.fscLicense)      setLicenseFsc(su.fscLicense);
+      if (su?.fscChainOfCustody) setChainOfCustody(su.fscChainOfCustody);
+      if (su?.fscInputClaim)   setInputClaim(su.fscInputClaim);
+      if (cl?.fscOutputClaim)  setOutputClaim(cl.fscOutputClaim);
       setPefc("");
     } else {
-      setPefc(su?.pefc || cl?.pefc || "");
-      setInputClaim(su?.fscInputClaim || "");
-      setChainOfCustody(su?.fscChainOfCustody || "");
-      setOutputClaim(cl?.fscOutputClaim || "");
+      const pefcVal = su?.pefc || (cl as { pefc?: string | null })?.pefc;
+      if (pefcVal) setPefc(pefcVal);
+      if (su?.fscInputClaim)     setInputClaim(su.fscInputClaim);
+      if (su?.fscChainOfCustody) setChainOfCustody(su.fscChainOfCustody);
+      if (cl?.fscOutputClaim)    setOutputClaim(cl.fscOutputClaim);
       setLicenseFsc("");
     }
   }
