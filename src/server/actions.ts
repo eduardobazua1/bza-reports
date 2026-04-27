@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, products, customerPayments, customerPaymentInvoices } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { v4 as uuidv4 } from "uuid";
 
@@ -260,6 +260,29 @@ export async function updateInvoice(id: number, data: Partial<{
   }
 
   await db.update(invoices).set(updates).where(eq(invoices.id, id));
+
+  // Auto-complete PO if all invoices for this PO are now delivered
+  if (data.shipmentStatus === "entregado") {
+    const inv = await db.query.invoices.findFirst({ where: eq(invoices.id, id) });
+    if (inv) {
+      const po = await db.query.purchaseOrders.findFirst({ where: eq(purchaseOrders.id, inv.purchaseOrderId) });
+      if (po && po.status === "active") {
+        const nonDelivered = await db
+          .select({ id: invoices.id })
+          .from(invoices)
+          .where(and(
+            eq(invoices.purchaseOrderId, inv.purchaseOrderId),
+            ne(invoices.shipmentStatus, "entregado")
+          ));
+        if (nonDelivered.length === 0) {
+          await db.update(purchaseOrders)
+            .set({ status: "completed", updatedAt: new Date().toISOString() })
+            .where(eq(purchaseOrders.id, inv.purchaseOrderId));
+        }
+      }
+    }
+  }
+
   revalidatePath("/invoices");
   revalidatePath("/purchase-orders");
   revalidatePath("/shipments");

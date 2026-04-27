@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { invoices } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { invoices, purchaseOrders } from "@/db/schema";
+import { eq, and, ne } from "drizzle-orm";
 
 export async function PATCH(
   req: NextRequest,
@@ -44,6 +44,26 @@ export async function PATCH(
     })
     .where(eq(invoices.id, Number(id)))
     .returning();
+
+  // Auto-complete PO if all invoices are now delivered
+  if (body.shipmentStatus === "entregado" && updated[0]) {
+    const inv = updated[0];
+    const po = await db.query.purchaseOrders.findFirst({ where: eq(purchaseOrders.id, inv.purchaseOrderId) });
+    if (po && po.status === "active") {
+      const nonDelivered = await db
+        .select({ id: invoices.id })
+        .from(invoices)
+        .where(and(
+          eq(invoices.purchaseOrderId, inv.purchaseOrderId),
+          ne(invoices.shipmentStatus, "entregado")
+        ));
+      if (nonDelivered.length === 0) {
+        await db.update(purchaseOrders)
+          .set({ status: "completed", updatedAt: new Date().toISOString() })
+          .where(eq(purchaseOrders.id, inv.purchaseOrderId));
+      }
+    }
+  }
 
   return NextResponse.json(updated[0]);
 }
