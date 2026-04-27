@@ -5,11 +5,11 @@ import { createPortal } from "react-dom";
 import { formatNumber, formatCurrency } from "@/lib/utils";
 
 const PRESET_DESTINATIONS = [
-  "Laredo, TX",
-  "Eagle Pass, TX",
-  "El Paso, TX",
-  "Manzanillo, Col.",
-  "Veracruz, Ver.",
+  "Ramos Arizpe",
+  "Ecatepec",
+  "Bajio",
+  "Orizaba",
+  "Morelia",
 ];
 const DEST_KEY = "bza_custom_destinations";
 
