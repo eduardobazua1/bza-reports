@@ -350,7 +350,7 @@ export function ClientActions({ clients }: { clients: Client[] }) {
                         </button>
                         <button
                           onClick={() => setPortalUsersClientId(portalUsersClientId === client.id ? null : client.id)}
-                          className="text-xs bg-[#0d9488] text-[#0d9488] px-2 py-0.5 rounded hover:bg-blue-100"
+                          className="text-xs bg-[#ccfbf1] text-[#0d3d3b] px-2 py-0.5 rounded hover:bg-[#99f6e4]"
                         >
                           Users
                         </button>
