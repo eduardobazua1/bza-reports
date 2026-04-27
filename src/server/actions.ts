@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, products, customerPayments, customerPaymentInvoices } from "@/db/schema";
+import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, supplierPayments, products, customerPayments, customerPaymentInvoices } from "@/db/schema";
 import { eq, and, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { v4 as uuidv4 } from "uuid";
@@ -144,7 +144,13 @@ export async function updatePurchaseOrder(id: number, data: Partial<{
 }
 
 export async function deletePurchaseOrder(id: number) {
+  // Delete shipment updates for all invoices of this PO
+  const invs = await db.select({ id: invoices.id }).from(invoices).where(eq(invoices.purchaseOrderId, id));
+  for (const inv of invs) {
+    await db.delete(shipmentUpdates).where(eq(shipmentUpdates.invoiceId, inv.id));
+  }
   await db.delete(invoices).where(eq(invoices.purchaseOrderId, id));
+  await db.delete(supplierPayments).where(eq(supplierPayments.purchaseOrderId, id));
   await db.delete(purchaseOrders).where(eq(purchaseOrders.id, id));
   revalidatePath("/purchase-orders");
 }
