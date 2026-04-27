@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { X, Paperclip, FileSpreadsheet, FileText, Image, Upload } from "lucide-react";
-import { usePathname } from "next/navigation";
 
 type Message = { role: "user" | "assistant"; content: string; fileNames?: string[]; imageUrls?: string[] };
 
@@ -38,7 +37,6 @@ function MarkdownContent({ content }: { content: string }) {
 }
 
 export function IntelligenceWidget() {
-  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -49,9 +47,6 @@ export function IntelligenceWidget() {
   const fileRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dragCounter = useRef(0);
-
-  // Hide on /assistant page
-  if (pathname === "/assistant") return null;
 
   useEffect(() => {
     if (open) setTimeout(() => scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight), 80);
