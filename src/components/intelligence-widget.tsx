@@ -6,9 +6,9 @@ import { X, Paperclip, FileSpreadsheet, FileText, Image, Upload } from "lucide-r
 type Message = { role: "user" | "assistant"; content: string; fileNames?: string[]; imageUrls?: string[] };
 
 const SUGGESTIONS = [
+  "Process invoice document",
   "Active purchase orders?",
   "Unpaid invoices?",
-  "Revenue this month?",
   "Shipments in transit?",
 ];
 
@@ -164,7 +164,16 @@ export function IntelligenceWidget() {
             {messages.length === 0 && (
               <div className="space-y-2">
                 {SUGGESTIONS.map(s => (
-                  <button key={s} onClick={() => send(s)} className="w-full text-left text-xs bg-white border border-stone-200 rounded-xl px-3 py-2.5 text-[#0d9488] font-medium hover:bg-stone-50 transition-colors">
+                  <button key={s}
+                    onClick={() => {
+                      if (s === "Process invoice document") {
+                        fileRef.current?.click();
+                      } else {
+                        send(s);
+                      }
+                    }}
+                    className="w-full text-left text-xs bg-white border border-stone-200 rounded-xl px-3 py-2.5 text-[#0d9488] font-medium hover:bg-stone-50 transition-colors flex items-center gap-2">
+                    {s === "Process invoice document" && <Paperclip className="w-3 h-3 shrink-0" />}
                     {s}
                   </button>
                 ))}
