@@ -270,23 +270,21 @@ export function POForm({
     purchaseOrder?.clientProductId ? String(purchaseOrder.clientProductId) : ""
   );
 
-  // Fill cert fields from the currently selected client + supplier records
-  function fillFromClientSupplier(type: "fsc" | "pefc", clientId: number | "", supplierId: number | "") {
+  // Fill cert fields from the selected CLIENT — clients hold the certification data
+  function fillFromClient(type: "fsc" | "pefc", clientId: number | "") {
     const cl = clients.find(c => c.id === clientId);
-    const su = suppliers.find(s => s.id === supplierId);
-    // Only overwrite a field if the source record actually has a value
+    if (!cl) return;
     if (type === "fsc") {
-      if (su?.fscLicense)      setLicenseFsc(su.fscLicense);
-      if (su?.fscChainOfCustody) setChainOfCustody(su.fscChainOfCustody);
-      if (su?.fscInputClaim)   setInputClaim(su.fscInputClaim);
-      if (cl?.fscOutputClaim)  setOutputClaim(cl.fscOutputClaim);
+      if (cl.fscLicense)       setLicenseFsc(cl.fscLicense);
+      if (cl.fscChainOfCustody) setChainOfCustody(cl.fscChainOfCustody);
+      if (cl.fscInputClaim)    setInputClaim(cl.fscInputClaim);
+      if (cl.fscOutputClaim)   setOutputClaim(cl.fscOutputClaim);
       setPefc("");
     } else {
-      const pefcVal = su?.pefc || (cl as { pefc?: string | null })?.pefc;
-      if (pefcVal) setPefc(pefcVal);
-      if (su?.fscInputClaim)     setInputClaim(su.fscInputClaim);
-      if (su?.fscChainOfCustody) setChainOfCustody(su.fscChainOfCustody);
-      if (cl?.fscOutputClaim)    setOutputClaim(cl.fscOutputClaim);
+      if (cl.pefc)              setPefc(cl.pefc);
+      if (cl.fscInputClaim)     setInputClaim(cl.fscInputClaim);
+      if (cl.fscChainOfCustody) setChainOfCustody(cl.fscChainOfCustody);
+      if (cl.fscOutputClaim)    setOutputClaim(cl.fscOutputClaim);
       setLicenseFsc("");
     }
   }
@@ -297,17 +295,17 @@ export function POForm({
       setLicenseFsc(""); setChainOfCustody(""); setInputClaim(""); setOutputClaim(""); setPefc("");
       return;
     }
-    fillFromClientSupplier(type, selectedClientId, selectedSupplierId);
+    fillFromClient(type, selectedClientId);
   }
 
   function handleClientSelect(id: number) {
     setSelectedClientId(id);
-    if (certType) fillFromClientSupplier(certType as "fsc" | "pefc", id, selectedSupplierId);
+    if (certType) fillFromClient(certType as "fsc" | "pefc", id);
   }
 
   function handleSupplierSelect(id: number) {
     setSelectedSupplierId(id);
-    if (certType) fillFromClientSupplier(certType as "fsc" | "pefc", selectedClientId, id);
+    // Supplier selection no longer drives cert fields — certs come from client
   }
 
   function handleSupplierProductChange(id: string) {

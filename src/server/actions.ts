@@ -37,6 +37,12 @@ export async function updateClient(id: number, data: {
   rfc?: string;
   city?: string;
   country?: string;
+  certType?: string | null;
+  fscLicense?: string | null;
+  fscChainOfCustody?: string | null;
+  fscInputClaim?: string | null;
+  fscOutputClaim?: string | null;
+  pefc?: string | null;
 }) {
   await db.update(clients).set({ ...data, updatedAt: new Date().toISOString() }).where(eq(clients.id, id));
   revalidatePath("/clients");

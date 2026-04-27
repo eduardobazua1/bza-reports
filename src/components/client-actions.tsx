@@ -19,6 +19,12 @@ type Client = {
   rfc: string | null;
   city: string | null;
   country: string | null;
+  certType: string | null;
+  fscLicense: string | null;
+  fscChainOfCustody: string | null;
+  fscInputClaim: string | null;
+  fscOutputClaim: string | null;
+  pefc: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -38,6 +44,7 @@ export function ClientActions({ clients }: { clients: Client[] }) {
   const [isPending, startTransition] = useTransition();
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
+  const [certType, setCertType] = useState<"" | "fsc" | "pefc">("");
   const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [portalUsersClientId, setPortalUsersClientId] = useState<number | null>(null);
@@ -101,17 +108,24 @@ export function ClientActions({ clients }: { clients: Client[] }) {
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
+    const g = (k: string) => (formData.get(k) as string) || undefined;
     const data = {
       name: formData.get("name") as string,
-      contactName: (formData.get("contactName") as string) || undefined,
-      contactEmail: (formData.get("contactEmail") as string) || undefined,
-      phone: (formData.get("phone") as string) || undefined,
+      contactName: g("contactName"),
+      contactEmail: g("contactEmail"),
+      phone: g("phone"),
       paymentTermsDays: formData.get("paymentTermsDays") ? Number(formData.get("paymentTermsDays")) : null,
-      billAddress: (formData.get("billAddress") as string) || undefined,
-      shipAddress: (formData.get("shipAddress") as string) || undefined,
-      rfc: (formData.get("rfc") as string) || undefined,
-      city: (formData.get("city") as string) || undefined,
-      country: (formData.get("country") as string) || undefined,
+      billAddress: g("billAddress"),
+      shipAddress: g("shipAddress"),
+      rfc: g("rfc"),
+      city: g("city"),
+      country: g("country"),
+      certType: certType || null,
+      fscLicense: g("fscLicense") || null,
+      fscChainOfCustody: g("fscChainOfCustody") || null,
+      fscInputClaim: g("fscInputClaim") || null,
+      fscOutputClaim: g("fscOutputClaim") || null,
+      pefc: g("pefc") || null,
     };
 
     startTransition(async () => {
@@ -153,12 +167,14 @@ export function ClientActions({ clients }: { clients: Client[] }) {
 
   function handleEdit(client: Client) {
     setEditingClient(client);
+    setCertType((client.certType as "" | "fsc" | "pefc") || "");
     setShowForm(true);
   }
 
   function handleCancel() {
     setShowForm(false);
     setEditingClient(null);
+    setCertType("");
   }
 
   return (
@@ -255,6 +271,39 @@ export function ClientActions({ clients }: { clients: Client[] }) {
                 placeholder="MEXICO"
               />
             </div>
+            {/* Certification */}
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium mb-2">Certification</label>
+              <div className="flex gap-1 mb-3">
+                {(["", "fsc", "pefc"] as const).map(t => (
+                  <button key={t} type="button" onClick={() => setCertType(t)}
+                    className={`px-3 py-1 rounded text-xs font-medium border transition-colors ${certType === t ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-muted"}`}>
+                    {t === "" ? "None" : t.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              {certType === "fsc" && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-muted/30 rounded-lg">
+                  {[["fscLicense","FSC License","FSC-C000000"],["fscChainOfCustody","Chain of Custody","SCS-CW-000000"],["fscInputClaim","Input Claim","FSC Controlled Wood"],["fscOutputClaim","Output Claim","FSC Controlled Wood"]].map(([name,label,ph]) => (
+                    <div key={name}>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">{label}</label>
+                      <input name={name} defaultValue={(editingClient as Record<string,string|null> | null)?.[name] || ""} placeholder={ph} className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background" />
+                    </div>
+                  ))}
+                </div>
+              )}
+              {certType === "pefc" && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-muted/30 rounded-lg">
+                  {[["pefc","PEFC Certificate","PEFC/xx-xx-xx"],["fscInputClaim","Input Claim",""],["fscChainOfCustody","Chain of Custody",""],["fscOutputClaim","Output Claim",""]].map(([name,label,ph]) => (
+                    <div key={name}>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">{label}</label>
+                      <input name={name} defaultValue={(editingClient as Record<string,string|null> | null)?.[name] || ""} placeholder={ph} className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium mb-1">Billing Address</label>
               <textarea
