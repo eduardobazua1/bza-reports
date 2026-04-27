@@ -37,9 +37,9 @@ export const shipmentStatusLabels: Record<string, string> = {
 
 export const shipmentStatusColors: Record<string, string> = {
   programado: "bg-stone-100 text-stone-600",
-  en_transito: "bg-blue-100 text-[#0d9488]",
-  en_aduana: "bg-[#0d9488] text-[#0d9488]",
-  entregado: "bg-emerald-100 text-emerald-700",
+  en_transito: "bg-[#ccfbf1] text-[#0d3d3b]",
+  en_aduana: "bg-[#ccfbf1] text-[#0d3d3b]",
+  entregado: "bg-[#0d3d3b] text-[#6ee7b7]",
 };
 
 export const paymentStatusLabels: Record<string, string> = {
