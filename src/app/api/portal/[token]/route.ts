@@ -28,6 +28,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
       item: invoices.item,
       salesDocument: invoices.salesDocument,
       billingDocument: invoices.billingDocument,
+      updatedAt: invoices.updatedAt,
       clientPoNumber: purchaseOrders.clientPoNumber,
       product: purchaseOrders.product,
       transportType: purchaseOrders.transportType,
@@ -75,7 +76,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
     vehicle: r.vehicleId,
     bl: r.blNumber,
     transport: r.transportType,
-    statusUpdatedAt: updateMap.get(r.id) || null,
+    statusUpdatedAt: [updateMap.get(r.id), r.updatedAt].filter(Boolean).sort().pop() || null,
     docs: (docMap.get(r.id) || []).map(d => ({ id: d.id, type: d.type })),
   }));
 
