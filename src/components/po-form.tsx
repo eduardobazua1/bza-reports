@@ -172,6 +172,48 @@ export function POListActions({
   );
 }
 
+function IncotermSelect({ name, options, defaultValue }: { name: string; options: string[]; defaultValue?: string }) {
+  const [value, setValue] = useState(defaultValue || "");
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const filtered = value ? options.filter(o => o.toLowerCase().includes(value.toLowerCase())) : options;
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <input
+        name={name}
+        value={value}
+        onChange={e => { setValue(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        placeholder="Select or type..."
+        className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
+        autoComplete="off"
+      />
+      {open && filtered.length > 0 && (
+        <div className="absolute z-50 mt-1 w-full bg-white border border-border rounded-lg shadow-lg overflow-hidden">
+          {filtered.map(o => (
+            <div
+              key={o}
+              onMouseDown={() => { setValue(o); setOpen(false); }}
+              className={`px-3 py-2 text-sm cursor-pointer hover:bg-muted ${value === o ? "bg-muted font-medium" : ""}`}
+            >
+              {o}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const STORAGE_KEY = "bza_custom_incoterms";
 
 function useIncoterms() {
@@ -320,8 +362,6 @@ export function POForm({
     </button>
   );
 
-  const incotermId = "incoterm-list";
-
   return (
     <div className="bg-white rounded-md shadow-sm p-4">
       <h3 className="text-lg font-semibold mb-4">
@@ -450,16 +490,11 @@ export function POForm({
                 <button type="button" onClick={() => setAddingTerm(true)} className="text-xs text-[#0d9488] hover:underline">+ Add</button>
               )}
             </div>
-            <input
+            <IncotermSelect
               name="terms"
-              list={incotermId}
+              options={allIncoterms}
               defaultValue={purchaseOrder?.terms || ""}
-              className={inp}
-              placeholder="Select or type..."
             />
-            <datalist id={incotermId}>
-              {allIncoterms.map(t => <option key={t} value={t} />)}
-            </datalist>
             {addingTerm && (
               <div className="flex gap-1 mt-1">
                 <input
