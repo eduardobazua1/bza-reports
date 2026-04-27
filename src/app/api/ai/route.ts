@@ -474,6 +474,11 @@ FIELDS THE USER ENTERS MANUALLY (do NOT try to extract from document):
 - estimatedArrival (ETA) — user sets this manually after
 - salesDocument (client PO) — always ask the user for this
 
+FIELDS INHERITED FROM THE PO (do NOT ask, do NOT extract from document — already set):
+- sellPrice / sellPriceOverride — defined on the PO
+- buyPrice / buyPriceOverride — defined on the PO
+- item / product description — defined on the PO
+
 IMPORTANT — common mistakes to avoid:
 - "Bales in Unit" or "Bales" = balesCount (can be large, e.g. 372)
 - "Units" = unitsPerBale (sheets per bale, e.g. 62) — do NOT confuse these two
