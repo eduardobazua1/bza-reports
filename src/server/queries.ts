@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, clientPurchaseOrders, supplierPayments, supplierOrders, customerPayments, customerPaymentInvoices } from "@/db/schema";
+import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, clientPurchaseOrders, supplierPayments, supplierOrders, customerPayments, customerPaymentInvoices, creditMemos } from "@/db/schema";
 import { eq, desc, sql, and, count, inArray } from "drizzle-orm";
 
 // ---- Clients ----
@@ -449,4 +449,60 @@ export async function getProductsWithSales() {
     .leftJoin(purchaseOrders, eq(invoices.purchaseOrderId, purchaseOrders.id))
     .groupBy(sql`coalesce(${invoices.item}, ${purchaseOrders.product}, 'Unknown')`)
     .orderBy(sql<number>`coalesce(sum(${invoices.quantityTons} * coalesce(${invoices.sellPriceOverride}, ${purchaseOrders.sellPrice})), 0)` );
+}
+
+// ---- Credit Memos ----
+export async function getCreditMemos() {
+  return db
+    .select({
+      id: creditMemos.id,
+      clientId: creditMemos.clientId,
+      clientName: clients.name,
+      invoiceId: creditMemos.invoiceId,
+      creditNumber: creditMemos.creditNumber,
+      amount: creditMemos.amount,
+      memoDate: creditMemos.memoDate,
+      reason: creditMemos.reason,
+      status: creditMemos.status,
+      appliedDate: creditMemos.appliedDate,
+      notes: creditMemos.notes,
+      createdAt: creditMemos.createdAt,
+    })
+    .from(creditMemos)
+    .leftJoin(clients, eq(creditMemos.clientId, clients.id))
+    .orderBy(desc(creditMemos.memoDate));
+}
+
+// ---- Statement: all transactions for a client ----
+export async function getClientStatement(clientId: number, fromDate?: string, toDate?: string) {
+  const allInvoices = await db
+    .select({
+      id: invoices.id,
+      invoiceNumber: invoices.invoiceNumber,
+      invoiceDate: invoices.invoiceDate,
+      shipmentDate: invoices.shipmentDate,
+      dueDate: invoices.dueDate,
+      quantityTons: invoices.quantityTons,
+      customerPaymentStatus: invoices.customerPaymentStatus,
+      sellPrice: sql<number>`coalesce(${invoices.sellPriceOverride}, ${purchaseOrders.sellPrice})`,
+      poNumber: purchaseOrders.poNumber,
+    })
+    .from(invoices)
+    .leftJoin(purchaseOrders, eq(invoices.purchaseOrderId, purchaseOrders.id))
+    .where(eq(purchaseOrders.clientId, clientId))
+    .orderBy(invoices.invoiceDate);
+
+  const allPayments = await db
+    .select()
+    .from(customerPayments)
+    .where(eq(customerPayments.clientId, clientId))
+    .orderBy(customerPayments.paymentDate);
+
+  const allCredits = await db
+    .select()
+    .from(creditMemos)
+    .where(eq(creditMemos.clientId, clientId))
+    .orderBy(creditMemos.memoDate);
+
+  return { invoices: allInvoices, payments: allPayments, credits: allCredits };
 }

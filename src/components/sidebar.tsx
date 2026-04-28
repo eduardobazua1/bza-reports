@@ -31,7 +31,6 @@ import {
   ScrollText,
   Send,
   FileMinus,
-  Sliders,
   type LucideIcon,
 } from "lucide-react";
 
@@ -129,59 +128,10 @@ const mainEntries: RootEntry[] = [
   {
     label: "Reports", icon: BarChart3,
     children: [
-      {
-        section: "Business Overview",
-        children: [
-          { href: "/reports/balance-sheet",    label: "Balance Sheet" },
-          { href: "/reports/pl-by-customer",   label: "P&L by Customer" },
-          { href: "/reports/pl-by-month",      label: "P&L by Month" },
-        ],
-      },
-      {
-        section: "Who Owes You",
-        children: [
-          { href: "/reports/ar-aging-summary",   label: "A/R Aging Summary" },
-          { href: "/reports/ar-aging-detail",    label: "A/R Aging Detail" },
-          { href: "/reports/open-invoices",      label: "Open Invoices" },
-          { href: "/reports/invoice-list",       label: "Invoice List" },
-          { href: "/reports/received-payments",  label: "Received Payments" },
-        ],
-      },
-      {
-        section: "Sales & Customers",
-        children: [
-          { href: "/reports/customer-contacts",    label: "Customer Contact List" },
-          { href: "/reports/income-by-customer",   label: "Income by Customer" },
-          { href: "/reports/product-service-list", label: "Product & Service List" },
-          { href: "/reports/sales-by-product",     label: "Sales by Product" },
-        ],
-      },
-      {
-        section: "Inventory",
-        children: [
-          { href: "/reports/open-pos-by-customer", label: "Open POs by Customer" },
-          { href: "/reports/open-pos-by-product",  label: "Open POs by Product" },
-        ],
-      },
-      {
-        section: "What You Owe",
-        children: [
-          { href: "/reports/ap-aging-summary",      label: "A/P Aging Summary" },
-          { href: "/reports/ap-aging-detail",       label: "A/P Aging Detail" },
-          { href: "/reports/vendor-balance-summary", label: "Vendor Balance Summary" },
-          { href: "/reports/vendor-balance-detail",  label: "Vendor Balance Detail" },
-        ],
-      },
-      {
-        section: "Vendors",
-        children: [
-          { href: "/reports/vendor-contacts", label: "Vendor Contact List" },
-          { href: "/reports/pos-by-vendor",   label: "POs by Vendor" },
-        ],
-      },
+      { href: "/reports",        label: "Standard Reports" },
+      { href: "/custom-reports", label: "Custom Reports"   },
     ],
   },
-  { href: "/custom-reports", label: "Custom Reports", icon: Sliders },
 ];
 
 const utilityEntries: (NavLeaf & { icon: LucideIcon })[] = [

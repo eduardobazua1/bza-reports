@@ -23,6 +23,7 @@ const REPORT_CATEGORIES = [
       { id: "open-invoices",     label: "Open Invoices",           href: "/reports/open-invoices",     ready: true  },
       { id: "invoice-list",      label: "Invoice List",            href: "/reports/invoice-list",      ready: true  },
       { id: "received-payments", label: "Received Payments",       href: "/reports/received-payments", ready: true  },
+      { id: "statements",        label: "Statements",              href: "/reports/statements",        ready: true  },
     ],
   },
   {

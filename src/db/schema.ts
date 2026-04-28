@@ -340,3 +340,18 @@ export const documents = sqliteTable("documents", {
   fileSize: integer("file_size"),
   uploadedAt: text("uploaded_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
+
+// Credit memos — issued to clients as discounts or adjustments on invoices
+export const creditMemos = sqliteTable("credit_memos", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  clientId: integer("client_id").notNull().references(() => clients.id),
+  invoiceId: integer("invoice_id").references(() => invoices.id),
+  creditNumber: text("credit_number"),
+  amount: real("amount").notNull(), // positive = credit to client
+  memoDate: text("memo_date").notNull(),
+  reason: text("reason"),
+  status: text("status", { enum: ["open", "applied", "void"] }).notNull().default("open"),
+  appliedDate: text("applied_date"),
+  notes: text("notes"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});

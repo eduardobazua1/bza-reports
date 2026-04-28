@@ -1,13 +1,32 @@
-export default function Page() {
+import { getCreditMemos, getClients, getUnpaidInvoicesForPayments } from "@/server/queries";
+import { CreditMemosPanel } from "@/components/credit-memos-panel";
+
+export default async function CreditMemosPage() {
+  const [memos, clients, unpaidInvs] = await Promise.all([
+    getCreditMemos(),
+    getClients(),
+    getUnpaidInvoicesForPayments(),
+  ]);
+
+  // Build invoice options for the form dropdown
+  const invoices = unpaidInvs.map(i => ({
+    id: i.id,
+    invoiceNumber: i.invoiceNumber,
+    clientId: i.clientId ?? 0,
+    amount: i.quantityTons * i.sellPrice,
+  }));
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Credit Memos</h1>
-        <p className="text-sm text-muted-foreground mt-1">Issue adjustments on invoices</p>
+        <h1 className="text-2xl font-bold text-stone-900">Credit Memos</h1>
+        <p className="text-sm text-stone-500 mt-1">Issue adjustments and credits to clients</p>
       </div>
-      <div className="bg-white rounded-xl shadow-sm p-10 text-center text-muted-foreground text-sm">
-        Coming soon
-      </div>
+      <CreditMemosPanel
+        memos={memos as any}
+        clients={clients.map(c => ({ id: c.id, name: c.name }))}
+        invoices={invoices}
+      />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, supplierPayments, products, customerPayments, customerPaymentInvoices } from "@/db/schema";
+import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, supplierPayments, products, customerPayments, customerPaymentInvoices, creditMemos } from "@/db/schema";
 import { eq, and, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { v4 as uuidv4 } from "uuid";
@@ -418,4 +418,54 @@ export async function updateProduct(id: number, data: {
 export async function deleteProduct(id: number) {
   await db.delete(products).where(eq(products.id, id));
   revalidatePath("/products");
+}
+
+// ---- Credit Memos ----
+export async function createCreditMemo(data: {
+  clientId: number;
+  invoiceId?: number | null;
+  creditNumber?: string;
+  amount: number;
+  memoDate: string;
+  reason?: string;
+  notes?: string;
+}) {
+  await db.insert(creditMemos).values({
+    ...data,
+    status: "open",
+  });
+  revalidatePath("/credit-memos");
+}
+
+export async function updateCreditMemo(id: number, data: {
+  clientId?: number;
+  invoiceId?: number | null;
+  creditNumber?: string;
+  amount?: number;
+  memoDate?: string;
+  reason?: string;
+  notes?: string;
+}) {
+  await db.update(creditMemos).set(data).where(eq(creditMemos.id, id));
+  revalidatePath("/credit-memos");
+}
+
+export async function applyCreditMemo(id: number) {
+  const today = new Date().toISOString().split("T")[0];
+  await db.update(creditMemos)
+    .set({ status: "applied", appliedDate: today })
+    .where(eq(creditMemos.id, id));
+  revalidatePath("/credit-memos");
+}
+
+export async function voidCreditMemo(id: number) {
+  await db.update(creditMemos)
+    .set({ status: "void" })
+    .where(eq(creditMemos.id, id));
+  revalidatePath("/credit-memos");
+}
+
+export async function deleteCreditMemo(id: number) {
+  await db.delete(creditMemos).where(eq(creditMemos.id, id));
+  revalidatePath("/credit-memos");
 }
