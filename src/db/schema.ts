@@ -23,10 +23,12 @@ export const clients = sqliteTable("clients", {
   country: text("country"),
   paymentTermsDays: integer("payment_terms_days"), // e.g. 60 = Net 60
   // FSC/PEFC certification
+  certType: text("cert_type"),
   fscLicense: text("fsc_license"),
   fscChainOfCustody: text("fsc_chain_of_custody"),
   fscInputClaim: text("fsc_input_claim"),
   fscOutputClaim: text("fsc_output_claim"),
+  pefc: text("pefc"),
   accessToken: text("access_token").notNull().unique(),
   portalEnabled: integer("portal_enabled", { mode: "boolean" }).notNull().default(false),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),

@@ -1,13 +1,36 @@
-export default function PaymentsPage() {
+import { getCustomerPaymentsWithInvoices, getUnpaidInvoicesForPayments, getSupplierPaymentsWithInfo } from "@/server/queries";
+import { PaymentsPanel } from "@/components/payments-panel";
+
+export default async function PaymentsPage() {
+  const [customerPaymentsList, unpaidInvoices, supplierPaymentsList] = await Promise.all([
+    getCustomerPaymentsWithInvoices(),
+    getUnpaidInvoicesForPayments(),
+    getSupplierPaymentsWithInfo(),
+  ]);
+
+  const today = new Date().toISOString().split("T")[0];
+  const totalAR = unpaidInvoices.reduce((s, inv) => s + inv.quantityTons * inv.sellPrice, 0);
+  const overdueAR = unpaidInvoices
+    .filter(inv => inv.dueDate && inv.dueDate < today)
+    .reduce((s, inv) => s + inv.quantityTons * inv.sellPrice, 0);
+  const totalCollected = customerPaymentsList.reduce((s, p) => s + p.amount, 0);
+  const totalSupplierPaid = supplierPaymentsList.reduce((s, p) => s + p.amountUsd, 0);
+
   return (
-    <div className="p-6 md:p-10 max-w-4xl space-y-6">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-stone-900">Payments</h1>
-        <p className="text-sm text-stone-400 mt-1">Customer &amp; supplier payment tracking</p>
+        <h1 className="text-2xl font-bold">Payments</h1>
+        <p className="text-sm text-muted-foreground mt-1">Customer collections & supplier disbursements</p>
       </div>
-      <div className="bg-white rounded-xl shadow-sm p-8 text-center text-stone-400 text-sm">
-        Coming soon — payment tracking will be available here.
-      </div>
+      <PaymentsPanel
+        customerPayments={customerPaymentsList}
+        unpaidInvoices={unpaidInvoices}
+        supplierPayments={supplierPaymentsList}
+        totalAR={totalAR}
+        overdueAR={overdueAR}
+        totalCollected={totalCollected}
+        totalSupplierPaid={totalSupplierPaid}
+      />
     </div>
   );
 }

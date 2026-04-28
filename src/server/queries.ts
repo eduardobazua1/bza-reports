@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, clientPurchaseOrders, supplierPayments, supplierOrders } from "@/db/schema";
-import { eq, desc, sql, and, count } from "drizzle-orm";
+import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, clientPurchaseOrders, supplierPayments, supplierOrders, customerPayments, customerPaymentInvoices } from "@/db/schema";
+import { eq, desc, sql, and, count, inArray } from "drizzle-orm";
 
 // ---- Clients ----
 export async function getClients() {
@@ -335,4 +335,79 @@ export async function getClientInvoices(clientId: number) {
     .leftJoin(purchaseOrders, eq(invoices.purchaseOrderId, purchaseOrders.id))
     .where(eq(purchaseOrders.clientId, clientId))
     .orderBy(desc(invoices.shipmentDate));
+}
+
+// ---- Payments ----
+export async function getCustomerPaymentsWithInvoices() {
+  const payments = await db
+    .select({
+      id: customerPayments.id,
+      clientId: customerPayments.clientId,
+      clientName: clients.name,
+      paymentDate: customerPayments.paymentDate,
+      amount: customerPayments.amount,
+      paymentMethod: customerPayments.paymentMethod,
+      referenceNo: customerPayments.referenceNo,
+      notes: customerPayments.notes,
+      createdAt: customerPayments.createdAt,
+    })
+    .from(customerPayments)
+    .leftJoin(clients, eq(customerPayments.clientId, clients.id))
+    .orderBy(desc(customerPayments.paymentDate));
+
+  if (payments.length === 0) return [];
+
+  const links = await db
+    .select()
+    .from(customerPaymentInvoices)
+    .where(inArray(customerPaymentInvoices.paymentId, payments.map(p => p.id)));
+
+  return payments.map(p => ({
+    ...p,
+    invoices: links.filter(l => l.paymentId === p.id),
+  }));
+}
+
+export async function getUnpaidInvoicesForPayments() {
+  return db
+    .select({
+      id: invoices.id,
+      invoiceNumber: invoices.invoiceNumber,
+      quantityTons: invoices.quantityTons,
+      shipmentDate: invoices.shipmentDate,
+      dueDate: invoices.dueDate,
+      clientId: purchaseOrders.clientId,
+      clientName: clients.name,
+      poNumber: purchaseOrders.poNumber,
+      sellPrice: sql<number>`coalesce(${invoices.sellPriceOverride}, ${purchaseOrders.sellPrice})`,
+    })
+    .from(invoices)
+    .leftJoin(purchaseOrders, eq(invoices.purchaseOrderId, purchaseOrders.id))
+    .leftJoin(clients, eq(purchaseOrders.clientId, clients.id))
+    .where(eq(invoices.customerPaymentStatus, "unpaid"))
+    .orderBy(clients.name, invoices.dueDate);
+}
+
+export async function getSupplierPaymentsWithInfo() {
+  return db
+    .select({
+      id: supplierPayments.id,
+      supplierId: supplierPayments.supplierId,
+      supplierName: suppliers.name,
+      purchaseOrderId: supplierPayments.purchaseOrderId,
+      poNumber: purchaseOrders.poNumber,
+      amountUsd: supplierPayments.amountUsd,
+      paymentDate: supplierPayments.paymentDate,
+      paymentMethod: supplierPayments.paymentMethod,
+      reference: supplierPayments.reference,
+      notes: supplierPayments.notes,
+      estimatedTons: supplierPayments.estimatedTons,
+      actualTons: supplierPayments.actualTons,
+      adjustmentAmount: supplierPayments.adjustmentAmount,
+      adjustmentStatus: supplierPayments.adjustmentStatus,
+    })
+    .from(supplierPayments)
+    .leftJoin(suppliers, eq(supplierPayments.supplierId, suppliers.id))
+    .leftJoin(purchaseOrders, eq(supplierPayments.purchaseOrderId, purchaseOrders.id))
+    .orderBy(desc(supplierPayments.paymentDate));
 }
