@@ -19,47 +19,59 @@ import {
   LogOut,
   Menu,
   X,
-  TrendingUp,
-  Ship,
   Database,
   HelpCircle,
   ChevronDown,
   CreditCard,
-  LineChart,
-  FolderOpen,
   UserCog,
   Bell,
   Plus,
+  ShoppingCart,
+  Wallet,
+  ScrollText,
+  Send,
+  FileMinus,
+  Sliders,
   type LucideIcon,
 } from "lucide-react";
 
+// ── Types ────────────────────────────────────────────────────────────────────
+type NavLeaf     = { href: string; label: string; icon?: LucideIcon };
+type NavSection  = { section: string; children: NavLeaf[] };
+type NavGroup    = { label: string; icon: LucideIcon; children: (NavLeaf | NavSection)[] };
+type RootEntry   = (NavLeaf & { icon: LucideIcon }) | NavGroup;
+
+function isGroup(e: RootEntry): e is NavGroup   { return "children" in e; }
+function isSection(e: NavLeaf | NavSection): e is NavSection { return "section" in e; }
+
+// ── Quick Create ─────────────────────────────────────────────────────────────
 const QUICK_ACTIONS = [
   {
     group: "Operations",
     items: [
-      { label: "New Purchase Order", href: "/purchase-orders", description: "Create a new PO" },
-      { label: "New Invoice / Shipment", href: "/invoices", description: "Add shipment to a PO" },
+      { label: "New Purchase Order",       href: "/purchase-orders",    description: "Create a new PO" },
+      { label: "New Invoice / Shipment",   href: "/invoices",           description: "Add shipment to a PO" },
     ],
   },
   {
     group: "Payments",
     items: [
-      { label: "Record Customer Payment", href: "/payments", description: "Mark invoices as paid" },
-      { label: "Record Supplier Payment", href: "/payments?tab=supplier", description: "Log payment to supplier" },
+      { label: "Record Customer Payment",  href: "/payments",                description: "Mark invoices as paid" },
+      { label: "Record Supplier Payment",  href: "/payments?tab=supplier",   description: "Log payment to supplier" },
     ],
   },
   {
     group: "Contacts",
     items: [
-      { label: "Add Client", href: "/clients", description: "Register a new client" },
-      { label: "Add Supplier", href: "/suppliers", description: "Register a new supplier" },
+      { label: "Add Client",    href: "/clients",    description: "Register a new client" },
+      { label: "Add Supplier",  href: "/suppliers",  description: "Register a new supplier" },
     ],
   },
 ];
 
 function QuickCreateMenu({ onClose }: { onClose: () => void }) {
   return (
-    <div className="absolute left-4 top-full mt-2 z-50 w-72 bg-white rounded-xl shadow-xl border border-stone-200 overflow-hidden">
+    <div className="absolute left-0 top-full mt-2 z-50 w-72 bg-white rounded-xl shadow-xl border border-stone-200 overflow-hidden">
       <div className="px-4 py-2.5 bg-[#0d3d3b] flex items-center justify-between">
         <span className="text-sm font-semibold text-white">Quick Create</span>
         <button onClick={onClose} className="text-white/60 hover:text-white">
@@ -72,12 +84,8 @@ function QuickCreateMenu({ onClose }: { onClose: () => void }) {
             {section.group}
           </p>
           {section.items.map(item => (
-            <Link
-              key={item.href + item.label}
-              href={item.href}
-              onClick={onClose}
-              className="flex flex-col px-4 py-2.5 hover:bg-stone-50 transition-colors"
-            >
+            <Link key={item.href + item.label} href={item.href} onClick={onClose}
+              className="flex flex-col px-4 py-2.5 hover:bg-stone-50 transition-colors">
               <span className="text-sm font-medium text-stone-800">{item.label}</span>
               <span className="text-xs text-stone-400">{item.description}</span>
             </Link>
@@ -89,50 +97,106 @@ function QuickCreateMenu({ onClose }: { onClose: () => void }) {
   );
 }
 
-type NavItem = { href: string; label: string; icon: LucideIcon };
-type NavGroup = { label: string; icon: LucideIcon; children: NavItem[] };
-type NavEntry = NavItem | NavGroup;
-
-function isGroup(e: NavEntry): e is NavGroup {
-  return "children" in e;
-}
-
-const navEntries: NavEntry[] = [
+// ── Nav structure ────────────────────────────────────────────────────────────
+const mainEntries: RootEntry[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/purchase-orders", label: "Purchase Orders", icon: ClipboardList },
-  { href: "/invoices", label: "Invoices", icon: FileText },
-  { href: "/payments", label: "Payments", icon: CreditCard },
-  { href: "/clients", label: "Clients", icon: Users },
-  { href: "/suppliers", label: "Suppliers", icon: Truck },
-  { href: "/products", label: "Products", icon: Package },
   {
-    label: "Reports",
-    icon: BarChart3,
+    label: "Customer Hub", icon: Users,
     children: [
-      { href: "/reports", label: "Reports", icon: BarChart3 },
-      { href: "/analytics", label: "Analytics", icon: LineChart },
-      { href: "/shipments", label: "Shipments", icon: Ship },
-      { href: "/market-prices", label: "Market Prices", icon: TrendingUp },
+      { href: "/clients",    label: "Clients" },
+      { href: "/contracts",  label: "Contracts" },
+      { href: "/proposals",  label: "Proposals" },
     ],
   },
-  { href: "/documents", label: "Documents", icon: FolderOpen },
   {
-    label: "Data",
-    icon: Database,
+    label: "Sales", icon: ShoppingCart,
     children: [
-      { href: "/import", label: "Import Data", icon: Upload },
-      { href: "/export", label: "Export Excel", icon: Download },
+      { href: "/purchase-orders", label: "Purchase Orders" },
+      { href: "/invoices",        label: "Invoices" },
+      { href: "/payments",        label: "Payments (A/R)" },
+      { href: "/products",        label: "Products & Services" },
+      { href: "/credit-memos",    label: "Credit Memo" },
     ],
   },
-  { href: "/portal-users", label: "Portal Users", icon: UserCog },
-  { href: "/notifications", label: "Notifications", icon: Bell },
-  { href: "/settings", label: "Settings", icon: Settings },
-  { href: "/help", label: "Help & Support", icon: HelpCircle },
+  {
+    label: "Expenses", icon: Wallet,
+    children: [
+      { href: "/suppliers",              label: "Vendors" },
+      { href: "/payments?tab=supplier",  label: "Payments (A/P)" },
+      { href: "/supplier-orders",        label: "Purchase Orders" },
+    ],
+  },
+  {
+    label: "Reports", icon: BarChart3,
+    children: [
+      {
+        section: "Business Overview",
+        children: [
+          { href: "/reports/balance-sheet",    label: "Balance Sheet" },
+          { href: "/reports/pl-by-customer",   label: "P&L by Customer" },
+          { href: "/reports/pl-by-month",      label: "P&L by Month" },
+        ],
+      },
+      {
+        section: "Who Owes You",
+        children: [
+          { href: "/reports/ar-aging-summary",   label: "A/R Aging Summary" },
+          { href: "/reports/ar-aging-detail",    label: "A/R Aging Detail" },
+          { href: "/reports/open-invoices",      label: "Open Invoices" },
+          { href: "/reports/invoice-list",       label: "Invoice List" },
+          { href: "/reports/received-payments",  label: "Received Payments" },
+        ],
+      },
+      {
+        section: "Sales & Customers",
+        children: [
+          { href: "/reports/customer-contacts",    label: "Customer Contact List" },
+          { href: "/reports/income-by-customer",   label: "Income by Customer" },
+          { href: "/reports/product-service-list", label: "Product & Service List" },
+          { href: "/reports/sales-by-product",     label: "Sales by Product" },
+        ],
+      },
+      {
+        section: "Inventory",
+        children: [
+          { href: "/reports/open-pos-by-customer", label: "Open POs by Customer" },
+          { href: "/reports/open-pos-by-product",  label: "Open POs by Product" },
+        ],
+      },
+      {
+        section: "What You Owe",
+        children: [
+          { href: "/reports/ap-aging-summary",      label: "A/P Aging Summary" },
+          { href: "/reports/ap-aging-detail",       label: "A/P Aging Detail" },
+          { href: "/reports/vendor-balance-summary", label: "Vendor Balance Summary" },
+          { href: "/reports/vendor-balance-detail",  label: "Vendor Balance Detail" },
+        ],
+      },
+      {
+        section: "Vendors",
+        children: [
+          { href: "/reports/vendor-contacts", label: "Vendor Contact List" },
+          { href: "/reports/pos-by-vendor",   label: "POs by Vendor" },
+        ],
+      },
+    ],
+  },
+  { href: "/custom-reports", label: "Custom Reports", icon: Sliders },
 ];
 
+const utilityEntries: (NavLeaf & { icon: LucideIcon })[] = [
+  { href: "/import",        label: "Data",          icon: Database },
+  { href: "/notifications", label: "Notifications", icon: Bell },
+  { href: "/settings",      label: "Settings",      icon: Settings },
+  { href: "/portal-users",  label: "Portal Users",  icon: UserCog },
+  { href: "/help",          label: "Help & Support",icon: HelpCircle },
+];
+
+// ── NavGroupItem ─────────────────────────────────────────────────────────────
 function NavGroupItem({ group, pathname, onNav }: { group: NavGroup; pathname: string; onNav: () => void }) {
-  const isChildActive = group.children.some(
-    c => pathname === c.href || pathname.startsWith(c.href + "/")
+  const allLeaves = group.children.flatMap(c => isSection(c) ? c.children : [c]);
+  const isChildActive = allLeaves.some(
+    c => pathname === c.href || pathname.startsWith(c.href.split("?")[0] + "/")
   );
   const [open, setOpen] = useState(isChildActive);
   const Icon = group.icon;
@@ -151,23 +215,43 @@ function NavGroupItem({ group, pathname, onNav }: { group: NavGroup; pathname: s
         <span className="flex-1 text-left">{group.label}</span>
         <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? "rotate-180" : ""}`} strokeWidth={2} />
       </button>
+
       {open && (
-        <div className="ml-3 mt-0.5 space-y-0.5 border-l border-stone-100 pl-3">
-          {group.children.map(child => {
-            const isActive = pathname === child.href || pathname.startsWith(child.href + "/");
-            const CIcon = child.icon;
+        <div className="ml-3 mt-0.5 border-l border-stone-100 pl-3 space-y-0.5">
+          {group.children.map((child, i) => {
+            if (isSection(child)) {
+              return (
+                <div key={child.section}>
+                  <p className="px-2 pt-2.5 pb-1 text-[10px] font-bold uppercase tracking-widest text-stone-400">
+                    {child.section}
+                  </p>
+                  {child.children.map(leaf => {
+                    const isActive = pathname === leaf.href || pathname.startsWith(leaf.href.split("?")[0] + "/");
+                    return (
+                      <Link key={leaf.href} href={leaf.href} onClick={onNav}
+                        className={`flex items-center px-2 py-1.5 rounded-md text-xs transition-colors ${
+                          isActive
+                            ? "bg-stone-100 text-stone-900 font-medium"
+                            : "text-stone-500 hover:bg-stone-50 hover:text-stone-700"
+                        }`}
+                      >
+                        {leaf.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              );
+            }
+            // plain leaf
+            const isActive = pathname === child.href || pathname.startsWith(child.href.split("?")[0] + "/");
             return (
-              <Link
-                key={child.href}
-                href={child.href}
-                onClick={onNav}
-                className={`flex items-center gap-3 px-3 py-1.5 rounded-md text-sm transition-colors ${
+              <Link key={child.href} href={child.href} onClick={onNav}
+                className={`flex items-center px-2 py-1.5 rounded-md text-sm transition-colors ${
                   isActive
                     ? "bg-stone-100 text-stone-900 font-medium"
                     : "text-stone-500 hover:bg-stone-50 hover:text-stone-700"
                 }`}
               >
-                <CIcon className="w-3.5 h-3.5 shrink-0" strokeWidth={1.75} />
                 {child.label}
               </Link>
             );
@@ -178,6 +262,7 @@ function NavGroupItem({ group, pathname, onNav }: { group: NavGroup; pathname: s
   );
 }
 
+// ── Sidebar ──────────────────────────────────────────────────────────────────
 export function Sidebar({ userName }: { userName: string }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -186,48 +271,60 @@ export function Sidebar({ userName }: { userName: string }) {
 
   useEffect(() => {
     function handler(e: MouseEvent) {
-      if (quickRef.current && !quickRef.current.contains(e.target as Node)) {
-        setQuickOpen(false);
-      }
+      if (quickRef.current && !quickRef.current.contains(e.target as Node)) setQuickOpen(false);
     }
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const navContent = (
+  function renderMain(onNav: () => void) {
+    return mainEntries.map((entry, i) => {
+      if (isGroup(entry)) {
+        return <NavGroupItem key={entry.label} group={entry} pathname={pathname} onNav={onNav} />;
+      }
+      const isActive = pathname === entry.href || pathname.startsWith(entry.href + "/");
+      const Icon = entry.icon;
+      return (
+        <Link key={entry.href} href={entry.href} onClick={onNav}
+          className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+            isActive
+              ? "bg-stone-100 text-stone-900 font-medium"
+              : "text-stone-500 hover:bg-stone-50 hover:text-stone-700"
+          }`}
+        >
+          <Icon className="w-4 h-4 shrink-0" strokeWidth={1.75} />
+          {entry.label}
+        </Link>
+      );
+    });
+  }
+
+  function renderUtility(onNav: () => void) {
+    return utilityEntries.map(entry => {
+      const isActive = pathname === entry.href || pathname.startsWith(entry.href + "/");
+      const Icon = entry.icon;
+      return (
+        <Link key={entry.href} href={entry.href} onClick={onNav}
+          className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+            isActive
+              ? "bg-stone-100 text-stone-900 font-medium"
+              : "text-stone-500 hover:bg-stone-50 hover:text-stone-700"
+          }`}
+        >
+          <Icon className="w-4 h-4 shrink-0" strokeWidth={1.75} />
+          {entry.label}
+        </Link>
+      );
+    });
+  }
+
+  const navContent = (onNav: () => void) => (
     <>
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {navEntries.map((entry, i) => {
-          if (isGroup(entry)) {
-            return (
-              <NavGroupItem
-                key={entry.label}
-                group={entry}
-                pathname={pathname}
-                onNav={() => setOpen(false)}
-              />
-            );
-          }
-          const isActive = pathname === entry.href || pathname.startsWith(entry.href + "/");
-          const Icon = entry.icon;
-          return (
-            <Link
-              key={entry.href}
-              href={entry.href}
-              onClick={() => setOpen(false)}
-              className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
-                isActive
-                  ? "bg-stone-100 text-stone-900 font-medium"
-                  : "text-stone-500 hover:bg-stone-50 hover:text-stone-700"
-              }`}
-            >
-              <Icon className="w-4 h-4 shrink-0" strokeWidth={1.75} />
-              {entry.label}
-            </Link>
-          );
-        })}
+        {renderMain(onNav)}
+        <div className="my-3 border-t border-stone-100" />
+        {renderUtility(onNav)}
       </nav>
-
       <div className="px-4 py-3 border-t border-stone-200">
         <div className="flex items-center justify-between">
           <span className="text-sm text-stone-600 truncate">{userName}</span>
@@ -254,33 +351,29 @@ export function Sidebar({ userName }: { userName: string }) {
       </div>
 
       {/* Mobile overlay */}
-      {open && (
-        <div className="md:hidden fixed inset-0 z-30 bg-black/30" onClick={() => setOpen(false)} />
-      )}
+      {open && <div className="md:hidden fixed inset-0 z-30 bg-black/30" onClick={() => setOpen(false)} />}
 
       {/* Mobile drawer */}
       <aside className={`md:hidden fixed top-0 left-0 z-40 w-72 h-full bg-white border-r border-stone-200 flex flex-col transform transition-transform duration-200 ${open ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="px-4 py-4 border-b border-stone-200 flex items-center justify-between">
           <BzaLogo size="md" />
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => { setQuickOpen(v => !v); }}
-              className="w-7 h-7 rounded-full bg-[#0d3d3b] hover:bg-[#0a5c5a] text-white flex items-center justify-center transition-colors shadow-sm"
-              title="Quick create"
-            >
-              <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
-            </button>
+            <div ref={quickRef} className="relative">
+              <button
+                onClick={() => setQuickOpen(v => !v)}
+                className="w-7 h-7 rounded-full bg-[#0d3d3b] hover:bg-[#0a5c5a] text-white flex items-center justify-center transition-colors shadow-sm"
+                title="Quick create"
+              >
+                <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
+              </button>
+              {quickOpen && <QuickCreateMenu onClose={() => { setQuickOpen(false); setOpen(false); }} />}
+            </div>
             <button onClick={() => setOpen(false)} className="text-stone-400">
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
-        {quickOpen && (
-          <div className="px-4 pb-2">
-            <QuickCreateMenu onClose={() => { setQuickOpen(false); setOpen(false); }} />
-          </div>
-        )}
-        {navContent}
+        {navContent(() => setOpen(false))}
       </aside>
 
       {/* Desktop sidebar */}
@@ -298,7 +391,7 @@ export function Sidebar({ userName }: { userName: string }) {
             {quickOpen && <QuickCreateMenu onClose={() => setQuickOpen(false)} />}
           </div>
         </div>
-        {navContent}
+        {navContent(() => {})}
       </aside>
     </>
   );
