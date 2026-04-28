@@ -285,9 +285,9 @@ export function Sidebar({ userName }: { userName: string }) {
 
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-64 bg-white border-r border-stone-200 flex-col h-full">
-        <div className="px-4 py-4 border-b border-stone-200 flex items-center justify-between gap-3">
+        <div className="px-4 py-6 border-b border-stone-200 relative flex justify-center items-center">
           <BzaLogo size="md" />
-          <div ref={quickRef} className="relative flex-shrink-0">
+          <div ref={quickRef} className="absolute right-4 top-1/2 -translate-y-1/2">
             <button
               onClick={() => setQuickOpen(v => !v)}
               className="w-8 h-8 rounded-full bg-[#0d3d3b] hover:bg-[#0a5c5a] text-white flex items-center justify-center transition-colors shadow-sm"
