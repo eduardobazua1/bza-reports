@@ -1,7 +1,8 @@
 import { getUnpaidInvoicesForPayments } from "@/server/queries";
 import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
-import { ArrowLeft, Printer } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { PrintButton } from "@/components/reports/print-button";
 
 // Map summary bucket keys → detail bucket keys
 const BUCKET_MAP: Record<string, string> = {
@@ -60,9 +61,7 @@ export default async function ARAgingSummaryPage() {
         <Link href="/reports" className="flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-700">
           <ArrowLeft className="w-4 h-4" /> Back to standard reports
         </Link>
-        <button onClick={() => {}} className="flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-700 print:hidden">
-          <Printer className="w-4 h-4" /> Print
-        </button>
+        <PrintButton />
       </div>
 
       {/* Report */}
