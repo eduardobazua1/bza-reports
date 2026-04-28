@@ -2,8 +2,9 @@
 
 import React, { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { ArrowLeft, Download, Mail, Settings2, X, Check, RotateCcw } from "lucide-react";
+import { ArrowLeft, Download, Mail, Settings2, X, Check, RotateCcw, ChevronDown, FileText, Table2, FileSpreadsheet } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import * as XLSX from "xlsx";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -302,8 +303,21 @@ export function ReportWrapper({
 
   const [isPdfPending, startPdfTransition] = useTransition();
   const [isEmailPending, startEmailTransition] = useTransition();
+  const [showDownload, setShowDownload] = useState(false);
 
   const customizeBtnRef = useRef<HTMLDivElement>(null);
+  const downloadBtnRef  = useRef<HTMLDivElement>(null);
+
+  // Close download dropdown on outside click
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (downloadBtnRef.current && !downloadBtnRef.current.contains(e.target as Node)) {
+        setShowDownload(false);
+      }
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   // Load from localStorage after hydration to avoid SSR mismatch
   useEffect(() => {
@@ -400,6 +414,60 @@ export function ReportWrapper({
     });
   }
 
+  // ── Excel download ───────────────────────────────────────────────────────────
+
+  function handleDownloadExcel() {
+    const header = visibleCols.map(c => c.label);
+    const dataRows = rows.map(row => visibleCols.map(col => {
+      const v = row[col.key];
+      if (v === null || v === undefined) return "";
+      if (col.format === "currency" && typeof v === "number") return v;
+      if (col.format === "number" && typeof v === "number") return v;
+      if (col.format === "percent" && typeof v === "number") return v / 100; // Excel % format
+      return formatCell(v, col.format);
+    }));
+    if (totals && totalsLabel) {
+      dataRows.push(visibleCols.map((col, i) => {
+        if (i === 0) return totalsLabel ?? "TOTAL";
+        const v = totals[col.key];
+        if (v !== undefined && v !== null && typeof v === "number") return v;
+        return "";
+      }));
+    }
+    const ws = XLSX.utils.aoa_to_sheet([header, ...dataRows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, title.slice(0, 31));
+    XLSX.writeFile(wb, `${title.replace(/[^a-zA-Z0-9_\- ]/g, "_")}.xlsx`);
+  }
+
+  // ── CSV download ──────────────────────────────────────────────────────────────
+
+  function handleDownloadCsv() {
+    const escape = (v: unknown) => {
+      const s = v === null || v === undefined ? "" : formatCell(v, undefined);
+      return s.includes(",") || s.includes('"') || s.includes("\n")
+        ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const lines: string[] = [];
+    lines.push(visibleCols.map(c => escape(c.label)).join(","));
+    for (const row of rows) {
+      lines.push(visibleCols.map(col => escape(formatCell(row[col.key], col.format))).join(","));
+    }
+    if (totals && totalsLabel) {
+      lines.push(visibleCols.map((col, i) => {
+        if (i === 0) return escape(totalsLabel);
+        const v = totals[col.key];
+        return v !== undefined && v !== null ? escape(formatCell(v, col.format)) : "";
+      }).join(","));
+    }
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url;
+    a.download = `${title.replace(/[^a-zA-Z0-9_\- ]/g, "_")}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+
   // ── Email send ───────────────────────────────────────────────────────────────
 
   function handleSendEmail(to: string, subject: string, message: string) {
@@ -439,6 +507,32 @@ export function ReportWrapper({
 
   return (
     <>
+      {/* ── Floating Customize button (always visible on right) ── */}
+      <div
+        ref={customizeBtnRef}
+        className="fixed right-0 top-1/2 -translate-y-1/2 z-[60] print:hidden"
+      >
+        <button
+          onClick={() => setShowCustomize((v) => !v)}
+          className="flex items-center gap-1.5 bg-[#0d3d3b] hover:bg-[#0a5c5a] text-white text-xs font-semibold px-3 py-2.5 rounded-l-lg shadow-lg transition-colors"
+          style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+        >
+          <Settings2 className="w-3.5 h-3.5" style={{ transform: "rotate(180deg)" }} />
+          Customize
+        </button>
+        {showCustomize && (
+          <div className="absolute right-full top-1/2 -translate-y-1/2 mr-1">
+            <CustomizeDropdown
+              columns={columns}
+              visibleKeys={visibleKeys}
+              onToggle={handleToggle}
+              onReset={handleReset}
+              onClose={() => setShowCustomize(false)}
+            />
+          </div>
+        )}
+      </div>
+
       <div className="space-y-4 max-w-5xl">
         {/* ── Toolbar ── */}
         <div className="flex items-center justify-between print:hidden">
@@ -451,35 +545,34 @@ export function ReportWrapper({
           </Link>
 
           <div className="flex items-center gap-2">
-            {/* Customize */}
-            <div className="relative" ref={customizeBtnRef}>
+            {/* Download dropdown */}
+            <div className="relative" ref={downloadBtnRef}>
               <button
-                onClick={() => setShowCustomize((v) => !v)}
-                className="flex items-center gap-1.5 text-sm text-stone-600 hover:text-stone-800 hover:bg-stone-100 px-3 py-1.5 rounded-lg transition-colors"
+                onClick={() => setShowDownload(v => !v)}
+                disabled={isPdfPending}
+                className="flex items-center gap-1.5 text-sm text-stone-600 hover:text-stone-800 hover:bg-stone-100 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
               >
-                <Settings2 className="w-4 h-4" />
-                Customize
+                <Download className="w-4 h-4" />
+                {isPdfPending ? "Generating…" : "Download"}
+                <ChevronDown className="w-3 h-3 ml-0.5" />
               </button>
-              {showCustomize && (
-                <CustomizeDropdown
-                  columns={columns}
-                  visibleKeys={visibleKeys}
-                  onToggle={handleToggle}
-                  onReset={handleReset}
-                  onClose={() => setShowCustomize(false)}
-                />
+              {showDownload && (
+                <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-stone-200 rounded-xl shadow-xl w-44 overflow-hidden">
+                  <button onClick={() => { setShowDownload(false); handleDownloadPdf(); }}
+                    className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 transition-colors">
+                    <FileText className="w-4 h-4 text-stone-400" /> PDF
+                  </button>
+                  <button onClick={() => { setShowDownload(false); handleDownloadExcel(); }}
+                    className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 transition-colors">
+                    <FileSpreadsheet className="w-4 h-4 text-stone-400" /> Excel (.xlsx)
+                  </button>
+                  <button onClick={() => { setShowDownload(false); handleDownloadCsv(); }}
+                    className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 transition-colors">
+                    <Table2 className="w-4 h-4 text-stone-400" /> CSV
+                  </button>
+                </div>
               )}
             </div>
-
-            {/* Download PDF */}
-            <button
-              onClick={handleDownloadPdf}
-              disabled={isPdfPending}
-              className="flex items-center gap-1.5 text-sm text-stone-600 hover:text-stone-800 hover:bg-stone-100 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Download className="w-4 h-4" />
-              {isPdfPending ? "Generating…" : "Download PDF"}
-            </button>
 
             {/* Send Email */}
             <button
@@ -488,7 +581,7 @@ export function ReportWrapper({
               className="flex items-center gap-1.5 text-sm text-stone-600 hover:text-stone-800 hover:bg-stone-100 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
             >
               <Mail className="w-4 h-4" />
-              Send Email
+              Send
             </button>
           </div>
         </div>
