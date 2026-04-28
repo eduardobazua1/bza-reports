@@ -1,12 +1,86 @@
-export default function Page() {
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import { getSuppliers } from "@/server/queries";
+
+export default async function VendorContactsPage() {
+  const suppliers = await getSuppliers();
+
+  function CertBadge({ certType }: { certType: string | null }) {
+    if (certType === "fsc")
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+          FSC
+        </span>
+      );
+    if (certType === "pefc")
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
+          PEFC
+        </span>
+      );
+    return <span className="text-gray-400">—</span>;
+  }
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Vendor Contact List</h1>
-        <p className="text-sm text-muted-foreground mt-1">Supplier directory</p>
+    <div className="max-w-5xl mx-auto px-4 py-8">
+      <Link
+        href="/reports"
+        className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 mb-6"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back to Reports
+      </Link>
+
+      <div className="flex items-baseline justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Vendor Contact List</h1>
+        <span className="text-sm text-gray-500">
+          {suppliers.length} vendor{suppliers.length !== 1 ? "s" : ""}
+        </span>
       </div>
-      <div className="bg-white rounded-xl shadow-sm p-10 text-center text-muted-foreground text-sm">
-        Coming soon
+
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-gray-100 bg-gray-50">
+              <th className="text-left px-4 py-3 font-semibold text-gray-600">Name</th>
+              <th className="text-left px-4 py-3 font-semibold text-gray-600">Contact</th>
+              <th className="text-left px-4 py-3 font-semibold text-gray-600">Email</th>
+              <th className="text-left px-4 py-3 font-semibold text-gray-600">Phone</th>
+              <th className="text-left px-4 py-3 font-semibold text-gray-600">City / Country</th>
+              <th className="text-center px-4 py-3 font-semibold text-gray-600">Cert</th>
+            </tr>
+          </thead>
+          <tbody>
+            {suppliers.map((s) => (
+              <tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                <td className="px-4 py-3 text-gray-900 font-medium">{s.name}</td>
+                <td className="px-4 py-3 text-gray-700">
+                  {s.contactName || <span className="text-gray-400">—</span>}
+                </td>
+                <td className="px-4 py-3 text-gray-700">
+                  {s.contactEmail ? (
+                    <a href={`mailto:${s.contactEmail}`} className="text-teal-700 hover:underline">
+                      {s.contactEmail}
+                    </a>
+                  ) : (
+                    <span className="text-gray-400">—</span>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-gray-700">
+                  {s.phone || <span className="text-gray-400">—</span>}
+                </td>
+                <td className="px-4 py-3 text-gray-700">
+                  {[s.city, s.country].filter(Boolean).join(", ") || (
+                    <span className="text-gray-400">—</span>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-center">
+                  <CertBadge certType={s.certType} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
