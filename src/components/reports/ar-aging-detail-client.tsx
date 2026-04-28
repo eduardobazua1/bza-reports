@@ -40,7 +40,7 @@ export function ARAgingDetailClient({ buckets, total, filterBucket, filterClient
           <tr className="border-b border-stone-200 text-xs font-semibold text-stone-500 uppercase tracking-wide">
             <th className="text-left px-6 py-3 w-32">Date</th>
             <th className="text-left px-4 py-3 w-24">Type</th>
-            <th className="text-left px-4 py-3 w-32">Num</th>
+            <th className="text-left px-4 py-3 w-32">Invoice</th>
             <th className="text-left px-4 py-3">Customer</th>
             <th className="text-left px-4 py-3 w-28">Due Date</th>
             <th className="text-right px-4 py-3 w-32">Amount</th>
