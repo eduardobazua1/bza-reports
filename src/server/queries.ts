@@ -411,3 +411,42 @@ export async function getSupplierPaymentsWithInfo() {
     .leftJoin(purchaseOrders, eq(supplierPayments.purchaseOrderId, purchaseOrders.id))
     .orderBy(desc(supplierPayments.paymentDate));
 }
+
+// ---- A/P: unpaid supplier invoices ----
+export async function getUnpaidSupplierInvoices() {
+  return db
+    .select({
+      id: invoices.id,
+      invoiceNumber: invoices.invoiceNumber,
+      quantityTons: invoices.quantityTons,
+      shipmentDate: invoices.shipmentDate,
+      freightCost: invoices.freightCost,
+      supplierId: suppliers.id,
+      supplierName: suppliers.name,
+      poNumber: purchaseOrders.poNumber,
+      clientName: clients.name,
+      buyPrice: sql<number>`coalesce(${invoices.buyPriceOverride}, ${purchaseOrders.buyPrice})`,
+    })
+    .from(invoices)
+    .leftJoin(purchaseOrders, eq(invoices.purchaseOrderId, purchaseOrders.id))
+    .leftJoin(suppliers, eq(purchaseOrders.supplierId, suppliers.id))
+    .leftJoin(clients, eq(purchaseOrders.clientId, clients.id))
+    .where(eq(invoices.supplierPaymentStatus, "unpaid"))
+    .orderBy(suppliers.name, invoices.shipmentDate);
+}
+
+// ---- Products with sales data ----
+export async function getProductsWithSales() {
+  return db
+    .select({
+      product: sql<string>`coalesce(${invoices.item}, ${purchaseOrders.product}, 'Unknown')`,
+      invoiceCount: count(invoices.id),
+      totalTons: sql<number>`coalesce(sum(${invoices.quantityTons}), 0)`,
+      totalRevenue: sql<number>`coalesce(sum(${invoices.quantityTons} * coalesce(${invoices.sellPriceOverride}, ${purchaseOrders.sellPrice})), 0)`,
+      totalCost: sql<number>`coalesce(sum(${invoices.quantityTons} * coalesce(${invoices.buyPriceOverride}, ${purchaseOrders.buyPrice})), 0)`,
+    })
+    .from(invoices)
+    .leftJoin(purchaseOrders, eq(invoices.purchaseOrderId, purchaseOrders.id))
+    .groupBy(sql`coalesce(${invoices.item}, ${purchaseOrders.product}, 'Unknown')`)
+    .orderBy(sql<number>`coalesce(sum(${invoices.quantityTons} * coalesce(${invoices.sellPriceOverride}, ${purchaseOrders.sellPrice})), 0)` );
+}

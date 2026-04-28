@@ -3,6 +3,11 @@ import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
 import { ArrowLeft, Printer } from "lucide-react";
 
+// Map summary bucket keys → detail bucket keys
+const BUCKET_MAP: Record<string, string> = {
+  current: "current", d1_30: "d1_30", d31_60: "d31_60", d61_90: "d61_90", d91plus: "over91",
+};
+
 export default async function ARAgingSummaryPage() {
   const invoices = await getUnpaidInvoicesForPayments();
   const today = new Date();
@@ -84,13 +89,26 @@ export default async function ARAgingSummaryPage() {
             <tbody>
               {rows.map(row => (
                 <tr key={row.name} className="border-b border-stone-50 hover:bg-stone-50">
-                  <td className="px-6 py-3 text-stone-700 font-medium">{row.name}</td>
+                  <td className="px-6 py-3 text-stone-700 font-medium">
+                    <Link href={`/reports/ar-aging-detail?client=${encodeURIComponent(row.name)}`} className="hover:text-[#0d9488] hover:underline">
+                      {row.name}
+                    </Link>
+                  </td>
                   {cols.map(c => (
                     <td key={c.key} className={`px-4 py-3 text-right ${row[c.key] === 0 ? "text-stone-300" : c.key === "d91plus" ? "text-red-600 font-medium" : c.key === "d61_90" ? "text-amber-600" : "text-stone-700"}`}>
-                      {row[c.key] === 0 ? "" : formatCurrency(row[c.key])}
+                      {row[c.key] === 0 ? "" : (
+                        <Link href={`/reports/ar-aging-detail?client=${encodeURIComponent(row.name)}&bucket=${BUCKET_MAP[c.key]}`}
+                          className="hover:underline hover:opacity-80">
+                          {formatCurrency(row[c.key])}
+                        </Link>
+                      )}
                     </td>
                   ))}
-                  <td className="px-6 py-3 text-right font-semibold text-stone-800">{formatCurrency(row.total)}</td>
+                  <td className="px-6 py-3 text-right font-semibold text-stone-800">
+                    <Link href={`/reports/ar-aging-detail?client=${encodeURIComponent(row.name)}`} className="hover:underline hover:opacity-80">
+                      {formatCurrency(row.total)}
+                    </Link>
+                  </td>
                 </tr>
               ))}
             </tbody>
