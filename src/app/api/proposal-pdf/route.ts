@@ -71,21 +71,23 @@ function fmtDate(s: string | null | undefined) {
 }
 
 // ── Column definitions — must total W = 516 ────────────────────────────────────
+// Product+Description merged into one wide "Item" column — no more truncation
 const COLS: { label: string; w: number; align: "left" | "right" | "center" }[] = [
-  { label: "#",           w: 22,  align: "center" },
-  { label: "Product",     w: 152, align: "left"   },
-  { label: "Description", w: 128, align: "left"   },
-  { label: "Qty",         w: 54,  align: "right"  },
-  { label: "Unit",        w: 40,  align: "center" },
-  { label: "Unit Price",  w: 64,  align: "right"  },
-  { label: "Amount",      w: 56,  align: "right"  },
+  { label: "#",           w: 20,  align: "center" },
+  { label: "Item",        w: 232, align: "left"   },
+  { label: "Qty",         w: 58,  align: "right"  },
+  { label: "Unit",        w: 44,  align: "center" },
+  { label: "Unit Price",  w: 74,  align: "right"  },
+  { label: "Amount",      w: 88,  align: "right"  },
 ];
 // auto-correct last column so columns exactly fill W
 const COLS_SUM = COLS.reduce((s, c) => s + c.w, 0);
 COLS[COLS.length - 1].w += W - COLS_SUM;
 
-const HDR_H = 17;
-const ROW_H = 30;
+const HDR_H    = 17;
+const ROW_BASE = 26;   // height with product name only
+const DESC_EXT = 12;   // extra height when description is shown
+const CERT_EXT = 11;   // extra height for cert pill
 
 // ── Main builder ───────────────────────────────────────────────────────────────
 export async function buildProposalPdf(proposalId: number): Promise<Uint8Array> {
@@ -220,8 +222,9 @@ export async function buildProposalPdf(proposalId: number): Promise<Uint8Array> 
     const lineTotal = item.tons * item.pricePerTon;
     grandTotal     += lineTotal;
 
+    const hasDesc = !!(item.description && item.description.trim() && item.description !== "—");
     const hasCert = !!(item.certType && item.certType !== "None" && item.certType !== "—");
-    const rowH    = hasCert ? ROW_H + 11 : ROW_H;
+    const rowH    = ROW_BASE + (hasDesc ? DESC_EXT : 0) + (hasCert ? CERT_EXT : 0);
 
     if (y + rowH > MAX_Y) {
       [page, y] = newPage();
@@ -231,44 +234,62 @@ export async function buildProposalPdf(proposalId: number): Promise<Uint8Array> 
     // Alternating row background
     if (i % 2 === 1) dr(page, M, y, W, rowH, LGRY);
 
-    // Per-column text — visual hierarchy matches invoice style
-    type CellDef = { text: string; f: PDFFont; sz: number; color: RGB; align: "left" | "right" | "center" };
-    const cells: CellDef[] = [
-      { text: String(i + 1),            f: font,  sz: 7.5, color: GRAY,  align: "center" },
-      { text: item.product,             f: fontB, sz: 8.5, color: TEAL,  align: "left"   },
-      { text: item.description || "—",  f: font,  sz: 7.5, color: GRAY,  align: "left"   },
-      { text: fmtTons(item.tons),       f: fontB, sz: 8,   color: DARK,  align: "right"  },
-      { text: item.unit,                f: font,  sz: 8,   color: GRAY,  align: "center" },
-      { text: fmtUsd(item.pricePerTon), f: font,  sz: 8,   color: DARK,  align: "right"  },
-      { text: fmtUsd(lineTotal),        f: fontB, sz: 8.5, color: TEALB, align: "right"  },
-    ];
+    // ── Col 0: row number — vertically centered
+    const numTW = font.widthOfTextAtSize(String(i + 1), 7.5);
+    const numX  = M + (COLS[0].w - numTW) / 2;
+    const numY  = y + rowH / 2 - 7.5 * 0.716 / 2;
+    dt(page, String(i + 1), numX, numY, 7.5, font, GRAY);
 
-    let x = M;
-    cells.forEach((c, ci) => {
-      const cw  = COLS[ci].w;
-      const txt = fit(c.text, cw - 8, c.f, c.sz);
-      const tw  = c.f.widthOfTextAtSize(txt, c.sz);
-      // Vertically center within row (cap-height center)
-      const pkY = y + (hasCert ? ROW_H : rowH) / 2 - c.sz * 0.716 / 2;
-      let   dx  = x + 4;
-      if (c.align === "right")  dx = x + cw - 4 - tw;
-      if (c.align === "center") dx = x + (cw - tw) / 2;
-      dt(page, txt, dx, pkY, c.sz, c.f, c.color);
-      x += cw;
-    });
+    // ── Col 1: Item — product name bold top, description small gray below
+    const itemX  = M + COLS[0].w + 5;
+    const itemW  = COLS[1].w - 10;
 
-    // Cert badge pill — solid TEAL with white text
+    // Product name — position depends on whether description follows
+    const prodY = hasDesc || hasCert ? y + 7 : y + rowH / 2 - 8.5 * 0.716 / 2;
+    dt(page, fit(item.product, itemW, fontB, 8.5), itemX, prodY, 8.5, fontB, TEAL);
+
+    // Description sub-line
+    if (hasDesc) {
+      dt(page, fit(item.description!, itemW, font, 7), itemX, y + 7 + 12, 7, font, GRAY);
+    }
+
+    // Cert pill — sits below text content
     if (hasCert) {
-      const certStr = `${item.certType}${item.certDetail ? `  ${item.certDetail}` : ""}`;
-      const certSz  = 5.5;
-      const ctw     = fontB.widthOfTextAtSize(certStr, certSz);
-      const pillW   = ctw + 8;
-      const pillH   = 9;
-      const pillX   = M + COLS[0].w + 4;
-      const pillY   = y + ROW_H + 1;
+      const certStr  = `${item.certType}${item.certDetail ? `  ${item.certDetail}` : ""}`;
+      const certSz   = 5.5;
+      const ctw      = fontB.widthOfTextAtSize(certStr, certSz);
+      const pillW    = ctw + 8;
+      const pillH    = 9;
+      const textH    = ROW_BASE + (hasDesc ? DESC_EXT : 0);
+      const pillX    = itemX;
+      const pillY    = y + textH - CERT_EXT + 1;
       dr(page, pillX, pillY, pillW, pillH, TEAL);
       dt(page, certStr, pillX + 4, pillY + 1, certSz, fontB, WHITE);
     }
+
+    // ── Cols 2-5: numeric cells — all vertically centered in full rowH
+    type NumCell = { text: string; f: PDFFont; sz: number; color: RGB };
+    const numCells: NumCell[] = [
+      { text: fmtTons(item.tons),       f: fontB, sz: 8,   color: DARK  },
+      { text: item.unit,                f: font,  sz: 8,   color: GRAY  },
+      { text: fmtUsd(item.pricePerTon), f: font,  sz: 8,   color: DARK  },
+      { text: fmtUsd(lineTotal),        f: fontB, sz: 8.5, color: TEALB },
+    ];
+
+    let x = M + COLS[0].w + COLS[1].w;
+    numCells.forEach((c, ci) => {
+      const colIdx = ci + 2;
+      const cw     = COLS[colIdx].w;
+      const txt    = fit(c.text, cw - 6, c.f, c.sz);
+      const tw     = c.f.widthOfTextAtSize(txt, c.sz);
+      const pkY    = y + rowH / 2 - c.sz * 0.716 / 2;
+      const col    = COLS[colIdx];
+      let   dx     = x + 4;
+      if (col.align === "right")  dx = x + cw - 5 - tw;
+      if (col.align === "center") dx = x + (cw - tw) / 2;
+      dt(page, txt, dx, pkY, c.sz, c.f, c.color);
+      x += cw;
+    });
 
     y += rowH;
   }

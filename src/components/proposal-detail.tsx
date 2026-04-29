@@ -261,18 +261,17 @@ export function ProposalDetail({ proposal }: { proposal: ProposalData }) {
               <thead>
                 <tr className="bg-[#0d3d3b] text-white text-xs uppercase tracking-wide">
                   <th className="px-4 py-2.5 text-center w-8">#</th>
-                  <th className="px-4 py-2.5 text-left">Product</th>
-                  <th className="px-4 py-2.5 text-left">Description</th>
-                  <th className="px-4 py-2.5 text-right w-20">Tons</th>
+                  <th className="px-4 py-2.5 text-left">Item</th>
+                  <th className="px-4 py-2.5 text-right w-24">Qty</th>
                   <th className="px-4 py-2.5 text-center w-16">Unit</th>
-                  <th className="px-4 py-2.5 text-right w-24">Price / MT</th>
+                  <th className="px-4 py-2.5 text-right w-28">Price / MT</th>
                   <th className="px-4 py-2.5 text-right w-28">Total</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-50">
                 {proposal.items.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-sm text-stone-400">No line items</td>
+                    <td colSpan={6} className="px-4 py-8 text-center text-sm text-stone-400">No line items</td>
                   </tr>
                 ) : proposal.items.map((item, idx) => {
                   const lineTotal = item.tons * item.pricePerTon;
@@ -280,26 +279,28 @@ export function ProposalDetail({ proposal }: { proposal: ProposalData }) {
                     <tr key={item.id} className={idx % 2 === 1 ? "bg-stone-50/50" : ""}>
                       <td className="px-4 py-3 text-center text-xs text-stone-400">{idx + 1}</td>
                       <td className="px-4 py-3">
-                        <div className="font-medium text-stone-800">{item.product}</div>
+                        <div className="font-semibold text-stone-800">{item.product}</div>
+                        {item.description && item.description !== "—" && (
+                          <div className="text-xs text-stone-400 mt-0.5">{item.description}</div>
+                        )}
                         {item.certType && item.certType !== "None" && (
-                          <div className="text-[10px] text-[#0d9488] mt-0.5">
+                          <span className="inline-block mt-1 text-[9px] font-bold bg-[#0d3d3b] text-white px-1.5 py-0.5 rounded">
                             {item.certType}{item.certDetail ? `  ${item.certDetail}` : ""}
-                          </div>
+                          </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-stone-500">{item.description || "—"}</td>
-                      <td className="px-4 py-3 text-right font-mono text-stone-700">{fmtNum(item.tons)}</td>
+                      <td className="px-4 py-3 text-right text-stone-700">{fmtNum(item.tons)}</td>
                       <td className="px-4 py-3 text-center text-stone-500">{item.unit}</td>
-                      <td className="px-4 py-3 text-right text-stone-700">{fmtUsd(item.pricePerTon)}</td>
-                      <td className="px-4 py-3 text-right font-semibold text-stone-800">{fmtUsd(lineTotal)}</td>
+                      <td className="px-4 py-3 text-right text-stone-600">{fmtUsd(item.pricePerTon)}</td>
+                      <td className="px-4 py-3 text-right font-semibold text-[#0d9488]">{fmtUsd(lineTotal)}</td>
                     </tr>
                   );
                 })}
               </tbody>
               <tfoot>
                 <tr className="bg-[#0d3d3b]/5 border-t border-stone-200">
-                  <td colSpan={5} className="px-4 py-3 text-right text-xs font-semibold text-stone-500 uppercase tracking-wide">
-                    Grand Total ({proposal.items.length} line{proposal.items.length !== 1 ? "s" : ""})
+                  <td colSpan={4} className="px-4 py-3 text-right text-xs font-semibold text-stone-500 uppercase tracking-wide">
+                    Grand Total ({proposal.items.length} item{proposal.items.length !== 1 ? "s" : ""})
                   </td>
                   <td className="px-4 py-3 text-right" />
                   <td className="px-4 py-3 text-right text-base font-bold text-[#0d3d3b]">{fmtUsd(grandTotal)}</td>
