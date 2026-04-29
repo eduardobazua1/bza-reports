@@ -111,8 +111,8 @@ export function CreatableSelect({
   }
 
   // Portal dropdown — positioned with fixed coords derived from trigger
-  const DROPDOWN_W = rect ? rect.width : 240;
-  const MENU_MAX_H = 240;
+  const DROPDOWN_W = rect ? Math.max(rect.width, 200) : 240;
+  const MENU_MAX_H = 280;
   const GAP = 4;
 
   // Decide whether to open upward or downward
@@ -148,25 +148,25 @@ export function CreatableSelect({
       </div>
 
       {/* Options list */}
-      <div style={{ maxHeight: MENU_MAX_H - 52 }} className="overflow-y-auto">
+      <div style={{ maxHeight: MENU_MAX_H - 48 }} className="overflow-y-auto">
         {filtered.length === 0 && !canCreate && (
           <p className="px-4 py-3 text-xs text-stone-400 italic text-center">No options found</p>
         )}
 
         {filtered.map(opt => (
           <button key={opt} type="button" onClick={() => select(opt)}
-            className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors hover:bg-stone-50 text-left ${
-              opt === value ? "text-[#0d9488] font-medium" : "text-stone-700"
+            className={`w-full flex items-center justify-between px-3 py-2 text-sm transition-colors hover:bg-stone-50 text-left ${
+              opt === value ? "bg-[#0d9488]/5 text-[#0d9488] font-medium" : "text-stone-800"
             }`}>
-            <span className="truncate pr-2">{opt}</span>
-            {opt === value && <Check className="w-3.5 h-3.5 shrink-0 text-[#0d9488]" />}
+            <span className="flex-1 min-w-0 leading-snug">{opt}</span>
+            {opt === value && <Check className="w-3.5 h-3.5 shrink-0 ml-2 text-[#0d9488]" />}
           </button>
         ))}
 
         {/* Add new option */}
         {canCreate && (
           <button type="button" onClick={create}
-            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-[#0d9488] hover:bg-[#0d9488]/5 transition-colors border-t border-stone-100">
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0d9488] hover:bg-[#0d9488]/5 transition-colors border-t border-stone-100">
             <Plus className="w-3.5 h-3.5 shrink-0" />
             <span>Add <span className="font-semibold">"{trimmed}"</span></span>
           </button>
