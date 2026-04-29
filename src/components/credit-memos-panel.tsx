@@ -203,7 +203,7 @@ function MemoForm({
             </button>
             <button type="submit" disabled={pending}
               className="px-4 py-2 text-sm bg-[#0d3d3b] text-white rounded-lg hover:bg-[#0a5c5a] disabled:opacity-50">
-              {pending ? "Saving…" : memo ? "Save Changes" : "Create Memo"}
+              {pending ? "Saving…" : memo ? "Save" : "Create"}
             </button>
           </div>
         </form>

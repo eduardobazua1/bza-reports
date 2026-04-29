@@ -113,7 +113,7 @@ export function UserManagement({ users, isAdmin }: { users: User[]; isAdmin: boo
             </div>
             <div className="sm:col-span-2 flex gap-2">
               <button type="submit" disabled={isPending} className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50">
-                {isPending ? "Creating..." : "Create User"}
+                {isPending ? "Creating..." : "Create"}
               </button>
               <button type="button" onClick={() => setShowForm(false)} className="border border-border px-4 py-2 rounded-lg text-sm hover:bg-muted">
                 Cancel

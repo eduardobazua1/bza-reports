@@ -113,7 +113,7 @@ function SupplierForm({ initial, onSave, onCancel, isPending }: {
 
         <div className="flex gap-2">
           <button type="submit" disabled={isPending} className="bg-[#0d3d3b] text-white px-4 py-2 rounded text-sm font-medium hover:opacity-90 disabled:opacity-50">
-            {isPending ? "Saving..." : initial ? "Update Supplier" : "Create Supplier"}
+            {isPending ? "Saving..." : initial ? "Update" : "Create"}
           </button>
           <button type="button" onClick={onCancel} className="border border-stone-200 px-4 py-2 rounded text-sm hover:bg-stone-50">Cancel</button>
         </div>

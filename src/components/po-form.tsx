@@ -528,7 +528,7 @@ export function POForm({
 
         <div className="flex gap-2">
           <button type="submit" disabled={isPending} className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
-            {isPending ? "Saving..." : purchaseOrder ? "Update Purchase Order" : "Create Purchase Order"}
+            {isPending ? "Saving..." : purchaseOrder ? "Update" : "Create"}
           </button>
           {onCancel && (
             <button type="button" onClick={onCancel} className="border border-border px-4 py-2 rounded-lg text-sm hover:bg-muted transition-colors">

@@ -243,7 +243,7 @@ export function InvoiceForm({
         <div className="flex gap-2 pt-1">
           <button type="submit" disabled={isPending}
             className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50">
-            {isPending ? "Saving..." : invoice ? "Update Invoice" : "Create Invoice"}
+            {isPending ? "Saving..." : invoice ? "Update" : "Create"}
           </button>
           {onCancel && (
             <button type="button" onClick={onCancel}
