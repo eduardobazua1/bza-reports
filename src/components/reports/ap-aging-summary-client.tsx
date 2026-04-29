@@ -7,35 +7,33 @@ import { formatCurrency } from "@/lib/utils";
 import * as XLSX from "xlsx";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type BucketKey = "current" | "d1_30" | "d31_60" | "d61_90" | "d91plus";
+type BucketKey = "current" | "d31_60" | "d61_90" | "d91plus";
 
-export type ARRow = {
+export type APRow = {
   name: string;
   current: number;
-  d1_30: number;
   d31_60: number;
   d61_90: number;
   d91plus: number;
   total: number;
 };
 
-export type ARTotals = {
-  current: number; d1_30: number; d31_60: number; d61_90: number; d91plus: number; total: number;
+export type APTotals = {
+  current: number; d31_60: number; d61_90: number; d91plus: number; total: number;
 };
 
 const BUCKET_MAP: Record<BucketKey, string> = {
-  current: "current", d1_30: "d1_30", d31_60: "d31_60", d61_90: "d61_90", d91plus: "over91",
+  current: "current", d31_60: "d31_60", d61_90: "d61_90", d91plus: "over91",
 };
 
 const ALL_COLS: { key: BucketKey; label: string }[] = [
   { key: "current", label: "Current" },
-  { key: "d1_30",   label: "1 - 30" },
   { key: "d31_60",  label: "31 - 60" },
   { key: "d61_90",  label: "61 - 90" },
   { key: "d91plus", label: "91 And Over" },
 ];
 
-const STORAGE_KEY = "bza_cols_ar-aging-summary";
+const STORAGE_KEY = "bza_cols_ap-aging-summary";
 
 type ToastState = { message: string; type: "success" | "error" } | null;
 
@@ -46,7 +44,7 @@ function EmailModal({ onClose, onSend, isSending }: {
   isSending: boolean;
 }) {
   const [to, setTo] = useState("");
-  const [subject, setSubject] = useState("A/R Aging Summary — BZA International Services");
+  const [subject, setSubject] = useState("A/P Aging Summary — BZA International Services");
   const [message, setMessage] = useState("");
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -85,9 +83,9 @@ function EmailModal({ onClose, onSend, isSending }: {
 }
 
 // ─── Main client component ────────────────────────────────────────────────────
-export function ARAgingSummaryClient({ rows, totals, asOf, timestamp }: {
-  rows: ARRow[];
-  totals: ARTotals;
+export function APAgingSummaryClient({ rows, totals, asOf, timestamp }: {
+  rows: APRow[];
+  totals: APTotals;
   asOf: string;
   timestamp: string;
 }) {
@@ -99,7 +97,7 @@ export function ARAgingSummaryClient({ rows, totals, asOf, timestamp }: {
   const [isEmailPending, startEmail] = useTransition();
   const downloadRef = useRef<HTMLDivElement>(null);
 
-  // Column visibility (bucket cols only; Client + Total always shown)
+  // Column visibility (bucket cols only; Supplier + Total always shown)
   const [visibleCols, setVisibleCols] = useState<Record<BucketKey, boolean>>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -107,7 +105,7 @@ export function ARAgingSummaryClient({ rows, totals, asOf, timestamp }: {
         if (saved) return JSON.parse(saved);
       } catch {}
     }
-    return { current: true, d1_30: true, d31_60: true, d61_90: true, d91plus: true };
+    return { current: true, d31_60: true, d61_90: true, d91plus: true };
   });
 
   const activeCols = ALL_COLS.filter(c => visibleCols[c.key]);
@@ -143,31 +141,29 @@ export function ARAgingSummaryClient({ rows, totals, asOf, timestamp }: {
     const pdfRows = rows.map(r => ({
       name: r.name,
       ...(visibleCols.current  ? { current:  r.current  || null } : {}),
-      ...(visibleCols.d1_30   ? { d1_30:    r.d1_30    || null } : {}),
       ...(visibleCols.d31_60  ? { d31_60:   r.d31_60   || null } : {}),
       ...(visibleCols.d61_90  ? { d61_90:   r.d61_90   || null } : {}),
       ...(visibleCols.d91plus ? { d91plus:  r.d91plus  || null } : {}),
       total: r.total,
     }));
     return {
-      title: "A/R Aging Summary",
+      title: "A/P Aging Summary",
       subtitle: "BZA International Services",
       dateLabel: `As of ${asOf}`,
       columns: [
-        { key: "name",    label: "Client",       align: "left"  as const },
+        { key: "name",    label: "Supplier",     align: "left"  as const },
         ...activeCols.map(c => ({ key: c.key, label: c.label, align: "right" as const, format: "currency" as const })),
         { key: "total",   label: "Total",         align: "right" as const, format: "currency" as const },
       ],
       rows: pdfRows,
       totals: {
         ...(visibleCols.current  ? { current:  totals.current  || undefined } : {}),
-        ...(visibleCols.d1_30   ? { d1_30:    totals.d1_30    || undefined } : {}),
         ...(visibleCols.d31_60  ? { d31_60:   totals.d31_60   || undefined } : {}),
         ...(visibleCols.d61_90  ? { d61_90:   totals.d61_90   || undefined } : {}),
         ...(visibleCols.d91plus ? { d91plus:  totals.d91plus  || undefined } : {}),
         total: totals.total,
       },
-      totalsLabel: `TOTAL (${rows.length} clients)`,
+      totalsLabel: `TOTAL (${rows.length} suppliers)`,
     };
   }
 
@@ -182,7 +178,7 @@ export function ARAgingSummaryClient({ rows, totals, asOf, timestamp }: {
       if (!res.ok) { setToast({ message: "PDF generation failed", type: "error" }); return; }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a"); a.href = url; a.download = "AR-Aging-Summary.pdf";
+      const a = document.createElement("a"); a.href = url; a.download = "AP-Aging-Summary.pdf";
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 10000);
     });
@@ -191,7 +187,7 @@ export function ARAgingSummaryClient({ rows, totals, asOf, timestamp }: {
   // ── Excel ─────────────────────────────────────────────────────────────────
   function handleExcel() {
     setShowDownload(false);
-    const headers = ["Client", ...activeCols.map(c => c.label), "Total"];
+    const headers = ["Supplier", ...activeCols.map(c => c.label), "Total"];
     const dataRows = rows.map(r => [
       r.name,
       ...activeCols.map(c => r[c.key] || 0),
@@ -201,20 +197,20 @@ export function ARAgingSummaryClient({ rows, totals, asOf, timestamp }: {
     const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows, totalsRow]);
     ws["!cols"] = headers.map((h, i) => ({ wch: Math.max(h.length, i === 0 ? 30 : 12) + 2 }));
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "AR Aging Summary");
-    XLSX.writeFile(wb, "AR-Aging-Summary.xlsx");
+    XLSX.utils.book_append_sheet(wb, ws, "AP Aging Summary");
+    XLSX.writeFile(wb, "AP-Aging-Summary.xlsx");
   }
 
   // ── CSV ───────────────────────────────────────────────────────────────────
   function handleCsv() {
     setShowDownload(false);
-    const headers = ["Client", ...activeCols.map(c => c.label), "Total"];
+    const headers = ["Supplier", ...activeCols.map(c => c.label), "Total"];
     const dataRows = rows.map(r => [r.name, ...activeCols.map(c => r[c.key] || 0), r.total]);
     const totalsRow = ["TOTAL", ...activeCols.map(c => totals[c.key] || 0), totals.total];
     const csv = [headers, ...dataRows, totalsRow].map(row => row.map(v => `"${v}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = "AR-Aging-Summary.csv";
+    const a = document.createElement("a"); a.href = url; a.download = "AP-Aging-Summary.csv";
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 10000);
   }
@@ -312,7 +308,7 @@ export function ARAgingSummaryClient({ rows, totals, asOf, timestamp }: {
         {/* Report card */}
         <div className="bg-white rounded-xl shadow-sm overflow-hidden print:shadow-none">
           <div className="py-6 text-center border-b border-stone-100">
-            <h2 className="text-lg font-bold text-stone-800">A/R Aging Summary</h2>
+            <h2 className="text-lg font-bold text-stone-800">A/P Aging Summary</h2>
             <p className="text-sm text-stone-500 mt-0.5">BZA International Services</p>
             <p className="text-sm text-stone-400 mt-0.5">As of {asOf}</p>
           </div>
@@ -321,7 +317,7 @@ export function ARAgingSummaryClient({ rows, totals, asOf, timestamp }: {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-stone-200 bg-stone-50">
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide w-48">Client</th>
+                  <th className="text-left px-6 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide w-48">Supplier</th>
                   {activeCols.map(c => (
                     <th key={c.key} className="text-right px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{c.label}</th>
                   ))}
@@ -332,13 +328,13 @@ export function ARAgingSummaryClient({ rows, totals, asOf, timestamp }: {
                 {rows.map(row => (
                   <tr key={row.name} className="border-b border-stone-50 hover:bg-stone-50">
                     <td className="px-6 py-3 text-stone-700 font-medium">
-                      <Link href={`/reports/ar-aging-detail?client=${encodeURIComponent(row.name)}`}
+                      <Link href={`/reports/ap-aging-detail?supplier=${encodeURIComponent(row.name)}`}
                         className="hover:text-[#0d9488] hover:underline">{row.name}</Link>
                     </td>
                     {activeCols.map(c => (
-                      <td key={c.key} className={`px-4 py-3 text-right ${row[c.key] === 0 ? "text-stone-300" : "text-stone-700"}`}>
+                      <td key={c.key} className={`px-4 py-3 text-right ${row[c.key] === 0 ? "text-stone-300" : c.key === "d91plus" ? "text-red-600 font-medium" : c.key === "d61_90" ? "text-amber-600" : "text-stone-700"}`}>
                         {row[c.key] === 0 ? "" : (
-                          <Link href={`/reports/ar-aging-detail?client=${encodeURIComponent(row.name)}&bucket=${BUCKET_MAP[c.key]}`}
+                          <Link href={`/reports/ap-aging-detail?supplier=${encodeURIComponent(row.name)}&bucket=${BUCKET_MAP[c.key]}`}
                             className="hover:underline hover:opacity-70">
                             {formatCurrency(row[c.key])}
                           </Link>
@@ -346,7 +342,7 @@ export function ARAgingSummaryClient({ rows, totals, asOf, timestamp }: {
                       </td>
                     ))}
                     <td className="px-6 py-3 text-right font-semibold text-stone-800">
-                      <Link href={`/reports/ar-aging-detail?client=${encodeURIComponent(row.name)}`}
+                      <Link href={`/reports/ap-aging-detail?supplier=${encodeURIComponent(row.name)}`}
                         className="hover:underline hover:opacity-70">{formatCurrency(row.total)}</Link>
                     </td>
                   </tr>
@@ -356,7 +352,7 @@ export function ARAgingSummaryClient({ rows, totals, asOf, timestamp }: {
                 <tr className="border-t-2 border-stone-300 bg-stone-50">
                   <td className="px-6 py-3 text-sm font-bold text-stone-800 uppercase tracking-wide">TOTAL</td>
                   {activeCols.map(c => (
-                    <td key={c.key} className={`px-4 py-3 text-right font-bold ${totals[c.key] === 0 ? "text-stone-300" : "text-stone-800"}`}>
+                    <td key={c.key} className={`px-4 py-3 text-right font-bold ${totals[c.key] === 0 ? "text-stone-300" : c.key === "d91plus" ? "text-red-700" : "text-stone-800"}`}>
                       {totals[c.key] === 0 ? "" : formatCurrency(totals[c.key])}
                     </td>
                   ))}

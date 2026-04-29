@@ -1,8 +1,7 @@
 import { getUnpaidSupplierInvoices } from "@/server/queries";
-import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { APAgingDetailClient } from "@/components/reports/ap-aging-detail-client";
+import { AgingDetailToolbar } from "@/components/reports/aging-detail-toolbar";
 
 export default async function APAgingDetailPage({
   searchParams,
@@ -62,37 +61,61 @@ export default async function APAgingDetailPage({
   });
   const total = filteredInvoices.reduce((s, inv) => s + inv.quantityTons * inv.buyPrice + (inv.freightCost ?? 0), 0);
 
+  // Build flat rows for export
+  const exportHeaders = ["Date", "Invoice", "Supplier", "Amount", "Open Balance", "Days"];
+  const exportRows = filteredInvoices.map(inv => {
+    const amount = inv.quantityTons * inv.buyPrice + (inv.freightCost ?? 0);
+    let daysSince = 0;
+    if (inv.shipmentDate) {
+      const d = Math.floor((today.getTime() - new Date(inv.shipmentDate).getTime()) / 86400000);
+      daysSince = d > 0 ? d : 0;
+    }
+    function fmt(date: string | null) {
+      if (!date) return "";
+      return new Date(date).toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
+    }
+    return {
+      "Date": fmt(inv.shipmentDate ?? null),
+      "Invoice": inv.invoiceNumber,
+      "Supplier": inv.supplierName || "Unknown",
+      "Amount": amount,
+      "Open Balance": amount,
+      "Days": daysSince,
+    };
+  });
+
   return (
-    <div className="space-y-4 max-w-5xl">
-      <div className="flex items-center justify-between print:hidden">
-        <Link href="/reports" className="flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-700">
-          <ArrowLeft className="w-4 h-4" /> Back to standard reports
-        </Link>
-        <Link href="/reports/ap-aging-summary" className="text-sm text-[#0d9488] hover:underline">
-          ← Back to summary report
-        </Link>
-      </div>
+    <AgingDetailToolbar
+      title="A/P Aging Detail Report"
+      backHref="/reports/ap-aging-summary"
+      backLabel="← Back to summary"
+      filename="AP-Aging-Detail"
+      emailSubject="A/P Aging Detail Report — BZA International Services"
+      headers={exportHeaders}
+      rows={exportRows}
+    >
+      <div className="space-y-4 max-w-5xl">
+        {(filterSupplier || filterBucket) && (
+          <div className="flex items-center gap-2 text-sm text-stone-500 bg-stone-50 border border-stone-200 rounded-lg px-4 py-2">
+            <span>Filtered by:</span>
+            {filterSupplier && <span className="bg-[#0d3d3b]/10 text-[#0d3d3b] px-2 py-0.5 rounded font-medium">{filterSupplier}</span>}
+            {filterBucket && <span className="bg-[#0d3d3b]/10 text-[#0d3d3b] px-2 py-0.5 rounded font-medium">{buckets.find(b => b.key === filterBucket)?.label}</span>}
+            <Link href="/reports/ap-aging-detail" className="ml-auto text-xs text-stone-400 hover:text-stone-600">Clear filter</Link>
+          </div>
+        )}
 
-      {(filterSupplier || filterBucket) && (
-        <div className="flex items-center gap-2 text-sm text-stone-500 bg-stone-50 border border-stone-200 rounded-lg px-4 py-2">
-          <span>Filtered by:</span>
-          {filterSupplier && <span className="bg-[#0d3d3b]/10 text-[#0d3d3b] px-2 py-0.5 rounded font-medium">{filterSupplier}</span>}
-          {filterBucket && <span className="bg-[#0d3d3b]/10 text-[#0d3d3b] px-2 py-0.5 rounded font-medium">{buckets.find(b => b.key === filterBucket)?.label}</span>}
-          <Link href="/reports/ap-aging-detail" className="ml-auto text-xs text-stone-400 hover:text-stone-600">Clear filter</Link>
-        </div>
-      )}
-
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <div className="py-6 text-center border-b border-stone-100">
-          <h2 className="text-lg font-bold text-stone-800">A/P Aging Detail Report</h2>
-          <p className="text-sm text-stone-500 mt-0.5">BZA International Services</p>
-          <p className="text-sm text-stone-400 mt-0.5">As of {asOf}</p>
-        </div>
-        <APAgingDetailClient buckets={buckets} total={total} filterBucket={filterBucket} filterSupplier={filterSupplier} />
-        <div className="px-6 py-3 text-xs text-stone-400 border-t border-stone-100">
-          {today.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="py-6 text-center border-b border-stone-100">
+            <h2 className="text-lg font-bold text-stone-800">A/P Aging Detail Report</h2>
+            <p className="text-sm text-stone-500 mt-0.5">BZA International Services</p>
+            <p className="text-sm text-stone-400 mt-0.5">As of {asOf}</p>
+          </div>
+          <APAgingDetailClient buckets={buckets} total={total} filterBucket={filterBucket} filterSupplier={filterSupplier} />
+          <div className="px-6 py-3 text-xs text-stone-400 border-t border-stone-100">
+            {today.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+          </div>
         </div>
       </div>
-    </div>
+    </AgingDetailToolbar>
   );
 }
