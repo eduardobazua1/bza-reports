@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, supplierPayments, products, customerPayments, customerPaymentInvoices, creditMemos } from "@/db/schema";
+import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, supplierPayments, products, customerPayments, customerPaymentInvoices, creditMemos, proposals, proposalItems } from "@/db/schema";
 import { eq, and, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { v4 as uuidv4 } from "uuid";
@@ -468,4 +468,77 @@ export async function voidCreditMemo(id: number) {
 export async function deleteCreditMemo(id: number) {
   await db.delete(creditMemos).where(eq(creditMemos.id, id));
   revalidatePath("/credit-memos");
+}
+
+// ---- Proposals ----
+type ProposalItemInput = {
+  sort: number;
+  product: string;
+  description?: string;
+  tons: number;
+  unit: string;
+  pricePerTon: number;
+  certType?: string;
+  certDetail?: string;
+};
+
+export async function createProposal(data: {
+  proposalNumber: string;
+  clientId: number;
+  title: string;
+  proposalDate: string;
+  validUntil?: string;
+  status: "draft" | "sent" | "accepted" | "declined";
+  incoterm?: string;
+  paymentTerms?: string;
+  notes?: string;
+  items: ProposalItemInput[];
+}) {
+  const { items, ...header } = data;
+  const result = await db.insert(proposals).values(header).returning({ id: proposals.id });
+  const proposalId = result[0].id;
+  if (items.length) {
+    await db.insert(proposalItems).values(items.map(item => ({ ...item, proposalId })));
+  }
+  revalidatePath("/proposals");
+  return proposalId;
+}
+
+export async function updateProposal(id: number, data: {
+  clientId?: number;
+  title?: string;
+  proposalDate?: string;
+  validUntil?: string;
+  status?: "draft" | "sent" | "accepted" | "declined";
+  incoterm?: string;
+  paymentTerms?: string;
+  notes?: string;
+  items?: ProposalItemInput[];
+}) {
+  const { items, ...header } = data;
+  await db.update(proposals)
+    .set({ ...header, updatedAt: new Date().toISOString() })
+    .where(eq(proposals.id, id));
+  if (items !== undefined) {
+    await db.delete(proposalItems).where(eq(proposalItems.proposalId, id));
+    if (items.length) {
+      await db.insert(proposalItems).values(items.map(item => ({ ...item, proposalId: id })));
+    }
+  }
+  revalidatePath("/proposals");
+  revalidatePath(`/proposals/${id}`);
+}
+
+export async function updateProposalStatus(id: number, status: "draft" | "sent" | "accepted" | "declined") {
+  await db.update(proposals)
+    .set({ status, updatedAt: new Date().toISOString() })
+    .where(eq(proposals.id, id));
+  revalidatePath("/proposals");
+  revalidatePath(`/proposals/${id}`);
+}
+
+export async function deleteProposal(id: number) {
+  await db.delete(proposalItems).where(eq(proposalItems.proposalId, id));
+  await db.delete(proposals).where(eq(proposals.id, id));
+  revalidatePath("/proposals");
 }

@@ -320,7 +320,7 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                     key={row.invoice.id}
                     onClick={() => openPanel(row)}
                     className={`cursor-pointer transition-colors border-t border-border ${
-                      isSelected ? "bg-[#0d9488]" : isOverdue ? "bg-[#0d3d3b]/40 hover:bg-[#0d3d3b]/70" : "hover:bg-muted/40"
+                      isSelected ? "bg-[#0d9488]/10 border-l-2 border-l-[#0d9488]" : "hover:bg-muted/40"
                     }`}
                   >
                     <td className="px-3 py-1.5 text-xs font-medium text-stone-800 whitespace-nowrap">{row.invoice.invoiceNumber}</td>

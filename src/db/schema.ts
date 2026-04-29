@@ -341,6 +341,36 @@ export const documents = sqliteTable("documents", {
   uploadedAt: text("uploaded_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
+// Proposals — sent to clients before a purchase order
+export const proposals = sqliteTable("proposals", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  proposalNumber: text("proposal_number").notNull().unique(), // e.g. PRO-001
+  clientId: integer("client_id").notNull().references(() => clients.id),
+  title: text("title").notNull().default("Proposal"),
+  proposalDate: text("proposal_date").notNull(),
+  validUntil: text("valid_until"),
+  status: text("status", { enum: ["draft", "sent", "accepted", "declined"] }).notNull().default("draft"),
+  incoterm: text("incoterm"),      // e.g. "DAP Eagle Pass, TX"
+  paymentTerms: text("payment_terms"), // e.g. "Net 60"
+  notes: text("notes"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Proposal line items
+export const proposalItems = sqliteTable("proposal_items", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  proposalId: integer("proposal_id").notNull().references(() => proposals.id),
+  sort: integer("sort").notNull().default(0),   // display order
+  product: text("product").notNull(),            // e.g. "NBSK - Northern Bleached Softwood Kraft"
+  description: text("description"),             // extra spec info
+  tons: real("tons").notNull().default(0),
+  unit: text("unit").notNull().default("MT"),    // MT | ADMT
+  pricePerTon: real("price_per_ton").notNull().default(0),
+  certType: text("cert_type"),                  // FSC / PEFC / None
+  certDetail: text("cert_detail"),              // e.g. FSC-C005174
+});
+
 // Credit memos — issued to clients as discounts or adjustments on invoices
 export const creditMemos = sqliteTable("credit_memos", {
   id: integer("id").primaryKey({ autoIncrement: true }),

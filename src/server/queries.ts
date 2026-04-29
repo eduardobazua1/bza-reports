@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, clientPurchaseOrders, supplierPayments, supplierOrders, customerPayments, customerPaymentInvoices, creditMemos } from "@/db/schema";
+import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, clientPurchaseOrders, supplierPayments, supplierOrders, customerPayments, customerPaymentInvoices, creditMemos, proposals, proposalItems } from "@/db/schema";
 import { eq, desc, sql, and, count, inArray } from "drizzle-orm";
 
 // ---- Clients ----
@@ -505,4 +505,52 @@ export async function getClientStatement(clientId: number, fromDate?: string, to
     .orderBy(creditMemos.memoDate);
 
   return { invoices: allInvoices, payments: allPayments, credits: allCredits };
+}
+
+// ---- Proposals ----
+export async function getProposals() {
+  return db
+    .select({
+      id: proposals.id,
+      proposalNumber: proposals.proposalNumber,
+      clientId: proposals.clientId,
+      clientName: clients.name,
+      title: proposals.title,
+      proposalDate: proposals.proposalDate,
+      validUntil: proposals.validUntil,
+      status: proposals.status,
+      incoterm: proposals.incoterm,
+      paymentTerms: proposals.paymentTerms,
+      notes: proposals.notes,
+      createdAt: proposals.createdAt,
+    })
+    .from(proposals)
+    .leftJoin(clients, eq(proposals.clientId, clients.id))
+    .orderBy(desc(proposals.createdAt));
+}
+
+export async function getProposal(id: number) {
+  const proposal = await db.query.proposals.findFirst({
+    where: eq(proposals.id, id),
+  });
+  if (!proposal) return null;
+  const client = await db.query.clients.findFirst({ where: eq(clients.id, proposal.clientId) });
+  const items = await db
+    .select()
+    .from(proposalItems)
+    .where(eq(proposalItems.proposalId, id))
+    .orderBy(proposalItems.sort);
+  return { ...proposal, client, items };
+}
+
+export async function getNextProposalNumber(): Promise<string> {
+  const last = await db
+    .select({ num: proposals.proposalNumber })
+    .from(proposals)
+    .orderBy(desc(proposals.id))
+    .limit(1);
+  if (!last.length) return "PRO-001";
+  const match = last[0].num.match(/PRO-(\d+)/);
+  const next = match ? parseInt(match[1]) + 1 : 1;
+  return `PRO-${String(next).padStart(3, "0")}`;
 }

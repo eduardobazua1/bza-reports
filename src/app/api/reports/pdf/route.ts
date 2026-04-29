@@ -11,7 +11,7 @@ const MARGIN = 40;
 const CONTENT_W = PAGE_W - MARGIN * 2; // 532pt
 
 const ROW_H = 16;
-const HEADER_HEIGHT = 110; // space consumed by page 1 header (logo + title + rules)
+const HEADER_HEIGHT = 85; // space consumed by page 1 header (logo bar + title + rules)
 const CONT_HEADER_HEIGHT = 30; // space consumed by continuation page header
 const COL_HEADER_H = 16;
 const FOOTER_H = 24; // space reserved at bottom for footer rule + text
@@ -145,80 +145,60 @@ function drawFirstPageHeader(
   subtitle?: string,
   dateLabel?: string,
 ): number {
-  let y = MARGIN;
+  const CAP = 0.716;
 
-  // ── BZA Logo ────────────────────────────────────────────────────────────────
-  // Draw "BZA" in dark teal + "." in teal, centered
-  const LOGO_SIZE = 16;
-  const bzaText = "BZA";
-  const dotText = ".";
-  const bzaW  = fonts.bold.widthOfTextAtSize(bzaText, LOGO_SIZE);
-  const dotW  = fonts.bold.widthOfTextAtSize(dotText, LOGO_SIZE);
-  const logoW = bzaW + dotW;
-  const logoX = (PAGE_W - logoW) / 2;
-  const logoBaseline = BY(y) - LOGO_SIZE * 0.716;
-  page.drawText(bzaText, { x: logoX,        y: logoBaseline, size: LOGO_SIZE, font: fonts.bold, color: C_HEADER_BG });
-  page.drawText(dotText, { x: logoX + bzaW, y: logoBaseline, size: LOGO_SIZE, font: fonts.bold, color: C_TEAL_LIGHT });
-  y += LOGO_SIZE + 4;
+  // ── Thin cyan top bar ────────────────────────────────────────────────────────
+  fillRect(page, 0, 0, PAGE_W, 3, C_TEAL);
 
-  // Company subtitle
-  const companyName = "International Services";
-  const companyW = fonts.regular.widthOfTextAtSize(companyName, 6.5);
-  page.drawText(companyName, {
-    x: (PAGE_W - companyW) / 2,
-    y: BY(y) - 6.5 * 0.716,
-    size: 6.5,
-    font: fonts.regular,
-    color: C_GRAY,
+  // ── BZA. logo (left-aligned, same style as invoice PDFs) ────────────────────
+  const LOGO_SIZE = 13;
+  const bzaW = fonts.bold.widthOfTextAtSize("BZA", LOGO_SIZE);
+  page.drawText("BZA", { x: MARGIN, y: BY(MARGIN) - LOGO_SIZE * CAP, size: LOGO_SIZE, font: fonts.bold, color: C_HEADER_BG });
+  page.drawText(".", { x: MARGIN + bzaW, y: BY(MARGIN) - LOGO_SIZE * CAP, size: LOGO_SIZE, font: fonts.bold, color: C_TEAL_LIGHT });
+
+  // ── Company info (right-aligned) ─────────────────────────────────────────────
+  const infoLines = [
+    "BZA International Services, LLC",
+    "accounting@bza-is.com  ·  www.bza-is.com",
+  ];
+  infoLines.forEach((line, i) => {
+    const lw = fonts.regular.widthOfTextAtSize(line, 6.5);
+    page.drawText(line, {
+      x: PAGE_W - MARGIN - lw,
+      y: BY(MARGIN + i * 9) - 6.5 * CAP,
+      size: 6.5, font: fonts.regular, color: C_GRAY,
+    });
   });
+
+  // ── Rule below header strip ──────────────────────────────────────────────────
+  let y = MARGIN + 22;
+  hline(page, MARGIN, y, PAGE_W - MARGIN, C_TEAL, 1);
   y += 10;
 
-  // Thin teal rule under logo
-  hline(page, PAGE_W / 2 - 30, y, PAGE_W / 2 + 30, C_TEAL, 1);
-  y += 8;
-
-  // Report title (bold, centered)
-  const titleSize = 13;
+  // ── Report title ─────────────────────────────────────────────────────────────
+  const titleSize = 12;
   const titleW = fonts.bold.widthOfTextAtSize(title, titleSize);
   page.drawText(title, {
     x: (PAGE_W - titleW) / 2,
-    y: BY(y) - titleSize * 0.716,
-    size: titleSize,
-    font: fonts.bold,
-    color: C_DARK,
+    y: BY(y) - titleSize * CAP,
+    size: titleSize, font: fonts.bold, color: C_DARK,
   });
-  y += titleSize + 4;
+  y += titleSize + 5;
 
-  // Subtitle (if any)
-  if (subtitle && subtitle !== "BZA International Services") {
-    const subW = fonts.regular.widthOfTextAtSize(subtitle, 7);
-    page.drawText(subtitle, {
-      x: (PAGE_W - subW) / 2,
-      y: BY(y) - 7 * 0.716,
-      size: 7,
-      font: fonts.regular,
-      color: C_GRAY,
-    });
-    y += 11;
-  }
-
-  // Date label (if any)
+  // ── Date label ───────────────────────────────────────────────────────────────
   if (dateLabel) {
     const dlW = fonts.regular.widthOfTextAtSize(dateLabel, 7);
     page.drawText(dateLabel, {
       x: (PAGE_W - dlW) / 2,
-      y: BY(y) - 7 * 0.716,
-      size: 7,
-      font: fonts.regular,
-      color: C_GRAY,
+      y: BY(y) - 7 * CAP,
+      size: 7, font: fonts.regular, color: C_GRAY,
     });
     y += 11;
   }
 
-  // Full-width rule below header
-  y += 4;
-  hline(page, MARGIN, y, PAGE_W - MARGIN, C_TEAL, 0.75);
-  y += 8;
+  y += 6;
+  hline(page, MARGIN, y, PAGE_W - MARGIN, C_RULE, 0.5);
+  y += 6;
 
   return y;
 }
@@ -408,25 +388,32 @@ export async function buildGenericPdf(payload: {
     y += 1;
     fillRect(page, MARGIN, y, CONTENT_W, TOT_H, C_TOTALS_BG);
 
+    // Find first column that actually has a totals value — the label spans everything before it
+    const firstValIdx = cols.findIndex((col) => {
+      const v = totals[col.key];
+      return v !== undefined && v !== null && v !== "";
+    });
+    const labelSpan = firstValIdx > 0 ? firstValIdx : (totalsLabel ? 1 : 0);
+    const labelWidth = labelSpan > 0 ? widths.slice(0, labelSpan).reduce((s, w) => s + w, 0) : 0;
+
     let x = MARGIN;
-    cols.forEach((col, ci) => {
-      let cellStr: string;
-      if (ci === 0 && totalsLabel) {
-        cellStr = totalsLabel;
-      } else {
-        const val = totals[col.key];
-        cellStr = val !== undefined && val !== null ? formatCellPdf(val, col.format) : "";
-      }
+    if (totalsLabel && labelSpan > 0) {
+      drawCell(page, totalsLabel, MARGIN, y, labelWidth, TOT_H, {
+        font: boldFont, size: FONT_SIZE, color: C_DARK, align: "left",
+      });
+      x = MARGIN + labelWidth;
+    }
+    for (let ci = labelSpan; ci < cols.length; ci++) {
+      const col = cols[ci];
+      const val = totals[col.key];
+      const cellStr = val !== undefined && val !== null && val !== "" ? formatCellPdf(val, col.format) : "";
       if (cellStr) {
         drawCell(page, cellStr, x, y, widths[ci], TOT_H, {
-          font: boldFont,
-          size: FONT_SIZE,
-          color: C_DARK,
-          align: col.align,
+          font: boldFont, size: FONT_SIZE, color: C_DARK, align: col.align,
         });
       }
       x += widths[ci];
-    });
+    }
   }
 
   // Draw footer on every page

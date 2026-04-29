@@ -93,7 +93,6 @@ export default function ReportsHubPage() {
     <div className="space-y-6 max-w-4xl">
       <div>
         <h1 className="text-2xl font-bold">Standard Reports</h1>
-        <p className="text-sm text-muted-foreground mt-1">Click ★ to pin a report to Favorites</p>
       </div>
 
       {/* Favorites */}

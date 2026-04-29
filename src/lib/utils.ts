@@ -48,8 +48,8 @@ export const paymentStatusLabels: Record<string, string> = {
 };
 
 export const paymentStatusColors: Record<string, string> = {
-  paid: "bg-green-100 text-[#0d9488]",
-  unpaid: "bg-[#0d3d3b] text-[#0d3d3b]",
+  paid: "bg-emerald-50 text-emerald-700",
+  unpaid: "bg-stone-100 text-stone-500",
 };
 
 export const transportTypeLabels: Record<string, string> = {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { BzaLogo } from "./bza-logo";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -48,6 +49,7 @@ const QUICK_ACTIONS = [
   {
     group: "Operations",
     items: [
+      { label: "New Proposal",             href: "/proposals/new",      description: "Send a price proposal to a client" },
       { label: "New Purchase Order",       href: "/purchase-orders",    description: "Create a new PO" },
       { label: "New Invoice / Shipment",   href: "/invoices",           description: "Add shipment to a PO" },
     ],
@@ -68,9 +70,39 @@ const QUICK_ACTIONS = [
   },
 ];
 
-function QuickCreateMenu({ onClose }: { onClose: () => void }) {
-  return (
-    <div className="absolute left-0 top-full mt-2 z-50 w-72 bg-white rounded-xl shadow-xl border border-stone-200 overflow-hidden">
+function QuickCreateDropdown({
+  anchorRect,
+  onClose,
+}: {
+  anchorRect: DOMRect;
+  onClose: () => void;
+}) {
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    }
+    // slight delay so the opening click doesn't immediately close
+    const t = setTimeout(() => document.addEventListener("mousedown", handler), 50);
+    return () => { clearTimeout(t); document.removeEventListener("mousedown", handler); };
+  }, [onClose]);
+
+  // Position below the button, left-aligned, but clamp to viewport
+  const GAP = 6;
+  const MENU_W = 272;
+  let left = anchorRect.left;
+  if (left + MENU_W > window.innerWidth - 8) left = window.innerWidth - MENU_W - 8;
+  const top = anchorRect.bottom + GAP;
+
+  return createPortal(
+    <div
+      ref={menuRef}
+      style={{ position: "fixed", top, left, width: MENU_W, zIndex: 99999 }}
+      className="bg-white rounded-xl shadow-2xl border border-stone-200 overflow-hidden"
+    >
       <div className="px-4 py-2.5 bg-[#0d3d3b] flex items-center justify-between">
         <span className="text-sm font-semibold text-white">Quick Create</span>
         <button onClick={onClose} className="text-white/60 hover:text-white">
@@ -92,7 +124,8 @@ function QuickCreateMenu({ onClose }: { onClose: () => void }) {
         </div>
       ))}
       <div className="h-2" />
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -192,7 +225,6 @@ function NavGroupItem({ group, pathname, onNav }: { group: NavGroup; pathname: s
                 </div>
               );
             }
-            // plain leaf
             const isActive = pathname === child.href || pathname.startsWith(child.href.split("?")[0] + "/");
             return (
               <Link key={child.href} href={child.href} onClick={onNav}
@@ -217,18 +249,22 @@ export function Sidebar({ userName }: { userName: string }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [quickOpen, setQuickOpen] = useState(false);
-  const quickRef = useRef<HTMLDivElement>(null);
+  const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
+  const btnDesktopRef = useRef<HTMLButtonElement>(null);
+  const btnMobileRef  = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    function handler(e: MouseEvent) {
-      if (quickRef.current && !quickRef.current.contains(e.target as Node)) setQuickOpen(false);
+  function toggleQuick(ref: React.RefObject<HTMLButtonElement>) {
+    if (quickOpen) {
+      setQuickOpen(false);
+      setAnchorRect(null);
+    } else {
+      const rect = ref.current?.getBoundingClientRect();
+      if (rect) { setAnchorRect(rect); setQuickOpen(true); }
     }
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  }
 
   function renderMain(onNav: () => void) {
-    return mainEntries.map((entry, i) => {
+    return mainEntries.map((entry) => {
       if (isGroup(entry)) {
         return <NavGroupItem key={entry.label} group={entry} pathname={pathname} onNav={onNav} />;
       }
@@ -292,6 +328,14 @@ export function Sidebar({ userName }: { userName: string }) {
 
   return (
     <>
+      {/* Portal dropdown — rendered at body level, always on top */}
+      {quickOpen && anchorRect && (
+        <QuickCreateDropdown
+          anchorRect={anchorRect}
+          onClose={() => { setQuickOpen(false); setAnchorRect(null); }}
+        />
+      )}
+
       {/* Mobile top bar */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-stone-200 px-4 py-3 flex items-center justify-between">
         <BzaLogo size="md" />
@@ -305,43 +349,45 @@ export function Sidebar({ userName }: { userName: string }) {
 
       {/* Mobile drawer */}
       <aside className={`md:hidden fixed top-0 left-0 z-40 w-72 h-full bg-white border-r border-stone-200 flex flex-col transform transition-transform duration-200 ${open ? "translate-x-0" : "-translate-x-full"}`}>
-        <div className="px-4 py-4 border-b border-stone-200 flex items-center justify-between">
+        {/* Logo box */}
+        <div className="px-4 py-4 border-b border-stone-200 flex items-center justify-between shrink-0">
           <BzaLogo size="md" />
-          <div className="flex items-center gap-2">
-            <div ref={quickRef} className="relative">
-              <button
-                onClick={() => setQuickOpen(v => !v)}
-                className="w-7 h-7 rounded-full bg-[#0d3d3b] hover:bg-[#0a5c5a] text-white flex items-center justify-center transition-colors shadow-sm"
-                title="Quick create"
-              >
-                <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
-              </button>
-              {quickOpen && <QuickCreateMenu onClose={() => { setQuickOpen(false); setOpen(false); }} />}
-            </div>
-            <button onClick={() => setOpen(false)} className="text-stone-400">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+          <button onClick={() => { setOpen(false); setQuickOpen(false); }} className="text-stone-400 hover:text-stone-600">
+            <X className="w-5 h-5" />
+          </button>
         </div>
-        {navContent(() => setOpen(false))}
+        {/* + button row */}
+        <div className="px-4 py-2.5 flex justify-center border-b border-stone-100 shrink-0">
+          <button
+            ref={btnMobileRef}
+            onClick={() => toggleQuick(btnMobileRef)}
+            className={`w-8 h-8 rounded-full text-white flex items-center justify-center transition-colors shadow-sm ${quickOpen ? "bg-[#0a5c5a]" : "bg-[#0d3d3b] hover:bg-[#0a5c5a]"}`}
+            title="Quick create"
+          >
+            <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
+          </button>
+        </div>
+        {navContent(() => { setOpen(false); setQuickOpen(false); })}
       </aside>
 
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-64 bg-white border-r border-stone-200 flex-col h-full">
-        <div className="px-4 py-6 border-b border-stone-200 relative flex justify-center items-center">
+        {/* Logo box */}
+        <div className="px-4 py-6 border-b border-stone-200 flex justify-center shrink-0">
           <BzaLogo size="md" />
-          <div ref={quickRef} className="absolute right-4 top-1/2 -translate-y-1/2">
-            <button
-              onClick={() => setQuickOpen(v => !v)}
-              className="w-8 h-8 rounded-full bg-[#0d3d3b] hover:bg-[#0a5c5a] text-white flex items-center justify-center transition-colors shadow-sm"
-              title="Quick create"
-            >
-              <Plus className="w-4 h-4" strokeWidth={2.5} />
-            </button>
-            {quickOpen && <QuickCreateMenu onClose={() => setQuickOpen(false)} />}
-          </div>
         </div>
-        {navContent(() => {})}
+        {/* + button row — below logo, above Dashboard */}
+        <div className="px-4 py-3 flex justify-center border-b border-stone-100 shrink-0">
+          <button
+            ref={btnDesktopRef}
+            onClick={() => toggleQuick(btnDesktopRef)}
+            className={`w-9 h-9 rounded-full text-white flex items-center justify-center transition-colors shadow-sm ${quickOpen ? "bg-[#0a5c5a]" : "bg-[#0d3d3b] hover:bg-[#0a5c5a]"}`}
+            title="Quick create"
+          >
+            <Plus className="w-4 h-4" strokeWidth={2.5} />
+          </button>
+        </div>
+        {navContent(() => setQuickOpen(false))}
       </aside>
     </>
   );
