@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, ChevronDown } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { createProposal, updateProposal } from "@/server/actions";
 import { CreatableSelect } from "@/components/ui/creatable-select";
 
@@ -246,17 +246,15 @@ export function ProposalForm({ mode, proposalId, proposalNumber, clients, produc
           {/* Client */}
           <div className="sm:col-span-2 lg:col-span-1">
             <label className="block text-xs font-medium text-stone-600 mb-1">Client *</label>
-            <div className="relative">
-              <select
-                value={clientId}
-                onChange={e => setClientId(Number(e.target.value))}
-                className="w-full appearance-none border border-stone-200 rounded-lg px-3 py-2 text-sm text-stone-800 bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30 pr-8"
-              >
-                <option value={0} disabled>Select client…</option>
-                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
-            </div>
+            <CreatableSelect
+              value={clients.find(c => c.id === clientId)?.name || ""}
+              onChange={v => {
+                const found = clients.find(c => c.name === v);
+                if (found) setClientId(found.id);
+              }}
+              options={clients.map(c => c.name)}
+              placeholder="Select client…"
+            />
           </div>
 
           {/* Title */}
@@ -284,13 +282,12 @@ export function ProposalForm({ mode, proposalId, proposalNumber, clients, produc
           {/* Status */}
           <div>
             <label className="block text-xs font-medium text-stone-600 mb-1">Status</label>
-            <div className="relative">
-              <select value={status} onChange={e => setStatus(e.target.value as typeof status)}
-                className="w-full appearance-none border border-stone-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30 pr-8 capitalize">
-                {STATUS_OPTIONS.map(s => <option key={s} value={s} className="capitalize">{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
-              </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
-            </div>
+            <CreatableSelect
+              value={status.charAt(0).toUpperCase() + status.slice(1)}
+              onChange={v => setStatus(v.toLowerCase() as typeof status)}
+              options={STATUS_OPTIONS.map(s => s.charAt(0).toUpperCase() + s.slice(1))}
+              placeholder="Status"
+            />
           </div>
 
           {/* Incoterm — CreatableSelect */}
@@ -388,13 +385,12 @@ export function ProposalForm({ mode, proposalId, proposalNumber, clients, produc
                 {/* Unit */}
                 <div>
                   <label className="lg:hidden text-[10px] font-semibold uppercase tracking-wide text-stone-400 mb-1 block">Unit</label>
-                  <div className="relative">
-                    <select value={item.unit} onChange={e => updateLine(item.id, "unit", e.target.value)}
-                      className="w-full appearance-none border border-stone-200 rounded-lg px-2.5 py-1.5 text-sm text-stone-800 bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30 pr-6">
-                      {UNIT_OPTIONS.map(u => <option key={u} value={u}>{u}</option>)}
-                    </select>
-                    <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-stone-400 pointer-events-none" />
-                  </div>
+                  <CreatableSelect
+                    value={item.unit}
+                    onChange={v => updateLine(item.id, "unit", v)}
+                    options={UNIT_OPTIONS}
+                    placeholder="Unit"
+                  />
                 </div>
 
                 {/* Price / ton */}
@@ -412,14 +408,12 @@ export function ProposalForm({ mode, proposalId, proposalNumber, clients, produc
                 {/* Cert type */}
                 <div>
                   <label className="lg:hidden text-[10px] font-semibold uppercase tracking-wide text-stone-400 mb-1 block">Cert</label>
-                  <div className="relative">
-                    <select value={item.certType} onChange={e => updateLine(item.id, "certType", e.target.value)}
-                      className="w-full appearance-none border border-stone-200 rounded-lg px-2.5 py-1.5 text-sm text-stone-800 bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30 pr-6">
-                      <option value="">—</option>
-                      {CERT_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                    <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-stone-400 pointer-events-none" />
-                  </div>
+                  <CreatableSelect
+                    value={item.certType}
+                    onChange={v => updateLine(item.id, "certType", v)}
+                    options={["—", ...CERT_OPTIONS]}
+                    placeholder="—"
+                  />
                 </div>
 
                 {/* Cert detail */}
