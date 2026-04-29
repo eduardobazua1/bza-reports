@@ -166,7 +166,7 @@ export function SupplierActions({ suppliers }: { suppliers: Supplier[] }) {
   return (
     <div className="space-y-4">
       {!showForm && (
-        <button onClick={() => setShowForm(true)} className="bg-[#0d3d3b] text-white px-4 py-2 rounded text-sm font-medium hover:opacity-90">
+        <button onClick={() => setShowForm(true)} className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
           + New Supplier
         </button>
       )}
