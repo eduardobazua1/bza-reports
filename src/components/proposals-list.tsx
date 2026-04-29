@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { FileText, Plus, Search } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 
 type Proposal = {
   id: number;
@@ -14,6 +15,7 @@ type Proposal = {
   status: string;
   incoterm: string | null;
   paymentTerms: string | null;
+  total: number;
 };
 
 const STATUS_STYLES: Record<string, string> = {
@@ -55,18 +57,15 @@ export function ProposalsList({ proposals }: { proposals: Proposal[] }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Proposals</h1>
-          <p className="text-sm text-stone-400 mt-0.5">{proposals.length} total</p>
-        </div>
-        <Link
-          href="/proposals/new"
-          className="flex items-center gap-2 bg-[#0d3d3b] hover:bg-[#0a5c5a] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          New Proposal
-        </Link>
+        <h1 className="text-2xl font-bold">Proposals</h1>
       </div>
+      <Link
+        href="/proposals/new"
+        className="inline-flex items-center gap-2 bg-primary text-primary-foreground text-sm font-medium px-4 py-2 rounded-lg hover:opacity-90 transition-opacity"
+      >
+        <Plus className="w-4 h-4" />
+        New Proposal
+      </Link>
 
       {/* Status tabs */}
       <div className="flex gap-2 border-b border-stone-200">
@@ -112,31 +111,33 @@ export function ProposalsList({ proposals }: { proposals: Proposal[] }) {
           </div>
         ) : (
           <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-stone-50 border-b border-stone-100 text-left">
-                <th className="px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Number</th>
-                <th className="px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Client</th>
-                <th className="px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Title</th>
-                <th className="px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Date</th>
-                <th className="px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Valid Until</th>
-                <th className="px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Status</th>
-                <th className="px-4 py-3" />
+            <thead className="bg-muted">
+              <tr className="text-left">
+                <th className="p-3 text-sm font-medium text-muted-foreground">Number</th>
+                <th className="p-3 text-sm font-medium text-muted-foreground">Client</th>
+                <th className="p-3 text-sm font-medium text-muted-foreground">Title</th>
+                <th className="p-3 text-sm font-medium text-muted-foreground">Date</th>
+                <th className="p-3 text-sm font-medium text-muted-foreground">Valid Until</th>
+                <th className="p-3 text-sm font-medium text-muted-foreground">Status</th>
+                <th className="p-3 text-sm font-medium text-muted-foreground text-right">Total</th>
+                <th className="p-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-stone-50">
+            <tbody>
               {filtered.map(p => (
-                <tr key={p.id} className="hover:bg-stone-50 transition-colors">
-                  <td className="px-4 py-3 font-mono text-xs text-stone-700">{p.proposalNumber}</td>
-                  <td className="px-4 py-3 text-stone-700">{p.clientName || "—"}</td>
-                  <td className="px-4 py-3 text-stone-600 max-w-[200px] truncate">{p.title}</td>
-                  <td className="px-4 py-3 text-stone-500 text-xs whitespace-nowrap">{fmtDate(p.proposalDate)}</td>
-                  <td className="px-4 py-3 text-stone-500 text-xs whitespace-nowrap">{fmtDate(p.validUntil)}</td>
-                  <td className="px-4 py-3">
+                <tr key={p.id} className="hover:bg-muted/50 transition-colors">
+                  <td className="p-3 font-mono text-xs text-stone-700 border-t border-border">{p.proposalNumber}</td>
+                  <td className="p-3 text-stone-700 border-t border-border">{p.clientName || "—"}</td>
+                  <td className="p-3 text-stone-600 max-w-[200px] truncate border-t border-border">{p.title}</td>
+                  <td className="p-3 text-stone-500 text-xs whitespace-nowrap border-t border-border">{fmtDate(p.proposalDate)}</td>
+                  <td className="p-3 text-stone-500 text-xs whitespace-nowrap border-t border-border">{fmtDate(p.validUntil)}</td>
+                  <td className="p-3 border-t border-border">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${STATUS_STYLES[p.status] || "bg-stone-100 text-stone-500"}`}>
                       {p.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="p-3 text-right font-medium text-stone-800 border-t border-border">{formatCurrency(p.total)}</td>
+                  <td className="p-3 border-t border-border">
                     <Link
                       href={`/proposals/${p.id}`}
                       className="text-xs text-[#0d9488] hover:underline font-medium"

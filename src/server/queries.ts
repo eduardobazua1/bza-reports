@@ -529,9 +529,12 @@ export async function getProposals() {
       paymentTerms: proposals.paymentTerms,
       notes: proposals.notes,
       createdAt: proposals.createdAt,
+      total: sql<number>`coalesce(sum(${proposalItems.tons} * ${proposalItems.pricePerTon}), 0)`,
     })
     .from(proposals)
     .leftJoin(clients, eq(proposals.clientId, clients.id))
+    .leftJoin(proposalItems, eq(proposalItems.proposalId, proposals.id))
+    .groupBy(proposals.id)
     .orderBy(desc(proposals.createdAt));
 }
 
