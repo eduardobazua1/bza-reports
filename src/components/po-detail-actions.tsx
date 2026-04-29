@@ -98,7 +98,7 @@ export function PODetailActions({
             disabled={isDeleting}
             className="border border-red-200 text-red-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-50 ml-auto"
           >
-            {isDeleting ? "Deleting..." : "Delete Purchase Order"}
+            {isDeleting ? "Deleting..." : "Delete"}
           </button>
         )}
       </div>

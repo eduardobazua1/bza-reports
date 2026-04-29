@@ -31,6 +31,11 @@ const RY = (y: number, h: number) => PAGE_H - y - h;
 function dr(p: PDFPage, x: number, pkY: number, w: number, h: number, color: RGB) {
   p.drawRectangle({ x, y: RY(pkY, h), width: w, height: h, color });
 }
+// Rounded rectangle — uses drawSvgPath with y-flip transform (pkY = top-origin)
+function drr(p: PDFPage, x: number, pkY: number, w: number, h: number, r: number, color: RGB) {
+  const path = `M ${r} 0 H ${w - r} Q ${w} 0 ${w} ${r} V ${h - r} Q ${w} ${h} ${w - r} ${h} H ${r} Q 0 ${h} 0 ${h - r} V ${r} Q 0 0 ${r} 0 Z`;
+  p.drawSvgPath(path, { x, y: PAGE_H - pkY, color });
+}
 function dl(p: PDFPage, pkY: number) {
   p.drawLine({ start: { x: M, y: BY(pkY) }, end: { x: M + W, y: BY(pkY) }, thickness: 0.5, color: RULE });
 }
@@ -268,16 +273,17 @@ export async function buildProposalPdf(proposalId: number): Promise<Uint8Array> 
       dt(page, fit(item.description!, ITEM_W, font, DESC_SZ), itemX, descY, DESC_SZ, font, GRAY);
     }
 
-    // Cert pill
+    // Cert pill — rounded corners via drr(), matches web badge style
     if (hasCert) {
       const certStr = `${item.certType}${item.certDetail ? `  ${item.certDetail}` : ""}`;
       const certSz  = 5.5;
       const ctw     = fontB.widthOfTextAtSize(certStr, certSz);
       const pillW   = ctw + 8;
-      const pillH   = 9;
+      const pillH   = 10;
       const certY   = topY + prodLines.length * LINE_H + (hasDesc ? LINE_H : 0) + 1;
-      dr(page, itemX, certY, pillW, pillH, TEAL);
-      dt(page, certStr, itemX + 4, certY + 1, certSz, fontB, WHITE);
+      drr(page, itemX, certY, pillW, pillH, 2, TEAL);
+      // Vertically center text inside pill
+      dt(page, certStr, itemX + 4, certY + pillH / 2 - certSz * 0.716 / 2, certSz, fontB, WHITE);
     }
 
     // ── Cols 2-5: numeric data — regular font, vertically centered

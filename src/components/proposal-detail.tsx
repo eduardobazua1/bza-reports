@@ -335,7 +335,7 @@ export function ProposalDetail({ proposal }: { proposal: ProposalData }) {
             <button onClick={() => setDelConfirm(true)}
               className="flex items-center gap-2 px-4 py-2 border border-red-200 text-red-600 hover:bg-red-50 text-xs font-medium rounded-lg transition-colors">
               <Trash2 className="w-3.5 h-3.5" />
-              Delete Proposal
+              Delete
             </button>
           )}
         </div>
