@@ -175,56 +175,58 @@ export function SupplierActions({ suppliers }: { suppliers: Supplier[] }) {
       )}
 
       <div className="bg-white rounded-md shadow-sm">
-        <table className="w-full">
-          <thead className="bg-stone-50">
-            <tr>
-              <th className="text-left px-4 py-2.5 text-[10px] font-semibold text-stone-500 uppercase tracking-wide">Name</th>
-              <th className="text-left px-4 py-2.5 text-[10px] font-semibold text-stone-500 uppercase tracking-wide">Contact</th>
-              <th className="text-left px-4 py-2.5 text-[10px] font-semibold text-stone-500 uppercase tracking-wide">Email</th>
-              <th className="text-left px-4 py-2.5 text-[10px] font-semibold text-stone-500 uppercase tracking-wide">Location</th>
-              <th className="text-left px-4 py-2.5 text-[10px] font-semibold text-stone-500 uppercase tracking-wide">Cert</th>
-              <th className="text-right px-4 py-2.5 text-[10px] font-semibold text-stone-500 uppercase tracking-wide">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {suppliers.length === 0 && (
-              <tr><td colSpan={6} className="p-6 text-center text-sm text-stone-400">No suppliers registered.</td></tr>
-            )}
-            {suppliers.map(s => (
-              <tr key={s.id} className="border-t border-stone-100 hover:bg-stone-50/60">
-                <td className="px-4 py-3 text-sm font-medium">
-                  <a href={`/suppliers/${s.id}`} className="text-[#0d3d3b] hover:underline">{s.name}</a>
-                </td>
-                <td className="px-4 py-3 text-sm text-stone-600">{s.contactName || "—"}</td>
-                <td className="px-4 py-3 text-sm text-stone-500">{s.contactEmail || "—"}</td>
-                <td className="px-4 py-3 text-sm text-stone-500">{[s.city, s.country].filter(Boolean).join(", ") || "—"}</td>
-                <td className="px-4 py-3 text-sm">
-                  {s.certType === "fsc" || s.fscLicense ? (
-                    <span className="px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800">FSC</span>
-                  ) : s.certType === "pefc" || s.pefc ? (
-                    <span className="px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800">PEFC</span>
-                  ) : (
-                    <span className="text-stone-300">—</span>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <button
-                    onClick={(e) => {
-                      if (openDropdownId === s.id) { setOpenDropdownId(null); return; }
-                      const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                      const estimatedH = 120;
-                      const spaceBelow = window.innerHeight - r.bottom;
-                      const top = spaceBelow < estimatedH ? r.top - estimatedH - 4 : r.bottom + 4;
-                      setDropdownPos({ top, right: window.innerWidth - r.right });
-                      setOpenDropdownId(s.id);
-                    }}
-                    className="w-7 h-7 flex items-center justify-center text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-md transition-colors text-base leading-none"
-                  >···</button>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-muted">
+              <tr>
+                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Name</th>
+                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Contact</th>
+                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Email</th>
+                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Location</th>
+                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Cert</th>
+                <th className="text-right p-3 text-sm font-medium text-muted-foreground">Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {suppliers.length === 0 && (
+                <tr><td colSpan={6} className="p-6 text-center text-sm text-muted-foreground">No suppliers registered.</td></tr>
+              )}
+              {suppliers.map(s => (
+                <tr key={s.id} className="hover:bg-muted/50 transition-colors">
+                  <td className="p-3 text-sm font-medium border-t border-border">
+                    <a href={`/suppliers/${s.id}`} className="text-[#0d3d3b] hover:underline">{s.name}</a>
+                  </td>
+                  <td className="p-3 text-sm border-t border-border">{s.contactName || "-"}</td>
+                  <td className="p-3 text-sm border-t border-border">{s.contactEmail || "-"}</td>
+                  <td className="p-3 text-sm border-t border-border">{[s.city, s.country].filter(Boolean).join(", ") || "-"}</td>
+                  <td className="p-3 text-sm border-t border-border">
+                    {s.certType === "fsc" || s.fscLicense ? (
+                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800">FSC</span>
+                    ) : s.certType === "pefc" || s.pefc ? (
+                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800">PEFC</span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </td>
+                  <td className="p-3 text-right border-t border-border">
+                    <button
+                      onClick={(e) => {
+                        if (openDropdownId === s.id) { setOpenDropdownId(null); return; }
+                        const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                        const estimatedH = 120;
+                        const spaceBelow = window.innerHeight - r.bottom;
+                        const top = spaceBelow < estimatedH ? r.top - estimatedH - 4 : r.bottom + 4;
+                        setDropdownPos({ top, right: window.innerWidth - r.right });
+                        setOpenDropdownId(s.id);
+                      }}
+                      className="w-7 h-7 flex items-center justify-center text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-md transition-colors text-base leading-none"
+                    >···</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {openDropdownId !== null && dropdownPos && (() => {
