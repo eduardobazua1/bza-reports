@@ -268,19 +268,17 @@ export function ProductsClient({ products }: { products: Product[] }) {
   }
 
   return (
-    <div className="bg-white rounded-md shadow-sm">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <span className="text-sm text-muted-foreground">{products.length} product{products.length !== 1 ? "s" : ""}</span>
-        {!showAddRow && (
-          <button
-            onClick={() => { setShowAddRow(true); setEditId(null); }}
-            className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
-          >
-            + Add Product
-          </button>
-        )}
-      </div>
+    <div className="space-y-4">
+      {!showAddRow && (
+        <button
+          onClick={() => { setShowAddRow(true); setEditId(null); }}
+          className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+        >
+          + Add Product
+        </button>
+      )}
 
+      <div className="bg-white rounded-md shadow-sm">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-muted">
@@ -372,6 +370,7 @@ export function ProductsClient({ products }: { products: Product[] }) {
           document.body
         );
       })()}
+      </div>
     </div>
   );
 }
