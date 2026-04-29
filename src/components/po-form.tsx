@@ -327,7 +327,7 @@ export function POForm({
       clientPoNumber:    (formData.get("clientPoNumber") as string) || undefined,
       sellPrice:         Number(formData.get("sellPrice")),
       buyPrice:          Number(formData.get("buyPrice")),
-      product:           (formData.get("product") as string) || purchaseOrder?.product || "—",
+      product:           (supplierProductId ? products.find(p => String(p.id) === supplierProductId)?.name : null) || purchaseOrder?.product || "—",
       supplierProductId: supplierProductId ? Number(supplierProductId) : undefined,
       clientProductId:   clientProductId   ? Number(clientProductId)   : undefined,
       terms:             (formData.get("terms") as string) || undefined,
@@ -459,14 +459,11 @@ export function POForm({
           <div>
             <label className="block text-sm font-medium mb-1">Product (Supplier Purchase Order)</label>
             <select value={supplierProductId} onChange={(e) => handleSupplierProductChange(e.target.value)} className={inp}>
-              <option value="">— Free text —</option>
+              <option value="">— Select product —</option>
               {products.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
-            {!supplierProductId && (
-              <input name="product" defaultValue={purchaseOrder?.product || ""} className={`${inp} mt-1`} placeholder="Product description" />
-            )}
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Product (Client Purchase Order)</label>

@@ -12,7 +12,7 @@ export default async function OpenPOsByCustomerPage() {
     .map((r) => ({
       client: r.clientName ?? "Unknown",
       poNumber: r.po.poNumber,
-      product: r.po.product ?? "—",
+      product: r.productName ?? "—",
       terms: r.po.terms ?? "—",
       plannedTons: Number(r.po.plannedTons) || 0,
       shippedTons: Number(r.totalTons) || 0,

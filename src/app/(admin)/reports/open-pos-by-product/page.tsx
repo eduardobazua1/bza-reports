@@ -10,7 +10,7 @@ export default async function OpenPOsByProductPage() {
 
   const rows = active
     .map((r) => ({
-      product:      r.po.product ?? "Unknown",
+      product:      r.productName ?? "Unknown",
       poNumber:     r.po.poNumber,
       client:       r.clientName ?? "—",
       supplier:     r.supplierName ?? "—",

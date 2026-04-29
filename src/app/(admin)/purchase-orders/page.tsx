@@ -111,7 +111,7 @@ export default async function PurchaseOrdersPage({ searchParams }: { searchParam
                     <td className="p-3 text-sm border-t border-border">{formatDate(row.po.poDate)}</td>
                     <td className="p-3 text-sm border-t border-border">{row.clientName || "-"}</td>
                     <td className="p-3 text-sm border-t border-border">{row.supplierName || "-"}</td>
-                    <td className="p-3 text-sm border-t border-border">{row.po.product}</td>
+                    <td className="p-3 text-sm border-t border-border">{row.productName}</td>
                     <td className="p-3 text-sm border-t border-border text-right">{formatCurrency(row.po.sellPrice)}</td>
                     <td className="p-3 text-sm border-t border-border text-right">{formatCurrency(row.po.buyPrice)}</td>
                     <td className="p-3 text-sm border-t border-border text-right">{row.invoiceCount}</td>

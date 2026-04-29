@@ -27,6 +27,7 @@ export async function getPurchaseOrders() {
       po: purchaseOrders,
       clientName: clients.name,
       supplierName: suppliers.name,
+      productName: sql<string>`coalesce((SELECT p.name FROM products p WHERE p.id = ${purchaseOrders.supplierProductId}), ${purchaseOrders.product}, '—')`,
       invoiceCount: count(invoices.id),
       totalTons: sql<number>`coalesce(sum(${invoices.quantityTons}), 0)`,
       totalRevenue: sql<number>`coalesce(sum(${invoices.quantityTons} * coalesce(${invoices.sellPriceOverride}, ${purchaseOrders.sellPrice})), 0)`,
