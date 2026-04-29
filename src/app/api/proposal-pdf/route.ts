@@ -222,9 +222,21 @@ export async function buildProposalPdf(proposalId: number): Promise<Uint8Array> 
     const lineTotal = item.tons * item.pricePerTon;
     grandTotal     += lineTotal;
 
-    const hasDesc = !!(item.description && item.description.trim() && item.description !== "—");
-    const hasCert = !!(item.certType && item.certType !== "None" && item.certType !== "—");
-    const rowH    = ROW_BASE + (hasDesc ? DESC_EXT : 0) + (hasCert ? CERT_EXT : 0);
+    const ITEM_W  = COLS[1].w - 10;    // usable width for item text
+    const PROD_SZ = 7.5;
+    const DESC_SZ = 7;
+    const LINE_H  = 10;                // line-height between wrapped product lines
+
+    // Wrap product name — no truncation, same approach as invoice
+    const prodLines = wrap(item.product, ITEM_W, font, PROD_SZ);
+    const hasDesc   = !!(item.description && item.description.trim() && item.description !== "—");
+    const hasCert   = !!(item.certType && item.certType !== "None" && item.certType !== "—");
+
+    // Row height grows with wrapped lines
+    const textBlockH = prodLines.length * LINE_H
+                     + (hasDesc ? LINE_H : 0)
+                     + (hasCert ? CERT_EXT : 0);
+    const rowH = Math.max(ROW_BASE, textBlockH + 10);   // minimum ROW_BASE, +10 for top/bottom padding
 
     if (y + rowH > MAX_Y) {
       [page, y] = newPage();
@@ -236,59 +248,58 @@ export async function buildProposalPdf(proposalId: number): Promise<Uint8Array> 
 
     // ── Col 0: row number — vertically centered
     const numTW = font.widthOfTextAtSize(String(i + 1), 7.5);
-    const numX  = M + (COLS[0].w - numTW) / 2;
-    const numY  = y + rowH / 2 - 7.5 * 0.716 / 2;
-    dt(page, String(i + 1), numX, numY, 7.5, font, GRAY);
+    dt(page, String(i + 1),
+      M + (COLS[0].w - numTW) / 2,
+      y + rowH / 2 - 7.5 * 0.716 / 2,
+      7.5, font, GRAY);
 
-    // ── Col 1: Item — product name bold top, description small gray below
-    const itemX  = M + COLS[0].w + 5;
-    const itemW  = COLS[1].w - 10;
+    // ── Col 1: Item text block — top-aligned within row
+    const itemX = M + COLS[0].w + 5;
+    const topY  = y + 7;   // 7 pt padding from top of row
 
-    // Product name — position depends on whether description follows
-    const prodY = hasDesc || hasCert ? y + 7 : y + rowH / 2 - 8.5 * 0.716 / 2;
-    dt(page, fit(item.product, itemW, fontB, 8.5), itemX, prodY, 8.5, fontB, TEAL);
+    // Product lines — regular font, DARK color (same weight as invoice line items)
+    prodLines.forEach((l, li) =>
+      dt(page, l, itemX, topY + li * LINE_H, PROD_SZ, font, DARK)
+    );
 
     // Description sub-line
     if (hasDesc) {
-      dt(page, fit(item.description!, itemW, font, 7), itemX, y + 7 + 12, 7, font, GRAY);
+      const descY = topY + prodLines.length * LINE_H + 1;
+      dt(page, fit(item.description!, ITEM_W, font, DESC_SZ), itemX, descY, DESC_SZ, font, GRAY);
     }
 
-    // Cert pill — sits below text content
+    // Cert pill
     if (hasCert) {
-      const certStr  = `${item.certType}${item.certDetail ? `  ${item.certDetail}` : ""}`;
-      const certSz   = 5.5;
-      const ctw      = fontB.widthOfTextAtSize(certStr, certSz);
-      const pillW    = ctw + 8;
-      const pillH    = 9;
-      const textH    = ROW_BASE + (hasDesc ? DESC_EXT : 0);
-      const pillX    = itemX;
-      const pillY    = y + textH - CERT_EXT + 1;
-      dr(page, pillX, pillY, pillW, pillH, TEAL);
-      dt(page, certStr, pillX + 4, pillY + 1, certSz, fontB, WHITE);
+      const certStr = `${item.certType}${item.certDetail ? `  ${item.certDetail}` : ""}`;
+      const certSz  = 5.5;
+      const ctw     = fontB.widthOfTextAtSize(certStr, certSz);
+      const pillW   = ctw + 8;
+      const pillH   = 9;
+      const certY   = topY + prodLines.length * LINE_H + (hasDesc ? LINE_H : 0) + 1;
+      dr(page, itemX, certY, pillW, pillH, TEAL);
+      dt(page, certStr, itemX + 4, certY + 1, certSz, fontB, WHITE);
     }
 
-    // ── Cols 2-5: numeric cells — all vertically centered in full rowH
-    type NumCell = { text: string; f: PDFFont; sz: number; color: RGB };
+    // ── Cols 2-5: numeric data — regular font, vertically centered
+    // All use same weight as invoice line items (font, not fontB)
+    type NumCell = { text: string; sz: number; color: RGB; align: "left"|"right"|"center" };
     const numCells: NumCell[] = [
-      { text: fmtTons(item.tons),       f: fontB, sz: 8,   color: DARK  },
-      { text: item.unit,                f: font,  sz: 8,   color: GRAY  },
-      { text: fmtUsd(item.pricePerTon), f: font,  sz: 8,   color: DARK  },
-      { text: fmtUsd(lineTotal),        f: fontB, sz: 8.5, color: TEALB },
+      { text: fmtTons(item.tons),       sz: 7.5, color: DARK,  align: "right"  },
+      { text: item.unit,                sz: 7.5, color: GRAY,  align: "center" },
+      { text: fmtUsd(item.pricePerTon), sz: 7.5, color: DARK,  align: "right"  },
+      { text: fmtUsd(lineTotal),        sz: 8,   color: TEALB, align: "right"  },
     ];
 
     let x = M + COLS[0].w + COLS[1].w;
     numCells.forEach((c, ci) => {
-      const colIdx = ci + 2;
-      const cw     = COLS[colIdx].w;
-      const txt    = fit(c.text, cw - 6, c.f, c.sz);
-      const tw     = c.f.widthOfTextAtSize(txt, c.sz);
-      const pkY    = y + rowH / 2 - c.sz * 0.716 / 2;
-      const col    = COLS[colIdx];
-      let   dx     = x + 4;
-      if (col.align === "right")  dx = x + cw - 5 - tw;
-      if (col.align === "center") dx = x + (cw - tw) / 2;
-      dt(page, txt, dx, pkY, c.sz, c.f, c.color);
-      x += cw;
+      const col = COLS[ci + 2];
+      const tw  = font.widthOfTextAtSize(c.text, c.sz);
+      const pkY = y + rowH / 2 - c.sz * 0.716 / 2;
+      let   dx  = x + 4;
+      if (c.align === "right")  dx = x + col.w - 5 - tw;
+      if (c.align === "center") dx = x + (col.w - tw) / 2;
+      dt(page, c.text, dx, pkY, c.sz, font, c.color);
+      x += col.w;
     });
 
     y += rowH;
