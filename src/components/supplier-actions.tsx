@@ -4,6 +4,7 @@ import { useState, useTransition, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { createSupplier, deleteSupplier } from "@/server/actions";
 import { useRouter } from "next/navigation";
+import { Trash2 } from "lucide-react";
 
 type Supplier = {
   id: number;
@@ -233,7 +234,7 @@ export function SupplierActions({ suppliers }: { suppliers: Supplier[] }) {
           <div ref={dropdownRef} style={{ position: "fixed", top: dropdownPos.top, right: dropdownPos.right, zIndex: 9999 }} className="bg-white border border-stone-200 rounded-md shadow-lg min-w-[130px] py-1 text-left">
             <a href={`/suppliers/${supplier.id}`} className="block px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">View Detail</a>
             <div className="border-t border-stone-100 my-1" />
-            <button onClick={() => { setOpenDropdownId(null); handleDelete(supplier.id); }} disabled={isPending} className="w-full text-left px-4 py-2 text-sm text-[#0d3d3b] hover:bg-[#0d3d3b]">Delete</button>
+            <button onClick={() => { setOpenDropdownId(null); handleDelete(supplier.id); }} disabled={isPending} className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"><Trash2 className="w-3.5 h-3.5" />Delete</button>
           </div>,
           document.body
         );

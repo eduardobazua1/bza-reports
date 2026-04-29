@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { updateSupplier, deleteSupplier } from "@/server/actions";
 import { useRouter } from "next/navigation";
+import { Trash2 } from "lucide-react";
 
 type Supplier = {
   id: number;
@@ -77,8 +78,9 @@ export function SupplierDetailEdit({ supplier }: { supplier: Supplier }) {
         <button
           onClick={handleDelete}
           disabled={isPending}
-          className="border border-[#0d3d3b] px-3 py-1.5 rounded text-sm text-[#0d3d3b] hover:bg-[#0d3d3b] font-medium disabled:opacity-50"
+          className="flex items-center gap-1.5 border border-red-200 text-red-600 px-3 py-1.5 rounded text-sm font-medium hover:bg-red-50 disabled:opacity-50"
         >
+          <Trash2 className="w-3.5 h-3.5" />
           Delete
         </button>
       </div>

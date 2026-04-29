@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { deleteInvoice } from "@/server/actions";
 import { useRouter } from "next/navigation";
 import { InvoiceForm } from "@/components/invoice-form";
+import { Trash2 } from "lucide-react";
 
 type Invoice = {
   id: number;
@@ -264,7 +265,8 @@ export function InvoiceListActions({
         <button onClick={() => setShowEdit(true)} className="text-xs text-primary hover:underline">
           Edit
         </button>
-        <button onClick={handleDelete} disabled={isPending} className="text-xs text-destructive hover:underline">
+        <button onClick={handleDelete} disabled={isPending} className="flex items-center gap-1 text-xs text-destructive hover:underline disabled:opacity-50">
+          <Trash2 className="w-3 h-3" />
           Delete
         </button>
       </div>

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { createSupplierPayment, deleteSupplierPayment } from "@/server/payment-actions";
 import { useRouter } from "next/navigation";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { Trash2 } from "lucide-react";
 
 type Payment = {
   id: number;
@@ -164,9 +165,10 @@ export function SupplierPaymentActions({
                   <button
                     onClick={() => handleDelete(p.id)}
                     disabled={isPending}
-                    className="text-[#0d3d3b] hover:text-[#0d3d3b] text-xs"
+                    title="Delete"
+                    className="p-1 rounded text-stone-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors"
                   >
-                    ×
+                    {isPending ? "…" : <Trash2 className="w-3.5 h-3.5" />}
                   </button>
                 </td>
               </tr>

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { formatNumber, formatCurrency } from "@/lib/utils";
+import { Trash2 } from "lucide-react";
 
 function PaperclipIcon({ className }: { className?: string }) {
   return (
@@ -491,7 +492,7 @@ export function SupplierOrdersSection({
               <button onClick={() => { setOpenDropdownId(null); openSend(order); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">Send</button>
             )}
             <div className="border-t border-stone-100 my-1" />
-            <button onClick={() => { setOpenDropdownId(null); handleDelete(order.id); }} className="w-full text-left px-4 py-2 text-sm text-[#0d3d3b] hover:bg-[#0d3d3b]">Delete</button>
+            <button onClick={() => { setOpenDropdownId(null); handleDelete(order.id); }} className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"><Trash2 className="w-3.5 h-3.5" />Delete</button>
           </div>,
           document.body
         );

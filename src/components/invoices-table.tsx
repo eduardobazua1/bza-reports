@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { deleteInvoice, markInvoicesPaid, duplicateInvoice, markInvoiceUnpaid, updateInvoice } from "@/server/actions";
 import { InvoiceForm } from "@/components/invoice-form";
+import { Trash2 } from "lucide-react";
 import {
   formatCurrency,
   formatNumber,
@@ -434,7 +435,7 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
               <button onClick={async () => { setOpenDropdownId(null); await markInvoiceUnpaid(activeRow.invoice.id); router.refresh(); }} className="w-full text-left px-4 py-2 text-sm text-[#0d9488] hover:bg-[#0d9488]">Mark as Unpaid</button>
             )}
             <div className="border-t border-stone-100 my-1" />
-            <button onClick={() => { handleDelete(activeRow.invoice); setOpenDropdownId(null); }} className="w-full text-left px-4 py-2 text-sm text-[#0d3d3b] hover:bg-[#0d3d3b]">Delete</button>
+            <button onClick={() => { handleDelete(activeRow.invoice); setOpenDropdownId(null); }} className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"><Trash2 className="w-3.5 h-3.5" />Delete</button>
           </div>,
           document.body
         );

@@ -4,6 +4,7 @@ import { useState, useTransition, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { createClient, updateClient, deleteClient } from "@/server/actions";
 import { useRouter } from "next/navigation";
+import { Trash2 } from "lucide-react";
 
 type Client = {
   id: number;
@@ -449,7 +450,7 @@ export function ClientActions({ clients }: { clients: Client[] }) {
             <a href={`/clients/${client.id}/send-report`} className="block w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50" onClick={() => setOpenDropdownId(null)}>Send Report</a>
             <button onClick={() => { setOpenDropdownId(null); handleEdit(client); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">Edit</button>
             <div className="border-t border-stone-100 my-1" />
-            <button onClick={() => { setOpenDropdownId(null); handleDelete(client.id); }} disabled={isPending} className="w-full text-left px-4 py-2 text-sm text-[#0d3d3b] hover:bg-[#0d3d3b]">Delete</button>
+            <button onClick={() => { setOpenDropdownId(null); handleDelete(client.id); }} disabled={isPending} className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"><Trash2 className="w-3.5 h-3.5" />Delete</button>
           </div>,
           document.body
         );
