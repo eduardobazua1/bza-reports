@@ -436,6 +436,11 @@ export async function getUnpaidSupplierInvoices() {
 }
 
 // ---- Products with sales data ----
+export async function getProducts() {
+  const { products } = await import("@/db/schema");
+  return db.select({ id: products.id, name: products.name, grade: products.grade }).from(products).orderBy(products.name);
+}
+
 export async function getProductsWithSales() {
   return db
     .select({
