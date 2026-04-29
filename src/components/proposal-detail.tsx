@@ -318,19 +318,17 @@ export function ProposalDetail({ proposal }: { proposal: ProposalData }) {
           </div>
         )}
 
-        {/* Danger zone */}
-        <div className="border border-red-100 rounded-xl p-5">
-          <h3 className="text-sm font-semibold text-stone-700 mb-1">Danger Zone</h3>
-          <p className="text-xs text-stone-400 mb-3">Deleting a proposal cannot be undone.</p>
+        {/* Delete */}
+        <div className="flex items-center gap-3">
           {delConfirm ? (
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-red-600">Are you sure?</span>
+            <>
+              <span className="text-sm text-red-500">Are you sure?</span>
               <button onClick={handleDelete} disabled={pending}
                 className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50">
                 {pending ? "Deleting…" : "Yes, delete"}
               </button>
               <button onClick={() => setDelConfirm(false)} className="text-xs text-stone-400 hover:text-stone-600">Cancel</button>
-            </div>
+            </>
           ) : (
             <button onClick={() => setDelConfirm(true)}
               className="flex items-center gap-2 px-4 py-2 border border-red-200 text-red-600 hover:bg-red-50 text-xs font-medium rounded-lg transition-colors">
