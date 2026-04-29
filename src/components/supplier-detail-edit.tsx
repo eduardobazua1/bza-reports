@@ -170,7 +170,7 @@ export function SupplierDetailEdit({ supplier }: { supplier: Supplier }) {
           </section>
 
           <div className="flex gap-2 pt-2 border-t border-stone-100">
-            <button type="submit" disabled={isPending} className="bg-[#0d3d3b] text-white px-4 py-2 rounded text-sm font-medium hover:opacity-90 disabled:opacity-50">
+            <button type="submit" disabled={isPending} className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity">
               {isPending ? "Saving..." : "Update"}
             </button>
             <button type="button" onClick={() => setOpen(false)} className="border border-stone-200 px-4 py-2 rounded text-sm hover:bg-stone-50">

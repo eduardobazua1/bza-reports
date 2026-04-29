@@ -88,7 +88,7 @@ export function POSupplierPayments({
         </div>
         <button
           onClick={() => setShowForm((v) => !v)}
-          className="px-3 py-1.5 text-xs font-medium bg-[#0d3d3b] text-white rounded-md hover:bg-[#0a2e2c] transition-colors"
+          className="px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity"
         >
           + Add Payment
         </button>
@@ -168,7 +168,7 @@ export function POSupplierPayments({
             <button
               type="submit"
               disabled={saving}
-              className="px-4 py-1.5 text-sm font-medium bg-[#0d3d3b] text-white rounded-md hover:bg-[#0a2e2c] disabled:opacity-50 transition-colors"
+              className="px-4 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:opacity-90 disabled:opacity-50 transition-opacity"
             >
               {saving ? "Saving..." : "Save Payment"}
             </button>

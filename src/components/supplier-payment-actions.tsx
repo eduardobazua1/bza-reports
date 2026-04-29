@@ -75,7 +75,7 @@ export function SupplierPaymentActions({
         {!showForm && (
           <button
             onClick={() => setShowForm(true)}
-            className="bg-[#0d3d3b] text-white px-3 py-1.5 rounded text-xs font-medium hover:bg-[#0a2e2d]"
+            className="bg-primary text-primary-foreground px-3 py-1.5 rounded-md text-xs font-medium hover:opacity-90 transition-opacity"
           >
             + Record Payment
           </button>
@@ -121,7 +121,7 @@ export function SupplierPaymentActions({
             <div className="sm:col-span-4 flex gap-2">
               <button
                 type="submit" disabled={isPending}
-                className="bg-[#0d3d3b] text-white px-4 py-2 rounded text-sm font-medium disabled:opacity-50"
+                className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
               >
                 {isPending ? "Saving..." : "Save"}
               </button>
