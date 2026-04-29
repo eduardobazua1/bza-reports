@@ -99,7 +99,7 @@ function MemoForm({
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 mx-4">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-base font-semibold text-stone-800">
-            {memo ? "Edit Credit Memo" : "New Credit Memo"}
+            {memo ? "Edit" : "New Credit Memo"}
           </h2>
           <button onClick={onClose} className="text-stone-400 hover:text-stone-600"><X className="w-5 h-5" /></button>
         </div>

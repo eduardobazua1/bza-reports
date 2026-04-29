@@ -367,7 +367,7 @@ export function POForm({
   return (
     <div className="bg-white rounded-md shadow-sm p-4">
       <h3 className="text-lg font-semibold mb-4">
-        {purchaseOrder ? "Edit Purchase Order" : "New Purchase Order"}
+        {purchaseOrder ? "Edit" : "New Purchase Order"}
       </h3>
       <form onSubmit={handleSubmit} className="space-y-4">
 

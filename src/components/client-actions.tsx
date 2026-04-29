@@ -193,7 +193,7 @@ export function ClientActions({ clients }: { clients: Client[] }) {
       {showForm && (
         <div className="bg-white rounded-md shadow-sm p-4">
           <h3 className="text-lg font-semibold mb-4">
-            {editingClient ? "Edit Client" : "New Client"}
+            {editingClient ? "Edit" : "New Client"}
           </h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>

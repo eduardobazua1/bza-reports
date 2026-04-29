@@ -219,7 +219,7 @@ export function ProposalForm({ mode, proposalId, proposalNumber, clients, produc
       {/* Header row */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold">{mode === "new" ? "New Proposal" : "Edit Proposal"}</h1>
+          <h1 className="text-2xl font-bold">{mode === "new" ? "New Proposal" : "Edit"}</h1>
           <p className="text-sm text-stone-400 mt-0.5 font-mono">{proposalNumber}</p>
         </div>
         <div className="flex items-center gap-3">
