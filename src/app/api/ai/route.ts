@@ -2,14 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { db } from "@/db";
 import { createClient } from "@libsql/client";
-import { invoices, purchaseOrders, clients, suppliers, supplierPayments, scheduledReports, reportTemplates, shipmentUpdates, marketPrices } from "@/db/schema";
+import { invoices, purchaseOrders, clients, suppliers, supplierPayments, scheduledReports, reportTemplates, shipmentUpdates, marketPrices, customerPayments, proposals, proposalItems, creditMemos, products } from "@/db/schema";
+import { sendEmail, isEmailConfigured } from "@/lib/email";
+import * as XLSX from "xlsx";
 import { eq, sql, count, like, desc, and } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
 
 const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
-  { type: "function", function: { name: "query_data", description: "Query business data: summary, clients, suppliers, POs, invoices, payments, shipments", parameters: { type: "object", properties: { query_type: { type: "string", enum: ["summary", "unpaid_invoices", "active_pos", "all_pos", "client_list", "supplier_list", "supplier_payments", "active_shipments", "templates", "scheduled_reports"] }, filter_name: { type: "string" } }, required: ["query_type"] } } },
+  { type: "function", function: { name: "query_data", description: "Query business data: summary, clients, suppliers, POs, invoices, payments, shipments, proposals, credit memos, products", parameters: { type: "object", properties: { query_type: { type: "string", enum: ["summary", "unpaid_invoices", "active_pos", "all_pos", "client_list", "supplier_list", "supplier_payments", "active_shipments", "templates", "scheduled_reports", "customer_payments", "ar_aging", "proposals", "credit_memos", "products"] }, filter_name: { type: "string", description: "Optional: filter by client/supplier name" } }, required: ["query_type"] } } },
   { type: "function", function: { name: "create_po", description: "Create purchase order", parameters: { type: "object", properties: { poNumber: { type: "string" }, clientName: { type: "string" }, supplierName: { type: "string" }, sellPrice: { type: "number" }, buyPrice: { type: "number" }, product: { type: "string" }, poDate: { type: "string" }, terms: { type: "string" }, transportType: { type: "string", enum: ["ffcc", "ship", "truck"] }, licenseFsc: { type: "string" }, chainOfCustody: { type: "string" }, inputClaim: { type: "string" }, outputClaim: { type: "string" } }, required: ["poNumber", "clientName", "supplierName", "sellPrice", "buyPrice", "product"] } } },
   { type: "function", function: { name: "create_invoice", description: "Create invoice/shipment on a PO", parameters: { type: "object", properties: { invoiceNumber: { type: "string" }, poNumber: { type: "string" }, quantityTons: { type: "number" }, item: { type: "string" }, shipmentDate: { type: "string" }, vehicleId: { type: "string", description: "Tracking/railcar number e.g. TBOX640169" }, blNumber: { type: "string" }, currentLocation: { type: "string", description: "Current location for tracking" }, destination: { type: "string", description: "Final destination e.g. Ecatepec, Morelia, Bajio" }, balesCount: { type: "number", description: "Number of bales (from BOL)" }, unitsPerBale: { type: "number", description: "Units per bale (from BOL)" }, invoiceDate: { type: "string" }, salesDocument: { type: "string" }, billingDocument: { type: "string" } }, required: ["invoiceNumber", "poNumber", "quantityTons"] } } },
   { type: "function", function: { name: "update_invoice", description: "Update invoice fields. Can find the invoice by ANY of: invoiceNumber, vehicleIdLookup (railcar/container), blNumberLookup (BL number), or salesDocumentLookup (client PO). When processing shipment status updates from documents, always use vehicleIdLookup with the railcar number.", parameters: { type: "object", properties: { invoiceNumber: { type: "string", description: "Invoice # (e.g. IX0043-1)" }, vehicleIdLookup: { type: "string", description: "Railcar or container # to look up the invoice (e.g. TBOX640169, RAIL123456)" }, blNumberLookup: { type: "string", description: "BL (Bill of Lading) number to look up the invoice" }, salesDocumentLookup: { type: "string", description: "Client PO / sales document number to look up the invoice" }, quantityTons: { type: "number" }, customerPaymentStatus: { type: "string", enum: ["paid", "unpaid"] }, supplierPaymentStatus: { type: "string", enum: ["paid", "unpaid"] }, shipmentStatus: { type: "string", enum: ["programado", "en_transito", "en_aduana", "entregado"] }, shipmentDate: { type: "string" }, currentLocation: { type: "string" }, destination: { type: "string" }, vehicleId: { type: "string" }, blNumber: { type: "string" }, estimatedArrival: { type: "string" }, customerPaidDate: { type: "string" }, invoiceDate: { type: "string" }, paymentTermsDays: { type: "number" }, salesDocument: { type: "string" }, billingDocument: { type: "string" }, balesCount: { type: "number" }, unitsPerBale: { type: "number" } }, required: [] } } },
@@ -22,8 +24,9 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   { type: "function", function: { name: "delete_record", description: "Delete a PO, invoice, client, supplier, or payment", parameters: { type: "object", properties: { type: { type: "string", enum: ["po", "invoice", "client", "supplier", "payment"] }, identifier: { type: "string", description: "PO number, invoice number, client name, supplier name, or payment ID" } }, required: ["type", "identifier"] } } },
   { type: "function", function: { name: "update_shipment_tracking", description: "Update location, ETA, and status for one or more railcars/containers using their vehicle IDs. Use this ALWAYS when processing tracking screenshots, emails, or reports. Pass all vehicles at once in the updates array.", parameters: { type: "object", properties: { updates: { type: "array", description: "List of railcar updates extracted from the document", items: { type: "object", properties: { vehicleId: { type: "string", description: "Railcar or container number exactly as shown (e.g. TBOX636255, SMW608012)" }, currentLocation: { type: "string", description: "Current location city/state as shown" }, estimatedArrival: { type: "string", description: "ETA date in YYYY-MM-DD format" }, shipmentStatus: { type: "string", enum: ["programado", "en_transito", "en_aduana", "entregado"], description: "en_transito for Train Arrived/Departed, en_aduana for customs hold, entregado for delivered" } }, required: ["vehicleId"] } } }, required: ["updates"] } } },
   { type: "function", function: { name: "update_market_price", description: "Update or set a market reference price from TTO or RISI for a grade and region. Use current month if month not specified.", parameters: { type: "object", properties: { source: { type: "string", enum: ["TTO", "RISI"], description: "Price source" }, grade: { type: "string", description: "Pulp grade e.g. NBSK, SBSK, BHK" }, region: { type: "string", description: "Region e.g. North America, Europe, China" }, price: { type: "number", description: "Price in USD/ADMT" }, priceType: { type: "string", enum: ["list", "net", "derived"], description: "Price type, default net" }, changeValue: { type: "number", description: "Change from previous month (positive or negative)" }, month: { type: "string", description: "Month in YYYY-MM format, defaults to current month" } }, required: ["source", "grade", "region", "price"] } } },
-  { type: "function", function: { name: "schedule_report", description: "Schedule a report to be sent to a client", parameters: { type: "object", properties: { clientName: { type: "string" }, templateName: { type: "string" }, sendDate: { type: "string" }, notes: { type: "string" } }, required: ["clientName", "sendDate"] } } },
+  { type: "function", function: { name: "send_report_email", description: "Generate a shipment report and send it immediately via email RIGHT NOW. Use this when user says 'send', 'email', 'manda', 'envía'. STOP before calling this — you MUST have an email address typed by the user in this conversation. If you do not have one, ask for it first. Never auto-fill from DB.", parameters: { type: "object", properties: { clientName: { type: "string", description: "Client name (fuzzy match)" }, toEmail: { type: "string", description: "Recipient email address. REQUIRED — must be explicitly typed by the user in this conversation." }, subject: { type: "string", description: "Email subject. Defaults to 'BZA Shipment Report — [Client]'" }, message: { type: "string", description: "Body text. Defaults to a standard message." }, format: { type: "string", enum: ["excel", "pdf", "both"], description: "Report format. Default: excel" }, filter: { type: "string", enum: ["active", "all"], description: "active = active shipments only, all = include delivered. Default: active" }, columns: { type: "string", description: "Comma-separated column keys. Leave empty for defaults." } }, required: ["clientName", "toEmail"] } } },
   { type: "function", function: { name: "generate_report", description: "Generate a PDF or Excel report for a client. Returns a download link. Use when user asks for a report, export, or document.", parameters: { type: "object", properties: { clientName: { type: "string", description: "Client name (fuzzy match)" }, format: { type: "string", enum: ["pdf", "excel"], description: "Report format" }, filter: { type: "string", enum: ["active", "all"], description: "active = only active shipments, all = include delivered" }, columns: { type: "string", description: "Comma-separated column keys. Options: currentLocation,poNumber,invoiceNumber,vehicleId,blNumber,quantityTons,sellPrice,shipmentStatus,shipmentDate,item,terms,transportType,customerPaymentStatus,estimatedArrival,salesDocument,billingDocument,clientPoNumber. Leave empty for defaults." } }, required: ["clientName", "format"] } } },
+  { type: "function", function: { name: "schedule_report", description: "Save a future reminder in the database. Does NOT send any email, does NOT contact anyone. Use ONLY when user says 'schedule for [date]' or 'remind on [date]'. Never use this to send a report now.", parameters: { type: "object", properties: { clientName: { type: "string" }, templateName: { type: "string" }, sendDate: { type: "string" }, notes: { type: "string" } }, required: ["clientName", "sendDate"] } } },
   { type: "function", function: { name: "run_calculation", description: "Run a SQL query on the database for exact calculations. Use this for any math: sums, totals, averages, counts, filtering. Tables: invoices (invoice_number, purchase_order_id, quantity_tons, sell_price_override, buy_price_override, shipment_date, due_date, customer_payment_status, supplier_payment_status, shipment_status, item, vehicle_id, current_location), purchase_orders (po_number, po_date, client_id, supplier_id, sell_price, buy_price, product, terms, transport_type, status), clients (id, name), suppliers (id, name), supplier_payments (supplier_id, purchase_order_id, amount_usd, payment_date, estimated_tons, notes), market_prices (source, grade, region, month, price, price_type, change_value, unit). Revenue = quantity_tons * COALESCE(sell_price_override, sell_price). Cost = quantity_tons * COALESCE(buy_price_override, buy_price).", parameters: { type: "object", properties: { sql_query: { type: "string", description: "SELECT SQL query to run. Only SELECT allowed, no INSERT/UPDATE/DELETE." } }, required: ["sql_query"] } } },
 ];
 
@@ -101,6 +104,47 @@ async function exec(name: string, args: Record<string, unknown>): Promise<string
       if (qt === "templates") return JSON.stringify(await db.select({ id: reportTemplates.id, name: reportTemplates.name, format: reportTemplates.format }).from(reportTemplates));
       if (qt === "scheduled_reports") {
         const data = await db.select({ id: scheduledReports.id, clientName: clients.name, templateName: reportTemplates.name, sendDate: scheduledReports.sendDate, status: scheduledReports.status }).from(scheduledReports).leftJoin(clients, eq(scheduledReports.clientId, clients.id)).leftJoin(reportTemplates, eq(scheduledReports.templateId, reportTemplates.id)).where(eq(scheduledReports.status, "pending"));
+        return JSON.stringify(data);
+      }
+      if (qt === "customer_payments") {
+        const filter = args.filter_name as string | undefined;
+        let data = await db.select({ id: customerPayments.id, clientName: clients.name, paymentDate: customerPayments.paymentDate, amount: customerPayments.amount, paymentMethod: customerPayments.paymentMethod, referenceNo: customerPayments.referenceNo, notes: customerPayments.notes }).from(customerPayments).leftJoin(clients, eq(customerPayments.clientId, clients.id)).orderBy(desc(customerPayments.paymentDate));
+        if (filter) data = data.filter(d => d.clientName?.toLowerCase().includes(filter.toLowerCase()));
+        return JSON.stringify(data.slice(0, 50));
+      }
+      if (qt === "ar_aging") {
+        const rawDb = createClient({ url: process.env.TURSO_DATABASE_URL || "file:sqlite.db", authToken: process.env.TURSO_AUTH_TOKEN });
+        const today = new Date().toISOString().split("T")[0];
+        const result = await rawDb.execute({
+          sql: `SELECT c.name as client,
+            ROUND(SUM(CASE WHEN i.due_date >= ? THEN i.quantity_tons * COALESCE(i.sell_price_override, po.sell_price) ELSE 0 END), 2) as current,
+            ROUND(SUM(CASE WHEN i.due_date < ? AND i.due_date >= date(?, '-30 days') THEN i.quantity_tons * COALESCE(i.sell_price_override, po.sell_price) ELSE 0 END), 2) as overdue_1_30,
+            ROUND(SUM(CASE WHEN i.due_date < date(?, '-30 days') AND i.due_date >= date(?, '-60 days') THEN i.quantity_tons * COALESCE(i.sell_price_override, po.sell_price) ELSE 0 END), 2) as overdue_31_60,
+            ROUND(SUM(CASE WHEN i.due_date < date(?, '-60 days') THEN i.quantity_tons * COALESCE(i.sell_price_override, po.sell_price) ELSE 0 END), 2) as overdue_60_plus,
+            ROUND(SUM(i.quantity_tons * COALESCE(i.sell_price_override, po.sell_price)), 2) as total
+          FROM invoices i
+          JOIN purchase_orders po ON i.purchase_order_id = po.id
+          JOIN clients c ON po.client_id = c.id
+          WHERE i.customer_payment_status = 'unpaid'
+          GROUP BY c.name ORDER BY total DESC`,
+          args: [today, today, today, today, today, today],
+        });
+        return JSON.stringify(result.rows);
+      }
+      if (qt === "proposals") {
+        const filter = args.filter_name as string | undefined;
+        const data = await db.select({ proposalNumber: proposals.proposalNumber, clientName: clients.name, title: proposals.title, proposalDate: proposals.proposalDate, validUntil: proposals.validUntil, status: proposals.status, incoterm: proposals.incoterm, paymentTerms: proposals.paymentTerms }).from(proposals).leftJoin(clients, eq(proposals.clientId, clients.id)).orderBy(desc(proposals.proposalDate));
+        const filtered = filter ? data.filter(d => d.clientName?.toLowerCase().includes(filter.toLowerCase()) || d.status === filter) : data;
+        return JSON.stringify(filtered.slice(0, 30));
+      }
+      if (qt === "credit_memos") {
+        const filter = args.filter_name as string | undefined;
+        const data = await db.select({ creditNumber: creditMemos.creditNumber, clientName: clients.name, amount: creditMemos.amount, memoDate: creditMemos.memoDate, reason: creditMemos.reason, status: creditMemos.status, invoiceId: creditMemos.invoiceId }).from(creditMemos).leftJoin(clients, eq(creditMemos.clientId, clients.id)).orderBy(desc(creditMemos.memoDate));
+        const filtered = filter ? data.filter(d => d.clientName?.toLowerCase().includes(filter.toLowerCase())) : data;
+        return JSON.stringify(filtered.slice(0, 30));
+      }
+      if (qt === "products") {
+        const data = await db.select({ id: products.id, name: products.name, grade: products.grade, description: products.description, fscLicense: products.fscLicense, chainOfCustody: products.chainOfCustody, inputClaim: products.inputClaim, outputClaim: products.outputClaim, pefc: products.pefc }).from(products);
         return JSON.stringify(data);
       }
       return "Unknown query type";
@@ -313,15 +357,21 @@ async function exec(name: string, args: Record<string, unknown>): Promise<string
     }
 
     if (name === "schedule_report") {
+      // Guard: if sendDate is in the past or is today, the user almost certainly wanted to SEND now, not schedule.
+      const today = new Date().toISOString().split("T")[0];
+      const sendDate = args.sendDate as string;
+      if (!sendDate || sendDate <= today) {
+        return `WRONG TOOL — You must NOT use schedule_report when the user wants to send a report now. Follow these steps: (1) Reply to the user asking "What email address should I send this report to?" (2) Wait for them to provide an email. (3) Call send_report_email with clientName and the email they provide. Do not call schedule_report again.`;
+      }
       const cl = await findClient(args.clientName as string);
       if (!cl) return `Client "${args.clientName}" not found.`;
-      let tmplId = 1; // default template
+      let tmplId = 1;
       if (args.templateName) {
         const tmpl = await db.query.reportTemplates.findFirst({ where: like(reportTemplates.name, `%${args.templateName}%`) });
         if (tmpl) tmplId = tmpl.id;
       }
-      await db.insert(scheduledReports).values({ clientId: cl.id, templateId: tmplId, sendDate: args.sendDate as string, notes: (args.notes as string) || null });
-      return `Report scheduled for ${cl.name} on ${args.sendDate}`;
+      await db.insert(scheduledReports).values({ clientId: cl.id, templateId: tmplId, sendDate, notes: (args.notes as string) || null });
+      return `Reminder saved: report for ${cl.name} scheduled for ${sendDate}. No email has been sent yet.`;
     }
 
     if (name === "generate_report") {
@@ -370,9 +420,79 @@ async function exec(name: string, args: Record<string, unknown>): Promise<string
       return results.join("\n");
     }
 
+    if (name === "send_report_email") {
+      if (!isEmailConfigured()) return "Email not configured. SMTP credentials are missing in .env.local — the user must add SMTP_USER and SMTP_PASS.";
+      const cl = await findClient(args.clientName as string);
+      if (!cl) return `Client "${args.clientName}" not found. Available: ${(await db.select({ name: clients.name }).from(clients)).map(c => c.name).join(", ")}`;
+      const toEmail = args.toEmail as string;
+      if (!toEmail) return `ERROR: toEmail is required. Ask the user what email address to send the report to — never use emails from the database.`;
+      const format = (args.format as string) || "excel";
+      const filter = (args.filter as string) || "active";
+      const defaultCols = ["currentLocation", "poNumber", "clientPoNumber", "invoiceNumber", "vehicleId", "blNumber", "quantityTons", "shipmentStatus", "shipmentDate", "estimatedArrival"];
+      const selectedCols = args.columns ? (args.columns as string).split(",").map(c => c.trim()).filter(Boolean) : defaultCols;
+      const subject = (args.subject as string) || `BZA Shipment Report — ${cl.name.split(",")[0].trim()}`;
+      const message = (args.message as string) || `Please find your shipment report attached.\n\nThis report includes ${filter === "active" ? "active shipments only" : "all shipments"}.`;
+
+      // Fetch rows
+      let rows = await db.select({ poNumber: purchaseOrders.poNumber, clientPoNumber: purchaseOrders.clientPoNumber, invoiceNumber: invoices.invoiceNumber, quantityTons: invoices.quantityTons, sellPrice: purchaseOrders.sellPrice, sellPriceOverride: invoices.sellPriceOverride, item: invoices.item, shipmentDate: invoices.shipmentDate, shipmentStatus: invoices.shipmentStatus, terms: purchaseOrders.terms, transportType: purchaseOrders.transportType, vehicleId: invoices.vehicleId, blNumber: invoices.blNumber, salesDocument: invoices.salesDocument, billingDocument: invoices.billingDocument, currentLocation: invoices.currentLocation, lastLocationUpdate: invoices.lastLocationUpdate, estimatedArrival: invoices.estimatedArrival, licenseFsc: purchaseOrders.licenseFsc, chainOfCustody: purchaseOrders.chainOfCustody, inputClaim: purchaseOrders.inputClaim, outputClaim: purchaseOrders.outputClaim }).from(invoices).leftJoin(purchaseOrders, eq(invoices.purchaseOrderId, purchaseOrders.id)).where(eq(purchaseOrders.clientId, cl.id)).orderBy(purchaseOrders.poNumber, invoices.invoiceNumber);
+      if (filter === "active") rows = rows.filter(r => r.shipmentStatus !== "entregado");
+
+      const colMap: Record<string, { header: string; getValue: (r: typeof rows[0]) => string | number | null }> = {
+        currentLocation: { header: "Current Location", getValue: r => r.currentLocation },
+        lastLocationUpdate: { header: "Last Update", getValue: r => r.lastLocationUpdate },
+        poNumber: { header: "Purchase Order", getValue: r => r.poNumber },
+        clientPoNumber: { header: "Client PO", getValue: r => r.salesDocument || r.clientPoNumber },
+        invoiceNumber: { header: "Invoice", getValue: r => r.invoiceNumber },
+        vehicleId: { header: "Vehicle ID", getValue: r => r.vehicleId },
+        blNumber: { header: "BL Number", getValue: r => r.blNumber },
+        quantityTons: { header: "Qty (TN)", getValue: r => r.quantityTons },
+        sellPrice: { header: "Price", getValue: r => `$${r.sellPriceOverride ?? r.sellPrice ?? 0}` },
+        billingDocument: { header: "Billing Doc.", getValue: r => r.billingDocument },
+        item: { header: "Item", getValue: r => r.item },
+        shipmentDate: { header: "Ship Date", getValue: r => r.shipmentDate },
+        shipmentStatus: { header: "Status", getValue: r => ({ programado: "Scheduled", en_transito: "In Transit", en_aduana: "Customs", entregado: "Delivered" }[r.shipmentStatus ?? ""] || r.shipmentStatus) },
+        estimatedArrival: { header: "ETA", getValue: r => r.estimatedArrival },
+        terms: { header: "Terms", getValue: r => r.terms },
+        transportType: { header: "Transport", getValue: r => r.transportType === "ffcc" ? "FFCC" : r.transportType === "ship" ? "Ship" : r.transportType === "truck" ? "Truck" : r.transportType },
+        licenseFsc: { header: "License #", getValue: r => r.licenseFsc },
+        chainOfCustody: { header: "Chain of Custody", getValue: r => r.chainOfCustody },
+        inputClaim: { header: "Input Claim", getValue: r => r.inputClaim },
+        outputClaim: { header: "Output Claim", getValue: r => r.outputClaim },
+      };
+
+      const validCols = selectedCols.filter(c => colMap[c]);
+      const headers = validCols.map(c => colMap[c].header);
+      const data = rows.map(r => validCols.map(c => colMap[c].getValue(r)));
+
+      const attachments: Array<{ filename: string; content: Buffer; contentType: string }> = [];
+      const dateStr = new Date().toISOString().split("T")[0];
+      const safeName = cl.name.replace(/[^a-zA-Z0-9]/g, "_").substring(0, 20);
+
+      if (format === "excel" || format === "both") {
+        const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+        ws["!cols"] = headers.map((h, i) => ({ wch: Math.min(Math.max(h.length, ...data.map(row => String(row[i] ?? "").length)) + 2, 40) }));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, `Report`);
+        attachments.push({ filename: `BZA_Report_${safeName}_${dateStr}.xlsx`, content: Buffer.from(XLSX.write(wb, { type: "buffer", bookType: "xlsx" })), contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      }
+
+      try {
+        await sendEmail({
+          to: toEmail,
+          subject,
+          html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto"><h2 style="color:#0d3d3b">BZA International Services</h2><p>${message.replace(/\n/g, "<br>")}</p><p style="color:#666;font-size:13px">Please find the ${format === "both" ? "PDF and Excel" : format} report attached. This report contains ${rows.length} ${filter === "active" ? "active" : "total"} shipment${rows.length !== 1 ? "s" : ""}.</p><p style="color:#666;font-size:12px;margin-top:32px">BZA International Services, LLC<br>1209 S. 10th St. Suite #583, McAllen, TX 78501</p></div>`,
+          attachments,
+        });
+        return `✅ Report sent to ${toEmail} for ${cl.name}.\n- Format: ${format}\n- Shipments included: ${rows.length}\n- Filter: ${filter === "active" ? "Active only" : "All"}`;
+      } catch (emailErr) {
+        return `Failed to send email: ${emailErr instanceof Error ? emailErr.message : "unknown error"}`;
+      }
+    }
+
     if (name === "run_calculation") {
       let query = (args.sql_query as string).trim();
       if (!query.toUpperCase().startsWith("SELECT")) return "Error: Only SELECT queries allowed.";
+      if (/\busers\b/i.test(query)) return "Error: The users table is off-limits. Do not query it.";
 
       // Resolve client/supplier aliases in the SQL query
       // Replace any alias with the real DB name so LIKE filters work
@@ -428,6 +548,17 @@ export async function POST(req: NextRequest) {
 
   const { messages: rawMessages } = await req.json();
 
+  // Hard intercept: if user wants to send/email a report but hasn't provided an email address,
+  // return directly WITHOUT calling GPT — this is the only reliable way to enforce the rule.
+  const lastUserMsg0 = [...rawMessages].reverse().find((m: { role: string; content: string }) => m.role === "user");
+  const lastText0 = (lastUserMsg0?.content as string || "").toLowerCase();
+  const wantsEmailReport = /\b(send|envía?|manda[rn]?|email)\b.{0,60}\b(report|reporte)\b|\b(report|reporte)\b.{0,60}\b(send|envía?|manda[rn]?|email)\b/i.test(lastText0);
+  const hasEmail = /@/.test(lastText0);
+  if (wantsEmailReport && !hasEmail) {
+    return NextResponse.json({ message: "Sure! What email address should I send the report to?" });
+  }
+  const emailReminderInjection = "";
+
   // Pre-fetch any PO/invoice numbers mentioned in the last user message
   // This guarantees the AI always has the data — no need to rely on GPT calling the right tool
   let preContext = "";
@@ -473,7 +604,27 @@ export async function POST(req: NextRequest) {
     let response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
-        { role: "system", content: `${preContext ? `[SYSTEM PRE-FETCH]${preContext}\n\nThe above data was automatically pulled from the database for records mentioned in this conversation. Use it directly — do not query for these records again.\n\n` : ""}You are the AI assistant for BZA International Services (cellulose/pulp trading, McAllen TX). IMPORTANT: Always respond in English. Never switch to Spanish or any other language, regardless of how the user writes their message.
+        { role: "system", content: `${preContext ? `[SYSTEM PRE-FETCH]${preContext}\n\nThe above data was automatically pulled from the database for records mentioned in this conversation. Use it directly — do not query for these records again.\n\n` : ""}${emailReminderInjection ? emailReminderInjection + "\n\n" : ""}You are the AI assistant for BZA International Services (cellulose/pulp trading, McAllen TX). IMPORTANT: Always respond in English. Never switch to Spanish or any other language, regardless of how the user writes their message.
+
+## ABSOLUTE RULE — EMAIL ADDRESSES
+NEVER use, mention, or assume any email address from the database, client records, users table, or anywhere in the platform.
+When the user asks to send a report or email anything: STOP and ask "What email address should I send it to?"
+Only proceed after the user types an email address in this conversation.
+WRONG: calling send_report_email with an email you found anywhere.
+WRONG: querying the users table or clients table to get an email.
+WRONG: mentioning any email address the user did not type in this chat.
+The users table is OFF-LIMITS. Never query it.
+
+## ABSOLUTE RULE — SEND vs SCHEDULE
+- User says "send", "email", "manda", "envía" → call send_report_email (sends NOW)
+- User says "schedule", "programa para el [date]" → call schedule_report (NO email is sent, just a DB record)
+- schedule_report does NOT send any email. EVER. Do not call it when the user wants to send something.
+
+## YOU CAN SEND EMAILS — THIS IS A HARD FACT
+You have a send_report_email tool that generates a report and emails it immediately. You are FULLY capable of sending emails.
+NEVER say "I don't have the capability to send emails" — that is FALSE.
+NEVER say "you can download and send it manually" — you can send it directly.
+When you have a clientName and a toEmail, call send_report_email immediately.
 
 ## CRITICAL RULE — ALWAYS USE TOOLS. NEVER ANSWER FROM MEMORY.
 Your ONLY source of truth is the database. You have NO knowledge of BZA's POs, invoices, clients, or data except what tools return.
@@ -577,6 +728,12 @@ Tables and columns:
 - shipment_updates: id, invoice_id, previous_status, new_status, comment
 - report_templates: id, name, description, format, columns, subject, message, is_system
 - scheduled_reports: id, client_id, template_id, send_date, reminder_email, status, sent_at, notes
+- customer_payments: id, client_id, payment_date, amount, payment_method, reference_no, notes
+- customer_payment_invoices: id, payment_id, invoice_id, invoice_number, amount
+- proposals: id, proposal_number, client_id, title, proposal_date, valid_until, status (draft/sent/accepted/declined), incoterm, payment_terms, notes
+- proposal_items: id, proposal_id, sort, product, description, tons, unit, price_per_ton, cert_type, cert_detail
+- credit_memos: id, client_id, invoice_id, credit_number, amount, memo_date, reason, status (open/applied/void), applied_date, notes
+- products: id, name, grade, description, fsc_license, chain_of_custody, input_claim, output_claim, pefc
 
 ## CLIENT/SUPPLIER ALIASES & EXACT DB NAMES
 When the user mentions a client/supplier by abbreviation, resolve it to the exact DB name below.
@@ -668,9 +825,51 @@ When Eduardo asks for help with proposals or pricing strategy:
 Example analysis: "KC is buying NBSK at $X. TTO net is $Y. Market is trending [up/down] based on last 3 months. Recommend selling at $Z for a margin of $W/ton."
 
 ## CAPABILITIES
-You can: query/calculate data, create POs/invoices/clients/suppliers, record supplier payments, update any field on invoices or POs, delete records, schedule reports, generate PDF/Excel reports, analyze market prices, build pricing proposals.
+You can: query/calculate data, create POs/invoices/clients/suppliers, record supplier payments, update any field on invoices or POs, delete records, schedule reports, generate PDF/Excel reports, **send reports via email**, analyze market prices, build pricing proposals.
 
-When user asks for a report or export, use generate_report immediately. CRITICAL: Copy the markdown download link from the tool result EXACTLY as-is. Do NOT add any prefix like "sandbox:" to the URL. The link must start with /api/.
+### EMAIL RULES — ABSOLUTE
+**NEVER use any email address from the database, from client records, or from any other source in the platform. Always ask the user explicitly.**
+
+This applies to ALL email operations:
+- Sending reports
+- Scheduling reports
+- Any mention of an email address in a response
+
+**CORRECT flow for "send report to KCM":**
+1. Assistant: "Sure! What email address should I send it to?"
+2. User: "ana@kcm.com.mx"
+3. Assistant calls send_report_email with toEmail="ana@kcm.com.mx"
+
+**WRONG:** Calling any email tool with an email the user did not type in this conversation.
+**WRONG:** Mentioning any email address in a response that the user did not provide.
+
+### SCHEDULE vs SEND — know the difference
+- `schedule_report` = saves a future reminder to the DB only. Does NOT send any email now.
+- `send_report_email` = generates the report and sends it immediately via email RIGHT NOW.
+
+When user says "send", "email", "manda", "envía" → use send_report_email (sends now).
+When user says "schedule", "programa para el [date]" → use schedule_report (future reminder only).
+NEVER use schedule_report when the user wants to send something now.
+
+### QUERYING CUSTOMER PAYMENTS & AR AGING
+- query_data(customer_payments) — list all customer payment receipts, optionally filter by client name
+- query_data(ar_aging) — AR aging buckets by client: Current, 1-30 days overdue, 31-60 days, 60+ days
+- Use ar_aging when user asks "what does X owe?", "aging report", "overdue by client"
+
+### QUERYING PROPOSALS
+- query_data(proposals) — list all proposals (filter by client name or status: draft/sent/accepted/declined)
+- Use when user asks "open proposals", "proposal pipeline", "did we send X a proposal?"
+
+### QUERYING CREDIT MEMOS
+- query_data(credit_memos) — list credit memos (discounts/adjustments), optionally filter by client
+- Use when user asks about credits, adjustments, or discounts issued to clients
+
+### QUERYING PRODUCTS CATALOG
+- query_data(products) — full product catalog with grades (NBSK, SBSK, BHK), FSC certifications
+- Use when user asks "what products do we have?", needs product details for a proposal
+
+When user asks to SEND/EMAIL a report → use send_report_email (you have this capability, use it).
+When user asks to DOWNLOAD a report → use generate_report and return the link. CRITICAL: Copy the link EXACTLY as-is, starting with /api/.
 
 When user asks to do something, DO IT immediately using tools. Always confirm with the exact number from the database.
 

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { markInvoicesPaid, markInvoiceUnpaid } from "@/server/actions";
+import { markInvoicesPaid } from "@/server/actions";
 import { useRouter } from "next/navigation";
 
 type CustomerPayment = {
@@ -55,12 +55,11 @@ const METHOD_LABELS: Record<string, string> = {
   other: "Other",
 };
 
-function KpiCard({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: "red" | "green" | "default" }) {
-  const color = accent === "red" ? "text-red-600" : accent === "green" ? "text-[#0d9488]" : "text-stone-800";
+function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="bg-white rounded-lg shadow-sm p-4 space-y-1">
-      <p className="text-xs text-stone-400 uppercase tracking-wide font-medium">{label}</p>
-      <p className={`text-xl font-bold ${color}`}>{value}</p>
+    <div className="bg-white rounded-xl shadow-sm p-4 space-y-1">
+      <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">{label}</p>
+      <p className="text-xl font-bold text-stone-800">{value}</p>
       {sub && <p className="text-xs text-stone-400">{sub}</p>}
     </div>
   );
@@ -74,6 +73,7 @@ export function PaymentsPanel({
   overdueAR,
   totalCollected,
   totalSupplierPaid,
+  defaultTab = "customer",
 }: {
   customerPayments: CustomerPayment[];
   unpaidInvoices: UnpaidInvoice[];
@@ -82,9 +82,9 @@ export function PaymentsPanel({
   overdueAR: number;
   totalCollected: number;
   totalSupplierPaid: number;
+  defaultTab?: "customer" | "supplier";
 }) {
-  const [tab, setTab] = useState<"customer" | "supplier">("customer");
-  const [subTab, setSubTab] = useState<"history" | "unpaid">("unpaid");
+  const [subTab, setSubTab] = useState<"unpaid" | "history">("unpaid");
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [showMarkPaid, setShowMarkPaid] = useState(false);
   const [paidDate, setPaidDate] = useState(new Date().toISOString().split("T")[0]);
@@ -94,14 +94,7 @@ export function PaymentsPanel({
   const router = useRouter();
 
   const today = new Date().toISOString().split("T")[0];
-
-  // Group unpaid invoices by client
-  const byClient: Record<string, { clientId: number; clientName: string; invoices: UnpaidInvoice[] }> = {};
-  for (const inv of unpaidInvoices) {
-    const key = String(inv.clientId ?? "unknown");
-    if (!byClient[key]) byClient[key] = { clientId: inv.clientId ?? 0, clientName: inv.clientName || "Unknown", invoices: [] };
-    byClient[key].invoices.push(inv);
-  }
+  const isAP = defaultTab === "supplier";
 
   function toggleInv(id: number) {
     setSelected(prev => {
@@ -110,20 +103,9 @@ export function PaymentsPanel({
       return next;
     });
   }
-  function toggleClient(ids: number[]) {
-    const allSelected = ids.every(id => selected.has(id));
-    setSelected(prev => {
-      const next = new Set(prev);
-      if (allSelected) ids.forEach(id => next.delete(id));
-      else ids.forEach(id => next.add(id));
-      return next;
-    });
-  }
 
   const selectedInvoices = unpaidInvoices.filter(inv => selected.has(inv.id));
   const selectedAmount = selectedInvoices.reduce((s, inv) => s + inv.quantityTons * inv.sellPrice, 0);
-
-  // All selected must belong to the same client
   const selectedClientIds = [...new Set(selectedInvoices.map(inv => inv.clientId))];
   const canMarkPaid = selected.size > 0 && selectedClientIds.length === 1;
 
@@ -149,246 +131,320 @@ export function PaymentsPanel({
     });
   }
 
-  // Group supplier payments by supplier
+  // Group supplier totals for KPI
   const supplierTotals: Record<string, { name: string; total: number }> = {};
   for (const p of supplierPayments) {
     const key = String(p.supplierId);
-    if (!supplierTotals[key]) supplierTotals[key] = { name: p.supplierName || "Unknown", total: 0 };
+    if (!supplierTotals[key]) supplierTotals[key] = { name: p.supplierName?.split("(")[0].trim() || "Unknown", total: 0 };
     supplierTotals[key].total += p.amountUsd;
   }
 
+  // ── ACCOUNTS PAYABLE ──
+  if (isAP) {
+    return (
+      <div className="space-y-6">
+        {/* KPI row */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          <StatCard
+            label="Total Paid Out"
+            value={formatCurrency(totalSupplierPaid)}
+            sub={`${supplierPayments.length} payments`}
+          />
+          {Object.values(supplierTotals).map(s => (
+            <StatCard key={s.name} label={s.name} value={formatCurrency(s.total)} />
+          ))}
+        </div>
+
+        {/* Table */}
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted">
+                <tr className="text-left">
+                  <th className="p-3 text-sm font-medium text-muted-foreground">Date</th>
+                  <th className="p-3 text-sm font-medium text-muted-foreground">Supplier</th>
+                  <th className="p-3 text-sm font-medium text-muted-foreground">PO</th>
+                  <th className="p-3 text-sm font-medium text-muted-foreground text-right">Amount</th>
+                  <th className="p-3 text-sm font-medium text-muted-foreground text-right">Est. Tons</th>
+                  <th className="p-3 text-sm font-medium text-muted-foreground text-right">Actual Tons</th>
+                  <th className="p-3 text-sm font-medium text-muted-foreground text-right">Adj.</th>
+                  <th className="p-3 text-sm font-medium text-muted-foreground">Method</th>
+                  <th className="p-3 text-sm font-medium text-muted-foreground">Reference</th>
+                </tr>
+              </thead>
+              <tbody>
+                {supplierPayments.length === 0 && (
+                  <tr>
+                    <td colSpan={9} className="p-8 text-center text-stone-400">No supplier payments recorded.</td>
+                  </tr>
+                )}
+                {supplierPayments.map(p => {
+                  const adj = p.adjustmentAmount;
+                  return (
+                    <tr key={p.id} className="border-t border-border hover:bg-muted/50 transition-colors">
+                      <td className="p-3 text-stone-600">{formatDate(p.paymentDate)}</td>
+                      <td className="p-3 font-medium text-stone-800">{p.supplierName || "—"}</td>
+                      <td className="p-3 text-stone-500">{p.poNumber || "—"}</td>
+                      <td className="p-3 text-right font-semibold text-stone-800">{formatCurrency(p.amountUsd)}</td>
+                      <td className="p-3 text-right text-stone-500">{p.estimatedTons?.toFixed(1) ?? "—"}</td>
+                      <td className="p-3 text-right text-stone-500">{p.actualTons?.toFixed(1) ?? "—"}</td>
+                      <td className={`p-3 text-right font-medium ${
+                        adj == null ? "text-stone-300"
+                        : adj > 0 ? "text-amber-600"
+                        : adj < 0 ? "text-red-600"
+                        : "text-stone-400"
+                      }`}>
+                        {adj != null ? (adj > 0 ? "+" : "") + formatCurrency(adj) : "—"}
+                      </td>
+                      <td className="p-3 text-stone-500">{p.paymentMethod || "—"}</td>
+                      <td className="p-3 text-stone-500">{p.reference || "—"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              {supplierPayments.length > 0 && (
+                <tfoot>
+                  <tr className="bg-muted font-semibold border-t-2 border-border">
+                    <td className="p-3 text-stone-700" colSpan={3}>TOTAL</td>
+                    <td className="p-3 text-right text-stone-800">{formatCurrency(totalSupplierPaid)}</td>
+                    <td colSpan={5} className="p-3" />
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── ACCOUNTS RECEIVABLE ──
+  const overdueCount = unpaidInvoices.filter(i => i.dueDate && i.dueDate < today).length;
+  const allSelected = unpaidInvoices.length > 0 && unpaidInvoices.every(i => selected.has(i.id));
+
   return (
     <div className="space-y-6">
-      {/* Main tabs */}
-      <div className="flex gap-1 bg-muted p-1 rounded-lg w-fit">
-        {(["customer", "supplier"] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === t ? "bg-card shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
-            {t === "customer" ? "Customer Payments" : "Supplier Payments"}
+      {/* KPI row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <StatCard
+          label="Outstanding AR"
+          value={formatCurrency(totalAR)}
+          sub={`${unpaidInvoices.length} invoices`}
+        />
+        <StatCard
+          label="Overdue"
+          value={formatCurrency(overdueAR)}
+          sub={`${overdueCount} invoice${overdueCount !== 1 ? "s" : ""}`}
+        />
+        <StatCard
+          label="Total Collected"
+          value={formatCurrency(totalCollected)}
+          sub={`${customerPayments.length} payments`}
+        />
+        <StatCard
+          label="Net Position"
+          value={formatCurrency(totalCollected - totalAR)}
+        />
+      </div>
+
+      {/* Border-b tabs */}
+      <div className="flex gap-2 border-b border-stone-200">
+        {(["unpaid", "history"] as const).map(t => (
+          <button
+            key={t}
+            onClick={() => setSubTab(t)}
+            className={`pb-2.5 px-3 text-sm font-medium border-b-2 transition-colors capitalize ${
+              subTab === t
+                ? "border-primary text-primary"
+                : "border-transparent text-stone-500 hover:text-stone-700"
+            }`}
+          >
+            {t === "unpaid"
+              ? `Outstanding (${unpaidInvoices.length})`
+              : `History (${customerPayments.length})`}
           </button>
         ))}
       </div>
 
-      {/* ── CUSTOMER TAB ── */}
-      {tab === "customer" && (
-        <div className="space-y-5">
-          {/* KPIs */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <KpiCard label="Outstanding AR" value={formatCurrency(totalAR)} sub={`${unpaidInvoices.length} invoices`} />
-            <KpiCard label="Overdue" value={formatCurrency(overdueAR)} accent="red"
-              sub={`${unpaidInvoices.filter(i => i.dueDate && i.dueDate < today).length} invoices`} />
-            <KpiCard label="Total Collected" value={formatCurrency(totalCollected)} accent="green" sub={`${customerPayments.length} payments`} />
-            <KpiCard label="Net Position" value={formatCurrency(totalCollected - totalAR)}
-              accent={totalCollected >= totalAR ? "green" : "default"} />
-          </div>
-
-          {/* Sub tabs */}
-          <div className="flex gap-1 bg-muted p-1 rounded-lg w-fit">
-            {(["unpaid", "history"] as const).map(t => (
-              <button key={t} onClick={() => setSubTab(t)}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${subTab === t ? "bg-card shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
-                {t === "unpaid" ? `Unpaid (${unpaidInvoices.length})` : `History (${customerPayments.length})`}
+      {/* Outstanding (unpaid invoices) */}
+      {subTab === "unpaid" && (
+        <div className="space-y-3">
+          {/* Selection action bar */}
+          {selected.size > 0 && (
+            <div className="flex items-center gap-3 bg-muted border border-border rounded-lg px-4 py-2.5">
+              <span className="text-sm font-medium text-stone-700">
+                {selected.size} invoice{selected.size > 1 ? "s" : ""} selected —{" "}
+                {formatCurrency(selectedAmount)}
+              </span>
+              {!canMarkPaid && (
+                <span className="text-xs text-red-500">Select invoices from one client only</span>
+              )}
+              {canMarkPaid && (
+                <button
+                  onClick={() => setShowMarkPaid(true)}
+                  className="ml-auto text-sm bg-primary text-primary-foreground px-4 py-1.5 rounded-lg font-medium hover:opacity-90"
+                >
+                  Mark as Paid
+                </button>
+              )}
+              <button
+                onClick={() => setSelected(new Set())}
+                className={`text-xs text-stone-400 hover:text-stone-600 ${canMarkPaid ? "" : "ml-auto"}`}
+              >
+                Clear
               </button>
-            ))}
-          </div>
-
-          {/* Unpaid invoices */}
-          {subTab === "unpaid" && (
-            <div className="space-y-3">
-              {selected.size > 0 && (
-                <div className="flex items-center gap-3 bg-[#0d3d3b]/5 border border-[#0d3d3b]/20 rounded-lg px-4 py-2.5">
-                  <span className="text-sm font-medium text-[#0d3d3b]">{selected.size} invoice{selected.size > 1 ? "s" : ""} selected — {formatCurrency(selectedAmount)}</span>
-                  {!canMarkPaid && selected.size > 0 && (
-                    <span className="text-xs text-red-500">Select invoices from one client only</span>
-                  )}
-                  {canMarkPaid && (
-                    <button onClick={() => setShowMarkPaid(true)}
-                      className="ml-auto text-sm bg-[#0d9488] text-white px-4 py-1.5 rounded-lg font-medium hover:bg-[#0a7970]">
-                      Mark as Paid
-                    </button>
-                  )}
-                  <button onClick={() => setSelected(new Set())} className="text-xs text-stone-400 hover:text-stone-600">Clear</button>
-                </div>
-              )}
-
-              {Object.values(byClient).length === 0 && (
-                <div className="bg-white rounded-lg shadow-sm p-8 text-center text-sm text-stone-400">
-                  All invoices are paid.
-                </div>
-              )}
-
-              {Object.values(byClient).map(({ clientId, clientName, invoices: clientInvs }) => {
-                const clientTotal = clientInvs.reduce((s, inv) => s + inv.quantityTons * inv.sellPrice, 0);
-                const clientIds = clientInvs.map(i => i.id);
-                const allSel = clientIds.every(id => selected.has(id));
-                return (
-                  <div key={clientId} className="bg-white rounded-lg shadow-sm overflow-hidden">
-                    <div className="px-4 py-2.5 bg-stone-50 border-b border-stone-100 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <input type="checkbox" checked={allSel} onChange={() => toggleClient(clientIds)}
-                          className="accent-[#0d3d3b]" />
-                        <span className="text-sm font-semibold text-stone-800">{clientName}</span>
-                        <span className="text-xs text-stone-400">{clientInvs.length} invoice{clientInvs.length > 1 ? "s" : ""}</span>
-                      </div>
-                      <span className="text-sm font-bold text-stone-800">{formatCurrency(clientTotal)}</span>
-                    </div>
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="text-left text-xs text-stone-400 border-b border-stone-100">
-                          <th className="px-4 py-2 w-8"></th>
-                          <th className="px-4 py-2">Invoice #</th>
-                          <th className="px-4 py-2">PO</th>
-                          <th className="px-4 py-2 text-right">Tons</th>
-                          <th className="px-4 py-2 text-right">Amount</th>
-                          <th className="px-4 py-2">Ship Date</th>
-                          <th className="px-4 py-2">Due Date</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {clientInvs.map(inv => {
-                          const overdue = inv.dueDate && inv.dueDate < today;
-                          const amount = inv.quantityTons * inv.sellPrice;
-                          return (
-                            <tr key={inv.id} onClick={() => toggleInv(inv.id)}
-                              className={`border-t border-stone-50 cursor-pointer hover:bg-stone-50 ${selected.has(inv.id) ? "bg-[#0d9488]/5" : ""}`}>
-                              <td className="px-4 py-2.5">
-                                <input type="checkbox" checked={selected.has(inv.id)} onChange={() => toggleInv(inv.id)}
-                                  onClick={e => e.stopPropagation()} className="accent-[#0d3d3b]" />
-                              </td>
-                              <td className="px-4 py-2.5 font-mono text-xs font-medium">{inv.invoiceNumber}</td>
-                              <td className="px-4 py-2.5 text-stone-500 text-xs">{inv.poNumber || "—"}</td>
-                              <td className="px-4 py-2.5 text-right">{inv.quantityTons.toFixed(2)}</td>
-                              <td className="px-4 py-2.5 text-right font-medium">{formatCurrency(amount)}</td>
-                              <td className="px-4 py-2.5 text-stone-500">{formatDate(inv.shipmentDate)}</td>
-                              <td className={`px-4 py-2.5 font-medium ${overdue ? "text-red-600" : "text-stone-600"}`}>
-                                {formatDate(inv.dueDate)}{overdue && " ⚠"}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                );
-              })}
             </div>
           )}
 
-          {/* Payment history */}
-          {subTab === "history" && (
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-stone-50 border-b border-stone-100">
-                    <tr className="text-left text-xs text-stone-500 font-semibold uppercase tracking-wide">
-                      <th className="px-4 py-3">Date</th>
-                      <th className="px-4 py-3">Client</th>
-                      <th className="px-4 py-3 text-right">Amount</th>
-                      <th className="px-4 py-3">Method</th>
-                      <th className="px-4 py-3">Reference</th>
-                      <th className="px-4 py-3">Invoices</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {customerPayments.length === 0 && (
-                      <tr><td colSpan={6} className="px-4 py-8 text-center text-stone-400">No payments recorded.</td></tr>
-                    )}
-                    {customerPayments.map(p => (
-                      <tr key={p.id} className="border-t border-stone-50 hover:bg-stone-50">
-                        <td className="px-4 py-3 text-stone-600">{formatDate(p.paymentDate)}</td>
-                        <td className="px-4 py-3 font-medium">{p.clientName || "—"}</td>
-                        <td className="px-4 py-3 text-right font-semibold text-[#0d9488]">{formatCurrency(p.amount)}</td>
-                        <td className="px-4 py-3 text-stone-500 text-xs">{METHOD_LABELS[p.paymentMethod] || p.paymentMethod}</td>
-                        <td className="px-4 py-3 text-stone-500 font-mono text-xs">{p.referenceNo || "—"}</td>
-                        <td className="px-4 py-3 text-xs text-stone-400">
-                          {p.invoices.length > 0 ? p.invoices.map(i => i.invoiceNumber).join(", ") : "—"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── SUPPLIER TAB ── */}
-      {tab === "supplier" && (
-        <div className="space-y-5">
-          {/* KPIs */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <KpiCard label="Total Paid Out" value={formatCurrency(totalSupplierPaid)} sub={`${supplierPayments.length} payments`} />
-            {Object.values(supplierTotals).map(s => (
-              <KpiCard key={s.name} label={s.name} value={formatCurrency(s.total)} />
-            ))}
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            {unpaidInvoices.length === 0 ? (
+              <div className="p-8 text-center text-sm text-stone-400">All invoices are paid. 🎉</div>
+            ) : (
               <table className="w-full text-sm">
-                <thead className="bg-stone-50 border-b border-stone-100">
-                  <tr className="text-left text-xs text-stone-500 font-semibold uppercase tracking-wide">
-                    <th className="px-4 py-3">Date</th>
-                    <th className="px-4 py-3">Supplier</th>
-                    <th className="px-4 py-3">PO</th>
-                    <th className="px-4 py-3 text-right">Amount</th>
-                    <th className="px-4 py-3 text-right">Est. Tons</th>
-                    <th className="px-4 py-3 text-right">Actual Tons</th>
-                    <th className="px-4 py-3 text-right">Adj.</th>
-                    <th className="px-4 py-3">Method</th>
-                    <th className="px-4 py-3">Reference</th>
+                <thead className="bg-muted">
+                  <tr className="text-left">
+                    <th className="p-3 w-8">
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        onChange={() =>
+                          setSelected(allSelected ? new Set() : new Set(unpaidInvoices.map(i => i.id)))
+                        }
+                        className="accent-primary"
+                      />
+                    </th>
+                    <th className="p-3 text-sm font-medium text-muted-foreground">Invoice #</th>
+                    <th className="p-3 text-sm font-medium text-muted-foreground">Client</th>
+                    <th className="p-3 text-sm font-medium text-muted-foreground">PO</th>
+                    <th className="p-3 text-sm font-medium text-muted-foreground text-right">Tons</th>
+                    <th className="p-3 text-sm font-medium text-muted-foreground text-right">Amount</th>
+                    <th className="p-3 text-sm font-medium text-muted-foreground">Ship Date</th>
+                    <th className="p-3 text-sm font-medium text-muted-foreground">Due Date</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {supplierPayments.length === 0 && (
-                    <tr><td colSpan={9} className="px-4 py-8 text-center text-stone-400">No supplier payments.</td></tr>
-                  )}
-                  {supplierPayments.map(p => {
-                    const adj = p.adjustmentAmount;
+                  {unpaidInvoices.map(inv => {
+                    const overdue = inv.dueDate && inv.dueDate < today;
+                    const amount = inv.quantityTons * inv.sellPrice;
                     return (
-                      <tr key={p.id} className="border-t border-stone-50 hover:bg-stone-50">
-                        <td className="px-4 py-3 text-stone-600">{formatDate(p.paymentDate)}</td>
-                        <td className="px-4 py-3 font-medium">{p.supplierName || "—"}</td>
-                        <td className="px-4 py-3 text-stone-500 text-xs font-mono">{p.poNumber || "—"}</td>
-                        <td className="px-4 py-3 text-right font-semibold text-[#0d3d3b]">{formatCurrency(p.amountUsd)}</td>
-                        <td className="px-4 py-3 text-right text-stone-500">{p.estimatedTons?.toFixed(1) ?? "—"}</td>
-                        <td className="px-4 py-3 text-right text-stone-500">{p.actualTons?.toFixed(1) ?? "—"}</td>
-                        <td className={`px-4 py-3 text-right font-medium text-xs ${adj == null ? "text-stone-300" : adj > 0 ? "text-amber-600" : adj < 0 ? "text-red-600" : "text-stone-400"}`}>
-                          {adj != null ? (adj > 0 ? "+" : "") + formatCurrency(adj) : "—"}
+                      <tr
+                        key={inv.id}
+                        onClick={() => toggleInv(inv.id)}
+                        className={`border-t border-border cursor-pointer hover:bg-muted/50 transition-colors ${
+                          selected.has(inv.id) ? "bg-primary/5" : ""
+                        }`}
+                      >
+                        <td className="p-3">
+                          <input
+                            type="checkbox"
+                            checked={selected.has(inv.id)}
+                            onChange={() => toggleInv(inv.id)}
+                            onClick={e => e.stopPropagation()}
+                            className="accent-primary"
+                          />
                         </td>
-                        <td className="px-4 py-3 text-stone-500 text-xs">{p.paymentMethod || "—"}</td>
-                        <td className="px-4 py-3 text-stone-500 font-mono text-xs">{p.reference || "—"}</td>
+                        <td className="p-3 font-medium text-stone-700">{inv.invoiceNumber}</td>
+                        <td className="p-3 text-stone-700">{inv.clientName || "—"}</td>
+                        <td className="p-3 text-stone-500">{inv.poNumber || "—"}</td>
+                        <td className="p-3 text-right text-stone-700">{inv.quantityTons.toFixed(2)}</td>
+                        <td className="p-3 text-right font-medium text-stone-800">{formatCurrency(amount)}</td>
+                        <td className="p-3 text-stone-500">{formatDate(inv.shipmentDate)}</td>
+                        <td className={`p-3 font-medium ${overdue ? "text-red-600" : "text-stone-600"}`}>
+                          {formatDate(inv.dueDate)}{overdue && " ⚠"}
+                        </td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
-            </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Payment history */}
+      {subTab === "history" && (
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted">
+                <tr className="text-left">
+                  <th className="p-3 text-sm font-medium text-muted-foreground">Date</th>
+                  <th className="p-3 text-sm font-medium text-muted-foreground">Client</th>
+                  <th className="p-3 text-sm font-medium text-muted-foreground text-right">Amount</th>
+                  <th className="p-3 text-sm font-medium text-muted-foreground">Method</th>
+                  <th className="p-3 text-sm font-medium text-muted-foreground">Reference</th>
+                  <th className="p-3 text-sm font-medium text-muted-foreground">Invoices</th>
+                </tr>
+              </thead>
+              <tbody>
+                {customerPayments.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center text-stone-400">No payments recorded.</td>
+                  </tr>
+                )}
+                {customerPayments.map(p => (
+                  <tr key={p.id} className="border-t border-border hover:bg-muted/50 transition-colors">
+                    <td className="p-3 text-stone-600">{formatDate(p.paymentDate)}</td>
+                    <td className="p-3 font-medium text-stone-800">{p.clientName || "—"}</td>
+                    <td className="p-3 text-right font-semibold text-stone-800">{formatCurrency(p.amount)}</td>
+                    <td className="p-3 text-stone-500">{METHOD_LABELS[p.paymentMethod] || p.paymentMethod}</td>
+                    <td className="p-3 text-stone-500">{p.referenceNo || "—"}</td>
+                    <td className="p-3 text-stone-400">
+                      {p.invoices.length > 0 ? p.invoices.map(i => i.invoiceNumber).join(", ") : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
       {/* Mark Paid Modal */}
       {showMarkPaid && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowMarkPaid(false)}>
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 space-y-4" onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowMarkPaid(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 space-y-4"
+            onClick={e => e.stopPropagation()}
+          >
             <h3 className="font-semibold text-stone-800">Record Payment</h3>
-            <div className="bg-stone-50 rounded-lg p-3 text-sm space-y-1">
-              <p className="text-stone-500">Client: <span className="font-medium text-stone-800">{selectedInvoices[0]?.clientName}</span></p>
-              <p className="text-stone-500">Invoices: <span className="font-medium text-stone-800">{selectedInvoices.map(i => i.invoiceNumber).join(", ")}</span></p>
-              <p className="text-stone-500">Total: <span className="font-bold text-[#0d9488]">{formatCurrency(selectedAmount)}</span></p>
+            <div className="bg-muted rounded-lg p-3 text-sm space-y-1">
+              <p className="text-stone-500">
+                Client:{" "}
+                <span className="font-medium text-stone-800">{selectedInvoices[0]?.clientName}</span>
+              </p>
+              <p className="text-stone-500">
+                Invoices:{" "}
+                <span className="font-medium text-stone-800">
+                  {selectedInvoices.map(i => i.invoiceNumber).join(", ")}
+                </span>
+              </p>
+              <p className="text-stone-500">
+                Total:{" "}
+                <span className="font-bold text-stone-800">{formatCurrency(selectedAmount)}</span>
+              </p>
             </div>
             <div className="space-y-3">
               <div>
                 <label className="block text-xs text-stone-500 mb-1">Payment Date</label>
-                <input type="date" value={paidDate} onChange={e => setPaidDate(e.target.value)}
-                  className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm" />
+                <input
+                  type="date"
+                  value={paidDate}
+                  onChange={e => setPaidDate(e.target.value)}
+                  className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm"
+                />
               </div>
               <div>
                 <label className="block text-xs text-stone-500 mb-1">Payment Method</label>
-                <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}
-                  className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm bg-white">
+                <select
+                  value={paymentMethod}
+                  onChange={e => setPaymentMethod(e.target.value)}
+                  className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm bg-white"
+                >
                   {Object.entries(METHOD_LABELS).map(([v, l]) => (
                     <option key={v} value={v}>{l}</option>
                   ))}
@@ -396,18 +452,26 @@ export function PaymentsPanel({
               </div>
               <div>
                 <label className="block text-xs text-stone-500 mb-1">Reference No.</label>
-                <input value={referenceNo} onChange={e => setReferenceNo(e.target.value)}
+                <input
+                  value={referenceNo}
+                  onChange={e => setReferenceNo(e.target.value)}
                   placeholder="Wire reference, transaction ID..."
-                  className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm" />
+                  className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm"
+                />
               </div>
             </div>
             <div className="flex gap-2 pt-1">
-              <button onClick={handleMarkPaid} disabled={isPending}
-                className="flex-1 bg-[#0d9488] text-white py-2 rounded-lg text-sm font-medium hover:bg-[#0a7970] disabled:opacity-50">
+              <button
+                onClick={handleMarkPaid}
+                disabled={isPending}
+                className="flex-1 bg-primary text-primary-foreground py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50"
+              >
                 {isPending ? "Saving..." : "Confirm Payment"}
               </button>
-              <button onClick={() => setShowMarkPaid(false)}
-                className="px-4 py-2 border border-stone-200 rounded-lg text-sm text-stone-600 hover:bg-stone-50">
+              <button
+                onClick={() => setShowMarkPaid(false)}
+                className="px-4 py-2 border border-stone-200 rounded-lg text-sm text-stone-600 hover:bg-stone-50"
+              >
                 Cancel
               </button>
             </div>
