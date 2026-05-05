@@ -844,8 +844,8 @@ This applies to ALL email operations:
 **WRONG:** Mentioning any email address in a response that the user did not provide.
 
 ### SCHEDULE vs SEND — know the difference
-- `schedule_report` = saves a future reminder to the DB only. Does NOT send any email now.
-- `send_report_email` = generates the report and sends it immediately via email RIGHT NOW.
+- schedule_report = saves a future reminder to the DB only. Does NOT send any email now.
+- send_report_email = generates the report and sends it immediately via email RIGHT NOW.
 
 When user says "send", "email", "manda", "envía" → use send_report_email (sends now).
 When user says "schedule", "programa para el [date]" → use schedule_report (future reminder only).
