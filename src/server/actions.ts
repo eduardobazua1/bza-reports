@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, supplierPayments, products, customerPayments, customerPaymentInvoices, creditMemos, proposals, proposalItems } from "@/db/schema";
+import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, supplierPayments, products, customerPayments, customerPaymentInvoices, creditMemos, proposals, proposalItems, contracts } from "@/db/schema";
 import { eq, and, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { v4 as uuidv4 } from "uuid";
@@ -541,4 +541,56 @@ export async function deleteProposal(id: number) {
   await db.delete(proposalItems).where(eq(proposalItems.proposalId, id));
   await db.delete(proposals).where(eq(proposals.id, id));
   revalidatePath("/proposals");
+}
+
+// ---- Contracts ----
+
+type ContractData = {
+  contractNumber: string;
+  clientId: number;
+  supplierId: number;
+  product?: string | null;
+  status: "draft" | "active" | "expired" | "cancelled";
+  volumeTons?: number | null;
+  volumeFrequency?: "total" | "monthly" | "quarterly";
+  startDate?: string | null;
+  endDate?: string | null;
+  sellPriceType: "fixed" | "cost_plus" | "market_plus";
+  sellPrice?: number | null;
+  sellMargin?: number | null;
+  sellMarketRef?: string | null;
+  sellIncoterm?: string | null;
+  sellPaymentDays?: number | null;
+  buyPriceType: "fixed" | "cost_plus" | "market_plus";
+  buyPrice?: number | null;
+  buyMargin?: number | null;
+  buyMarketRef?: string | null;
+  buyIncoterm?: string | null;
+  buyPaymentDays?: number | null;
+  notes?: string | null;
+};
+
+export async function createContract(data: ContractData) {
+  const result = await db.insert(contracts).values(data).returning();
+  revalidatePath("/contracts");
+  return result[0];
+}
+
+export async function updateContract(id: number, data: Partial<Omit<ContractData, "contractNumber">>) {
+  await db.update(contracts).set({ ...data, updatedAt: new Date().toISOString() }).where(eq(contracts.id, id));
+  revalidatePath("/contracts");
+  revalidatePath(`/contracts/${id}`);
+}
+
+export async function deleteContract(id: number) {
+  await db.update(purchaseOrders).set({ contractId: null }).where(eq(purchaseOrders.contractId, id));
+  await db.delete(contracts).where(eq(contracts.id, id));
+  revalidatePath("/contracts");
+}
+
+export async function linkPoToContract(poId: number, contractId: number | null) {
+  await db.update(purchaseOrders).set({ contractId, updatedAt: new Date().toISOString() }).where(eq(purchaseOrders.id, poId));
+  revalidatePath("/contracts");
+  revalidatePath("/purchase-orders");
+  if (contractId) revalidatePath(`/contracts/${contractId}`);
 }

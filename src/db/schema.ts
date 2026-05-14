@@ -83,10 +83,43 @@ export const products = sqliteTable("products", {
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
+export const contracts = sqliteTable("contracts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  contractNumber: text("contract_number").notNull().unique(),
+  clientId: integer("client_id").notNull().references(() => clients.id),
+  supplierId: integer("supplier_id").notNull().references(() => suppliers.id),
+  product: text("product"),
+  status: text("status", { enum: ["draft", "active", "expired", "cancelled"] }).notNull().default("draft"),
+  // Volume
+  volumeTons: real("volume_tons"),
+  volumeFrequency: text("volume_frequency", { enum: ["total", "monthly", "quarterly"] }).notNull().default("total"),
+  // Validity
+  startDate: text("start_date"),
+  endDate: text("end_date"),
+  // Sell side (BZA → Client)
+  sellPriceType: text("sell_price_type", { enum: ["fixed", "cost_plus", "market_plus"] }).notNull().default("fixed"),
+  sellPrice: real("sell_price"),
+  sellMargin: real("sell_margin"),
+  sellMarketRef: text("sell_market_ref"),
+  sellIncoterm: text("sell_incoterm"),
+  sellPaymentDays: integer("sell_payment_days"),
+  // Buy side (BZA ← Supplier)
+  buyPriceType: text("buy_price_type", { enum: ["fixed", "cost_plus", "market_plus"] }).notNull().default("fixed"),
+  buyPrice: real("buy_price"),
+  buyMargin: real("buy_margin"),
+  buyMarketRef: text("buy_market_ref"),
+  buyIncoterm: text("buy_incoterm"),
+  buyPaymentDays: integer("buy_payment_days"),
+  notes: text("notes"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
 export const purchaseOrders = sqliteTable("purchase_orders", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   poNumber: text("po_number").notNull().unique(),
   poDate: text("po_date"),
+  contractId: integer("contract_id").references(() => contracts.id),
   clientId: integer("client_id").notNull().references(() => clients.id),
   clientPoNumber: text("client_po_number"),
   supplierId: integer("supplier_id").notNull().references(() => suppliers.id),

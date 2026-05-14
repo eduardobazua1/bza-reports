@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, clientPurchaseOrders, supplierPayments, supplierOrders, customerPayments, customerPaymentInvoices, creditMemos, proposals, proposalItems } from "@/db/schema";
-import { eq, desc, sql, and, count, inArray } from "drizzle-orm";
+import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, clientPurchaseOrders, supplierPayments, supplierOrders, customerPayments, customerPaymentInvoices, creditMemos, proposals, proposalItems, contracts } from "@/db/schema";
+import { eq, desc, sql, and, count, inArray, isNull } from "drizzle-orm";
 
 // ---- Clients ----
 export async function getClients() {
@@ -562,4 +562,73 @@ export async function getNextProposalNumber(): Promise<string> {
   const match = last[0].num.match(/PRO-(\d+)/);
   const next = match ? parseInt(match[1]) + 1 : 1;
   return `PRO-${String(next).padStart(3, "0")}`;
+}
+
+// ---- Contracts ----
+
+export async function getContracts() {
+  return db
+    .select({
+      contract: contracts,
+      clientName: clients.name,
+      supplierName: suppliers.name,
+      poCount: count(purchaseOrders.id),
+      volumeUsed: sql<number>`coalesce(sum(${purchaseOrders.plannedTons}), 0)`,
+    })
+    .from(contracts)
+    .leftJoin(clients, eq(contracts.clientId, clients.id))
+    .leftJoin(suppliers, eq(contracts.supplierId, suppliers.id))
+    .leftJoin(purchaseOrders, eq(purchaseOrders.contractId, contracts.id))
+    .groupBy(contracts.id)
+    .orderBy(desc(contracts.createdAt));
+}
+
+export async function getContractWithPos(id: number) {
+  const contract = await db.query.contracts.findFirst({ where: eq(contracts.id, id) });
+  if (!contract) return null;
+
+  const [client, supplier, linkedPos] = await Promise.all([
+    db.query.clients.findFirst({ where: eq(clients.id, contract.clientId) }),
+    db.query.suppliers.findFirst({ where: eq(suppliers.id, contract.supplierId) }),
+    db
+      .select({
+        po: purchaseOrders,
+        invoiceCount: count(invoices.id),
+        shippedTons: sql<number>`coalesce(sum(${invoices.quantityTons}), 0)`,
+      })
+      .from(purchaseOrders)
+      .leftJoin(invoices, eq(invoices.purchaseOrderId, purchaseOrders.id))
+      .where(eq(purchaseOrders.contractId, id))
+      .groupBy(purchaseOrders.id)
+      .orderBy(purchaseOrders.poNumber),
+  ]);
+
+  const volumeUsed = linkedPos.reduce((s, r) => s + (r.po.plannedTons ?? 0), 0);
+  return { ...contract, client, supplier, purchaseOrders: linkedPos, volumeUsed };
+}
+
+export async function getEligiblePosForContract(contractId: number, clientId: number, supplierId: number) {
+  return db
+    .select({ id: purchaseOrders.id, poNumber: purchaseOrders.poNumber, product: purchaseOrders.product, plannedTons: purchaseOrders.plannedTons, status: purchaseOrders.status })
+    .from(purchaseOrders)
+    .where(
+      and(
+        eq(purchaseOrders.clientId, clientId),
+        eq(purchaseOrders.supplierId, supplierId),
+        isNull(purchaseOrders.contractId),
+      )
+    )
+    .orderBy(purchaseOrders.poNumber);
+}
+
+export async function getNextContractNumber(): Promise<string> {
+  const last = await db
+    .select({ num: contracts.contractNumber })
+    .from(contracts)
+    .orderBy(desc(contracts.id))
+    .limit(1);
+  if (!last.length) return "CTR-001";
+  const match = last[0].num.match(/CTR-(\d+)/);
+  const next = match ? parseInt(match[1]) + 1 : 1;
+  return `CTR-${String(next).padStart(3, "0")}`;
 }

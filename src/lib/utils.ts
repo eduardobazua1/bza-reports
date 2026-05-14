@@ -57,3 +57,29 @@ export const transportTypeLabels: Record<string, string> = {
   ship: "Maritime",
   truck: "Truck",
 };
+
+export const contractStatusLabels: Record<string, string> = {
+  draft:     "Draft",
+  active:    "Active",
+  expired:   "Expired",
+  cancelled: "Cancelled",
+};
+
+export const contractStatusColors: Record<string, string> = {
+  draft:     "bg-stone-100 text-stone-500",
+  active:    "bg-[#ccfbf1] text-[#0d3d3b]",
+  expired:   "bg-stone-200 text-stone-500",
+  cancelled: "bg-red-50 text-red-600",
+};
+
+export function formatPriceFormula(
+  priceType: string,
+  price: number | null | undefined,
+  margin: number | null | undefined,
+  marketRef: string | null | undefined,
+): string {
+  if (priceType === "fixed") return price != null ? formatCurrency(price) + "/t" : "—";
+  if (priceType === "cost_plus") return margin != null ? `Cost + $${margin}/t` : "Cost+";
+  if (priceType === "market_plus") return `${marketRef || "Market"} + $${margin ?? "?"}/t`;
+  return "—";
+}
