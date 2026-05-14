@@ -116,9 +116,7 @@ export function ShipmentsClient({ allInvoices }: Props) {
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-muted-foreground">
-        {active.length} active shipments &middot; {formatNumber(totalActiveTons, 0)} TN in transit
-      </p>
+      <h1 className="text-2xl font-bold">Active Shipments</h1>
 
       {/* Summary cards — all clickable as filters */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
