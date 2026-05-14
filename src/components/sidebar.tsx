@@ -156,8 +156,9 @@ const mainEntries: RootEntry[] = [
   {
     label: "Reports", icon: BarChart3,
     children: [
-      { href: "/reports",        label: "Standard Reports" },
-      { href: "/custom-reports", label: "Custom Reports"   },
+      { href: "/reports",               label: "Standard Reports" },
+      { href: "/reports/client-report", label: "Client Report"    },
+      { href: "/custom-reports",        label: "Custom Reports"   },
     ],
   },
 ];
