@@ -264,7 +264,7 @@ export function APAgingSummaryClient({ rows, totals, asOf, timestamp }: {
               <label key={c.key} className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={visibleCols[c.key]}
                   onChange={() => toggleCol(c.key)}
-                  className="rounded border-stone-300 text-[#0d9488] focus:ring-[#0d9488]" />
+                  className="rounded border-stone-300 text-[#0d3d3b] focus:ring-[#0d3d3b]" />
                 <span className="text-sm text-stone-600">{c.label}</span>
               </label>
             ))}
@@ -329,7 +329,7 @@ export function APAgingSummaryClient({ rows, totals, asOf, timestamp }: {
                   <tr key={row.name} className="border-b border-stone-50 hover:bg-stone-50">
                     <td className="px-6 py-3 text-stone-700 font-medium">
                       <Link href={`/reports/ap-aging-detail?supplier=${encodeURIComponent(row.name)}`}
-                        className="hover:text-[#0d9488] hover:underline">{row.name}</Link>
+                        className="hover:text-[#0d3d3b] hover:underline">{row.name}</Link>
                     </td>
                     {activeCols.map(c => (
                       <td key={c.key} className={`px-4 py-3 text-right ${row[c.key] === 0 ? "text-stone-300" : c.key === "d91plus" ? "text-red-600 font-medium" : c.key === "d61_90" ? "text-amber-600" : "text-stone-700"}`}>

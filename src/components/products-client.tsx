@@ -105,7 +105,7 @@ function FormRow({
   }
 
   return (
-    <tr className={rowClass ?? "bg-teal-50/40 border-t border-b border-border"}>
+    <tr className={rowClass ?? "bg-[#0d3d3b]/[0.04] border-t border-b border-border"}>
       {/* Name */}
       <td className="p-2 align-top">
         <input
@@ -325,7 +325,7 @@ export function ProductsClient({ products }: { products: Product[] }) {
                   <td className="p-3 text-sm font-medium">{p.name}</td>
                   <td className="p-3 text-sm">
                     {p.grade ? (
-                      <span className="inline-block bg-teal-100 text-teal-800 text-xs font-medium px-2 py-0.5 rounded-full">
+                      <span className="inline-block bg-[#0d3d3b]/10 text-[#0d3d3b] text-xs font-medium px-2 py-0.5 rounded-full">
                         {p.grade}
                       </span>
                     ) : (

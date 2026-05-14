@@ -124,7 +124,7 @@ export default async function ShipmentsPage({
                     </td>
                     <td className="px-2 py-1.5 border-t border-border">
                       {row.invoice.currentLocation ? (
-                        <span className={row.invoice.currentLocation.toLowerCase().includes("pending") ? "text-[#0d9488]" : ""}>
+                        <span className={row.invoice.currentLocation.toLowerCase().includes("pending") ? "text-[#0d3d3b]" : ""}>
                           {row.invoice.currentLocation}
                         </span>
                       ) : (

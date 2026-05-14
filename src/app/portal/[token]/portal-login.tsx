@@ -52,7 +52,7 @@ export function PortalLogin({ token }: { token: string }) {
     <div className="min-h-screen bg-white flex flex-col items-center justify-center px-7">
       {/* Logo */}
       <div className="flex flex-col items-center mb-10">
-        <div className="w-20 h-20 rounded-[20px] bg-[#0d9488] flex flex-col items-center justify-center mb-0">
+        <div className="w-20 h-20 rounded-[20px] bg-[#0d3d3b] flex flex-col items-center justify-center mb-0">
           <div className="flex items-center">
             <span className="text-white text-[22px] font-extrabold tracking-wide">BZA</span>
             <span className="w-2 h-2 rounded-full bg-[#ccfbf1] ml-0.5 -mt-3" />
@@ -73,7 +73,7 @@ export function PortalLogin({ token }: { token: string }) {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoFocus
-              className="w-full bg-[#fafaf9] border-[1.5px] border-[#e7e5e4] rounded-xl px-4 py-4 text-[15px] text-[#1c1917] focus:outline-none focus:border-[#0d9488] focus:bg-white transition-colors mb-5"
+              className="w-full bg-[#fafaf9] border-[1.5px] border-[#e7e5e4] rounded-xl px-4 py-4 text-[15px] text-[#1c1917] focus:outline-none focus:border-[#0d3d3b] focus:bg-white transition-colors mb-5"
             />
 
             {error && <p className="text-[#0d3d3b] text-xs mb-3">{error}</p>}
@@ -81,7 +81,7 @@ export function PortalLogin({ token }: { token: string }) {
             <button
               type="submit"
               disabled={loading || !email}
-              className="w-full bg-[#0d9488] text-white rounded-[14px] py-[17px] text-base font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-[#0d3d3b] text-white rounded-[14px] py-[17px] text-base font-bold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Sending code..." : "Continue"}
             </button>
@@ -104,7 +104,7 @@ export function PortalLogin({ token }: { token: string }) {
               autoFocus
               maxLength={6}
               placeholder="000000"
-              className="w-full bg-[#fafaf9] border-[1.5px] border-[#e7e5e4] rounded-xl px-4 py-4 text-[22px] text-center tracking-[10px] font-mono text-[#1c1917] focus:outline-none focus:border-[#0d9488] focus:bg-white transition-colors mb-5"
+              className="w-full bg-[#fafaf9] border-[1.5px] border-[#e7e5e4] rounded-xl px-4 py-4 text-[22px] text-center tracking-[10px] font-mono text-[#1c1917] focus:outline-none focus:border-[#0d3d3b] focus:bg-white transition-colors mb-5"
             />
 
             {error && <p className="text-[#0d3d3b] text-xs mb-3">{error}</p>}
@@ -112,7 +112,7 @@ export function PortalLogin({ token }: { token: string }) {
             <button
               type="submit"
               disabled={loading || code.length !== 6}
-              className="w-full bg-[#0d9488] text-white rounded-[14px] py-[17px] text-base font-bold disabled:opacity-50 disabled:cursor-not-allowed mb-3"
+              className="w-full bg-[#0d3d3b] text-white rounded-[14px] py-[17px] text-base font-bold disabled:opacity-50 disabled:cursor-not-allowed mb-3"
             >
               {loading ? "Verifying..." : "Access Portal"}
             </button>
@@ -120,7 +120,7 @@ export function PortalLogin({ token }: { token: string }) {
             <button
               type="button"
               onClick={() => { setStep("email"); setCode(""); setError(""); }}
-              className="w-full py-3 text-[15px] font-semibold text-[#0d9488]"
+              className="w-full py-3 text-[15px] font-semibold text-[#0d3d3b]"
             >
               ← Back
             </button>

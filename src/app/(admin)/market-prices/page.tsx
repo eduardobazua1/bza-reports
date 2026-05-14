@@ -25,7 +25,7 @@ function monthLabel(m: string) {
 
 function Change({ value, price }: { value: number; price: number }) {
   const pct = price - value !== 0 ? (value / (price - value)) * 100 : 0;
-  const color = value > 0 ? "text-[#0d9488]" : value < 0 ? "text-[#0d3d3b]" : "text-stone-400";
+  const color = value > 0 ? "text-[#0d3d3b]" : value < 0 ? "text-[#0d3d3b]" : "text-stone-400";
   const Icon = value > 0 ? TrendingUp : value < 0 ? TrendingDown : Minus;
   return (
     <span className={`flex items-center gap-1 text-sm font-medium ${color}`}>
@@ -92,7 +92,7 @@ export default function MarketPricesPage() {
   const maxPrice = allVals.length > 0 ? Math.max(...allVals) : 1000;
   const minPrice = allVals.length > 0 ? Math.min(...allVals) : 500;
   const range = maxPrice - minPrice || 1;
-  const gradeColors: Record<string, string> = { NBSK: "#0d3d3b", SBSK: "#0d9488", BHK: "#6ee7b7" };
+  const gradeColors: Record<string, string> = { NBSK: "#0d3d3b", SBSK: "#0d3d3b", BHK: "#6ee7b7" };
 
   if (loading) return <div className="p-8 text-stone-400">Loading...</div>;
 
@@ -104,7 +104,7 @@ export default function MarketPricesPage() {
           <p className="text-sm text-stone-400">TTO & RISI pulp price indices — North America</p>
         </div>
         <button onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 bg-[#0d3d3b] text-[#6ee7b7] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#0d9488] transition-colors">
+          className="flex items-center gap-2 bg-[#0d3d3b] text-[#6ee7b7] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#0d3d3b] transition-colors">
           + Add Price
         </button>
       </div>
@@ -172,7 +172,7 @@ export default function MarketPricesPage() {
       {/* TTO Net Prices */}
       {currentMonth && (
         <div>
-          <h2 className="text-sm font-medium text-[#0d9488] uppercase tracking-wide mb-3">TTO Key Indicators — {monthLabel(currentMonth)}</h2>
+          <h2 className="text-sm font-medium text-[#0d3d3b] uppercase tracking-wide mb-3">TTO Key Indicators — {monthLabel(currentMonth)}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {GRADES.map(grade => {
               const p = currentPrices.find(p => p.source === "TTO" && p.grade === grade && p.priceType === "net");
@@ -329,7 +329,7 @@ export default function MarketPricesPage() {
                   <td className="p-3 text-sm border-t border-border text-right font-medium">${formatNumber(p.price, 2)}</td>
                   <td className="p-3 text-sm border-t border-border text-right">
                     {p.changeValue != null && (
-                      <span className={`text-sm font-medium ${p.changeValue > 0 ? "text-[#0d9488]" : p.changeValue < 0 ? "text-[#0d3d3b]" : "text-muted-foreground"}`}>
+                      <span className={`text-sm font-medium ${p.changeValue > 0 ? "text-[#0d3d3b]" : p.changeValue < 0 ? "text-[#0d3d3b]" : "text-muted-foreground"}`}>
                         {p.changeValue > 0 ? "+" : ""}{formatNumber(p.changeValue, 2)}
                       </span>
                     )}

@@ -321,7 +321,7 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                     key={row.invoice.id}
                     onClick={() => openPanel(row)}
                     className={`cursor-pointer transition-colors border-t border-border ${
-                      isSelected ? "bg-[#0d9488]/10 border-l-2 border-l-[#0d9488]" : "hover:bg-muted/40"
+                      isSelected ? "bg-[#0d3d3b]/10 border-l-2 border-l-[#0d3d3b]" : "hover:bg-muted/40"
                     }`}
                   >
                     <td className="px-3 py-1.5 text-xs font-medium text-stone-800 whitespace-nowrap">{row.invoice.invoiceNumber}</td>
@@ -379,7 +379,7 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                         {row.invoice.customerPaymentStatus === "unpaid" && row.clientId && (
                           <button
                             onClick={() => openPanel(row, "payment")}
-                            className="text-[11px] text-[#0d9488] font-medium px-2.5 py-1 bg-stone-50 hover:bg-stone-100 rounded border border-stone-200 transition-colors"
+                            className="text-[11px] text-[#0d3d3b] font-medium px-2.5 py-1 bg-stone-50 hover:bg-stone-100 rounded border border-stone-200 transition-colors"
                           >
                             Pay
                           </button>
@@ -432,7 +432,7 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
             )}
             <button onClick={async () => { setOpenDropdownId(null); await duplicateInvoice(activeRow.invoice.id); router.refresh(); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">Duplicate</button>
             {activeRow.invoice.customerPaymentStatus === "paid" && (
-              <button onClick={async () => { setOpenDropdownId(null); await markInvoiceUnpaid(activeRow.invoice.id); router.refresh(); }} className="w-full text-left px-4 py-2 text-sm text-[#0d9488] hover:bg-[#0d9488]">Mark as Unpaid</button>
+              <button onClick={async () => { setOpenDropdownId(null); await markInvoiceUnpaid(activeRow.invoice.id); router.refresh(); }} className="w-full text-left px-4 py-2 text-sm text-[#0d3d3b] hover:bg-[#0d3d3b]">Mark as Unpaid</button>
             )}
             <div className="border-t border-stone-100 my-1" />
             <button onClick={() => { handleDelete(activeRow.invoice); setOpenDropdownId(null); }} className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"><Trash2 className="w-3.5 h-3.5" />Delete</button>
@@ -675,7 +675,7 @@ function ReceivePaymentPanel({
       {/* Amount received */}
       {selectedIds.length > 0 && (
         <div className="px-4 py-2 bg-stone-50 border-b border-stone-100 flex items-center justify-between">
-          <span className="text-xs text-[#0d9488] font-medium">Amount received</span>
+          <span className="text-xs text-[#0d3d3b] font-medium">Amount received</span>
           <span className="text-lg font-bold text-[#0d3d3b]">{formatCurrency(totalSelected)}</span>
         </div>
       )}
@@ -733,7 +733,7 @@ function ReceivePaymentPanel({
                   <tr
                     key={inv.id}
                     onClick={() => toggleInvoice(inv.id)}
-                    className={`border-b border-stone-50 cursor-pointer transition-colors ${isChecked ? "bg-[#0d9488]/10" : "hover:bg-stone-50"}`}
+                    className={`border-b border-stone-50 cursor-pointer transition-colors ${isChecked ? "bg-[#0d3d3b]/10" : "hover:bg-stone-50"}`}
                   >
                     <td className="p-2 text-center">
                       <input
@@ -781,7 +781,7 @@ function ReceivePaymentPanel({
           <button
             onClick={handleSave}
             disabled={saving || selectedIds.length === 0 || !paymentDate}
-            className="flex-1 text-xs bg-[#0d9488] text-white px-3 py-2 rounded hover:bg-[#0a7970] disabled:opacity-50 font-medium"
+            className="flex-1 text-xs bg-[#0d3d3b] text-white px-3 py-2 rounded hover:bg-[#0a5c5a] disabled:opacity-50 font-medium"
           >
             {saving ? "Saving..." : `Save payment${selectedIds.length > 1 ? "s" : ""}`}
           </button>
@@ -944,7 +944,7 @@ function ViewPanel({
               {emailLogs.map((log, i) => (
                 <div key={log.id} className="flex gap-2">
                   <div className="flex flex-col items-center">
-                    <div className={`w-2.5 h-2.5 rounded-full mt-0.5 shrink-0 ${(log.openCount ?? 0) > 0 ? "bg-[#0d9488]" : "bg-stone-300"}`} />
+                    <div className={`w-2.5 h-2.5 rounded-full mt-0.5 shrink-0 ${(log.openCount ?? 0) > 0 ? "bg-[#0d3d3b]" : "bg-stone-300"}`} />
                     {i < emailLogs.length - 1 && <div className="w-px flex-1 bg-stone-200 my-0.5" />}
                   </div>
                   <div className="pb-2 flex-1">
@@ -968,7 +968,7 @@ function ViewPanel({
         {row.invoice.customerPaymentStatus === "unpaid" && row.clientId && (
           <button
             onClick={onPayment}
-            className="w-full text-xs bg-[#0d9488] text-white px-3 py-2 rounded hover:bg-[#0a7970] font-medium"
+            className="w-full text-xs bg-[#0d3d3b] text-white px-3 py-2 rounded hover:bg-[#0a5c5a] font-medium"
           >
             Receive payment
           </button>
@@ -1082,7 +1082,7 @@ function SendPanel({
         <button
           onClick={onSend}
           disabled={sendLoading || !sendTo}
-          className="flex-1 text-xs bg-[#0d9488] text-white px-3 py-2 rounded hover:bg-[#0d9488] disabled:opacity-50 font-medium"
+          className="flex-1 text-xs bg-[#0d3d3b] text-white px-3 py-2 rounded hover:bg-[#0d3d3b] disabled:opacity-50 font-medium"
         >
           {sendLoading ? "Sending..." : "Send invoice"}
         </button>

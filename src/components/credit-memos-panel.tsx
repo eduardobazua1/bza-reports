@@ -34,7 +34,7 @@ export type InvoiceOption = { id: number; invoiceNumber: string; clientId: numbe
 // ─── Status badge ─────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: CreditMemo["status"] }) {
   const map = {
-    open:    "bg-teal-50 text-teal-700 ring-teal-200",
+    open:    "bg-[#0d3d3b]/5 text-[#0d3d3b] ring-[#0d3d3b]/20",
     applied: "bg-stone-100 text-stone-600 ring-stone-200",
     void:    "bg-red-50 text-red-500 ring-red-200",
   };
@@ -112,7 +112,7 @@ function MemoForm({
               required
               value={clientId}
               onChange={e => { setClientId(e.target.value); setInvoiceId(""); }}
-              className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]"
+              className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]"
             >
               <option value="">Select client…</option>
               {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -126,7 +126,7 @@ function MemoForm({
               <select
                 value={invoiceId}
                 onChange={e => setInvoiceId(e.target.value)}
-                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]"
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]"
               >
                 <option value="">None</option>
                 {clientInvoices.map(i => (
@@ -144,7 +144,7 @@ function MemoForm({
                 value={creditNumber}
                 onChange={e => setCreditNumber(e.target.value)}
                 placeholder="CM-001"
-                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]"
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]"
               />
             </div>
             <div>
@@ -154,7 +154,7 @@ function MemoForm({
                 type="date"
                 value={memoDate}
                 onChange={e => setMemoDate(e.target.value)}
-                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]"
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]"
               />
             </div>
           </div>
@@ -170,7 +170,7 @@ function MemoForm({
               value={amount}
               onChange={e => setAmount(e.target.value)}
               placeholder="0.00"
-              className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]"
+              className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]"
             />
           </div>
 
@@ -181,7 +181,7 @@ function MemoForm({
               value={reason}
               onChange={e => setReason(e.target.value)}
               placeholder="Price adjustment, returned goods, etc."
-              className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]"
+              className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]"
             />
           </div>
 
@@ -192,7 +192,7 @@ function MemoForm({
               value={notes}
               onChange={e => setNotes(e.target.value)}
               rows={2}
-              className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488] resize-none"
+              className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d3d3b] resize-none"
             />
           </div>
 
@@ -250,7 +250,7 @@ export function CreditMemosPanel({
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <div className="bg-white rounded-xl shadow-sm p-4">
           <p className="text-xs text-stone-500 font-medium uppercase tracking-wide">Open Credits</p>
-          <p className="text-2xl font-bold text-teal-700 mt-1">{formatCurrency(totalOpen)}</p>
+          <p className="text-2xl font-bold text-[#0d3d3b] mt-1">{formatCurrency(totalOpen)}</p>
           <p className="text-xs text-stone-400 mt-0.5">{memos.filter(m => m.status === "open").length} memos</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4">
@@ -335,7 +335,7 @@ export function CreditMemosPanel({
                               title="Mark as Applied"
                               onClick={() => doAction(() => applyCreditMemo(m.id))}
                               disabled={isPending}
-                              className="p-1.5 rounded-md text-teal-500 hover:text-teal-700 hover:bg-teal-50 transition-colors"
+                              className="p-1.5 rounded-md text-[#0a5c5a] hover:text-[#0d3d3b] hover:bg-[#0d3d3b]/5 transition-colors"
                             >
                               <CheckCircle className="w-3.5 h-3.5" />
                             </button>

@@ -343,7 +343,7 @@ export default function SendReportPage() {
 
       {/* Result */}
       {result && (
-        <div className={`rounded-lg p-4 ${result.ok ? "bg-green-50 text-[#0d9488] border border-green-200" : "bg-[#0d3d3b] text-[#0d3d3b] border border-[#0d3d3b]"}`}>
+        <div className={`rounded-lg p-4 ${result.ok ? "bg-[#0d3d3b]/5 text-[#0d3d3b] border border-[#0d3d3b]/20" : "bg-red-50 text-red-700 border border-red-200"}`}>
           {result.msg}
         </div>
       )}

@@ -116,7 +116,7 @@ function EmailReportPanel({ onBack }: { onBack: () => void }) {
             </p>
             <button
               onClick={() => { setResult(null); setForm(f => ({ ...f, email: "" })); }}
-              className="mt-2 text-xs text-[#0d9488] hover:underline"
+              className="mt-2 text-xs text-[#0d3d3b] hover:underline"
             >
               Send another report
             </button>
@@ -129,7 +129,7 @@ function EmailReportPanel({ onBack }: { onBack: () => void }) {
               <select
                 value={form.clientId}
                 onChange={e => setForm(f => ({ ...f, clientId: e.target.value }))}
-                className="w-full bg-white border border-stone-200 rounded-lg px-3 py-2 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]/20 focus:border-[#0d9488] appearance-none"
+                className="w-full bg-white border border-stone-200 rounded-lg px-3 py-2 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]/20 focus:border-[#0d3d3b] appearance-none"
               >
                 <option value="">Select a client…</option>
                 {clients.map(c => (
@@ -146,7 +146,7 @@ function EmailReportPanel({ onBack }: { onBack: () => void }) {
                 value={form.email}
                 onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                 placeholder="recipient@example.com"
-                className="w-full bg-white border border-stone-200 rounded-lg px-3 py-2 text-sm text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]/20 focus:border-[#0d9488]"
+                className="w-full bg-white border border-stone-200 rounded-lg px-3 py-2 text-sm text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]/20 focus:border-[#0d3d3b]"
               />
             </div>
 
@@ -196,7 +196,7 @@ function EmailReportPanel({ onBack }: { onBack: () => void }) {
             {/* Columns note */}
             <p className="text-[11px] text-stone-400 leading-relaxed">
               Includes: PO, Invoice, Item, Qty, Ship Date, Status, ETA, Location, Vehicle.
-              For custom columns use the <span className="text-[#0d9488]">Reports</span> page.
+              For custom columns use the <span className="text-[#0d3d3b]">Reports</span> page.
             </p>
 
             {/* Send */}
@@ -379,7 +379,7 @@ export function IntelligenceWidget() {
                         send(s);
                       }
                     }}
-                    className="w-full text-left text-xs bg-white border border-stone-200 rounded-xl px-3 py-2.5 text-[#0d9488] font-medium hover:bg-stone-50 transition-colors flex items-center gap-2">
+                    className="w-full text-left text-xs bg-white border border-stone-200 rounded-xl px-3 py-2.5 text-[#0d3d3b] font-medium hover:bg-stone-50 transition-colors flex items-center gap-2">
                     {s === "Process invoice document" && <Paperclip className="w-3 h-3 shrink-0" />}
                     {s}
                   </button>
@@ -387,7 +387,7 @@ export function IntelligenceWidget() {
                 {/* Email shortcut */}
                 <button
                   onClick={() => setEmailPanelOpen(true)}
-                  className="w-full text-left text-xs bg-white border border-stone-200 rounded-xl px-3 py-2.5 text-[#0d9488] font-medium hover:bg-stone-50 transition-colors flex items-center gap-2"
+                  className="w-full text-left text-xs bg-white border border-stone-200 rounded-xl px-3 py-2.5 text-[#0d3d3b] font-medium hover:bg-stone-50 transition-colors flex items-center gap-2"
                 >
                   <Mail className="w-3 h-3 shrink-0" />
                   Send shipment report by email
@@ -408,9 +408,9 @@ export function IntelligenceWidget() {
               <div className="flex justify-start">
                 <div className="bg-white border border-stone-200 rounded-2xl rounded-bl-sm px-3 py-2">
                   <div className="flex gap-1 items-center">
-                    <span className="w-1.5 h-1.5 bg-[#0d9488] rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                    <span className="w-1.5 h-1.5 bg-[#0d9488] rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                    <span className="w-1.5 h-1.5 bg-[#0d9488] rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                    <span className="w-1.5 h-1.5 bg-[#0d3d3b] rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <span className="w-1.5 h-1.5 bg-[#0d3d3b] rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <span className="w-1.5 h-1.5 bg-[#0d3d3b] rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                   </div>
                 </div>
               </div>

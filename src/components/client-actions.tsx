@@ -379,11 +379,11 @@ export function ClientActions({ clients }: { clients: Client[] }) {
                   </td>
                   <td className="p-3 text-sm border-t border-border">
                     {client.certType === "fsc" ? (
-                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800">FSC</span>
+                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-[#0d3d3b]/10 text-[#0d3d3b]">FSC</span>
                     ) : client.certType === "pefc" ? (
-                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800">PEFC</span>
+                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-[#0d3d3b]/10 text-[#0d3d3b]">PEFC</span>
                     ) : (client.fscLicense || client.fscChainOfCustody) ? (
-                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800">FSC</span>
+                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-[#0d3d3b]/10 text-[#0d3d3b]">FSC</span>
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}
@@ -394,7 +394,7 @@ export function ClientActions({ clients }: { clients: Client[] }) {
                       disabled={isPending}
                       className={`px-2 py-1 rounded text-xs font-medium ${
                         client.portalEnabled
-                          ? "bg-green-100 text-[#0d9488]"
+                          ? "bg-[#0d3d3b]/10 text-[#0d3d3b]"
                           : "bg-gray-100 text-gray-500"
                       }`}
                     >

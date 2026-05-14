@@ -203,7 +203,7 @@ export function APAgingDetailFullClient({ buckets, total, filterBucket, filterSu
   const colCount = [visibleCols.date, visibleCols.type, visibleCols.invoice, true /*supplier*/, visibleCols.amount, visibleCols.openBalance, visibleCols.days].filter(Boolean).length;
 
   const SI = ({ col }: { col: "date" | "invoice" | "supplier" | "amount" | "days" }) =>
-    sortCol === col ? <span className="ml-1 text-[#0d9488]">{sortDir === "asc" ? "↑" : "↓"}</span> : <span className="ml-0.5 text-stone-300">↕</span>;
+    sortCol === col ? <span className="ml-1 text-[#0d3d3b]">{sortDir === "asc" ? "↑" : "↓"}</span> : <span className="ml-0.5 text-stone-300">↕</span>;
 
   return (
     <>
@@ -235,7 +235,7 @@ export function APAgingDetailFullClient({ buckets, total, filterBucket, filterSu
           <div className="space-y-2 mb-4">
             {COL_DEFS.map(c => (
               <label key={c.key} className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={visibleCols[c.key]} onChange={() => toggleCol(c.key)} className="rounded border-stone-300 text-[#0d9488] focus:ring-[#0d9488]" />
+                <input type="checkbox" checked={visibleCols[c.key]} onChange={() => toggleCol(c.key)} className="rounded border-stone-300 text-[#0d3d3b] focus:ring-[#0d3d3b]" />
                 <span className="text-sm text-stone-600">{c.label}</span>
               </label>
             ))}
@@ -245,7 +245,7 @@ export function APAgingDetailFullClient({ buckets, total, filterBucket, filterSu
             <p className="text-xs font-semibold text-stone-700 uppercase tracking-wide mb-2">View</p>
             {(["grouped", "flat"] as const).map(m => (
               <label key={m} className="flex items-center gap-2 cursor-pointer mb-1.5">
-                <input type="radio" name="apViewMode" value={m} checked={viewMode === m} onChange={() => setViewMode(m)} className="text-[#0d9488] focus:ring-[#0d9488]" />
+                <input type="radio" name="apViewMode" value={m} checked={viewMode === m} onChange={() => setViewMode(m)} className="text-[#0d3d3b] focus:ring-[#0d3d3b]" />
                 <span className="text-sm text-stone-600">{m === "grouped" ? "Group by aging period" : "Flat — all rows"}</span>
               </label>
             ))}
@@ -260,7 +260,7 @@ export function APAgingDetailFullClient({ buckets, total, filterBucket, filterSu
             <ArrowLeft className="w-4 h-4" /> Back to reports
           </Link>
           <div className="flex items-center gap-3">
-            <Link href="/reports/ap-aging-summary" className="text-sm text-[#0d9488] hover:underline">← Back to summary</Link>
+            <Link href="/reports/ap-aging-summary" className="text-sm text-[#0d3d3b] hover:underline">← Back to summary</Link>
             <div className="relative" ref={downloadRef}>
               <button onClick={() => setShowDownload(v => !v)} disabled={isPdfPending}
                 className="flex items-center gap-1.5 text-sm text-stone-600 hover:text-stone-800 hover:bg-stone-100 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50">

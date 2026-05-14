@@ -79,7 +79,7 @@ export function UserManagement({ users, isAdmin }: { users: User[]; isAdmin: boo
   return (
     <div className="space-y-4">
       {message && (
-        <div className={`rounded-lg p-3 text-sm ${message.ok ? "bg-green-50 text-[#0d9488] border border-green-200" : "bg-[#0d3d3b] text-[#0d3d3b] border border-[#0d3d3b]"}`}>
+        <div className={`rounded-lg p-3 text-sm ${message.ok ? "bg-[#0d3d3b]/5 text-[#0d3d3b] border border-[#0d3d3b]/20" : "bg-red-50 text-red-700 border border-red-200"}`}>
           {message.text}
         </div>
       )}
@@ -145,7 +145,7 @@ export function UserManagement({ users, isAdmin }: { users: User[]; isAdmin: boo
                   <button
                     onClick={() => handleToggleActive(user)}
                     disabled={isPending}
-                    className={`text-xs px-2 py-1 rounded ${user.isActive ? "text-[#0d9488] hover:bg-[#0d9488]" : "text-[#0d9488] hover:bg-green-50"}`}
+                    className={`text-xs px-2 py-1 rounded ${user.isActive ? "text-[#0d3d3b] hover:bg-[#0d3d3b]/10" : "text-[#0d3d3b] hover:bg-[#0d3d3b]/5"}`}
                   >
                     {user.isActive ? "Deactivate" : "Activate"}
                   </button>

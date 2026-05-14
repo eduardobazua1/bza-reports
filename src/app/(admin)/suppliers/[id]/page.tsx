@@ -74,12 +74,12 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
         </div>
         <div className="bg-white rounded-md shadow-sm p-4">
           <p className="text-[10px] text-stone-400 uppercase tracking-wide mb-1">Total Paid</p>
-          <p className="text-xl font-bold text-[#0d9488]">{formatCurrency(totalPaid)}</p>
+          <p className="text-xl font-bold text-[#0d3d3b]">{formatCurrency(totalPaid)}</p>
           <p className="text-xs text-stone-400 mt-0.5">{payments.length} payment{payments.length !== 1 ? "s" : ""}</p>
         </div>
-        <div className={`bg-white rounded-md shadow-sm p-4 border-l-4 ${balance > 0 ? "border-l-[#0d3d3b]" : balance < 0 ? "border-l-[#0d9488]" : "border-l-stone-200"}`}>
+        <div className={`bg-white rounded-md shadow-sm p-4 border-l-4 ${balance > 0 ? "border-l-[#0d3d3b]" : balance < 0 ? "border-l-[#0d3d3b]" : "border-l-stone-200"}`}>
           <p className="text-[10px] text-stone-400 uppercase tracking-wide mb-1">Open Balance</p>
-          <p className={`text-xl font-bold ${balance > 0 ? "text-[#0d3d3b]" : balance < 0 ? "text-[#0d9488]" : "text-stone-400"}`}>{formatCurrency(Math.abs(balance))}</p>
+          <p className={`text-xl font-bold ${balance > 0 ? "text-[#0d3d3b]" : balance < 0 ? "text-[#0d3d3b]" : "text-stone-400"}`}>{formatCurrency(Math.abs(balance))}</p>
           <p className="text-xs text-stone-400 mt-0.5">{balance > 0 ? "You owe supplier" : balance < 0 ? "Overpaid" : "Settled"}</p>
         </div>
       </div>

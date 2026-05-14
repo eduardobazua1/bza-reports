@@ -210,7 +210,7 @@ function StatementView({
         <div className="w-px bg-stone-200" />
         <div className="text-center">
           <p className="text-xs text-stone-500 uppercase tracking-wide font-medium">Credits & Payments</p>
-          <p className="text-base font-bold text-teal-700 mt-0.5">{formatCurrency(totalCredits)}</p>
+          <p className="text-base font-bold text-[#0d3d3b] mt-0.5">{formatCurrency(totalCredits)}</p>
         </div>
         <div className="w-px bg-stone-200" />
         <div className="text-center">
@@ -244,8 +244,8 @@ function StatementView({
                   <td className="px-6 py-2.5 text-stone-600 whitespace-nowrap">{formatDate(tx.date)}</td>
                   <td className="px-4 py-2.5">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ring-1 ${
-                      tx.type === "Invoice" ? "bg-blue-50 text-blue-700 ring-blue-200"
-                      : tx.type === "Payment" ? "bg-teal-50 text-teal-700 ring-teal-200"
+                      tx.type === "Invoice" ? "bg-[#0d3d3b]/5 text-[#0d3d3b] ring-[#0d3d3b]/20"
+                      : tx.type === "Payment" ? "bg-[#0d3d3b]/5 text-[#0d3d3b] ring-[#0d3d3b]/20"
                       : "bg-amber-50 text-amber-700 ring-amber-200"
                     }`}>
                       {tx.type}
@@ -255,10 +255,10 @@ function StatementView({
                   <td className="px-4 py-2.5 text-right text-stone-800">
                     {tx.amount > 0 ? formatCurrency(tx.amount) : ""}
                   </td>
-                  <td className="px-4 py-2.5 text-right text-teal-700">
+                  <td className="px-4 py-2.5 text-right text-[#0d3d3b]">
                     {tx.amount < 0 ? formatCurrency(Math.abs(tx.amount)) : ""}
                   </td>
-                  <td className={`px-6 py-2.5 text-right font-semibold ${tx.balance > 0 ? "text-stone-800" : tx.balance < 0 ? "text-teal-700" : "text-stone-400"}`}>
+                  <td className={`px-6 py-2.5 text-right font-semibold ${tx.balance > 0 ? "text-stone-800" : tx.balance < 0 ? "text-[#0d3d3b]" : "text-stone-400"}`}>
                     {formatCurrency(Math.abs(tx.balance))}
                     {tx.balance < 0 && <span className="text-xs font-normal ml-0.5">CR</span>}
                   </td>
@@ -269,8 +269,8 @@ function StatementView({
               <tr className="border-t-2 border-stone-300 bg-stone-50 print:bg-white">
                 <td colSpan={3} className="px-6 py-3 text-sm font-bold text-stone-800 uppercase tracking-wide">Balance Due</td>
                 <td className="px-4 py-3 text-right font-bold text-stone-800">{formatCurrency(totalCharges)}</td>
-                <td className="px-4 py-3 text-right font-bold text-teal-700">{formatCurrency(totalCredits)}</td>
-                <td className={`px-6 py-3 text-right text-base font-bold ${balanceDue > 0 ? "text-red-600" : "text-teal-700"}`}>
+                <td className="px-4 py-3 text-right font-bold text-[#0d3d3b]">{formatCurrency(totalCredits)}</td>
+                <td className={`px-6 py-3 text-right text-base font-bold ${balanceDue > 0 ? "text-red-600" : "text-[#0d3d3b]"}`}>
                   {formatCurrency(Math.abs(balanceDue))}
                   {balanceDue < 0 && <span className="text-xs font-normal ml-1">CR</span>}
                 </td>
@@ -578,7 +578,7 @@ export function StatementClient({
               <select
                 value={clientId}
                 onChange={e => setClientId(e.target.value)}
-                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]"
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]"
               >
                 <option value="">Select a client…</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -588,13 +588,13 @@ export function StatementClient({
             <div>
               <label className="block text-xs font-medium text-stone-600 mb-1">From</label>
               <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)}
-                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]" />
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]" />
             </div>
             {/* To */}
             <div>
               <label className="block text-xs font-medium text-stone-600 mb-1">To</label>
               <input type="date" value={toDate} onChange={e => setToDate(e.target.value)}
-                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]" />
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]" />
             </div>
           </div>
           <div className="mt-3 flex justify-end">

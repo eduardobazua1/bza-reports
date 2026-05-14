@@ -165,7 +165,7 @@ export function InvoiceListActions({
           <button
             onClick={handleSend}
             disabled={sendLoading || !sendTo}
-            className="text-xs bg-[#0d9488] text-white px-2.5 py-1 rounded hover:bg-[#0d9488] disabled:opacity-50 font-medium"
+            className="text-xs bg-[#0d3d3b] text-white px-2.5 py-1 rounded hover:bg-[#0d3d3b] disabled:opacity-50 font-medium"
           >
             {sendLoading ? "Sending..." : "Send"}
           </button>
@@ -249,7 +249,7 @@ export function InvoiceListActions({
           href={`/api/invoice-pdf?invoice=${invoice.invoiceNumber}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs text-[#0d9488] hover:underline font-medium"
+          className="text-xs text-[#0d3d3b] hover:underline font-medium"
         >
           PDF
         </a>
@@ -257,7 +257,7 @@ export function InvoiceListActions({
           sent ? (
             <span className="text-xs text-emerald-600 font-medium">Sent ✓</span>
           ) : (
-            <button onClick={openSendPanel} className="text-xs text-[#0d9488] hover:underline font-medium">
+            <button onClick={openSendPanel} className="text-xs text-[#0d3d3b] hover:underline font-medium">
               Send
             </button>
           )

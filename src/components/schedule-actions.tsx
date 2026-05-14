@@ -255,7 +255,7 @@ export function ScheduleActions({
                     {item.templateName} &middot; Sent: {item.sentAt?.split("T")[0] || item.sendDate}
                   </p>
                 </div>
-                <span className="text-xs bg-stone-100 text-[#0d9488] px-2 py-1 rounded-full">Sent</span>
+                <span className="text-xs bg-stone-100 text-[#0d3d3b] px-2 py-1 rounded-full">Sent</span>
               </div>
             ))}
           </div>

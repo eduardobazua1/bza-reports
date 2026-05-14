@@ -50,7 +50,7 @@ function fmtNum(n: number) {
 
 const STATUS_STYLES: Record<string, string> = {
   draft:    "bg-stone-100 text-stone-600",
-  sent:     "bg-blue-50 text-blue-600",
+  sent:     "bg-[#0d3d3b]/5 text-[#0d3d3b]",
   accepted: "bg-emerald-50 text-emerald-700",
   declined: "bg-red-50 text-red-600",
 };
@@ -90,7 +90,7 @@ function SendModal({ proposal, onClose }: { proposal: ProposalData; onClose: () 
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
         <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <MailIcon className="w-4 h-4 text-[#0d9488]" />
+            <MailIcon className="w-4 h-4 text-[#0d3d3b]" />
             <span className="font-semibold text-stone-800">Send Proposal</span>
           </div>
           <button onClick={onClose} className="text-stone-400 hover:text-stone-600"><X className="w-5 h-5" /></button>
@@ -111,24 +111,24 @@ function SendModal({ proposal, onClose }: { proposal: ProposalData; onClose: () 
               <label className="block text-xs font-medium text-stone-600 mb-1">To *</label>
               <input type="email" value={to} onChange={e => setTo(e.target.value)}
                 placeholder="client@example.com"
-                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30" />
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]/30" />
             </div>
             <div>
               <label className="block text-xs font-medium text-stone-600 mb-1">CC</label>
               <input type="text" value={cc} onChange={e => setCc(e.target.value)}
                 placeholder="optional"
-                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30" />
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]/30" />
             </div>
             <div>
               <label className="block text-xs font-medium text-stone-600 mb-1">Subject</label>
               <input type="text" value={subject} onChange={e => setSubject(e.target.value)}
-                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30" />
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]/30" />
             </div>
             <div>
               <label className="block text-xs font-medium text-stone-600 mb-1">Message <span className="text-stone-300">(optional)</span></label>
               <textarea value={message} onChange={e => setMessage(e.target.value)} rows={3}
                 placeholder="Custom message to prepend before the default email body…"
-                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30" />
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]/30" />
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <button onClick={onClose} className="px-4 py-2 text-sm text-stone-600 border border-stone-200 rounded-lg hover:bg-stone-50">Cancel</button>
@@ -197,7 +197,7 @@ export function ProposalDetail({ proposal }: { proposal: ProposalData }) {
             </button>
             <button
               onClick={() => setShowSend(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-[#0d9488] hover:bg-[#0b7a71] text-white text-sm font-medium rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-[#0d3d3b] hover:bg-[#0a5c5a] text-white text-sm font-medium rounded-lg transition-colors"
             >
               <Send className="w-4 h-4" />
               Send
@@ -292,7 +292,7 @@ export function ProposalDetail({ proposal }: { proposal: ProposalData }) {
                       <td className="px-4 py-3 text-right text-stone-700">{fmtNum(item.tons)}</td>
                       <td className="px-4 py-3 text-center text-stone-500">{item.unit}</td>
                       <td className="px-4 py-3 text-right text-stone-600">{fmtUsd(item.pricePerTon)}</td>
-                      <td className="px-4 py-3 text-right font-semibold text-[#0d9488]">{fmtUsd(lineTotal)}</td>
+                      <td className="px-4 py-3 text-right font-semibold text-[#0d3d3b]">{fmtUsd(lineTotal)}</td>
                     </tr>
                   );
                 })}

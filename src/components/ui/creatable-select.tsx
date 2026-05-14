@@ -143,7 +143,7 @@ export function CreatableSelect({
           onChange={e => setSearch(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Search or type to add…"
-          className="w-full px-2.5 py-1.5 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30"
+          className="w-full px-2.5 py-1.5 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]/30"
         />
       </div>
 
@@ -156,17 +156,17 @@ export function CreatableSelect({
         {filtered.map(opt => (
           <button key={opt} type="button" onClick={() => select(opt)}
             className={`w-full flex items-center justify-between px-3 py-2 text-sm transition-colors hover:bg-stone-50 text-left ${
-              opt === value ? "bg-[#0d9488]/5 text-[#0d9488] font-medium" : "text-stone-800"
+              opt === value ? "bg-[#0d3d3b]/5 text-[#0d3d3b] font-medium" : "text-stone-800"
             }`}>
             <span className="flex-1 min-w-0 leading-snug">{opt}</span>
-            {opt === value && <Check className="w-3.5 h-3.5 shrink-0 ml-2 text-[#0d9488]" />}
+            {opt === value && <Check className="w-3.5 h-3.5 shrink-0 ml-2 text-[#0d3d3b]" />}
           </button>
         ))}
 
         {/* Add new option */}
         {canCreate && (
           <button type="button" onClick={create}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0d9488] hover:bg-[#0d9488]/5 transition-colors border-t border-stone-100">
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0d3d3b] hover:bg-[#0d3d3b]/5 transition-colors border-t border-stone-100">
             <Plus className="w-3.5 h-3.5 shrink-0" />
             <span>Add <span className="font-semibold">"{trimmed}"</span></span>
           </button>
@@ -184,11 +184,11 @@ export function CreatableSelect({
           type="button"
           disabled={disabled}
           onClick={toggle}
-          className={`w-full flex items-center justify-between gap-2 border rounded-lg px-3 py-2 text-sm bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30 ${
+          className={`w-full flex items-center justify-between gap-2 border rounded-lg px-3 py-2 text-sm bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]/30 ${
             disabled
               ? "border-stone-100 text-stone-300 cursor-not-allowed"
               : open
-              ? "border-[#0d9488]/40 ring-2 ring-[#0d9488]/20 cursor-pointer"
+              ? "border-[#0d3d3b]/40 ring-2 ring-[#0d3d3b]/20 cursor-pointer"
               : "border-stone-200 hover:border-stone-300 cursor-pointer"
           } ${!value ? "text-stone-400" : "text-stone-800"}`}
         >

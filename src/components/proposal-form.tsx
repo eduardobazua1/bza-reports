@@ -262,21 +262,21 @@ export function ProposalForm({ mode, proposalId, proposalNumber, clients, produc
             <label className="block text-xs font-medium text-stone-600 mb-1">Title / Subject</label>
             <input type="text" value={title} onChange={e => setTitle(e.target.value)}
               placeholder="e.g. Pulp Supply Q3 2026"
-              className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30" />
+              className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]/30" />
           </div>
 
           {/* Proposal Date */}
           <div>
             <label className="block text-xs font-medium text-stone-600 mb-1">Proposal Date *</label>
             <input type="date" value={proposalDate} onChange={e => setProposalDate(e.target.value)} required
-              className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30" />
+              className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]/30" />
           </div>
 
           {/* Valid Until */}
           <div>
             <label className="block text-xs font-medium text-stone-600 mb-1">Valid Until</label>
             <input type="date" value={validUntil} onChange={e => setValidUntil(e.target.value)}
-              className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30" />
+              className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]/30" />
           </div>
 
           {/* Status */}
@@ -321,7 +321,7 @@ export function ProposalForm({ mode, proposalId, proposalNumber, clients, produc
         <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-stone-700">Line Items</h2>
           <button type="button" onClick={addLine}
-            className="flex items-center gap-1.5 text-xs font-medium text-[#0d9488] hover:text-[#0a5c5a] transition-colors">
+            className="flex items-center gap-1.5 text-xs font-medium text-[#0d3d3b] hover:text-[#0a5c5a] transition-colors">
             <Plus className="w-3.5 h-3.5" />
             Add Line
           </button>
@@ -370,7 +370,7 @@ export function ProposalForm({ mode, proposalId, proposalNumber, clients, produc
                   <input type="text" value={item.description}
                     onChange={e => updateLine(item.id, "description", e.target.value)}
                     placeholder="Specs, grade, etc."
-                    className="w-full border border-stone-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30" />
+                    className="w-full border border-stone-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]/30" />
                 </div>
 
                 {/* Tons */}
@@ -379,7 +379,7 @@ export function ProposalForm({ mode, proposalId, proposalNumber, clients, produc
                   <input type="number" value={item.tons}
                     onChange={e => updateLine(item.id, "tons", e.target.value)}
                     placeholder="0.000" step="0.001" min="0"
-                    className="w-full border border-stone-200 rounded-lg px-2.5 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30" />
+                    className="w-full border border-stone-200 rounded-lg px-2.5 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]/30" />
                 </div>
 
                 {/* Unit */}
@@ -401,7 +401,7 @@ export function ProposalForm({ mode, proposalId, proposalNumber, clients, produc
                     <input type="number" value={item.pricePerTon}
                       onChange={e => updateLine(item.id, "pricePerTon", e.target.value)}
                       placeholder="0.00" step="0.01" min="0"
-                      className="w-full border border-stone-200 rounded-lg pl-5 pr-2.5 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30" />
+                      className="w-full border border-stone-200 rounded-lg pl-5 pr-2.5 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]/30" />
                   </div>
                 </div>
 
@@ -422,7 +422,7 @@ export function ProposalForm({ mode, proposalId, proposalNumber, clients, produc
                   <input type="text" value={item.certDetail}
                     onChange={e => updateLine(item.id, "certDetail", e.target.value)}
                     placeholder="FSC-C005…"
-                    className="border border-stone-200 rounded-lg px-2.5 py-1.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30" />
+                    className="border border-stone-200 rounded-lg px-2.5 py-1.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]/30" />
                 </div>
 
                 {/* Delete + line total (mobile) */}
@@ -456,7 +456,7 @@ export function ProposalForm({ mode, proposalId, proposalNumber, clients, produc
         <label className="block text-xs font-medium text-stone-600 mb-2">Notes & Terms</label>
         <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={4}
           placeholder="Payment terms, certification requirements, delivery conditions, validity…"
-          className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30 resize-none" />
+          className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]/30 resize-none" />
       </div>
 
       {/* Bottom submit */}

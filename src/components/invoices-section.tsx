@@ -267,11 +267,11 @@ export function InvoicesSection({
 
               return (
                 <>
-                  <tr key={inv.id} className={`hover:bg-stone-50 align-middle ${isEditing ? "bg-[#0d9488]/40" : ""}`}>
+                  <tr key={inv.id} className={`hover:bg-stone-50 align-middle ${isEditing ? "bg-[#0d3d3b]/40" : ""}`}>
                     <td className="px-3 py-1.5 border-t border-stone-100 font-medium text-stone-800">{inv.salesDocument || "—"}</td>
                     <td className="px-3 py-1.5 border-t border-stone-100 font-medium text-stone-800 whitespace-nowrap">
                       {inv.invoiceNumber.startsWith("PEND-") ? (
-                        <span className="text-[#0d9488] italic font-normal">Pending</span>
+                        <span className="text-[#0d3d3b] italic font-normal">Pending</span>
                       ) : (
                         inv.invoiceNumber
                       )}
@@ -285,7 +285,7 @@ export function InvoicesSection({
                     <td className="px-3 py-1.5 border-t border-stone-100 text-right">{formatCurrency(revenue)}</td>
                     <td className="px-3 py-1.5 border-t border-stone-100 text-right">{formatCurrency(inv.quantityTons * buy)}</td>
                     <td className="px-3 py-1.5 border-t border-stone-100 text-right font-medium">
-                      <span className={profit >= 0 ? "text-[#0d9488]" : "text-[#0d3d3b]"}>{formatCurrency(profit)}</span>
+                      <span className={profit >= 0 ? "text-[#0d3d3b]" : "text-[#0d3d3b]"}>{formatCurrency(profit)}</span>
                     </td>
                     <td className="px-3 py-1.5 border-t border-stone-100">{formatDate(inv.shipmentDate)}</td>
                     <td className="px-3 py-1.5 border-t border-stone-100 text-xs text-stone-500">
@@ -362,7 +362,7 @@ export function InvoicesSection({
                             <button
                               onClick={() => handleSend(inv)}
                               disabled={sendLoading || !sendTo}
-                              className="text-xs bg-[#0d9488] text-white px-3 py-1.5 rounded hover:bg-[#0d9488] disabled:opacity-50 font-medium"
+                              className="text-xs bg-[#0d3d3b] text-white px-3 py-1.5 rounded hover:bg-[#0d3d3b] disabled:opacity-50 font-medium"
                             >
                               {sendLoading ? "Sending..." : "Send"}
                             </button>
@@ -398,8 +398,8 @@ export function InvoicesSection({
                   {isEditing && (
                     <tr key={`edit-${inv.id}`}>
                       <td colSpan={14} className="p-0">
-                        <div className="bg-[#0d9488] border-t border-[#0d9488] p-4 space-y-4">
-                          <p className="text-xs font-semibold text-[#0d9488] uppercase">Edit Invoice — {inv.invoiceNumber}</p>
+                        <div className="bg-[#0d3d3b] border-t border-[#0d3d3b] p-4 space-y-4">
+                          <p className="text-xs font-semibold text-[#0d3d3b] uppercase">Edit Invoice — {inv.invoiceNumber}</p>
 
                           {/* Row 1: identifiers */}
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -504,7 +504,7 @@ export function InvoicesSection({
                             <button
                               onClick={() => handleSave(inv)}
                               disabled={editLoading || !editForm.invoiceNumber || !editForm.quantityTons}
-                              className="text-xs bg-[#0d9488] text-white px-3 py-1.5 rounded hover:bg-[#0d9488] disabled:opacity-50 font-medium"
+                              className="text-xs bg-[#0d3d3b] text-white px-3 py-1.5 rounded hover:bg-[#0d3d3b] disabled:opacity-50 font-medium"
                             >
                               {editLoading ? "Saving..." : "Save changes"}
                             </button>
@@ -526,7 +526,7 @@ export function InvoicesSection({
                 <td className="px-3 py-2 border-t border-stone-200 text-right font-semibold">{formatCurrency(totalRevenue)}</td>
                 <td className="px-3 py-2 border-t border-stone-200 text-right font-semibold">{formatCurrency(totalCostNoFreight)}</td>
                 <td className="px-3 py-2 border-t border-stone-200 text-right font-semibold">
-                  <span className={totalProfit >= 0 ? "text-[#0d9488]" : "text-[#0d3d3b]"}>{formatCurrency(totalProfit)}</span>
+                  <span className={totalProfit >= 0 ? "text-[#0d3d3b]" : "text-[#0d3d3b]"}>{formatCurrency(totalProfit)}</span>
                 </td>
                 <td colSpan={5} className="px-3 py-2 border-t border-stone-200"></td>
               </tr>
@@ -562,7 +562,7 @@ export function InvoicesSection({
             <a href={`/api/invoice-pdf?invoice=${inv.invoiceNumber}`} target="_blank" rel="noopener noreferrer" className="block w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50" onClick={() => setOpenDropdownId(null)}>Print</a>
             {!inv.invoiceNumber.startsWith("PEND-") && (
               sentId === inv.id ? (
-                <span className="block px-4 py-2 text-sm text-[#0d9488] font-medium">Sent ✓</span>
+                <span className="block px-4 py-2 text-sm text-[#0d3d3b] font-medium">Sent ✓</span>
               ) : (
                 <button onClick={() => { setOpenDropdownId(null); openSend(inv); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">Send</button>
               )

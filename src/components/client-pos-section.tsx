@@ -69,7 +69,7 @@ function DestinationSelect({ value, onChange }: { value: string; onChange: (v: s
           {!adding ? (
             <div
               onMouseDown={(e) => { e.preventDefault(); setAdding(true); setNewVal(""); }}
-              className="px-3 py-2 text-xs text-[#0d9488] font-medium cursor-pointer hover:bg-stone-50 border-t border-stone-100"
+              className="px-3 py-2 text-xs text-[#0d3d3b] font-medium cursor-pointer hover:bg-stone-50 border-t border-stone-100"
             >
               + Add destination
             </div>
@@ -88,7 +88,7 @@ function DestinationSelect({ value, onChange }: { value: string; onChange: (v: s
               />
               <button
                 type="button"
-                className="text-xs bg-[#0d9488] text-white px-2 py-1 rounded"
+                className="text-xs bg-[#0d3d3b] text-white px-2 py-1 rounded"
                 onClick={() => { if (newVal.trim()) { add(newVal.trim()); onChange(newVal.trim()); setOpen(false); setAdding(false); } }}
               >
                 Add
@@ -356,9 +356,9 @@ export function ClientPOsSection({
   }
 
   const statusColors: Record<string, string> = {
-    pending: "bg-stone-100 text-[#0d9488]",
-    partial: "bg-stone-100 text-[#0d9488]",
-    complete: "bg-stone-100 text-[#0d9488]",
+    pending: "bg-stone-100 text-[#0d3d3b]",
+    partial: "bg-stone-100 text-[#0d3d3b]",
+    complete: "bg-stone-100 text-[#0d3d3b]",
   };
   const statusLabels: Record<string, string> = {
     pending: "Pending",
@@ -419,7 +419,7 @@ export function ClientPOsSection({
             });
             setAdding(true);
           }}
-          className="text-xs bg-[#0d9488] text-white px-3 py-1.5 rounded hover:bg-[#0a7970] transition"
+          className="text-xs bg-[#0d3d3b] text-white px-3 py-1.5 rounded hover:bg-[#0a5c5a] transition"
         >
           + Add Order
         </button>
@@ -462,7 +462,7 @@ export function ClientPOsSection({
 
                 return (
                   <>
-                    <tr key={cpo.id} className={`hover:bg-stone-50 ${editingId === cpo.id ? "bg-[#0d9488]/40" : ""}`}>
+                    <tr key={cpo.id} className={`hover:bg-stone-50 ${editingId === cpo.id ? "bg-[#0d3d3b]/40" : ""}`}>
                       <td className="px-4 py-3 border-t border-stone-100 text-sm font-semibold text-stone-800">
                         {cpo.clientPoNumber}
                       </td>
@@ -483,7 +483,7 @@ export function ClientPOsSection({
                       </td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right text-xs text-stone-500">
                         {cpo.sellPriceOverride ? formatCurrency(cpo.sellPriceOverride) : (sellPrice ? formatCurrency(sellPrice) : "—")}
-                        {cpo.sellPriceOverride && <span className="ml-1 text-[#0d9488]">*</span>}
+                        {cpo.sellPriceOverride && <span className="ml-1 text-[#0d3d3b]">*</span>}
                       </td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right font-medium">
                         {amount ? formatCurrency(amount) : "—"}
@@ -617,7 +617,7 @@ export function ClientPOsSection({
 
                             {/* Amount preview */}
                             {convertForm.quantityTons && (
-                              <div className="text-sm text-[#0d9488] font-medium">
+                              <div className="text-sm text-[#0d3d3b] font-medium">
                                 Invoice total: {formatCurrency(
                                   parseFloat(convertForm.quantityTons) * (convertForm.sellPriceOverride ? parseFloat(convertForm.sellPriceOverride) : (sellPrice ?? 0))
                                 )}
@@ -629,7 +629,7 @@ export function ClientPOsSection({
                               <button
                                 onClick={() => handleConvert(cpo)}
                                 disabled={convertLoading || !convertForm.invoiceNumber || !convertForm.quantityTons}
-                                className="text-sm bg-[#0d9488] text-white px-4 py-1.5 rounded hover:bg-[#0a7970] disabled:opacity-50 font-medium"
+                                className="text-sm bg-[#0d3d3b] text-white px-4 py-1.5 rounded hover:bg-[#0a5c5a] disabled:opacity-50 font-medium"
                               >
                                 {convertLoading ? "Creating..." : "Create Invoice"}
                               </button>
@@ -718,7 +718,7 @@ export function ClientPOsSection({
             <button
               onClick={handleAdd}
               disabled={loading || !addForm.clientPoNumber}
-              className="text-xs bg-[#0d9488] text-white px-3 py-1.5 rounded hover:bg-[#0a7970] disabled:opacity-50"
+              className="text-xs bg-[#0d3d3b] text-white px-3 py-1.5 rounded hover:bg-[#0a5c5a] disabled:opacity-50"
             >
               {loading ? "Saving..." : "Save"}
             </button>
@@ -737,7 +737,7 @@ export function ClientPOsSection({
           <div ref={dropdownRef} style={{ position: "fixed", top: dropdownPos.top, right: dropdownPos.right, zIndex: 9999 }} className="bg-white border border-stone-200 rounded-md shadow-lg min-w-[150px] py-1 text-left">
             <button onClick={() => { setOpenDropdownId(null); openEdit(cpo); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">View/Edit</button>
             {cpo.status !== "complete" && (
-              <button onClick={() => { setOpenDropdownId(null); openConvert(cpo); }} className="w-full text-left px-4 py-2 text-sm text-[#0d9488] hover:bg-stone-50 font-medium">Convert →</button>
+              <button onClick={() => { setOpenDropdownId(null); openConvert(cpo); }} className="w-full text-left px-4 py-2 text-sm text-[#0d3d3b] hover:bg-stone-50 font-medium">Convert →</button>
             )}
             <div className="border-t border-stone-100 my-1" />
             <button onClick={() => { setOpenDropdownId(null); handleDelete(cpo.id); }} className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"><Trash2 className="w-3.5 h-3.5" />Delete</button>
@@ -786,7 +786,7 @@ export function ClientPOsSection({
                 </div>
               </div>
               <div className="flex gap-2 pt-1">
-                <button onClick={() => handleEdit(cpo)} disabled={editLoading || !editForm.clientPoNumber} className="text-sm bg-[#0d9488] text-white px-4 py-1.5 rounded hover:bg-[#0d9488] disabled:opacity-50 font-medium">
+                <button onClick={() => handleEdit(cpo)} disabled={editLoading || !editForm.clientPoNumber} className="text-sm bg-[#0d3d3b] text-white px-4 py-1.5 rounded hover:bg-[#0d3d3b] disabled:opacity-50 font-medium">
                   {editLoading ? "Saving..." : "Save changes"}
                 </button>
                 <button onClick={cancelEdit} className="text-sm text-stone-500 hover:text-stone-700 px-4 py-1.5">Cancel</button>

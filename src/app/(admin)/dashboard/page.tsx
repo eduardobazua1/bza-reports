@@ -298,9 +298,9 @@ export default async function DashboardPage() {
                   <p className={`text-sm font-bold ${arOverdue > 0 ? "text-[#0d3d3b]" : ""}`}>{formatCurrency(arOverdue)}</p>
                   <p className="text-xs text-muted-foreground">{overdueCount} invoices</p>
                 </div>
-                <div className="bg-white border-l-[3px] border-l-[#0d9488] rounded-lg p-2">
+                <div className="bg-white border-l-[3px] border-l-[#0d3d3b] rounded-lg p-2">
                   <p className="text-xs text-muted-foreground">Current</p>
-                  <p className="text-sm font-bold text-[#0d9488]">{formatCurrency(arCurrent)}</p>
+                  <p className="text-sm font-bold text-[#0d3d3b]">{formatCurrency(arCurrent)}</p>
                   <p className="text-xs text-muted-foreground">{currentCount} invoices</p>
                 </div>
                 <div className="bg-muted/50 rounded-lg p-2">
@@ -352,13 +352,13 @@ export default async function DashboardPage() {
               <div key={m.year} className="space-y-0.5">
                 <div className="flex justify-between text-sm">
                   <span className={m.year === currentYear ? "font-bold" : ""}>{m.year}</span>
-                  <span className={`font-medium ${m.margin >= 10 ? "text-[#0d9488]" : "text-[#0d9488]"}`}>
+                  <span className={`font-medium ${m.margin >= 10 ? "text-[#0d3d3b]" : "text-[#0d3d3b]"}`}>
                     {formatPercent(m.margin)}
                   </span>
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Profit</span>
-                  <span className="text-[#0d9488] font-medium">${formatNumber(m.profit, 0)}</span>
+                  <span className="text-[#0d3d3b] font-medium">${formatNumber(m.profit, 0)}</span>
                 </div>
               </div>
             ))}
@@ -370,28 +370,28 @@ export default async function DashboardPage() {
             <div>
               <div className="flex justify-between text-sm">
                 <span>This Year ({currentYear})</span>
-                <span className="font-bold text-[#0d9488]">
+                <span className="font-bold text-[#0d3d3b]">
                   {currentYearMargin ? formatPercent((currentYearMargin.revenue - currentYearMargin.cost) / (currentYearMargin.revenue || 1) * 100) : "N/A"}
                 </span>
               </div>
               {currentYearMargin && (
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Profit</span>
-                  <span className="text-[#0d9488] font-medium">${formatNumber(currentYearMargin.revenue - currentYearMargin.cost, 0)}</span>
+                  <span className="text-[#0d3d3b] font-medium">${formatNumber(currentYearMargin.revenue - currentYearMargin.cost, 0)}</span>
                 </div>
               )}
             </div>
             <div>
               <div className="flex justify-between text-sm">
                 <span>This Month</span>
-                <span className="font-bold text-[#0d9488]">
+                <span className="font-bold text-[#0d3d3b]">
                   {currentMonthMargin ? formatPercent((currentMonthMargin.revenue - currentMonthMargin.cost) / (currentMonthMargin.revenue || 1) * 100) : "N/A"}
                 </span>
               </div>
               {currentMonthMargin && (
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Profit</span>
-                  <span className="text-[#0d9488] font-medium">${formatNumber(currentMonthMargin.revenue - currentMonthMargin.cost, 0)}</span>
+                  <span className="text-[#0d3d3b] font-medium">${formatNumber(currentMonthMargin.revenue - currentMonthMargin.cost, 0)}</span>
                 </div>
               )}
             </div>
@@ -407,7 +407,7 @@ export default async function DashboardPage() {
 
 function GaugeCard({ label, value, description }: { label: string; value: number; description: string }) {
   const pct = Math.min(Math.max(value, 0), 100);
-  const color = pct >= 80 ? "#0d9488" : pct >= 50 ? "#0d9488" : "#0d3d3b";
+  const color = pct >= 80 ? "#0d3d3b" : pct >= 50 ? "#0d3d3b" : "#0d3d3b";
 
   return (
     <div className="bg-white rounded-md shadow-sm p-4 flex flex-col items-center">

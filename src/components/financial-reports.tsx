@@ -124,13 +124,13 @@ function EmailModal({
         {status === "ok" ? (
           <div className="px-5 py-10 text-center">
             <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mx-auto mb-3">
-              <svg className="w-6 h-6 text-[#0d9488]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 text-[#0d3d3b]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
               </svg>
             </div>
             <p className="font-semibold text-stone-800">Email sent!</p>
             <p className="text-xs text-stone-500 mt-1">Report delivered to {email}</p>
-            <button onClick={onClose} className="mt-4 px-4 py-2 bg-[#0d9488] text-white text-sm rounded-lg hover:bg-[#0d9488]">Done</button>
+            <button onClick={onClose} className="mt-4 px-4 py-2 bg-[#0d3d3b] text-white text-sm rounded-lg hover:bg-[#0d3d3b]">Done</button>
           </div>
         ) : (
           <div className="px-5 py-4 space-y-3">
@@ -138,19 +138,19 @@ function EmailModal({
             <div>
               <label className="block text-xs font-medium text-stone-600 mb-1">To</label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="recipient@example.com"
-                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]"/>
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]"/>
             </div>
             {/* Subject */}
             <div>
               <label className="block text-xs font-medium text-stone-600 mb-1">Subject</label>
               <input type="text" value={subject} onChange={e => setSubject(e.target.value)}
-                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]"/>
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]"/>
             </div>
             {/* Message */}
             <div>
               <label className="block text-xs font-medium text-stone-600 mb-1">Message <span className="text-stone-400">(optional)</span></label>
               <textarea value={message} onChange={e => setMessage(e.target.value)} rows={3} placeholder="Add a note..."
-                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#0d9488]"/>
+                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]"/>
             </div>
             {/* Format */}
             <div>
@@ -158,7 +158,7 @@ function EmailModal({
               <div className="flex gap-2">
                 {(["excel","pdf","both"] as const).map(f => (
                   <button key={f} onClick={() => setFormat(f)}
-                    className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-colors capitalize ${format===f ? "bg-[#0d9488] text-white border-[#0d9488]" : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"}`}>
+                    className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-colors capitalize ${format===f ? "bg-[#0d3d3b] text-white border-[#0d3d3b]" : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"}`}>
                     {f === "both" ? "PDF + Excel" : f === "excel" ? "Excel" : "PDF"}
                   </button>
                 ))}
@@ -174,7 +174,7 @@ function EmailModal({
                 Cancel
               </button>
               <button onClick={send} disabled={!email || status==="sending"}
-                className="flex-1 py-2 rounded-lg bg-[#0d9488] text-white text-sm font-medium hover:bg-[#0d9488] disabled:opacity-50 flex items-center justify-center gap-2">
+                className="flex-1 py-2 rounded-lg bg-[#0d3d3b] text-white text-sm font-medium hover:bg-[#0d3d3b] disabled:opacity-50 flex items-center justify-center gap-2">
                 {status === "sending" ? (
                   <><svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>Sending…</>
                 ) : (
@@ -303,7 +303,7 @@ function DrillDownModal({
                   {DD_COL_DEFS.map(c => (
                     <label key={c.key} className="flex items-center gap-2 px-2 py-1.5 hover:bg-stone-50 rounded cursor-pointer">
                       <input type="checkbox" checked={visible.has(c.key)} onChange={() => toggleCol(c.key)}
-                        className="w-3.5 h-3.5 accent-[#0d9488] shrink-0"/>
+                        className="w-3.5 h-3.5 accent-[#0d3d3b] shrink-0"/>
                       <span className="text-sm text-stone-700">{c.label}</span>
                     </label>
                   ))}
@@ -379,7 +379,7 @@ function DrillDownModal({
                 const margin = r.revenue > 0 ? (r.profit / r.revenue) * 100 : 0;
                 return (
                   <tr key={i} className="border-b border-gray-100 hover:bg-gray-50">
-                    {v("invoiceNumber") && <td className="px-3 py-1.5 font-mono font-medium text-[#0d9488] whitespace-nowrap">{r.invoiceNumber}</td>}
+                    {v("invoiceNumber") && <td className="px-3 py-1.5 font-mono font-medium text-[#0d3d3b] whitespace-nowrap">{r.invoiceNumber}</td>}
                     {v("clientName")    && <td className="px-3 py-1.5 font-medium whitespace-nowrap">{r.clientName}</td>}
                     {v("supplierName")  && <td className="px-3 py-1.5 text-gray-500 whitespace-nowrap">{r.supplierName}</td>}
                     {v("poNumber")      && <td className="px-3 py-1.5 text-gray-500 whitespace-nowrap">{r.poNumber || "—"}</td>}
@@ -387,7 +387,7 @@ function DrillDownModal({
                     {v("destination")   && <td className="px-3 py-1.5 text-gray-600">{r.destination || "—"}</td>}
                     {v("date")          && <td className="px-3 py-1.5 whitespace-nowrap text-gray-600">{fmtDate(r.invoiceDate ?? r.shipmentDate)}</td>}
                     {v("dueDate")       && <td className="px-3 py-1.5 whitespace-nowrap text-gray-600">{fmtDate(r.dueDate)}</td>}
-                    {v("days")          && <td className={`px-3 py-1.5 text-right font-medium whitespace-nowrap ${days > 90 ? "text-[#0d3d3b]" : days > 30 ? "text-[#0d9488]" : days > 0 ? "text-[#0d9488]" : "text-gray-400"}`}>{days <= 0 ? "—" : `${days}d`}</td>}
+                    {v("days")          && <td className={`px-3 py-1.5 text-right font-medium whitespace-nowrap ${days > 90 ? "text-[#0d3d3b]" : days > 30 ? "text-[#0d3d3b]" : days > 0 ? "text-[#0d3d3b]" : "text-gray-400"}`}>{days <= 0 ? "—" : `${days}d`}</td>}
                     {v("tons")          && <td className="px-3 py-1.5 text-right text-gray-700">{formatNumber(r.quantityTons, 1)}</td>}
                     {v("amount")        && <td className="px-3 py-1.5 text-right font-medium">{formatCurrency(r.revenue)}</td>}
                     {v("cost")          && <td className="px-3 py-1.5 text-right text-gray-600">{formatCurrency(r.cost)}</td>}
@@ -452,7 +452,7 @@ function CustomizePanel({
         <div className="flex border-b border-stone-100">
           {(["data","visual"] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
-              className={`flex-1 py-2.5 text-sm font-medium capitalize border-b-2 transition-colors ${tab===t ? "border-[#0d9488] text-[#0d9488]" : "border-transparent text-stone-500 hover:text-stone-700"}`}>
+              className={`flex-1 py-2.5 text-sm font-medium capitalize border-b-2 transition-colors ${tab===t ? "border-[#0d3d3b] text-[#0d3d3b]" : "border-transparent text-stone-500 hover:text-stone-700"}`}>
               {t === "data" ? "Data" : "Visual"}
             </button>
           ))}
@@ -469,7 +469,7 @@ function CustomizePanel({
                     <span className="text-[10px] bg-stone-100 text-stone-500 rounded-full w-4 h-4 flex items-center justify-center">?</span>
                   </h3>
                   {conditions.length > 0 && (
-                    <button onClick={onClear} className="text-xs text-[#0d9488] hover:underline">Clear all</button>
+                    <button onClick={onClear} className="text-xs text-[#0d3d3b] hover:underline">Clear all</button>
                   )}
                 </div>
                 <p className="text-xs text-stone-400 mb-3">Select how you want to filter your data.</p>
@@ -499,7 +499,7 @@ function CustomizePanel({
                 ))}
 
                 <button onClick={onAdd}
-                  className="text-xs text-[#0d9488] hover:underline font-medium">
+                  className="text-xs text-[#0d3d3b] hover:underline font-medium">
                   + Add another filter
                 </button>
               </div>
@@ -513,7 +513,7 @@ function CustomizePanel({
               <div className="space-y-1">
                 {cols.map(c => (
                   <label key={c.key} className="flex items-center gap-2 cursor-pointer hover:bg-stone-50 px-1 py-1.5 rounded">
-                    <input type="checkbox" className="w-3.5 h-3.5 accent-[#0d9488]"
+                    <input type="checkbox" className="w-3.5 h-3.5 accent-[#0d3d3b]"
                       checked={visible.has(c.key)} onChange={() => onToggleCol(c.key)} />
                     <span className="text-sm text-stone-700">{c.label}</span>
                   </label>
@@ -524,7 +524,7 @@ function CustomizePanel({
         </div>
 
         <div className="p-4 border-t border-stone-100">
-          <button onClick={onClose} className="w-full bg-[#0d9488] text-white rounded-lg py-2 text-sm font-medium hover:bg-[#0d9488]">
+          <button onClick={onClose} className="w-full bg-[#0d3d3b] text-white rounded-lg py-2 text-sm font-medium hover:bg-[#0d3d3b]">
             Apply
           </button>
         </div>
@@ -542,7 +542,7 @@ function AmountCell({ value, rows, onDrillDown, className }: {
   return (
     <td className={`px-3 py-1.5 text-right ${className??""}`}>
       <button onClick={() => onDrillDown(rows, `${rows.length} invoices`)}
-        className="text-[#0d9488] hover:underline cursor-pointer">
+        className="text-[#0d3d3b] hover:underline cursor-pointer">
         {formatCurrency(value)}
       </button>
     </td>
@@ -633,7 +633,7 @@ function ARAgingReport({ data, visible, onDrillDown }: {
             {rows.map(r => (
               <tr key={r.name} className="border-b border-gray-100 hover:bg-gray-50">
                 <td className="px-3 py-1.5 font-medium">
-                  <button onClick={() => onDrillDown(r.allRows, r.name)} className="text-[#0d9488] hover:underline">
+                  <button onClick={() => onDrillDown(r.allRows, r.name)} className="text-[#0d3d3b] hover:underline">
                     {r.name}
                   </button>
                 </td>
@@ -643,7 +643,7 @@ function ARAgingReport({ data, visible, onDrillDown }: {
                 {v("d90")     && <AmountCell value={r.d90_v}     rows={r.d90}     onDrillDown={(rows) => onDrillDown(rows, `${r.name} — 61-90 days`)} />}
                 {v("d91")     && <AmountCell value={r.d91_v}     rows={r.d91}     onDrillDown={(rows) => onDrillDown(rows, `${r.name} — 91+ days`)} className="text-[#0d3d3b]" />}
                 <td className="px-3 py-1.5 text-right font-medium">
-                  <button onClick={() => onDrillDown(r.allRows, r.name)} className="text-[#0d9488] hover:underline">
+                  <button onClick={() => onDrillDown(r.allRows, r.name)} className="text-[#0d3d3b] hover:underline">
                     {formatCurrency(r.total)}
                   </button>
                 </td>
@@ -752,10 +752,10 @@ function PLMonthlyReport({ data, visible, onDrillDown }: {
             {months.map(m => (
               <tr key={m.key} className="border-b border-gray-100 hover:bg-gray-50">
                 <td className="px-3 py-1.5 font-medium">
-                  <button onClick={()=>onDrillDown(m.rows, m.label)} className="text-[#0d9488] hover:underline">{m.label}</button>
+                  <button onClick={()=>onDrillDown(m.rows, m.label)} className="text-[#0d3d3b] hover:underline">{m.label}</button>
                 </td>
                 {v("invoices") && <td className="px-3 py-1.5 text-right">
-                  <button onClick={()=>onDrillDown(m.rows,m.label)} className="text-[#0d9488] hover:underline">{m.invoices}</button>
+                  <button onClick={()=>onDrillDown(m.rows,m.label)} className="text-[#0d3d3b] hover:underline">{m.invoices}</button>
                 </td>}
                 {v("tons")     && <td className="px-3 py-1.5 text-right text-gray-700">{formatNumber(m.tons,1)}</td>}
                 {v("revenue")  && <AmountCell value={m.revenue} rows={m.rows} onDrillDown={r=>onDrillDown(r,`${m.label} — Revenue`)} />}
@@ -880,9 +880,9 @@ function PLEntityReport({ data, isClient, visible, onDrillDown }: {
             {entities.map(e => (
               <tr key={e.name} className="border-b border-gray-100 hover:bg-gray-50">
                 <td className="px-3 py-1.5 font-medium">
-                  <button onClick={()=>onDrillDown(e.rows, e.name)} className="text-[#0d9488] hover:underline">{e.name}</button>
+                  <button onClick={()=>onDrillDown(e.rows, e.name)} className="text-[#0d3d3b] hover:underline">{e.name}</button>
                 </td>
-                {v("invoices")      && <td className="px-3 py-1.5 text-right"><button onClick={()=>onDrillDown(e.rows,e.name)} className="text-[#0d9488] hover:underline">{e.rows.length}</button></td>}
+                {v("invoices")      && <td className="px-3 py-1.5 text-right"><button onClick={()=>onDrillDown(e.rows,e.name)} className="text-[#0d3d3b] hover:underline">{e.rows.length}</button></td>}
                 {v("tons")          && <td className="px-3 py-1.5 text-right text-gray-700">{formatNumber(e.tons,1)}</td>}
                 {v("revenue")       && <AmountCell value={e.revenue} rows={e.rows} onDrillDown={r=>onDrillDown(r,`${e.name} — Revenue`)} />}
                 {v("costNoFreight") && <AmountCell value={e.costNoFreight} rows={e.rows} onDrillDown={r=>onDrillDown(r,`${e.name} — Cost`)} />}
@@ -1036,7 +1036,7 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
                 <button key={r.id} onClick={() => { setActiveReport(r.id); setConditions([]); setDateFrom(""); setDateTo(""); }}
                   className="w-full flex items-center justify-between px-5 py-3 hover:bg-stone-50 text-left group">
                   <div>
-                    <p className="text-sm text-[#0d9488] group-hover:underline font-medium">{r.label}</p>
+                    <p className="text-sm text-[#0d3d3b] group-hover:underline font-medium">{r.label}</p>
                     <p className="text-xs text-stone-400 mt-0.5">{r.description}</p>
                   </div>
                   <svg className="w-4 h-4 text-stone-300 group-hover:text-stone-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1064,7 +1064,7 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
           <span className="text-stone-300">/</span>
           <h2 className="text-base font-semibold text-stone-800">{REPORT_LABELS[activeReport]}</h2>
           {filtered.length !== data.length && (
-            <span className="text-xs bg-stone-100 text-[#0d9488] border border-stone-200 px-2 py-0.5 rounded-full font-medium">{filtered.length} of {data.length} rows</span>
+            <span className="text-xs bg-stone-100 text-[#0d3d3b] border border-stone-200 px-2 py-0.5 rounded-full font-medium">{filtered.length} of {data.length} rows</span>
           )}
         </div>
 
@@ -1115,10 +1115,10 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
 
           {/* Customize */}
           <button onClick={()=>setCustomizeOpen(true)}
-            className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md font-medium border transition-colors ${hasFilters ? "bg-[#0d9488] text-white border-[#0d9488] hover:bg-[#0d9488]" : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"}`}>
+            className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md font-medium border transition-colors ${hasFilters ? "bg-[#0d3d3b] text-white border-[#0d3d3b] hover:bg-[#0d3d3b]" : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"}`}>
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
             Customize
-            {hasFilters && <span className="bg-white text-[#0d9488] rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold">{conditions.length + (dateFrom?1:0) + (dateTo?1:0)}</span>}
+            {hasFilters && <span className="bg-white text-[#0d3d3b] rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold">{conditions.length + (dateFrom?1:0) + (dateTo?1:0)}</span>}
           </button>
         </div>
       </div>

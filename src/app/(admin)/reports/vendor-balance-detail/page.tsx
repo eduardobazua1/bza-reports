@@ -61,7 +61,7 @@ export default async function VendorBalanceDetailPage({
         <Link href="/reports" className="flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-700">
           <ArrowLeft className="w-4 h-4" /> Back to standard reports
         </Link>
-        <Link href="/reports/vendor-balance-summary" className="text-sm text-[#0d9488] hover:underline">
+        <Link href="/reports/vendor-balance-summary" className="text-sm text-[#0d3d3b] hover:underline">
           ← Back to summary report
         </Link>
       </div>

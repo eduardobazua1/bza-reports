@@ -543,7 +543,7 @@ function SectionIntegrations() {
           <TF label="SMTP User"     value="" onChange={() => {}} placeholder="no-reply@bza-is.com" hint="Set via SMTP_USER in Vercel env vars" />
           <TF label="SMTP Password" value="" onChange={() => {}} type="password" placeholder="••••••••" hint="Set via SMTP_PASS in Vercel env vars" />
         </div>
-        <p className="text-xs text-[#0d9488] bg-[#0d9488] border border-[#0d9488] rounded-lg p-3">
+        <p className="text-xs text-[#0d3d3b] bg-[#0d3d3b] border border-[#0d3d3b] rounded-lg p-3">
           Credentials must be set as environment variables in Vercel → Project → Settings → Environment Variables.
         </p>
       </Card>

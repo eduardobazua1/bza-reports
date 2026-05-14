@@ -486,7 +486,7 @@ export function POForm({
             <div className="flex items-center justify-between mb-1">
               <label className="block text-sm font-medium">Incoterm</label>
               {!addingTerm && (
-                <button type="button" onClick={() => setAddingTerm(true)} className="text-xs text-[#0d9488] hover:underline">+ Add</button>
+                <button type="button" onClick={() => setAddingTerm(true)} className="text-xs text-[#0d3d3b] hover:underline">+ Add</button>
               )}
             </div>
             <IncotermSelect

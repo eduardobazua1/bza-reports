@@ -74,7 +74,7 @@ export default async function SalesByProductPage() {
                       <div>{p.product}</div>
                       <div className="mt-1 w-[120px] h-1.5 bg-[#0d3d3b]/10 rounded-full">
                         <div
-                          className="h-1.5 bg-[#0d9488] rounded-full"
+                          className="h-1.5 bg-[#0d3d3b] rounded-full"
                           style={{ width: `${barWidth}px` }}
                         />
                       </div>

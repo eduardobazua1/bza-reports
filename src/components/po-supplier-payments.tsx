@@ -102,11 +102,11 @@ export function POSupplierPayments({
         </div>
         <div className="p-3 text-center">
           <p className="text-[10px] text-stone-400 uppercase tracking-wide">Total Paid</p>
-          <p className="text-base font-semibold text-[#0d9488] mt-0.5">{formatCurrency(totalPaid)}</p>
+          <p className="text-base font-semibold text-[#0d3d3b] mt-0.5">{formatCurrency(totalPaid)}</p>
         </div>
-        <div className={`p-3 text-center border-l-4 ${balance > 0.01 ? "border-l-[#0d3d3b]" : balance < -0.01 ? "border-l-[#0d9488]" : "border-l-stone-200"}`}>
+        <div className={`p-3 text-center border-l-4 ${balance > 0.01 ? "border-l-[#0d3d3b]" : balance < -0.01 ? "border-l-[#0d3d3b]" : "border-l-stone-200"}`}>
           <p className="text-[10px] text-stone-400 uppercase tracking-wide">Balance</p>
-          <p className={`text-base font-semibold mt-0.5 ${balance > 0.01 ? "text-[#0d3d3b]" : balance < -0.01 ? "text-[#0d9488]" : "text-stone-400"}`}>
+          <p className={`text-base font-semibold mt-0.5 ${balance > 0.01 ? "text-[#0d3d3b]" : balance < -0.01 ? "text-[#0d3d3b]" : "text-stone-400"}`}>
             {balance > 0.01 ? `−${formatCurrency(balance)}` : balance < -0.01 ? `+${formatCurrency(Math.abs(balance))}` : "Settled"}
           </p>
           <p className="text-[10px] text-stone-400">
@@ -117,7 +117,7 @@ export function POSupplierPayments({
 
       {/* Add Payment Form */}
       {showForm && (
-        <form onSubmit={handleAdd} className="p-4 border-b border-stone-200 bg-[#0d9488]/50">
+        <form onSubmit={handleAdd} className="p-4 border-b border-stone-200 bg-[#0d3d3b]/50">
           <p className="text-xs font-semibold text-stone-600 uppercase tracking-wide mb-3">New Payment</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>

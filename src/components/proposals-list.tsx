@@ -20,7 +20,7 @@ type Proposal = {
 
 const STATUS_STYLES: Record<string, string> = {
   draft:    "bg-stone-100 text-stone-500",
-  sent:     "bg-blue-50 text-blue-600",
+  sent:     "bg-[#0d3d3b]/5 text-[#0d3d3b]",
   accepted: "bg-emerald-50 text-emerald-700",
   declined: "bg-red-50 text-red-600",
 };
@@ -75,7 +75,7 @@ export function ProposalsList({ proposals }: { proposals: Proposal[] }) {
             onClick={() => setStatusFilter(s)}
             className={`pb-2.5 px-3 text-sm font-medium border-b-2 transition-colors capitalize ${
               statusFilter === s
-                ? "border-[#0d9488] text-[#0d9488]"
+                ? "border-[#0d3d3b] text-[#0d3d3b]"
                 : "border-transparent text-stone-500 hover:text-stone-700"
             }`}
           >
@@ -93,7 +93,7 @@ export function ProposalsList({ proposals }: { proposals: Proposal[] }) {
           placeholder="Search proposals…"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full pl-9 pr-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30"
+          className="w-full pl-9 pr-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]/30"
         />
       </div>
 
@@ -104,7 +104,7 @@ export function ProposalsList({ proposals }: { proposals: Proposal[] }) {
             <FileText className="w-10 h-10 mb-3 opacity-30" />
             <p className="text-sm">No proposals found</p>
             {proposals.length === 0 && (
-              <Link href="/proposals/new" className="mt-4 text-sm text-[#0d9488] hover:underline">
+              <Link href="/proposals/new" className="mt-4 text-sm text-[#0d3d3b] hover:underline">
                 Create your first proposal →
               </Link>
             )}
@@ -140,7 +140,7 @@ export function ProposalsList({ proposals }: { proposals: Proposal[] }) {
                   <td className="p-3 border-t border-border">
                     <Link
                       href={`/proposals/${p.id}`}
-                      className="text-xs text-[#0d9488] hover:underline font-medium"
+                      className="text-xs text-[#0d3d3b] hover:underline font-medium"
                     >
                       View →
                     </Link>

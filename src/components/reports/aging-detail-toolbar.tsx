@@ -248,7 +248,7 @@ export function AgingDetailToolbar({
             className="flex items-center gap-1.5 text-sm text-stone-600 hover:text-stone-800 hover:bg-stone-100 px-3 py-1.5 rounded-lg transition-colors">
             <Mail className="w-4 h-4" /> Send
           </button>
-          <Link href={backHref} className="text-sm text-[#0d9488] hover:underline">
+          <Link href={backHref} className="text-sm text-[#0d3d3b] hover:underline">
             {backLabel}
           </Link>
         </div>

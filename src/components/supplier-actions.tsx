@@ -201,9 +201,9 @@ export function SupplierActions({ suppliers }: { suppliers: Supplier[] }) {
                   <td className="p-3 text-sm border-t border-border">{[s.city, s.country].filter(Boolean).join(", ") || "-"}</td>
                   <td className="p-3 text-sm border-t border-border">
                     {s.certType === "fsc" || s.fscLicense ? (
-                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800">FSC</span>
+                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-[#0d3d3b]/10 text-[#0d3d3b]">FSC</span>
                     ) : s.certType === "pefc" || s.pefc ? (
-                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800">PEFC</span>
+                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-[#0d3d3b]/10 text-[#0d3d3b]">PEFC</span>
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}

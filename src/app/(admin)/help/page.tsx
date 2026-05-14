@@ -32,7 +32,7 @@ export default function HelpPage() {
         </Section>
 
         <Section title="Contact">
-          <p>For technical issues, contact <strong>Eduardo Bazua</strong> at <a href="mailto:ebazua@bza-is.com" className="text-[#0d9488]">ebazua@bza-is.com</a></p>
+          <p>For technical issues, contact <strong>Eduardo Bazua</strong> at <a href="mailto:ebazua@bza-is.com" className="text-[#0d3d3b]">ebazua@bza-is.com</a></p>
         </Section>
       </div>
     </div>

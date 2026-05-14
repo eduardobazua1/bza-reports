@@ -183,7 +183,7 @@ export default function ImportPage() {
         </div>
       )}
       {result && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-sm text-[#0d9488]">
+        <div className="bg-[#0d3d3b]/5 border border-[#0d3d3b]/20 rounded-lg p-4 text-sm text-[#0d3d3b]">
           {result}
         </div>
       )}

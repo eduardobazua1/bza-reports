@@ -24,11 +24,11 @@ function StatusStepper({ status }: { status: string }) {
         <div key={label} className="flex items-center flex-1 last:flex-none">
           <div className="flex flex-col items-center">
             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${
-              i <= idx ? i === idx ? "bg-[#0d9488] text-white" : "bg-[#0d9488] text-white" : "bg-stone-200 text-stone-400"
+              i <= idx ? i === idx ? "bg-[#0d3d3b] text-white" : "bg-[#0d3d3b] text-white" : "bg-stone-200 text-stone-400"
             }`}>{i < idx ? "✓" : i + 1}</div>
             <span className={`text-[9px] mt-0.5 ${i <= idx ? "text-stone-700 font-medium" : "text-stone-400"}`}>{label}</span>
           </div>
-          {i < 3 && <div className={`flex-1 h-0.5 mx-0.5 mt-[-14px] ${i < idx ? "bg-[#0d9488]" : "bg-stone-200"}`} />}
+          {i < 3 && <div className={`flex-1 h-0.5 mx-0.5 mt-[-14px] ${i < idx ? "bg-[#0d3d3b]" : "bg-stone-200"}`} />}
         </div>
       ))}
     </div>
@@ -153,7 +153,7 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
   if (!data) return (
     <div className="min-h-screen bg-stone-100 flex items-center justify-center">
       <div className="text-center">
-        <div className="w-8 h-8 border-2 border-[#0d9488] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <div className="w-8 h-8 border-2 border-[#0d3d3b] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
         <p className="text-stone-400 text-sm">Loading shipments...</p>
       </div>
     </div>
@@ -191,7 +191,7 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
         <div className="max-w-lg mx-auto flex">
           {(["active", "delivered", "all"] as const).map(t => (
             <button key={t} onClick={() => setFilter(t)}
-              className={`flex-1 py-3 text-sm font-medium text-center border-b-2 ${filter === t ? "border-[#0d9488] text-[#0d9488]" : "border-transparent text-stone-400"}`}>
+              className={`flex-1 py-3 text-sm font-medium text-center border-b-2 ${filter === t ? "border-[#0d3d3b] text-[#0d3d3b]" : "border-transparent text-stone-400"}`}>
               {t === "active" ? `Active (${activeCount})` : t === "delivered" ? `Delivered (${deliveredCount})` : `All (${data.shipments.length})`}
             </button>
           ))}
@@ -204,7 +204,7 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
           <button onClick={() => setShowFilters(!showFilters)}
             className="w-full px-4 py-3 flex items-center justify-between text-sm">
             <span className="font-medium text-stone-700">
-              Filters {activeFilters > 0 && <span className="ml-1 bg-[#0d9488] text-white text-[10px] px-1.5 py-0.5 rounded-full">{activeFilters}</span>}
+              Filters {activeFilters > 0 && <span className="ml-1 bg-[#0d3d3b] text-white text-[10px] px-1.5 py-0.5 rounded-full">{activeFilters}</span>}
             </span>
             <svg className={`w-4 h-4 text-stone-400 transition-transform ${showFilters ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -230,7 +230,7 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
                 className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm" />
               {activeFilters > 0 && (
                 <button onClick={() => { setDateFrom(""); setDateTo(""); setPoSearch(""); setProductSearch(""); }}
-                  className="text-xs text-[#0d9488] font-medium">Clear filters</button>
+                  className="text-xs text-[#0d3d3b] font-medium">Clear filters</button>
               )}
             </div>
           )}
@@ -238,11 +238,11 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
 
         {/* Download buttons */}
         <div className="flex gap-2">
-          <a href={downloadUrl("pdf")} className="flex-1 flex items-center justify-center gap-2 bg-white border-[1.5px] border-[#0d9488] text-[#0d9488] rounded-xl py-2.5 text-sm font-bold shadow-sm hover:bg-[#f0fdfa]">
+          <a href={downloadUrl("pdf")} className="flex-1 flex items-center justify-center gap-2 bg-white border-[1.5px] border-[#0d3d3b] text-[#0d3d3b] rounded-xl py-2.5 text-sm font-bold shadow-sm hover:bg-[#f0fdfa]">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v3a2 2 0 002 2h14a2 2 0 002-2v-3" /></svg>
             PDF
           </a>
-          <a href={downloadUrl("xlsx")} className="flex-1 flex items-center justify-center gap-2 bg-white border-[1.5px] border-[#0d9488] text-[#0d9488] rounded-xl py-2.5 text-sm font-bold shadow-sm hover:bg-[#f0fdfa]">
+          <a href={downloadUrl("xlsx")} className="flex-1 flex items-center justify-center gap-2 bg-white border-[1.5px] border-[#0d3d3b] text-[#0d3d3b] rounded-xl py-2.5 text-sm font-bold shadow-sm hover:bg-[#f0fdfa]">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v3a2 2 0 002 2h14a2 2 0 002-2v-3" /></svg>
             Excel
           </a>
@@ -278,8 +278,8 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
               <StatusStepper status={s.status} />
               {s.statusUpdatedAt && (
                 <div className="flex items-center gap-1 mt-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#0d9488] animate-pulse" />
-                  <span className="text-[10px] text-[#0d9488] font-medium">Updated {formatDateTime(s.statusUpdatedAt)}</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#0d3d3b] animate-pulse" />
+                  <span className="text-[10px] text-[#0d3d3b] font-medium">Updated {formatDateTime(s.statusUpdatedAt)}</span>
                 </div>
               )}
             </div>
