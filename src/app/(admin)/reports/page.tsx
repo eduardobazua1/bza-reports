@@ -233,7 +233,7 @@ function SendToClientPanel() {
             </div>
 
             {/* Format + Filter */}
-            <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-end gap-4 flex-wrap">
               <div>
                 <p className="text-xs font-medium text-stone-500 mb-1.5">Format</p>
                 <div className="flex gap-1">
@@ -256,7 +256,7 @@ function SendToClientPanel() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 mt-4">
+              <div className="flex items-center gap-2 mb-0.5">
                 <button
                   onClick={() => setActiveOnly(v => !v)}
                   className={`relative w-9 h-5 rounded-full transition-colors ${activeOnly ? "bg-[#0d3d3b]" : "bg-stone-200"}`}
