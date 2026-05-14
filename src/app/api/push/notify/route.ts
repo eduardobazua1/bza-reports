@@ -7,13 +7,17 @@ import { eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
-webpush.setVapidDetails(
-  process.env.VAPID_EMAIL!,
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-);
-
 export async function POST(req: NextRequest) {
+  // VAPID configured at request time (not module load) so missing env vars don't break the build
+  if (!process.env.VAPID_EMAIL || !process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+    return NextResponse.json({ error: "VAPID env vars not configured" }, { status: 503 });
+  }
+  webpush.setVapidDetails(
+    process.env.VAPID_EMAIL,
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+
   // Protect cron endpoint with a shared secret
   const secret = req.headers.get("x-cron-secret");
   if (secret !== process.env.CRON_SECRET) {
