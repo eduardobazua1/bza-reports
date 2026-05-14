@@ -385,3 +385,13 @@ export const creditMemos = sqliteTable("credit_memos", {
   notes: text("notes"),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
+
+// Push notification subscriptions — one row per browser/device that subscribed
+export const pushSubscriptions = sqliteTable("push_subscriptions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  endpoint: text("endpoint").notNull().unique(),
+  p256dh:   text("p256dh").notNull(),
+  auth:     text("auth").notNull(),
+  userAgent: text("user_agent"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});

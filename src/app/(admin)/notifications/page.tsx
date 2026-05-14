@@ -1,5 +1,6 @@
 import { getNotifications, AppNotification } from "@/lib/get-notifications";
 import Link from "next/link";
+import { PushSubscribeButton } from "@/components/push-subscribe-button";
 import {
   AlertTriangle,
   AlertCircle,
@@ -90,6 +91,9 @@ export default async function NotificationsPage() {
           <p className="text-sm text-stone-500 mt-1">
             Alerts, reminders, and items that need attention
           </p>
+          <div className="mt-3">
+            <PushSubscribeButton />
+          </div>
         </div>
         {all.length > 0 && (
           <div className="flex items-center gap-2 mt-1">
