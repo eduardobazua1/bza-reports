@@ -133,9 +133,9 @@ export function ShipmentActions({
 
     // Compute portal position with flip logic
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const panelW = 240, panelH = 280;
+    const panelW = 260, panelH = 360;
     const spaceBelow = window.innerHeight - rect.bottom;
-    const top = spaceBelow < panelH ? rect.top - panelH - 6 : rect.bottom + 4;
+    const top = spaceBelow < panelH ? Math.max(8, rect.top - panelH - 6) : rect.bottom + 4;
     const right = window.innerWidth - rect.right;
     setPosStyle({ position: "fixed", top, right: Math.max(4, right), zIndex: 9999, width: panelW });
 
