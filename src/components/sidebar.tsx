@@ -213,10 +213,20 @@ function NavGroupItem({ group, pathname, onNav }: { group: NavGroup; pathname: s
                 </div>
               );
             }
-            const isActive = pathname === child.href || pathname.startsWith(child.href.split("?")[0] + "/");
+            // Active only if exact match OR starts-with AND no sibling is a more specific match
+            const siblings = group.children.filter(c => !isSection(c)) as NavLeaf[];
+            const base = child.href.split("?")[0];
+            const isActive =
+              pathname === child.href ||
+              (pathname.startsWith(base + "/") &&
+                !siblings.some(
+                  (s) =>
+                    s.href !== child.href &&
+                    (pathname === s.href || pathname.startsWith(s.href.split("?")[0] + "/"))
+                ));
             return (
               <Link key={child.href} href={child.href} onClick={onNav}
-                className={`flex items-center px-2 py-1.5 rounded-md text-sm transition-colors ${
+                className={`flex items-center px-2 py-1.5 rounded-md text-xs transition-colors ${
                   isActive
                     ? "bg-stone-100 text-stone-900 font-medium"
                     : "text-stone-500 hover:bg-stone-50 hover:text-stone-700"
