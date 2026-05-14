@@ -1,6 +1,8 @@
 import { getUnpaidInvoicesForPayments } from "@/server/queries";
 import { ReportWrapper, type ColDef } from "@/components/reports/report-wrapper";
 
+export const dynamic = "force-dynamic";
+
 const COLUMNS: ColDef[] = [
   { key: "invoiceNumber", label: "Invoice #", align: "left", format: "text" },
   { key: "po", label: "PO", align: "left", format: "text" },

@@ -1,6 +1,8 @@
 import { getPurchaseOrders } from "@/server/queries";
 import { ReportWrapper } from "@/components/reports/report-wrapper";
 
+export const dynamic = "force-dynamic";
+
 export default async function OpenPOsByCustomerPage() {
   const all = await getPurchaseOrders();
   const active = all.filter((r) => r.po.status === "active");

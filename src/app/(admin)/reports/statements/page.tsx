@@ -1,6 +1,8 @@
 import { getClients, getClientStatement } from "@/server/queries";
 import { StatementClient } from "@/components/reports/statement-client";
 
+export const dynamic = "force-dynamic";
+
 export default async function StatementsPage({
   searchParams,
 }: {

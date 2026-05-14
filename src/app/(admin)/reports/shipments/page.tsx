@@ -2,6 +2,8 @@ import { getInvoices } from "@/server/queries";
 import { formatNumber, formatDate, shipmentStatusLabels, shipmentStatusColors } from "@/lib/utils";
 import { ShipmentActions } from "@/components/shipment-actions";
 
+export const dynamic = "force-dynamic";
+
 export default async function ShipmentsPage() {
   const allInvoices = await getInvoices();
 

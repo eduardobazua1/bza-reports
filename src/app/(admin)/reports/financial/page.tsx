@@ -1,6 +1,8 @@
 import { getInvoices } from "@/server/queries";
 import { FinancialReports } from "@/components/financial-reports";
 
+export const dynamic = "force-dynamic";
+
 export default async function FinancialReportsPage() {
   const rows = await getInvoices();
 

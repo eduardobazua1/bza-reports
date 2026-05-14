@@ -2,6 +2,8 @@ import { getUnpaidSupplierInvoices } from "@/server/queries";
 import { APAgingSummaryClient } from "@/components/reports/ap-aging-summary-client";
 import type { APRow, APTotals } from "@/components/reports/ap-aging-summary-client";
 
+export const dynamic = "force-dynamic";
+
 export default async function APAgingSummaryPage() {
   const invoices = await getUnpaidSupplierInvoices();
   const today = new Date();

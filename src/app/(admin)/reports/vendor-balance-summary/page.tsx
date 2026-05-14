@@ -1,6 +1,8 @@
 import { getSupplierPaymentsWithInfo } from "@/server/queries";
 import { ReportWrapper } from "@/components/reports/report-wrapper";
 
+export const dynamic = "force-dynamic";
+
 export default async function VendorBalanceSummaryPage() {
   const payments = await getSupplierPaymentsWithInfo();
 

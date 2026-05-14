@@ -1,6 +1,8 @@
 import { getUnpaidInvoicesForPayments } from "@/server/queries";
 import { ARAgingSummaryClient } from "@/components/reports/ar-aging-summary-client";
 
+export const dynamic = "force-dynamic";
+
 export default async function ARAgingSummaryPage() {
   const invoices = await getUnpaidInvoicesForPayments();
   const today = new Date();

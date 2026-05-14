@@ -1,6 +1,8 @@
 import { getInvoices } from "@/server/queries";
 import { ReportWrapper, type ColDef } from "@/components/reports/report-wrapper";
 
+export const dynamic = "force-dynamic";
+
 const COLUMNS: ColDef[] = [
   { key: "month", label: "Month", align: "left", format: "text" },
   { key: "revenue", label: "Revenue", align: "right", format: "currency" },

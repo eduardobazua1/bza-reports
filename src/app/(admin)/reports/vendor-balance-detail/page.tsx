@@ -4,6 +4,8 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { VendorBalanceDetailClient } from "@/components/reports/vendor-balance-detail-client";
 
+export const dynamic = "force-dynamic";
+
 export default async function VendorBalanceDetailPage({
   searchParams,
 }: {

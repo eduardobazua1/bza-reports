@@ -1,6 +1,8 @@
 import { getProfitByClient } from "@/server/queries";
 import { ReportWrapper, type ColDef } from "@/components/reports/report-wrapper";
 
+export const dynamic = "force-dynamic";
+
 const COLUMNS: ColDef[] = [
   { key: "client", label: "Client", align: "left", format: "text" },
   { key: "revenue", label: "Revenue", align: "right", format: "currency" },

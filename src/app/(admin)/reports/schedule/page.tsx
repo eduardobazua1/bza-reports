@@ -4,6 +4,8 @@ import { eq, desc } from "drizzle-orm";
 import { formatDate } from "@/lib/utils";
 import { ScheduleActions } from "@/components/schedule-actions";
 
+export const dynamic = "force-dynamic";
+
 export default async function SchedulePage() {
   const templates = await db.select().from(reportTemplates).orderBy(reportTemplates.name);
   const allClients = await db.select().from(clients).orderBy(clients.name);

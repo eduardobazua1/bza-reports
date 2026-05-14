@@ -2,6 +2,8 @@ import { getProductsWithSales } from "@/server/queries";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export default async function ProductServiceListPage() {
   const products = await getProductsWithSales();
   const today = new Date();

@@ -1,6 +1,8 @@
 import { getClients } from "@/server/queries";
 import { ReportWrapper, type ColDef } from "@/components/reports/report-wrapper";
 
+export const dynamic = "force-dynamic";
+
 const COLUMNS: ColDef[] = [
   { key: "name", label: "Name", align: "left", format: "text" },
   { key: "contactName", label: "Contact", align: "left", format: "text" },

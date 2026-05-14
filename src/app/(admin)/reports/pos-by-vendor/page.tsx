@@ -1,6 +1,8 @@
 import { getPurchaseOrders } from "@/server/queries";
 import { ReportWrapper, type ColDef } from "@/components/reports/report-wrapper";
 
+export const dynamic = "force-dynamic";
+
 const COLUMNS: ColDef[] = [
   { key: "supplierName", label: "Supplier", align: "left", format: "text" },
   { key: "poNumber", label: "PO #", align: "left", format: "text" },

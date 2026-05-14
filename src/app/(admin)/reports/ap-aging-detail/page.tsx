@@ -1,6 +1,8 @@
 import { getUnpaidSupplierInvoices } from "@/server/queries";
 import { APAgingDetailFullClient } from "@/components/reports/ap-aging-detail-full-client";
 
+export const dynamic = "force-dynamic";
+
 export default async function APAgingDetailPage({
   searchParams,
 }: {

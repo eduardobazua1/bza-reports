@@ -1,6 +1,8 @@
 import { getCustomerPaymentsWithInvoices } from "@/server/queries";
 import { ReportWrapper, type ColDef } from "@/components/reports/report-wrapper";
 
+export const dynamic = "force-dynamic";
+
 const METHOD: Record<string, string> = {
   wire_transfer: "Wire Transfer",
   cv_credit: "CV Credit",
