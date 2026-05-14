@@ -16,15 +16,11 @@ import {
   Package,
   Download,
   Upload,
-  Settings,
   LogOut,
   Menu,
   X,
-  Database,
-  HelpCircle,
   ChevronDown,
   CreditCard,
-  UserCog,
   Plus,
   ShoppingCart,
   Wallet,
@@ -166,12 +162,6 @@ const mainEntries: RootEntry[] = [
   },
 ];
 
-const utilityEntries: (NavLeaf & { icon: LucideIcon })[] = [
-  { href: "/import",        label: "Data",          icon: Database },
-  { href: "/settings",      label: "Settings",      icon: Settings },
-  { href: "/portal-users",  label: "Portal Users",  icon: UserCog },
-  { href: "/help",          label: "Help & Support",icon: HelpCircle },
-];
 
 // ── NavGroupItem ─────────────────────────────────────────────────────────────
 function NavGroupItem({ group, pathname, onNav }: { group: NavGroup; pathname: string; onNav: () => void }) {
@@ -283,31 +273,10 @@ export function Sidebar({ userName }: { userName: string }) {
     });
   }
 
-  function renderUtility(onNav: () => void) {
-    return utilityEntries.map(entry => {
-      const isActive = pathname === entry.href || pathname.startsWith(entry.href + "/");
-      const Icon = entry.icon;
-      return (
-        <Link key={entry.href} href={entry.href} onClick={onNav}
-          className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
-            isActive
-              ? "bg-stone-100 text-stone-900 font-medium"
-              : "text-stone-500 hover:bg-stone-50 hover:text-stone-700"
-          }`}
-        >
-          <Icon className="w-4 h-4 shrink-0" strokeWidth={1.75} />
-          {entry.label}
-        </Link>
-      );
-    });
-  }
-
   const navContent = (onNav: () => void) => (
     <>
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {renderMain(onNav)}
-        <div className="my-3 border-t border-stone-100" />
-        {renderUtility(onNav)}
       </nav>
       <div className="px-4 py-3 border-t border-stone-200">
         <div className="flex items-center justify-between">
