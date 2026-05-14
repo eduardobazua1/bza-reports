@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Send, CheckCircle2, AlertCircle, FileSpreadsheet,
-  FileText, Loader2, Eye, Package, Download,
+  FileText, Loader2, Eye, Package, Download, ChevronDown,
 } from "lucide-react";
 
 const ALL_COLS: { key: string; label: string; default: boolean }[] = [
@@ -56,6 +56,7 @@ export default function ClientReportPage() {
   const [errMsg, setErrMsg] = useState("");
   const [downloading, setDownloading] = useState<"excel" | "pdf" | null>(null);
   const [dlOpen, setDlOpen] = useState(false);
+  const [extraOpen, setExtraOpen] = useState(false);
   const [preview, setPreview] = useState<PreviewRow[]>([]);
   const [previewLoading, setPreviewLoading] = useState(false);
 
@@ -373,26 +374,52 @@ export default function ClientReportPage() {
 
           {/* Column list */}
           <div className="py-2">
-            {ALL_COLS.map((col, i) => {
+            {/* Default columns — always visible */}
+            {ALL_COLS.filter(c => c.default).map(col => {
               const isChecked = selectedCols.includes(col.key);
-              const showDivider = i === DEFAULT_COLS.length && i > 0;
               return (
-                <div key={col.key}>
-                  {showDivider && <div className="mx-4 my-1.5 border-t border-dashed border-stone-200" />}
-                  <label className={`flex items-center gap-2.5 px-4 py-1.5 cursor-pointer transition-colors ${isChecked ? "bg-[#0d3d3b]/5" : "hover:bg-stone-50"}`}>
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={e => setSelectedCols(prev =>
-                        e.target.checked ? [...prev, col.key] : prev.filter(k => k !== col.key)
-                      )}
-                      className="w-3.5 h-3.5 accent-[#0d3d3b] cursor-pointer shrink-0"
-                    />
-                    <span className={`text-xs leading-tight transition-colors ${isChecked ? "text-[#0d3d3b] font-medium" : "text-stone-400"}`}>
-                      {col.label}
-                    </span>
-                  </label>
-                </div>
+                <label key={col.key} className={`flex items-center gap-2.5 px-4 py-1.5 cursor-pointer transition-colors ${isChecked ? "bg-[#0d3d3b]/5" : "hover:bg-stone-50"}`}>
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={e => setSelectedCols(prev =>
+                      e.target.checked ? [...prev, col.key] : prev.filter(k => k !== col.key)
+                    )}
+                    className="w-3.5 h-3.5 accent-[#0d3d3b] cursor-pointer shrink-0"
+                  />
+                  <span className={`text-xs leading-tight transition-colors ${isChecked ? "text-[#0d3d3b] font-medium" : "text-stone-400"}`}>
+                    {col.label}
+                  </span>
+                </label>
+              );
+            })}
+
+            {/* Toggle for optional columns */}
+            <button
+              onClick={() => setExtraOpen(o => !o)}
+              className="w-full flex items-center gap-1.5 px-4 py-2 mt-1 text-[10px] font-semibold text-stone-400 hover:text-stone-600 transition-colors border-t border-dashed border-stone-200"
+            >
+              <ChevronDown className={`w-3 h-3 transition-transform ${extraOpen ? "rotate-180" : ""}`} />
+              {extraOpen ? "Less" : "More columns"}
+            </button>
+
+            {/* Optional columns — collapsible */}
+            {extraOpen && ALL_COLS.filter(c => !c.default).map(col => {
+              const isChecked = selectedCols.includes(col.key);
+              return (
+                <label key={col.key} className={`flex items-center gap-2.5 px-4 py-1.5 cursor-pointer transition-colors ${isChecked ? "bg-[#0d3d3b]/5" : "hover:bg-stone-50"}`}>
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={e => setSelectedCols(prev =>
+                      e.target.checked ? [...prev, col.key] : prev.filter(k => k !== col.key)
+                    )}
+                    className="w-3.5 h-3.5 accent-[#0d3d3b] cursor-pointer shrink-0"
+                  />
+                  <span className={`text-xs leading-tight transition-colors ${isChecked ? "text-[#0d3d3b] font-medium" : "text-stone-400"}`}>
+                    {col.label}
+                  </span>
+                </label>
               );
             })}
           </div>
