@@ -3,7 +3,6 @@ export default function Page() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Contracts</h1>
-        <p className="text-sm text-muted-foreground mt-1">Define client & supplier contract methodology, pricing, and volumes</p>
       </div>
       <div className="bg-white rounded-xl shadow-sm p-10 text-center text-muted-foreground text-sm">
         Coming soon

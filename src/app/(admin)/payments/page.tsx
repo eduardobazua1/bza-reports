@@ -23,9 +23,6 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">{isAP ? "Accounts Payable" : "Accounts Receivable"}</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {isAP ? "Supplier disbursements & payment history" : "Customer collections & outstanding invoices"}
-        </p>
       </div>
       <PaymentsPanel
         customerPayments={customerPaymentsList}

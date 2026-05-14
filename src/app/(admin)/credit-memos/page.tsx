@@ -20,7 +20,6 @@ export default async function CreditMemosPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-stone-900">Credit Memos</h1>
-        <p className="text-sm text-stone-500 mt-1">Issue adjustments and credits to clients</p>
       </div>
       <CreditMemosPanel
         memos={memos as any}
