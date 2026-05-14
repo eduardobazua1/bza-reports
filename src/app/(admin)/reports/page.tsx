@@ -295,11 +295,13 @@ function SendToClientPanel() {
 
               <button
                 onClick={() => setActiveOnly(v => !v)}
-                className={`relative w-9 h-5 shrink-0 rounded-full transition-colors ${activeOnly ? "bg-[#0d3d3b]" : "bg-stone-200"}`}
+                className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-stone-50 transition-colors"
               >
-                <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${activeOnly ? "translate-x-4" : "translate-x-0.5"}`} />
+                <span className={`relative inline-flex w-8 h-4 shrink-0 rounded-full transition-colors ${activeOnly ? "bg-[#0d3d3b]" : "bg-stone-200"}`}>
+                  <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow-sm transition-transform ${activeOnly ? "translate-x-4" : "translate-x-0.5"}`} />
+                </span>
+                <span className="text-xs text-stone-500 whitespace-nowrap">Active only</span>
               </button>
-              <span className="text-xs text-stone-500 whitespace-nowrap">Active only</span>
             </div>
           </div>
 
