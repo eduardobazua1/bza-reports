@@ -71,7 +71,9 @@ const REPORT_CATEGORIES = [
 
 const DEFAULT_COLS = [
   "poNumber","clientPoNumber","invoiceNumber","item","quantityTons",
-  "shipmentDate","shipmentStatus","estimatedArrival","currentLocation","vehicleId",
+  "shipmentDate","shipmentStatus","currentLocation","lastLocationUpdate",
+  "estimatedArrival","vehicleId","blNumber","billingDocument","sellPrice",
+  "terms","transportType","licenseFsc","chainOfCustody","inputClaim","outputClaim",
 ];
 
 const FAV_KEY = "bza_fav_reports";
@@ -192,8 +194,7 @@ function SendToClientPanel() {
             <Mail className="w-4 h-4 text-white" />
           </div>
           <div className="text-left">
-            <p className="text-sm font-semibold text-stone-800">Send Shipment Report to Client</p>
-            <p className="text-xs text-stone-400">Select a client to preview and email their shipment report</p>
+            <p className="text-sm font-semibold text-stone-800">Send Report</p>
           </div>
         </div>
         <ChevronRight className={`w-4 h-4 text-stone-400 transition-transform shrink-0 ${open ? "rotate-90" : ""}`} />
@@ -336,7 +337,7 @@ function SendToClientPanel() {
                 ? <Loader2 className="w-4 h-4 animate-spin" />
                 : <Send className="w-4 h-4" />
               }
-              {status === "sending" ? "Sending…" : `Send report (${preview.length} row${preview.length !== 1 ? "s" : ""})`}
+              {status === "sending" ? "Sending…" : "Send report"}
             </button>
 
             {status === "ok" && (
