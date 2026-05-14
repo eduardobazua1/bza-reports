@@ -69,11 +69,27 @@ const REPORT_CATEGORIES = [
   },
 ];
 
-const DEFAULT_COLS = [
-  "poNumber","clientPoNumber","invoiceNumber","item","quantityTons",
-  "shipmentDate","shipmentStatus","currentLocation","lastLocationUpdate",
-  "estimatedArrival","vehicleId","blNumber","billingDocument","sellPrice",
-  "terms","transportType","licenseFsc","chainOfCustody","inputClaim","outputClaim",
+const ALL_COLS: { key: string; label: string }[] = [
+  { key: "poNumber",          label: "Purchase Order"    },
+  { key: "clientPoNumber",    label: "Client PO"         },
+  { key: "invoiceNumber",     label: "Invoice"           },
+  { key: "item",              label: "Item"              },
+  { key: "quantityTons",      label: "Qty (TN)"          },
+  { key: "sellPrice",         label: "Price"             },
+  { key: "shipmentDate",      label: "Ship Date"         },
+  { key: "shipmentStatus",    label: "Status"            },
+  { key: "currentLocation",   label: "Current Location"  },
+  { key: "lastLocationUpdate",label: "Last Update"       },
+  { key: "estimatedArrival",  label: "ETA"               },
+  { key: "vehicleId",         label: "Vehicle ID"        },
+  { key: "blNumber",          label: "BL Number"         },
+  { key: "billingDocument",   label: "Billing Doc."      },
+  { key: "terms",             label: "Terms"             },
+  { key: "transportType",     label: "Transport"         },
+  { key: "licenseFsc",        label: "License #"         },
+  { key: "chainOfCustody",    label: "Chain of Custody"  },
+  { key: "inputClaim",        label: "Input Claim"       },
+  { key: "outputClaim",       label: "Output Claim"      },
 ];
 
 const FAV_KEY = "bza_fav_reports";
@@ -111,6 +127,8 @@ function SendToClientPanel() {
   const [email, setEmail] = useState("");
   const [format, setFormat] = useState<"excel" | "pdf" | "both">("excel");
   const [activeOnly, setActiveOnly] = useState(true);
+  const [selectedCols, setSelectedCols] = useState<string[]>(ALL_COLS.map(c => c.key));
+  const [colsOpen, setColsOpen] = useState(false);
   const [status, setStatus] = useState<"idle" | "sending" | "ok" | "err">("idle");
   const [errMsg, setErrMsg] = useState("");
   const [open, setOpen] = useState(false);
@@ -161,7 +179,7 @@ function SendToClientPanel() {
           email,
           subject: `BZA. Shipment Report — ${client?.name}`,
           message: `Please find attached the latest shipment report for ${client?.name}.`,
-          columns: DEFAULT_COLS,
+          columns: selectedCols,
           format,
           filter: activeOnly ? "active" : "all",
         }),
@@ -325,6 +343,55 @@ function SendToClientPanel() {
               )}
             </div>
           )}
+
+          {/* ── Column selector ── */}
+          <div className="border-t border-stone-100">
+            <button
+              onClick={() => setColsOpen(o => !o)}
+              className="w-full px-5 py-2.5 flex items-center justify-between hover:bg-stone-50 transition-colors"
+            >
+              <span className="text-xs font-medium text-stone-500">
+                Columns
+                <span className="ml-1.5 bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded-full text-[10px] font-semibold">
+                  {selectedCols.length}/{ALL_COLS.length}
+                </span>
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={e => { e.stopPropagation(); setSelectedCols(ALL_COLS.map(c => c.key)); }}
+                  className="text-[10px] text-stone-400 hover:text-[#0d3d3b] transition-colors"
+                >
+                  All
+                </button>
+                <button
+                  onClick={e => { e.stopPropagation(); setSelectedCols([]); }}
+                  className="text-[10px] text-stone-400 hover:text-[#0d3d3b] transition-colors"
+                >
+                  None
+                </button>
+                <ChevronDown className={`w-3.5 h-3.5 text-stone-400 transition-transform ${colsOpen ? "rotate-180" : ""}`} />
+              </div>
+            </button>
+            {colsOpen && (
+              <div className="px-5 pb-3 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1.5">
+                {ALL_COLS.map(col => (
+                  <label key={col.key} className="flex items-center gap-2 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={selectedCols.includes(col.key)}
+                      onChange={e => {
+                        setSelectedCols(prev =>
+                          e.target.checked ? [...prev, col.key] : prev.filter(k => k !== col.key)
+                        );
+                      }}
+                      className="w-3.5 h-3.5 accent-[#0d3d3b] cursor-pointer"
+                    />
+                    <span className="text-xs text-stone-600 group-hover:text-stone-900 transition-colors">{col.label}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Send button */}
           <div className="px-5 py-3 border-t border-stone-100 flex items-center gap-3">
