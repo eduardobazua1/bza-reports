@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import webpush from "web-push";
+import * as webpush from "web-push";
 import { db } from "@/db";
 import { pushSubscriptions } from "@/db/schema";
 import { getNotifications } from "@/lib/get-notifications";

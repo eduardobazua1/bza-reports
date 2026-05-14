@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["pdf-parse", "pdf-lib"],
+  serverExternalPackages: ["pdf-parse", "pdf-lib", "web-push"],
   typescript: {
     ignoreBuildErrors: true,
   },
