@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { BzaLogo } from "./bza-logo";
 import Link from "next/link";
@@ -233,7 +233,7 @@ function NavGroupItem({ group, pathname, onNav }: { group: NavGroup; pathname: s
 }
 
 // ── Sidebar ──────────────────────────────────────────────────────────────────
-export function Sidebar({ userName }: { userName: string }) {
+export function Sidebar({ userName, topBarIcons }: { userName: string; topBarIcons?: React.ReactNode }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [quickOpen, setQuickOpen] = useState(false);
@@ -304,9 +304,12 @@ export function Sidebar({ userName }: { userName: string }) {
       )}
 
       {/* Mobile top bar */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-stone-200 px-4 py-3 flex items-center justify-between">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-stone-200 px-4 py-2.5 flex items-center justify-between gap-2">
         <BzaLogo size="md" />
-        <button onClick={() => setOpen(!open)} className="text-stone-600">
+        <div className="flex items-center gap-1.5 ml-auto">
+          {topBarIcons}
+        </div>
+        <button onClick={() => setOpen(!open)} className="text-stone-600 shrink-0">
           {open ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
       </div>
