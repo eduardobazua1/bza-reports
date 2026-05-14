@@ -5,7 +5,7 @@ import { asc } from "drizzle-orm";
 
 export async function GET() {
   const list = await db
-    .select({ id: clients.id, name: clients.name })
+    .select({ id: clients.id, name: clients.name, contactEmail: clients.contactEmail })
     .from(clients)
     .orderBy(asc(clients.name));
   return NextResponse.json(list);
