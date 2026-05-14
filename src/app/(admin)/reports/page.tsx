@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   Star, ChevronDown, Send, Mail, CheckCircle2,
   AlertCircle, FileSpreadsheet, FileText, Loader2,
-  ChevronRight, Eye, Package,
+  ChevronRight, Eye, Package, Download,
 } from "lucide-react";
 
 // ── Report catalogue ──────────────────────────────────────────────────────────
@@ -69,49 +69,41 @@ const REPORT_CATEGORIES = [
   },
 ];
 
-const ALL_COLS: { key: string; label: string }[] = [
-  { key: "poNumber",          label: "Purchase Order"    },
-  { key: "clientPoNumber",    label: "Client PO"         },
-  { key: "invoiceNumber",     label: "Invoice"           },
-  { key: "item",              label: "Item"              },
-  { key: "quantityTons",      label: "Qty (TN)"          },
-  { key: "sellPrice",         label: "Price"             },
-  { key: "shipmentDate",      label: "Ship Date"         },
-  { key: "shipmentStatus",    label: "Status"            },
-  { key: "currentLocation",   label: "Current Location"  },
-  { key: "lastLocationUpdate",label: "Last Update"       },
-  { key: "estimatedArrival",  label: "ETA"               },
-  { key: "vehicleId",         label: "Vehicle ID"        },
-  { key: "blNumber",          label: "BL Number"         },
-  { key: "billingDocument",   label: "Billing Doc."      },
-  { key: "terms",             label: "Terms"             },
-  { key: "transportType",     label: "Transport"         },
-  { key: "licenseFsc",        label: "License #"         },
-  { key: "chainOfCustody",    label: "Chain of Custody"  },
-  { key: "inputClaim",        label: "Input Claim"       },
-  { key: "outputClaim",       label: "Output Claim"      },
+const ALL_COLS: { key: string; label: string; default: boolean }[] = [
+  { key: "currentLocation",   label: "Current Location",  default: true  },
+  { key: "poNumber",          label: "Purchase Order",     default: true  },
+  { key: "clientPoNumber",    label: "Client PO",          default: true  },
+  { key: "invoiceNumber",     label: "Invoice",            default: true  },
+  { key: "vehicleId",         label: "Vehicle ID",         default: true  },
+  { key: "blNumber",          label: "BL Number",          default: true  },
+  { key: "quantityTons",      label: "Qty (TN)",           default: true  },
+  { key: "sellPrice",         label: "Price",              default: true  },
+  { key: "shipmentStatus",    label: "Status",             default: true  },
+  { key: "shipmentDate",      label: "Ship Date",          default: true  },
+  { key: "lastLocationUpdate",label: "Last Update",        default: false },
+  { key: "estimatedArrival",  label: "ETA",                default: false },
+  { key: "item",              label: "Item",               default: false },
+  { key: "billingDocument",   label: "Billing Doc.",       default: false },
+  { key: "terms",             label: "Terms",              default: false },
+  { key: "transportType",     label: "Transport",          default: false },
+  { key: "licenseFsc",        label: "License #",          default: false },
+  { key: "chainOfCustody",    label: "Chain of Custody",   default: false },
+  { key: "inputClaim",        label: "Input Claim",        default: false },
+  { key: "outputClaim",       label: "Output Claim",       default: false },
 ];
+
+const DEFAULT_COLS = ALL_COLS.filter(c => c.default).map(c => c.key);
 
 const FAV_KEY = "bza_fav_reports";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-type PreviewRow = {
-  invoiceNumber:    string | null;
-  poNumber:         string | null;
-  clientPoNumber:   string | null;
-  item:             string | null;
-  quantityTons:     number;
-  shipmentDate:     string | null;
-  shipmentStatus:   string | null;
-  currentLocation:  string | null;
-  estimatedArrival: string | null;
-  vehicleId:        string | null;
-};
+type PreviewRow = Record<string, string | number | null>;
 
 const STATUS_COLORS: Record<string, string> = {
-  entregado:  "bg-emerald-100 text-emerald-700",
-  "en tránsito": "bg-blue-100 text-blue-700",
-  programado: "bg-stone-100 text-stone-500",
+  "delivered":  "bg-emerald-100 text-emerald-700",
+  "in transit": "bg-blue-100 text-blue-700",
+  "customs":    "bg-amber-100 text-amber-700",
+  "scheduled":  "bg-stone-100 text-stone-500",
 };
 
 function statusBadge(s: string | null) {
@@ -127,11 +119,12 @@ function SendToClientPanel() {
   const [email, setEmail] = useState("");
   const [format, setFormat] = useState<"excel" | "pdf" | "both">("excel");
   const [activeOnly, setActiveOnly] = useState(true);
-  const [selectedCols, setSelectedCols] = useState<string[]>(ALL_COLS.map(c => c.key));
+  const [selectedCols, setSelectedCols] = useState<string[]>(DEFAULT_COLS);
   const [colsOpen, setColsOpen] = useState(false);
   const [status, setStatus] = useState<"idle" | "sending" | "ok" | "err">("idle");
   const [errMsg, setErrMsg] = useState("");
   const [open, setOpen] = useState(false);
+  const [downloading, setDownloading] = useState<"excel" | "pdf" | null>(null);
 
   // Preview state
   const [preview, setPreview] = useState<PreviewRow[]>([]);
@@ -200,6 +193,33 @@ function SendToClientPanel() {
     }
   }
 
+  async function download(fmt: "excel" | "pdf") {
+    if (!clientId) return;
+    setDownloading(fmt);
+    try {
+      const params = new URLSearchParams({
+        clientId: String(clientId),
+        format: fmt,
+        filter: activeOnly ? "active" : "all",
+        columns: selectedCols.join(","),
+      });
+      const res = await fetch(`/api/download-report?${params}`);
+      if (!res.ok) { setDownloading(null); return; }
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      const cd   = res.headers.get("Content-Disposition") ?? "";
+      const match = cd.match(/filename="([^"]+)"/);
+      a.href     = url;
+      a.download = match?.[1] ?? `BZA_Report.${fmt === "excel" ? "xlsx" : "pdf"}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch { /* ignore */ }
+    finally { setDownloading(null); }
+  }
+
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden">
       {/* Header */}
@@ -250,99 +270,38 @@ function SendToClientPanel() {
               </div>
             </div>
 
-            {/* Format + Filter */}
-            <div className="flex items-end gap-4 flex-wrap">
-              <div>
-                <p className="text-xs font-medium text-stone-500 mb-1.5">Format</p>
-                <div className="flex gap-1">
-                  {(["excel","pdf","both"] as const).map(f => (
-                    <button
-                      key={f}
-                      onClick={() => setFormat(f)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                        format === f
-                          ? "bg-[#0d3d3b] text-white border-[#0d3d3b]"
-                          : "bg-white text-stone-500 border-stone-200 hover:border-stone-300"
-                      }`}
-                    >
-                      {f === "excel" && <FileSpreadsheet className="w-3 h-3" />}
-                      {f === "pdf"   && <FileText className="w-3 h-3" />}
-                      {f === "both"  && <><FileSpreadsheet className="w-3 h-3" /><FileText className="w-3 h-3" /></>}
-                      {f === "excel" ? "Excel" : f === "pdf" ? "PDF" : "Both"}
-                    </button>
-                  ))}
-                </div>
+            {/* Format + Filter — single row, no wrap */}
+            <div className="flex items-center gap-3">
+              <div className="flex gap-1">
+                {(["excel","pdf","both"] as const).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setFormat(f)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                      format === f
+                        ? "bg-[#0d3d3b] text-white border-[#0d3d3b]"
+                        : "bg-white text-stone-500 border-stone-200 hover:border-stone-300"
+                    }`}
+                  >
+                    {f === "excel" && <FileSpreadsheet className="w-3 h-3" />}
+                    {f === "pdf"   && <FileText className="w-3 h-3" />}
+                    {f === "both"  && <><FileSpreadsheet className="w-3 h-3" /><FileText className="w-3 h-3" /></>}
+                    {f === "excel" ? "Excel" : f === "pdf" ? "PDF" : "Both"}
+                  </button>
+                ))}
               </div>
 
-              <div className="flex items-center gap-2 mb-0.5">
-                <button
-                  onClick={() => setActiveOnly(v => !v)}
-                  className={`relative w-9 h-5 rounded-full transition-colors ${activeOnly ? "bg-[#0d3d3b]" : "bg-stone-200"}`}
-                >
-                  <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${activeOnly ? "translate-x-4" : "translate-x-0.5"}`} />
-                </button>
-                <span className="text-xs text-stone-500">Active shipments only</span>
-              </div>
+              <div className="w-px h-5 bg-stone-200" />
+
+              <button
+                onClick={() => setActiveOnly(v => !v)}
+                className={`relative w-9 h-5 shrink-0 rounded-full transition-colors ${activeOnly ? "bg-[#0d3d3b]" : "bg-stone-200"}`}
+              >
+                <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${activeOnly ? "translate-x-4" : "translate-x-0.5"}`} />
+              </button>
+              <span className="text-xs text-stone-500 whitespace-nowrap">Active only</span>
             </div>
           </div>
-
-          {/* ── Preview table ── */}
-          {clientId && (
-            <div className="border-t border-stone-100">
-              <div className="px-5 py-2 flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs font-medium text-stone-500">
-                  <Eye className="w-3.5 h-3.5" />
-                  Preview
-                  {!previewLoading && (
-                    <span className="bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded-full text-[10px] font-semibold">
-                      {preview.length} row{preview.length !== 1 ? "s" : ""}
-                    </span>
-                  )}
-                </div>
-                {previewLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-stone-400" />}
-              </div>
-
-              {!previewLoading && preview.length === 0 && (
-                <div className="px-5 py-6 flex flex-col items-center gap-2 text-center">
-                  <Package className="w-8 h-8 text-stone-200" />
-                  <p className="text-xs text-stone-400">No shipments found for this client with the current filter.</p>
-                </div>
-              )}
-
-              {!previewLoading && preview.length > 0 && (
-                <div className="overflow-x-auto max-h-64 overflow-y-auto">
-                  <table className="w-full text-xs">
-                    <thead className="sticky top-0 bg-stone-50 border-b border-stone-100">
-                      <tr>
-                        <th className="px-3 py-2 text-left font-semibold text-stone-500 whitespace-nowrap">Invoice</th>
-                        <th className="px-3 py-2 text-left font-semibold text-stone-500 whitespace-nowrap">PO</th>
-                        <th className="px-3 py-2 text-left font-semibold text-stone-500 whitespace-nowrap">Item</th>
-                        <th className="px-3 py-2 text-right font-semibold text-stone-500 whitespace-nowrap">Tons</th>
-                        <th className="px-3 py-2 text-left font-semibold text-stone-500 whitespace-nowrap">Shipment Date</th>
-                        <th className="px-3 py-2 text-left font-semibold text-stone-500 whitespace-nowrap">Status</th>
-                        <th className="px-3 py-2 text-left font-semibold text-stone-500 whitespace-nowrap">Location</th>
-                        <th className="px-3 py-2 text-left font-semibold text-stone-500 whitespace-nowrap">ETA</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-stone-50">
-                      {preview.map((row, i) => (
-                        <tr key={i} className="hover:bg-stone-50">
-                          <td className="px-3 py-2 text-stone-700 font-medium whitespace-nowrap">{row.invoiceNumber ?? "—"}</td>
-                          <td className="px-3 py-2 text-stone-500 whitespace-nowrap">{row.poNumber ?? "—"}</td>
-                          <td className="px-3 py-2 text-stone-600 whitespace-nowrap max-w-[120px] truncate">{row.item ?? "—"}</td>
-                          <td className="px-3 py-2 text-right text-stone-700 whitespace-nowrap">{row.quantityTons?.toLocaleString()}</td>
-                          <td className="px-3 py-2 text-stone-500 whitespace-nowrap">{row.shipmentDate ?? "—"}</td>
-                          <td className="px-3 py-2 whitespace-nowrap">{statusBadge(row.shipmentStatus)}</td>
-                          <td className="px-3 py-2 text-stone-500 whitespace-nowrap max-w-[120px] truncate">{row.currentLocation ?? "—"}</td>
-                          <td className="px-3 py-2 text-stone-500 whitespace-nowrap">{row.estimatedArrival ?? "—"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* ── Column selector ── */}
           <div className="border-t border-stone-100">
@@ -362,6 +321,12 @@ function SendToClientPanel() {
                   className="text-[10px] text-stone-400 hover:text-[#0d3d3b] transition-colors"
                 >
                   All
+                </button>
+                <button
+                  onClick={e => { e.stopPropagation(); setSelectedCols(DEFAULT_COLS); }}
+                  className="text-[10px] text-stone-400 hover:text-[#0d3d3b] transition-colors"
+                >
+                  Default
                 </button>
                 <button
                   onClick={e => { e.stopPropagation(); setSelectedCols([]); }}
@@ -393,8 +358,70 @@ function SendToClientPanel() {
             )}
           </div>
 
-          {/* Send button */}
-          <div className="px-5 py-3 border-t border-stone-100 flex items-center gap-3">
+          {/* ── Preview table ── */}
+          {clientId && (
+            <div className="border-t border-stone-100">
+              <div className="px-5 py-2 flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-stone-500">
+                  <Eye className="w-3.5 h-3.5" />
+                  Preview
+                  {!previewLoading && (
+                    <span className="bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded-full text-[10px] font-semibold">
+                      {preview.length} row{preview.length !== 1 ? "s" : ""}
+                    </span>
+                  )}
+                </div>
+                {previewLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-stone-400" />}
+              </div>
+
+              {!previewLoading && preview.length === 0 && (
+                <div className="px-5 py-6 flex flex-col items-center gap-2 text-center">
+                  <Package className="w-8 h-8 text-stone-200" />
+                  <p className="text-xs text-stone-400">No shipments found for this client with the current filter.</p>
+                </div>
+              )}
+
+              {!previewLoading && preview.length > 0 && selectedCols.length > 0 && (
+                <div className="overflow-x-auto max-h-64 overflow-y-auto">
+                  <table className="w-full text-xs">
+                    <thead className="sticky top-0 bg-stone-50 border-b border-stone-100">
+                      <tr>
+                        {selectedCols.map(key => (
+                          <th key={key} className="px-3 py-2 text-left font-semibold text-stone-500 whitespace-nowrap">
+                            {ALL_COLS.find(c => c.key === key)?.label ?? key}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-50">
+                      {preview.map((row, i) => (
+                        <tr key={i} className="hover:bg-stone-50">
+                          {selectedCols.map(key => {
+                            const val = row[key];
+                            const display = val === null || val === undefined ? "—" : String(val);
+                            return (
+                              <td key={key} className="px-3 py-2 text-stone-600 whitespace-nowrap max-w-[160px] truncate">
+                                {key === "shipmentStatus" && val
+                                  ? statusBadge(display)
+                                  : display}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {!previewLoading && preview.length > 0 && selectedCols.length === 0 && (
+                <p className="px-5 pb-4 text-xs text-stone-400">Select at least one column to see the preview.</p>
+              )}
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="px-5 py-3 border-t border-stone-100 flex items-center gap-2 flex-wrap">
+            {/* Send */}
             <button
               onClick={send}
               disabled={!clientId || !email || status === "sending" || preview.length === 0}
@@ -407,14 +434,44 @@ function SendToClientPanel() {
               {status === "sending" ? "Sending…" : "Send report"}
             </button>
 
+            {/* Divider */}
+            <div className="w-px h-6 bg-stone-200 mx-1" />
+
+            {/* Download Excel */}
+            <button
+              onClick={() => download("excel")}
+              disabled={!clientId || preview.length === 0 || downloading !== null}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-stone-200 text-stone-600 hover:border-[#0d3d3b] hover:text-[#0d3d3b] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {downloading === "excel"
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <FileSpreadsheet className="w-4 h-4" />
+              }
+              Excel
+            </button>
+
+            {/* Download PDF */}
+            <button
+              onClick={() => download("pdf")}
+              disabled={!clientId || preview.length === 0 || downloading !== null}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-stone-200 text-stone-600 hover:border-[#0d3d3b] hover:text-[#0d3d3b] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {downloading === "pdf"
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <FileText className="w-4 h-4" />
+              }
+              PDF
+            </button>
+
+            {/* Feedback */}
             {status === "ok" && (
-              <div className="flex items-center gap-1.5 text-xs text-[#0d3d3b] font-medium">
+              <div className="flex items-center gap-1.5 text-xs text-[#0d3d3b] font-medium ml-1">
                 <CheckCircle2 className="w-4 h-4" />
                 Sent successfully
               </div>
             )}
             {status === "err" && (
-              <div className="flex items-center gap-1.5 text-xs text-red-500">
+              <div className="flex items-center gap-1.5 text-xs text-red-500 ml-1">
                 <AlertCircle className="w-4 h-4" />
                 {errMsg}
               </div>
