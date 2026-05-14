@@ -65,7 +65,10 @@ export function ShipmentStatusBadge({
               key={s.value}
               onClick={async () => {
                 setOpen(false);
-                await updateInvoice(invoiceId, { shipmentStatus: s.value });
+                await updateInvoice(invoiceId, {
+                  shipmentStatus: s.value,
+                  ...(s.value === "entregado" ? { currentLocation: null } : {}),
+                });
                 router.refresh();
               }}
               className={`w-full text-left px-3 py-1.5 text-xs hover:bg-stone-50 ${currentStatus === s.value ? "font-semibold text-primary" : "text-stone-700"}`}
@@ -167,7 +170,12 @@ export function ShipmentActions({
         <div ref={panelRef} style={posStyle} className="bg-white border border-stone-200 rounded-lg shadow-xl p-3 space-y-2">
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1">Status</label>
-            <select value={status} onChange={(e) => setStatus(e.target.value)}
+            <select
+              value={status}
+              onChange={(e) => {
+                setStatus(e.target.value);
+                if (e.target.value === "entregado") setLocation("");
+              }}
               className="w-full text-xs border border-border rounded px-2 py-1.5 bg-background">
               {statuses.map((s) => (
                 <option key={s.value} value={s.value}>{s.label}</option>
