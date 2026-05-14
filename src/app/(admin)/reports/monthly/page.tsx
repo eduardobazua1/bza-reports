@@ -45,7 +45,6 @@ export default async function MonthlyBreakdownPage() {
     <div className="bg-white rounded-md shadow-sm">
         <div className="px-5 py-4 border-b border-stone-100">
           <h2 className="text-base font-semibold text-stone-800">Monthly Summary</h2>
-          <p className="text-xs text-stone-400 mt-0.5">Volume, revenue, cost and profit by shipment month</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
