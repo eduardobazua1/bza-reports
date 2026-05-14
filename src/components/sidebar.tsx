@@ -34,6 +34,7 @@ import {
   FileMinus,
   type LucideIcon,
 } from "lucide-react";
+import { NotificationsBell } from "./notifications-bell";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type NavLeaf     = { href: string; label: string; icon?: LucideIcon };
@@ -287,6 +288,10 @@ export function Sidebar({ userName }: { userName: string }) {
 
   function renderUtility(onNav: () => void) {
     return utilityEntries.map(entry => {
+      // Notifications gets a special component with live badge
+      if (entry.href === "/notifications") {
+        return <NotificationsBell key={entry.href} />;
+      }
       const isActive = pathname === entry.href || pathname.startsWith(entry.href + "/");
       const Icon = entry.icon;
       return (
