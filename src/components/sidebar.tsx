@@ -158,7 +158,6 @@ const mainEntries: RootEntry[] = [
     children: [
       { href: "/reports",               label: "Standard Reports" },
       { href: "/reports/client-report", label: "Client Report"    },
-      { href: "/custom-reports",        label: "Custom Reports"   },
     ],
   },
 ];
