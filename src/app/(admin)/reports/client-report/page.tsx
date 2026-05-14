@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  Send, Mail, CheckCircle2, AlertCircle, FileSpreadsheet,
+  Send, CheckCircle2, AlertCircle, FileSpreadsheet,
   FileText, Loader2, ChevronDown, Eye, Package, Download,
 } from "lucide-react";
 
@@ -147,16 +147,7 @@ export default function ClientReportPage() {
 
   return (
     <div className="space-y-5 max-w-4xl">
-      {/* Page header */}
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-[#0d3d3b] flex items-center justify-center shrink-0">
-          <Mail className="w-4.5 h-4.5 text-white" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-stone-900">Client Report</h1>
-          <p className="text-sm text-stone-400">Send or download a shipment report for a client</p>
-        </div>
-      </div>
+      <h1 className="text-2xl font-bold text-stone-900">Client Report</h1>
 
       {/* Card */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">

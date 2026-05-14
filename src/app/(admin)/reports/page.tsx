@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Star, ChevronDown } from "lucide-react";
+import { ReportsTabs } from "@/components/reports-tabs";
 
 // ── Report catalogue ──────────────────────────────────────────────────────────
 const REPORT_CATEGORIES = [
@@ -93,9 +94,8 @@ export default function ReportsHubPage() {
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <div>
-        <h1 className="text-2xl font-bold">Standard Reports</h1>
-      </div>
+      <h1 className="text-2xl font-bold">Reports</h1>
+      <ReportsTabs />
 
       {/* Favorites */}
       {favoriteReports.length > 0 && (
