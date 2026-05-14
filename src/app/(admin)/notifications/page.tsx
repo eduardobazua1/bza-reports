@@ -16,22 +16,19 @@ export const dynamic = "force-dynamic";
 
 const SEVERITY_CONFIG = {
   critical: {
-    bg: "bg-red-50 border-red-200",
-    icon: "text-red-500",
-    badge: "bg-red-100 text-red-700",
-    Icon: AlertCircle,
+    bg: "bg-[#0d3d3b]/10 border-[#0d3d3b]/25",
+    iconColor: "text-[#0d3d3b]",
+    badge: "bg-[#0d3d3b] text-white",
   },
   warning: {
-    bg: "bg-amber-50 border-amber-200",
-    icon: "text-amber-500",
-    badge: "bg-amber-100 text-amber-700",
-    Icon: AlertTriangle,
+    bg: "bg-[#0d3d3b]/[0.05] border-[#0a5c5a]/20",
+    iconColor: "text-[#0a5c5a]",
+    badge: "bg-[#0a5c5a]/15 text-[#0a5c5a]",
   },
   info: {
-    bg: "bg-blue-50 border-blue-200",
-    icon: "text-blue-400",
-    badge: "bg-blue-100 text-blue-700",
-    Icon: Info,
+    bg: "bg-stone-50 border-stone-200",
+    iconColor: "text-stone-400",
+    badge: "bg-stone-100 text-stone-500",
   },
 };
 
@@ -53,7 +50,7 @@ function NotificationCard({ n }: { n: AppNotification }) {
       href={n.link}
       className={`flex items-start gap-3 p-4 rounded-xl border ${s.bg} hover:brightness-95 transition-all group`}
     >
-      <div className={`mt-0.5 shrink-0 ${s.icon}`}>
+      <div className={`mt-0.5 shrink-0 ${s.iconColor}`}>
         <TypeIcon className="w-5 h-5" />
       </div>
       <div className="flex-1 min-w-0">
@@ -68,9 +65,7 @@ function NotificationCard({ n }: { n: AppNotification }) {
           <p className="text-[11px] text-stone-400 mt-1">
             {n.type === "overdue" ? "Was due" : n.type === "stale_shipment" ? "Last update" : "Date"}:{" "}
             {new Date(n.date + "T12:00:00").toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
+              month: "short", day: "numeric", year: "numeric",
             })}
           </p>
         )}
@@ -92,26 +87,26 @@ export default async function NotificationsPage() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-stone-900">Notifications</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-stone-500 mt-1">
             Alerts, reminders, and items that need attention
           </p>
         </div>
         {all.length > 0 && (
           <div className="flex items-center gap-2 mt-1">
             {critical.length > 0 && (
-              <span className="inline-flex items-center gap-1 text-xs font-semibold bg-red-100 text-red-700 px-2.5 py-1 rounded-full">
+              <span className="inline-flex items-center gap-1 text-xs font-semibold bg-[#0d3d3b] text-white px-2.5 py-1 rounded-full">
                 <AlertCircle className="w-3 h-3" />
                 {critical.length} critical
               </span>
             )}
             {warning.length > 0 && (
-              <span className="inline-flex items-center gap-1 text-xs font-semibold bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full">
+              <span className="inline-flex items-center gap-1 text-xs font-semibold bg-[#0a5c5a]/15 text-[#0a5c5a] px-2.5 py-1 rounded-full">
                 <AlertTriangle className="w-3 h-3" />
                 {warning.length} warnings
               </span>
             )}
             {info.length > 0 && (
-              <span className="inline-flex items-center gap-1 text-xs font-semibold bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full">
+              <span className="inline-flex items-center gap-1 text-xs font-semibold bg-stone-100 text-stone-500 px-2.5 py-1 rounded-full">
                 <Info className="w-3 h-3" />
                 {info.length} info
               </span>
@@ -123,7 +118,7 @@ export default async function NotificationsPage() {
       {/* All clear */}
       {all.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 gap-3 bg-white rounded-xl shadow-sm">
-          <CheckCircle2 className="w-12 h-12 text-emerald-400" />
+          <CheckCircle2 className="w-12 h-12 text-[#0d3d3b]/30" />
           <p className="text-lg font-semibold text-stone-700">All clear!</p>
           <p className="text-sm text-stone-400">No alerts or pending items right now.</p>
         </div>
@@ -133,9 +128,9 @@ export default async function NotificationsPage() {
       {critical.length > 0 && (
         <section className="space-y-3">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-red-500" />
-            <h2 className="text-sm font-bold text-red-700 uppercase tracking-wide">Critical</h2>
-            <span className="text-xs bg-red-100 text-red-700 font-semibold px-2 py-0.5 rounded-full">{critical.length}</span>
+            <AlertCircle className="w-4 h-4 text-[#0d3d3b]" />
+            <h2 className="text-sm font-bold text-[#0d3d3b] uppercase tracking-wide">Critical</h2>
+            <span className="text-xs bg-[#0d3d3b] text-white font-semibold px-2 py-0.5 rounded-full">{critical.length}</span>
           </div>
           <div className="space-y-2">
             {critical.map(n => <NotificationCard key={n.id} n={n} />)}
@@ -147,9 +142,9 @@ export default async function NotificationsPage() {
       {warning.length > 0 && (
         <section className="space-y-3">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-amber-500" />
-            <h2 className="text-sm font-bold text-amber-700 uppercase tracking-wide">Warnings</h2>
-            <span className="text-xs bg-amber-100 text-amber-700 font-semibold px-2 py-0.5 rounded-full">{warning.length}</span>
+            <AlertTriangle className="w-4 h-4 text-[#0a5c5a]" />
+            <h2 className="text-sm font-bold text-[#0a5c5a] uppercase tracking-wide">Warnings</h2>
+            <span className="text-xs bg-[#0a5c5a]/15 text-[#0a5c5a] font-semibold px-2 py-0.5 rounded-full">{warning.length}</span>
           </div>
           <div className="space-y-2">
             {warning.map(n => <NotificationCard key={n.id} n={n} />)}
@@ -161,9 +156,9 @@ export default async function NotificationsPage() {
       {info.length > 0 && (
         <section className="space-y-3">
           <div className="flex items-center gap-2">
-            <Info className="w-4 h-4 text-blue-400" />
-            <h2 className="text-sm font-bold text-blue-700 uppercase tracking-wide">Info</h2>
-            <span className="text-xs bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">{info.length}</span>
+            <Info className="w-4 h-4 text-stone-400" />
+            <h2 className="text-sm font-bold text-stone-400 uppercase tracking-wide">Info</h2>
+            <span className="text-xs bg-stone-100 text-stone-500 font-semibold px-2 py-0.5 rounded-full">{info.length}</span>
           </div>
           <div className="space-y-2">
             {info.map(n => <NotificationCard key={n.id} n={n} />)}

@@ -51,30 +51,36 @@ function saveDismissed(set: Set<string>) {
   try { localStorage.setItem(DISMISSED_KEY, JSON.stringify([...set])); } catch {}
 }
 
-// After a fetch, prune IDs that no longer exist in the server response
-// (those notifications resolved naturally — no need to keep them dismissed)
 function pruneStale(dismissed: Set<string>, allIds: string[]): Set<string> {
   const live = new Set(allIds);
-  const pruned = new Set([...dismissed].filter(id => live.has(id)));
-  return pruned;
+  return new Set([...dismissed].filter(id => live.has(id)));
 }
 
-// ── Config ───────────────────────────────────────────────────────────────────
+// ── BZA color config ──────────────────────────────────────────────────────────
 const SEVERITY_CONFIG = {
   critical: {
-    bg: "bg-red-50 border-red-200",
-    iconColor: "text-red-500",
-    badge: "bg-red-100 text-red-700",
+    cardBg:      "bg-[#0d3d3b]/10 border-[#0d3d3b]/25",
+    iconColor:   "text-[#0d3d3b]",
+    badge:       "bg-[#0d3d3b] text-white",
+    sectionText: "text-[#0d3d3b]",
+    summaryBg:   "bg-[#0d3d3b] text-white",
+    Icon:        AlertCircle,
   },
   warning: {
-    bg: "bg-amber-50 border-amber-200",
-    iconColor: "text-amber-500",
-    badge: "bg-amber-100 text-amber-700",
+    cardBg:      "bg-[#0d3d3b]/[0.05] border-[#0a5c5a]/20",
+    iconColor:   "text-[#0a5c5a]",
+    badge:       "bg-[#0a5c5a]/15 text-[#0a5c5a]",
+    sectionText: "text-[#0a5c5a]",
+    summaryBg:   "bg-[#0a5c5a]/20 text-[#0a5c5a]",
+    Icon:        AlertTriangle,
   },
   info: {
-    bg: "bg-blue-50 border-blue-200",
-    iconColor: "text-blue-400",
-    badge: "bg-blue-100 text-blue-700",
+    cardBg:      "bg-stone-50 border-stone-200",
+    iconColor:   "text-stone-400",
+    badge:       "bg-stone-100 text-stone-500",
+    sectionText: "text-stone-400",
+    summaryBg:   "bg-stone-100 text-stone-500",
+    Icon:        Info,
   },
 };
 
@@ -101,8 +107,7 @@ function NotifCard({
   const TypeIcon = t.Icon;
 
   return (
-    <div className={`flex items-stretch rounded-lg border ${s.bg} overflow-hidden`}>
-      {/* Clickable link area */}
+    <div className={`flex items-stretch rounded-lg border ${s.cardBg} overflow-hidden`}>
       <Link
         href={n.link}
         onClick={() => { onDismiss(n.id); onClosePanel(); }}
@@ -128,8 +133,6 @@ function NotifCard({
           )}
         </div>
       </Link>
-
-      {/* Dismiss-only button (doesn't navigate) */}
       <button
         onClick={() => onDismiss(n.id)}
         title="Dismiss"
@@ -159,19 +162,16 @@ function DropdownPanel({
 
   useEffect(() => {
     function handler(e: MouseEvent) {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        onClose();
-      }
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) onClose();
     }
     const t = setTimeout(() => document.addEventListener("mousedown", handler), 50);
     return () => { clearTimeout(t); document.removeEventListener("mousedown", handler); };
   }, [onClose]);
 
   const PANEL_W = 340;
-  const GAP = 8;
   let left = anchorRect.right - PANEL_W;
   if (left < 8) left = 8;
-  const top = anchorRect.bottom + GAP;
+  const top = anchorRect.bottom + 8;
 
   const critical = notifications.filter(n => n.severity === "critical");
   const warning  = notifications.filter(n => n.severity === "warning");
@@ -194,7 +194,7 @@ function DropdownPanel({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {notifications.length > 0 && (
             <button
               onClick={onDismissAll}
@@ -213,19 +213,19 @@ function DropdownPanel({
       {notifications.length > 0 && (
         <div className="px-3 py-2 flex items-center gap-1.5 border-b border-stone-100 flex-wrap">
           {critical.length > 0 && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-[#0d3d3b] text-white px-2 py-0.5 rounded-full">
               <AlertCircle className="w-2.5 h-2.5" />
               {critical.length} critical
             </span>
           )}
           {warning.length > 0 && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-[#0a5c5a]/15 text-[#0a5c5a] px-2 py-0.5 rounded-full">
               <AlertTriangle className="w-2.5 h-2.5" />
               {warning.length} warnings
             </span>
           )}
           {info.length > 0 && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-stone-100 text-stone-500 px-2 py-0.5 rounded-full">
               <Info className="w-2.5 h-2.5" />
               {info.length} info
             </span>
@@ -237,7 +237,7 @@ function DropdownPanel({
       <div className="overflow-y-auto max-h-[420px] p-3 space-y-2">
         {notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 gap-2">
-            <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+            <CheckCircle2 className="w-8 h-8 text-[#0d3d3b]/40" />
             <p className="text-sm font-semibold text-stone-700">All clear!</p>
             <p className="text-xs text-stone-400">No pending alerts.</p>
           </div>
@@ -245,26 +245,20 @@ function DropdownPanel({
           <>
             {critical.length > 0 && (
               <div className="space-y-1.5">
-                <p className="text-[10px] font-bold text-red-600 uppercase tracking-widest px-1">Critical</p>
-                {critical.map(n => (
-                  <NotifCard key={n.id} n={n} onDismiss={onDismiss} onClosePanel={onClose} />
-                ))}
+                <p className="text-[10px] font-bold text-[#0d3d3b] uppercase tracking-widest px-1">Critical</p>
+                {critical.map(n => <NotifCard key={n.id} n={n} onDismiss={onDismiss} onClosePanel={onClose} />)}
               </div>
             )}
             {warning.length > 0 && (
               <div className="space-y-1.5">
-                <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest px-1">Warnings</p>
-                {warning.map(n => (
-                  <NotifCard key={n.id} n={n} onDismiss={onDismiss} onClosePanel={onClose} />
-                ))}
+                <p className="text-[10px] font-bold text-[#0a5c5a] uppercase tracking-widest px-1">Warnings</p>
+                {warning.map(n => <NotifCard key={n.id} n={n} onDismiss={onDismiss} onClosePanel={onClose} />)}
               </div>
             )}
             {info.length > 0 && (
               <div className="space-y-1.5">
-                <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest px-1">Info</p>
-                {info.map(n => (
-                  <NotifCard key={n.id} n={n} onDismiss={onDismiss} onClosePanel={onClose} />
-                ))}
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest px-1">Info</p>
+                {info.map(n => <NotifCard key={n.id} n={n} onDismiss={onDismiss} onClosePanel={onClose} />)}
               </div>
             )}
           </>
@@ -276,7 +270,7 @@ function DropdownPanel({
         <Link
           href="/notifications"
           onClick={onClose}
-          className="text-xs text-stone-400 hover:text-stone-600 transition-colors"
+          className="text-xs text-stone-400 hover:text-[#0d3d3b] transition-colors"
         >
           View full notifications page →
         </Link>
@@ -295,10 +289,7 @@ export function NotificationsDropdown() {
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
 
-  // Load dismissed IDs from localStorage on mount
-  useEffect(() => {
-    setDismissed(loadDismissed());
-  }, []);
+  useEffect(() => { setDismissed(loadDismissed()); }, []);
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -307,7 +298,6 @@ export function NotificationsDropdown() {
       const data: AppNotification[] = await res.json();
       if (!Array.isArray(data)) return;
       setAllNotifications(data);
-      // Prune dismissed IDs that no longer exist server-side
       setDismissed(prev => {
         const pruned = pruneStale(prev, data.map(n => n.id));
         saveDismissed(pruned);
@@ -333,25 +323,21 @@ export function NotificationsDropdown() {
   }
 
   function dismissAll() {
-    const allIds = new Set(allNotifications.map(n => n.id));
-    setDismissed(allIds);
-    saveDismissed(allIds);
+    const all = new Set(allNotifications.map(n => n.id));
+    setDismissed(all);
+    saveDismissed(all);
   }
 
   function toggle() {
-    if (open) {
-      setOpen(false);
-      setAnchorRect(null);
-    } else {
+    if (open) { setOpen(false); setAnchorRect(null); }
+    else {
       const rect = btnRef.current?.getBoundingClientRect();
       if (rect) { setAnchorRect(rect); setOpen(true); }
     }
   }
 
-  // Only show non-dismissed notifications
   const visible = allNotifications.filter(n => !dismissed.has(n.id));
   const count = visible.length;
-  const hasCritical = visible.some(n => n.severity === "critical");
 
   return (
     <>
@@ -367,11 +353,7 @@ export function NotificationsDropdown() {
       >
         <Bell className="w-4 h-4" strokeWidth={1.75} />
         {count > 0 && (
-          <span
-            className={`absolute -top-1 -right-1 min-w-[16px] h-4 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none ${
-              hasCritical ? "bg-red-500" : "bg-amber-500"
-            }`}
-          >
+          <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-[#0d3d3b] text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none">
             {count > 99 ? "99+" : count}
           </span>
         )}
