@@ -25,7 +25,6 @@ import {
   ChevronDown,
   CreditCard,
   UserCog,
-  Bell,
   Plus,
   ShoppingCart,
   Wallet,
@@ -34,7 +33,6 @@ import {
   FileMinus,
   type LucideIcon,
 } from "lucide-react";
-import { NotificationsBell } from "./notifications-bell";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type NavLeaf     = { href: string; label: string; icon?: LucideIcon };
@@ -170,7 +168,6 @@ const mainEntries: RootEntry[] = [
 
 const utilityEntries: (NavLeaf & { icon: LucideIcon })[] = [
   { href: "/import",        label: "Data",          icon: Database },
-  { href: "/notifications", label: "Notifications", icon: Bell },
   { href: "/settings",      label: "Settings",      icon: Settings },
   { href: "/portal-users",  label: "Portal Users",  icon: UserCog },
   { href: "/help",          label: "Help & Support",icon: HelpCircle },
@@ -288,10 +285,6 @@ export function Sidebar({ userName }: { userName: string }) {
 
   function renderUtility(onNav: () => void) {
     return utilityEntries.map(entry => {
-      // Notifications gets a special component with live badge
-      if (entry.href === "/notifications") {
-        return <NotificationsBell key={entry.href} />;
-      }
       const isActive = pathname === entry.href || pathname.startsWith(entry.href + "/");
       const Icon = entry.icon;
       return (
