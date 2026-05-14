@@ -439,31 +439,36 @@ function SendToClientPanel() {
             {/* Divider */}
             <div className="w-px h-6 bg-stone-200 mx-1" />
 
-            {/* Download Excel */}
-            <button
-              onClick={() => download("excel")}
-              disabled={!clientId || preview.length === 0 || downloading !== null}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-stone-200 text-stone-600 hover:border-[#0d3d3b] hover:text-[#0d3d3b] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {downloading === "excel"
-                ? <Loader2 className="w-4 h-4 animate-spin" />
-                : <FileSpreadsheet className="w-4 h-4" />
-              }
-              Excel
-            </button>
+            {/* Download group label + buttons */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-stone-400 font-medium mr-0.5">Download</span>
 
-            {/* Download PDF */}
-            <button
-              onClick={() => download("pdf")}
-              disabled={!clientId || preview.length === 0 || downloading !== null}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-stone-200 text-stone-600 hover:border-[#0d3d3b] hover:text-[#0d3d3b] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {downloading === "pdf"
-                ? <Loader2 className="w-4 h-4 animate-spin" />
-                : <FileText className="w-4 h-4" />
-              }
-              PDF
-            </button>
+              <button
+                onClick={() => download("excel")}
+                disabled={!clientId || preview.length === 0 || downloading !== null}
+                title="Download Excel"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-stone-200 text-stone-600 hover:border-[#0d3d3b] hover:text-[#0d3d3b] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {downloading === "excel"
+                  ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  : <><Download className="w-3 h-3" /><FileSpreadsheet className="w-3.5 h-3.5" /></>
+                }
+                .xlsx
+              </button>
+
+              <button
+                onClick={() => download("pdf")}
+                disabled={!clientId || preview.length === 0 || downloading !== null}
+                title="Download PDF"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-stone-200 text-stone-600 hover:border-[#0d3d3b] hover:text-[#0d3d3b] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {downloading === "pdf"
+                  ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  : <><Download className="w-3 h-3" /><FileText className="w-3.5 h-3.5" /></>
+                }
+                .pdf
+              </button>
+            </div>
 
             {/* Feedback */}
             {status === "ok" && (
