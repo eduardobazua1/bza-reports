@@ -226,7 +226,7 @@ function NavGroupItem({ group, pathname, onNav }: { group: NavGroup; pathname: s
                 ));
             return (
               <Link key={child.href} href={child.href} onClick={onNav}
-                className={`flex items-center px-2 py-1.5 rounded-md text-xs transition-colors ${
+                className={`flex items-center px-2 py-1.5 rounded-md text-sm transition-colors ${
                   isActive
                     ? "bg-stone-100 text-stone-900 font-medium"
                     : "text-stone-500 hover:bg-stone-50 hover:text-stone-700"
