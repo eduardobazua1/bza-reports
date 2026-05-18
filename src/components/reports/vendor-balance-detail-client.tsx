@@ -81,8 +81,8 @@ export function VendorBalanceDetailClient({
               ...(isOpen ? group.payments.map((p, i) => (
                 <tr key={`${group.name}-${i}`} className="border-t border-stone-50 hover:bg-stone-50">
                   <td className="px-6 py-2.5 text-stone-600">{fmt(p.paymentDate)}</td>
-                  <td className="px-4 py-2.5 text-xs text-stone-600">{p.poNumber ?? "—"}</td>
-                  <td className="px-4 py-2.5 text-right font-medium text-[#0d3d3b]">{p.amountUsd != null ? formatCurrency(p.amountUsd) : "—"}</td>
+                  <td className="px-4 py-2.5 text-xs text-[#0d3d3b]">{p.poNumber ?? "—"}</td>
+                  <td className="px-4 py-2.5 text-right font-semibold text-[#0d3d3b]">{p.amountUsd != null ? formatCurrency(p.amountUsd) : "—"}</td>
                   <td className="px-4 py-2.5 text-right text-stone-600">{p.estimatedTons != null ? p.estimatedTons.toLocaleString() : "—"}</td>
                   <td className="px-4 py-2.5 text-right text-stone-600">{p.actualTons != null ? p.actualTons.toLocaleString() : "—"}</td>
                   <td className="px-4 py-2.5 text-right">{fmtAdjustment(p.adjustmentAmount)}</td>

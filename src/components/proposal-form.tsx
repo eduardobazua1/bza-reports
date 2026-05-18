@@ -321,7 +321,7 @@ export function ProposalForm({ mode, proposalId, proposalNumber, clients, produc
         <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-stone-700">Line Items</h2>
           <button type="button" onClick={addLine}
-            className="flex items-center gap-1.5 text-xs font-medium text-[#0d3d3b] hover:text-[#0a5c5a] transition-colors">
+            className="flex items-center gap-1.5 text-xs font-semibold text-[#0d3d3b] hover:text-[#0a5c5a] transition-colors">
             <Plus className="w-3.5 h-3.5" />
             Add Line
           </button>
@@ -427,7 +427,7 @@ export function ProposalForm({ mode, proposalId, proposalNumber, clients, produc
 
                 {/* Delete + line total (mobile) */}
                 <div className="flex items-center justify-between lg:justify-end gap-2">
-                  <span className="lg:hidden text-xs text-stone-600 font-medium">
+                  <span className="lg:hidden text-xs text-[#0d3d3b] font-medium">
                     {lineTotal > 0 ? fmtUsd(lineTotal) : ""}
                   </span>
                   <button type="button" onClick={() => removeLine(item.id)}

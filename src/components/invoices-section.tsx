@@ -288,7 +288,7 @@ export function InvoicesSection({
                       <span className={profit >= 0 ? "text-[#0d3d3b]" : "text-[#0d3d3b]"}>{formatCurrency(profit)}</span>
                     </td>
                     <td className="px-3 py-1.5 border-t border-stone-100">{formatDate(inv.shipmentDate)}</td>
-                    <td className="px-3 py-1.5 border-t border-stone-100 text-xs text-stone-600">
+                    <td className="px-3 py-1.5 border-t border-stone-100 text-xs text-[#0d3d3b]">
                       {formatDate(calcDueDate(inv, clientTermsDays)) || "—"}
                     </td>
                     <td className="px-3 py-1.5 border-t border-stone-100 whitespace-nowrap">
@@ -340,7 +340,7 @@ export function InvoicesSection({
                           <p className="text-xs font-semibold text-[#0d3d3b]">Send Invoice {inv.invoiceNumber}</p>
                           <div className="flex items-center gap-3 flex-wrap">
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-stone-600 font-medium whitespace-nowrap">To:</span>
+                              <span className="text-xs text-[#0d3d3b] font-medium whitespace-nowrap">To:</span>
                               <input
                                 type="email"
                                 className="border border-stone-200 rounded px-2 py-1 text-sm w-56"
@@ -350,7 +350,7 @@ export function InvoicesSection({
                               />
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-stone-600 font-medium whitespace-nowrap">CC:</span>
+                              <span className="text-xs text-[#0d3d3b] font-medium whitespace-nowrap">CC:</span>
                               <input
                                 type="email"
                                 className="border border-stone-200 rounded px-2 py-1 text-sm w-56"
@@ -372,7 +372,7 @@ export function InvoicesSection({
                             <p className="text-xs text-stone-400">Loading documents...</p>
                           ) : sendDocs.length > 0 ? (
                             <div className="flex items-center gap-3 flex-wrap">
-                              <span className="text-xs text-stone-600 font-medium">Attach:</span>
+                              <span className="text-xs text-[#0d3d3b] font-medium">Attach:</span>
                               {sendDocs.map(d => (
                                 <label key={d.id} className="flex items-center gap-1 cursor-pointer">
                                   <input
@@ -382,7 +382,7 @@ export function InvoicesSection({
                                     onChange={() => toggleSendDoc(d.id)}
                                   />
                                   <svg className="w-3 h-3 text-[#5eead4] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
-                                  <span className="text-xs text-stone-600">{d.fileName}</span>
+                                  <span className="text-xs text-[#0d3d3b]">{d.fileName}</span>
                                 </label>
                               ))}
                             </div>
@@ -404,15 +404,15 @@ export function InvoicesSection({
                           {/* Row 1: identifiers */}
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             <div>
-                              <label className="block text-xs text-stone-600 mb-1">Invoice # *</label>
+                              <label className="block text-xs text-[#0d3d3b] mb-1">Invoice # *</label>
                               <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.invoiceNumber || ""} onChange={f("invoiceNumber")} />
                             </div>
                             <div>
-                              <label className="block text-xs text-stone-600 mb-1">Client PO</label>
+                              <label className="block text-xs text-[#0d3d3b] mb-1">Client PO</label>
                               <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.salesDocument || ""} onChange={f("salesDocument")} placeholder="X190165" />
                             </div>
                             <div>
-                              <label className="block text-xs text-stone-600 mb-1">Product</label>
+                              <label className="block text-xs text-[#0d3d3b] mb-1">Product</label>
                               {products.length > 0 ? (
                                 <select className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white" value={editForm.item || ""} onChange={f("item")}>
                                   <option value="">— Select —</option>
@@ -423,7 +423,7 @@ export function InvoicesSection({
                               )}
                             </div>
                             <div>
-                              <label className="block text-xs text-stone-600 mb-1">Destination</label>
+                              <label className="block text-xs text-[#0d3d3b] mb-1">Destination</label>
                               <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.destination || ""} onChange={f("destination")} placeholder="Morelia" />
                             </div>
                           </div>
@@ -431,19 +431,19 @@ export function InvoicesSection({
                           {/* Row 2: shipment */}
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             <div>
-                              <label className="block text-xs text-stone-600 mb-1">Railcar #</label>
+                              <label className="block text-xs text-[#0d3d3b] mb-1">Railcar #</label>
                               <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.vehicleId || ""} onChange={f("vehicleId")} placeholder="TBOX636255" />
                             </div>
                             <div>
-                              <label className="block text-xs text-stone-600 mb-1">BOL #</label>
+                              <label className="block text-xs text-[#0d3d3b] mb-1">BOL #</label>
                               <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.blNumber || ""} onChange={f("blNumber")} placeholder="4001124" />
                             </div>
                             <div>
-                              <label className="block text-xs text-stone-600 mb-1">Ship Date</label>
+                              <label className="block text-xs text-[#0d3d3b] mb-1">Ship Date</label>
                               <input type="date" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.shipmentDate || ""} onChange={f("shipmentDate")} />
                             </div>
                             <div>
-                              <label className="block text-xs text-stone-600 mb-1">Invoice Date</label>
+                              <label className="block text-xs text-[#0d3d3b] mb-1">Invoice Date</label>
                               <input type="date" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.invoiceDate || ""} onChange={f("invoiceDate")} />
                             </div>
                           </div>
@@ -451,27 +451,27 @@ export function InvoicesSection({
                           {/* Row 3: quantities & prices */}
                           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
                             <div>
-                              <label className="block text-xs text-stone-600 mb-1">Tons ADMT *</label>
+                              <label className="block text-xs text-[#0d3d3b] mb-1">Tons ADMT *</label>
                               <input type="number" step="0.001" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.quantityTons} onChange={f("quantityTons")} />
                             </div>
                             <div>
-                              <label className="block text-xs text-stone-600 mb-1">Bales</label>
+                              <label className="block text-xs text-[#0d3d3b] mb-1">Bales</label>
                               <input type="number" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.balesCount || ""} onChange={f("balesCount")} placeholder="250" />
                             </div>
                             <div>
-                              <label className="block text-xs text-stone-600 mb-1">Unit</label>
+                              <label className="block text-xs text-[#0d3d3b] mb-1">Unit</label>
                               <input type="number" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.unitsPerBale || ""} onChange={f("unitsPerBale")} placeholder="1" />
                             </div>
                             <div>
-                              <label className="block text-xs text-stone-600 mb-1">Sell Price Override</label>
+                              <label className="block text-xs text-[#0d3d3b] mb-1">Sell Price Override</label>
                               <input type="number" step="0.01" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.sellPriceOverride || ""} onChange={f("sellPriceOverride")} placeholder={`${poSellPrice} (default)`} />
                             </div>
                             <div>
-                              <label className="block text-xs text-stone-600 mb-1">Buy Price Override</label>
+                              <label className="block text-xs text-[#0d3d3b] mb-1">Buy Price Override</label>
                               <input type="number" step="0.01" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.buyPriceOverride || ""} onChange={f("buyPriceOverride")} placeholder={`${poBuyPrice} (default)`} />
                             </div>
                             <div>
-                              <label className="block text-xs text-stone-600 mb-1">Freight Cost</label>
+                              <label className="block text-xs text-[#0d3d3b] mb-1">Freight Cost</label>
                               <input type="number" step="0.01" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.freightCost || ""} onChange={f("freightCost")} placeholder="0" />
                             </div>
                           </div>
@@ -479,7 +479,7 @@ export function InvoicesSection({
                           {/* Row 4: statuses */}
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                             <div>
-                              <label className="block text-xs text-stone-600 mb-1">Shipment Status</label>
+                              <label className="block text-xs text-[#0d3d3b] mb-1">Shipment Status</label>
                               <select className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white" value={editForm.shipmentStatus || "programado"} onChange={f("shipmentStatus")}>
                                 <option value="programado">Scheduled</option>
                                 <option value="en_transito">In Transit</option>
@@ -488,14 +488,14 @@ export function InvoicesSection({
                               </select>
                             </div>
                             <div>
-                              <label className="block text-xs text-stone-600 mb-1">Payment Status</label>
+                              <label className="block text-xs text-[#0d3d3b] mb-1">Payment Status</label>
                               <select className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white" value={editForm.customerPaymentStatus || "unpaid"} onChange={f("customerPaymentStatus")}>
                                 <option value="unpaid">Unpaid</option>
                                 <option value="paid">Paid</option>
                               </select>
                             </div>
                             <div>
-                              <label className="block text-xs text-stone-600 mb-1">Notes</label>
+                              <label className="block text-xs text-[#0d3d3b] mb-1">Notes</label>
                               <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.notes || ""} onChange={f("notes")} placeholder="Optional notes" />
                             </div>
                           </div>
@@ -508,7 +508,7 @@ export function InvoicesSection({
                             >
                               {editLoading ? "Saving..." : "Save changes"}
                             </button>
-                            <button onClick={cancelEdit} className="text-xs text-stone-600 hover:text-stone-700 px-3 py-1.5">Cancel</button>
+                            <button onClick={cancelEdit} className="text-xs text-[#0d3d3b] hover:text-stone-700 px-3 py-1.5">Cancel</button>
                           </div>
                         </div>
                       </td>

@@ -209,7 +209,7 @@ export default function ClientReportPage() {
               <span className={`relative inline-flex w-8 h-4 shrink-0 rounded-full transition-colors ${activeOnly ? "bg-[#0d3d3b]" : "bg-stone-200"}`}>
                 <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow-sm transition-transform ${activeOnly ? "translate-x-4" : "translate-x-0.5"}`} />
               </span>
-              <span className="text-xs text-stone-600 whitespace-nowrap group-hover:text-stone-700 transition-colors">Active only</span>
+              <span className="text-xs text-[#0d3d3b] whitespace-nowrap group-hover:text-stone-700 transition-colors">Active only</span>
             </button>
 
             {/* Download dropdown — right side */}
@@ -226,14 +226,14 @@ export default function ClientReportPage() {
                 <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border border-stone-100 overflow-hidden z-20">
                   <button
                     onClick={() => { setDlOpen(false); download("excel"); }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-50 transition-colors"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-[#0d3d3b] hover:bg-stone-50 transition-colors"
                   >
                     <FileSpreadsheet className="w-3.5 h-3.5 text-stone-400" />
                     Excel (.xlsx)
                   </button>
                   <button
                     onClick={() => { setDlOpen(false); download("pdf"); }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-stone-600 hover:bg-stone-50 transition-colors border-t border-stone-50"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-[#0d3d3b] hover:bg-stone-50 transition-colors border-t border-stone-50"
                   >
                     <FileText className="w-3.5 h-3.5 text-stone-400" />
                     PDF (.pdf)

@@ -249,17 +249,17 @@ export function CreditMemosPanel({
       {/* KPI row */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4">
-          <p className="text-xs text-stone-600 font-medium uppercase tracking-wide">Open Credits</p>
+          <p className="text-xs text-[#0d3d3b] font-medium uppercase tracking-wide">Open Credits</p>
           <p className="text-2xl font-bold text-[#0d3d3b] mt-1">{formatCurrency(totalOpen)}</p>
           <p className="text-xs text-stone-400 mt-0.5">{memos.filter(m => m.status === "open").length} memos</p>
         </div>
         <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4">
-          <p className="text-xs text-stone-600 font-medium uppercase tracking-wide">Applied</p>
+          <p className="text-xs text-[#0d3d3b] font-medium uppercase tracking-wide">Applied</p>
           <p className="text-2xl font-bold text-stone-700 mt-1">{formatCurrency(totalApplied)}</p>
           <p className="text-xs text-stone-400 mt-0.5">{memos.filter(m => m.status === "applied").length} memos</p>
         </div>
         <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4">
-          <p className="text-xs text-stone-600 font-medium uppercase tracking-wide">Total Issued</p>
+          <p className="text-xs text-[#0d3d3b] font-medium uppercase tracking-wide">Total Issued</p>
           <p className="text-2xl font-bold text-stone-700 mt-1">{formatCurrency(memos.reduce((s, m) => s + m.amount, 0))}</p>
           <p className="text-xs text-stone-400 mt-0.5">{memos.length} total</p>
         </div>
@@ -318,7 +318,7 @@ export function CreditMemosPanel({
                     <td className="px-4 py-3 text-stone-600 font-medium">{m.creditNumber || <span className="text-stone-300">—</span>}</td>
                     <td className="px-4 py-3 text-stone-600">{m.clientName}</td>
                     <td className="px-4 py-3 text-stone-500 max-w-[200px] truncate">{m.reason || <span className="text-stone-300">—</span>}</td>
-                    <td className="px-4 py-3 text-right font-medium text-[#0d3d3b]">{formatCurrency(m.amount)}</td>
+                    <td className="px-4 py-3 text-right font-semibold text-[#0d3d3b]">{formatCurrency(m.amount)}</td>
                     <td className="px-4 py-3 text-center"><StatusBadge status={m.status} /></td>
                     <td className="px-5 py-3">
                       <div className="flex items-center justify-end gap-1">

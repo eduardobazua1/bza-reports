@@ -204,17 +204,17 @@ function StatementView({
       {/* Summary pills */}
       <div className="flex justify-center gap-6 py-4 border-b border-stone-100 bg-stone-50 print:bg-white">
         <div className="text-center">
-          <p className="text-xs text-stone-600 uppercase tracking-wide font-medium">Charges</p>
+          <p className="text-xs text-[#0d3d3b] uppercase tracking-wide font-medium">Charges</p>
           <p className="text-base font-bold text-stone-800 mt-0.5">{formatCurrency(totalCharges)}</p>
         </div>
         <div className="w-px bg-stone-200" />
         <div className="text-center">
-          <p className="text-xs text-stone-600 uppercase tracking-wide font-medium">Credits & Payments</p>
+          <p className="text-xs text-[#0d3d3b] uppercase tracking-wide font-medium">Credits & Payments</p>
           <p className="text-base font-bold text-[#0d3d3b] mt-0.5">{formatCurrency(totalCredits)}</p>
         </div>
         <div className="w-px bg-stone-200" />
         <div className="text-center">
-          <p className="text-xs text-stone-600 uppercase tracking-wide font-medium">Balance Due</p>
+          <p className="text-xs text-[#0d3d3b] uppercase tracking-wide font-medium">Balance Due</p>
           <p className={`text-base font-bold mt-0.5 ${balanceDue > 0 ? "text-red-600" : "text-stone-800"}`}>
             {formatCurrency(Math.abs(balanceDue))}
             {balanceDue < 0 && <span className="text-xs font-normal ml-1">(credit)</span>}
@@ -530,7 +530,7 @@ export function StatementClient({
             <span className="text-xs font-semibold text-stone-700 uppercase tracking-wide">Columns</span>
             <button onClick={() => setShowCustomize(false)} className="text-stone-400 hover:text-stone-600"><X className="w-3.5 h-3.5" /></button>
           </div>
-          <p className="text-xs text-stone-600">Column options are not available for statement reports.</p>
+          <p className="text-xs text-[#0d3d3b]">Column options are not available for statement reports.</p>
         </div>
       )}
 

@@ -324,18 +324,18 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                       isSelected ? "bg-[#0d3d3b]/10 border-l-2 border-l-[#0d3d3b]" : "hover:bg-muted/40"
                     }`}
                   >
-                    <td className="px-3 py-1.5 text-xs text-stone-600 whitespace-nowrap">{row.invoice.invoiceNumber}</td>
+                    <td className="px-3 py-1.5 text-xs text-[#0d3d3b] whitespace-nowrap">{row.invoice.invoiceNumber}</td>
                     <td className="px-3 py-1.5 text-xs">
                       <Link href={`/purchase-orders/${row.invoice.purchaseOrderId}`} className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
                         {row.poNumber || "-"}
                       </Link>
                     </td>
-                    <td className="px-3 py-1.5 text-xs text-stone-600">{row.clientName || "-"}</td>
-                    <td className="px-3 py-1.5 text-xs text-stone-600">{(row.invoice as any).destination || "-"}</td>
-                    <td className="px-3 py-1.5 text-xs text-right text-stone-500 tabular-nums">{formatNumber(row.invoice.quantityTons, 2)}</td>
-                    <td className="px-3 py-1.5 text-xs text-right font-medium text-[#0d3d3b] tabular-nums">{formatCurrency(revenue)}</td>
-                    <td className="px-3 py-1.5 text-xs text-stone-600 whitespace-nowrap">{formatDate(row.invoice.shipmentDate)}</td>
-                    <td className="px-3 py-1.5 text-xs text-stone-600 whitespace-nowrap">
+                    <td className="px-3 py-1.5 text-xs text-[#0d3d3b]">{row.clientName || "-"}</td>
+                    <td className="px-3 py-1.5 text-xs text-[#0d3d3b]">{(row.invoice as any).destination || "-"}</td>
+                    <td className="px-3 py-1.5 text-xs text-right text-[#0d3d3b] tabular-nums">{formatNumber(row.invoice.quantityTons, 2)}</td>
+                    <td className="px-3 py-1.5 text-xs text-right font-semibold text-[#0d3d3b] tabular-nums">{formatCurrency(revenue)}</td>
+                    <td className="px-3 py-1.5 text-xs text-[#0d3d3b] whitespace-nowrap">{formatDate(row.invoice.shipmentDate)}</td>
+                    <td className="px-3 py-1.5 text-xs text-[#0d3d3b] whitespace-nowrap">
                       {dueDate ? (
                         row.invoice.customerPaymentStatus === "unpaid" && daysOverdue > 0 ? (
                           <span className="text-[#0d3d3b] font-medium">{formatDate(dueDate)} <span className="font-bold">+{daysOverdue}d</span></span>
@@ -621,7 +621,7 @@ function ReceivePaymentPanel({
           <div className="flex items-center gap-2 mb-0.5">
             <span className="text-base font-bold text-stone-900">Receive Payment</span>
           </div>
-          <p className="text-xs text-stone-600">{clientName}</p>
+          <p className="text-xs text-[#0d3d3b]">{clientName}</p>
         </div>
         <button onClick={onClose} className="text-stone-400 hover:text-stone-600 text-xl leading-none mt-0.5">×</button>
       </div>
@@ -748,7 +748,7 @@ function ReceivePaymentPanel({
                       <p className="font-medium text-stone-800">{inv.invoiceNumber}</p>
                       {inv.invoiceDate && <p className="text-[10px] text-stone-400">{formatDate(inv.invoiceDate)}</p>}
                     </td>
-                    <td className="p-2 text-xs text-stone-600">
+                    <td className="p-2 text-xs text-[#0d3d3b]">
                       {due ? (
                         daysOverdue > 0 ? (
                           <span className="text-[#0d3d3b] font-medium">{formatDate(due)}<br /><span className="text-[10px]">+{daysOverdue}d overdue</span></span>
@@ -757,7 +757,7 @@ function ReceivePaymentPanel({
                         )
                       ) : "-"}
                     </td>
-                    <td className="p-2 text-xs text-right font-medium text-[#0d3d3b]">{formatCurrency(amount)}</td>
+                    <td className="p-2 text-xs text-right font-semibold text-[#0d3d3b]">{formatCurrency(amount)}</td>
                   </tr>
                 );
               })}
@@ -769,7 +769,7 @@ function ReceivePaymentPanel({
       {/* Footer */}
       <div className="p-3 border-t border-stone-100 space-y-2">
         {selectedIds.length > 0 && (
-          <div className="flex items-center justify-between text-xs text-stone-600 px-1">
+          <div className="flex items-center justify-between text-xs text-[#0d3d3b] px-1">
             <span>{selectedIds.length} invoice{selectedIds.length !== 1 ? "s" : ""} selected</span>
             <span className="font-bold text-stone-800">{formatCurrency(totalSelected)}</span>
           </div>
@@ -830,7 +830,7 @@ function ViewPanel({
     <>
       <div className="flex items-start justify-between p-4 border-b border-stone-100">
         <div>
-          <p className="text-xs text-stone-600 mb-0.5">Invoice {row.invoice.invoiceNumber}</p>
+          <p className="text-xs text-[#0d3d3b] mb-0.5">Invoice {row.invoice.invoiceNumber}</p>
           {isOverdue ? (
             <span className="text-xs font-semibold text-[#0d3d3b] bg-[#0d3d3b] px-2 py-0.5 rounded-full">Overdue {daysOverdue} days</span>
           ) : (
@@ -843,9 +843,9 @@ function ViewPanel({
       </div>
 
       <div className="px-4 py-3 border-b border-stone-100">
-        <p className="text-xs text-stone-600 mb-0.5">Total</p>
+        <p className="text-xs text-[#0d3d3b] mb-0.5">Total</p>
         <p className="text-2xl font-bold text-stone-900">{formatCurrency(revenue)}</p>
-        <p className="text-xs text-stone-600 mt-0.5">{formatNumber(row.invoice.quantityTons, 2)} tons</p>
+        <p className="text-xs text-[#0d3d3b] mt-0.5">{formatNumber(row.invoice.quantityTons, 2)} tons</p>
       </div>
 
       <div className="px-4 py-3 border-b border-stone-100 flex-1 overflow-y-auto space-y-2">
@@ -902,9 +902,9 @@ function ViewPanel({
 
         {row.clientName && (
           <div className="pt-2 border-t border-stone-100">
-            <p className="text-xs text-stone-600 mb-0.5">Client</p>
+            <p className="text-xs text-[#0d3d3b] mb-0.5">Client</p>
             <p className="text-sm font-semibold text-stone-800">{row.clientName}</p>
-            {row.clientEmail && <p className="text-xs text-stone-600">{row.clientEmail}</p>}
+            {row.clientEmail && <p className="text-xs text-[#0d3d3b]">{row.clientEmail}</p>}
           </div>
         )}
 

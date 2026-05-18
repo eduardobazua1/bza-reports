@@ -172,7 +172,7 @@ export default function MarketPricesPage() {
       {/* TTO Net Prices */}
       {currentMonth && (
         <div>
-          <h2 className="text-sm font-medium text-[#0d3d3b] uppercase tracking-wide mb-3">TTO Key Indicators — {monthLabel(currentMonth)}</h2>
+          <h2 className="text-sm font-semibold text-[#0d3d3b] uppercase tracking-wide mb-3">TTO Key Indicators — {monthLabel(currentMonth)}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {GRADES.map(grade => {
               const p = currentPrices.find(p => p.source === "TTO" && p.grade === grade && p.priceType === "net");
@@ -191,7 +191,7 @@ export default function MarketPricesPage() {
       {/* RISI Prices */}
       {currentMonth && currentPrices.some(p => p.source === "RISI") && (
         <div>
-          <h2 className="text-sm font-medium text-[#0d3d3b] uppercase tracking-wide mb-3">RISI (Fastmarkets) — {monthLabel(currentMonth)}</h2>
+          <h2 className="text-sm font-semibold text-[#0d3d3b] uppercase tracking-wide mb-3">RISI (Fastmarkets) — {monthLabel(currentMonth)}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {GRADES.map(grade => {
               const list = currentPrices.find(p => p.source === "RISI" && p.grade === grade && p.priceType === "list");

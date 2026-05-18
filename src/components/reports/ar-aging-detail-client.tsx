@@ -78,11 +78,11 @@ export function ARAgingDetailClient({ buckets, total, filterBucket, filterClient
                 <tr key={`${bucket.key}-${i}`} className="border-t border-stone-50 hover:bg-stone-50">
                   <td className="px-6 py-2.5 text-stone-600">{fmt(row.date)}</td>
                   <td className="px-4 py-2.5 text-stone-500">Invoice</td>
-                  <td className="px-4 py-2.5 text-xs text-stone-600">{row.num}</td>
+                  <td className="px-4 py-2.5 text-xs text-[#0d3d3b]">{row.num}</td>
                   <td className="px-4 py-2.5 text-stone-600">{row.customer}</td>
                   <td className="px-4 py-2.5 text-stone-600">{fmt(row.dueDate)}</td>
                   <td className="px-4 py-2.5 text-right text-[#0d3d3b]">{formatCurrency(row.amount)}</td>
-                  <td className="px-4 py-2.5 text-right font-medium text-[#0d3d3b]">{formatCurrency(row.amount)}</td>
+                  <td className="px-4 py-2.5 text-right font-semibold text-[#0d3d3b]">{formatCurrency(row.amount)}</td>
                   <td className={`px-6 py-2.5 text-right font-medium ${row.pastDue > 90 ? "text-red-600" : row.pastDue > 60 ? "text-amber-600" : row.pastDue > 0 ? "text-stone-600" : "text-stone-400"}`}>
                     {row.pastDue === 0 ? "—" : row.pastDue > 0 ? row.pastDue : row.pastDue}
                   </td>

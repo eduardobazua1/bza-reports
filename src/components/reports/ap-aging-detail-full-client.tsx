@@ -318,10 +318,10 @@ export function APAgingDetailFullClient({ buckets, total, filterBucket, filterSu
                       <tr key={i} className="border-t border-stone-50 hover:bg-stone-50">
                         {visibleCols.date     && <td className="px-6 py-2.5 text-stone-600">{fmtDate(row.date)}</td>}
                         {visibleCols.type     && <td className="px-4 py-2.5 text-stone-500">Invoice</td>}
-                        {visibleCols.invoice  && <td className="px-4 py-2.5 text-xs text-stone-600">{row.num}</td>}
+                        {visibleCols.invoice  && <td className="px-4 py-2.5 text-xs text-[#0d3d3b]">{row.num}</td>}
                         <td className="px-4 py-2.5 text-stone-700">{row.supplier}</td>
                         {visibleCols.amount      && <td className="px-4 py-2.5 text-right text-[#0d3d3b]">{formatCurrency(row.amount)}</td>}
-                        {visibleCols.openBalance && <td className="px-4 py-2.5 text-right font-medium text-[#0d3d3b]">{formatCurrency(row.amount)}</td>}
+                        {visibleCols.openBalance && <td className="px-4 py-2.5 text-right font-semibold text-[#0d3d3b]">{formatCurrency(row.amount)}</td>}
                         {visibleCols.days && (
                           <td className={`px-6 py-2.5 text-right font-medium ${row.daysSince > 90 ? "text-red-600" : row.daysSince > 60 ? "text-amber-600" : row.daysSince > 30 ? "text-stone-600" : "text-stone-400"}`}>
                             {row.daysSince <= 0 ? "—" : row.daysSince}
@@ -353,10 +353,10 @@ export function APAgingDetailFullClient({ buckets, total, filterBucket, filterSu
                         <tr key={`${bucket.key}-${i}`} className="border-t border-stone-50 hover:bg-stone-50">
                           {visibleCols.date     && <td className="px-6 py-2.5 text-stone-600">{fmtDate(row.date)}</td>}
                           {visibleCols.type     && <td className="px-4 py-2.5 text-stone-500">Invoice</td>}
-                          {visibleCols.invoice  && <td className="px-4 py-2.5 text-xs text-stone-600">{row.num}</td>}
+                          {visibleCols.invoice  && <td className="px-4 py-2.5 text-xs text-[#0d3d3b]">{row.num}</td>}
                           <td className="px-4 py-2.5 text-stone-700">{row.supplier}</td>
                           {visibleCols.amount      && <td className="px-4 py-2.5 text-right text-[#0d3d3b]">{formatCurrency(row.amount)}</td>}
-                          {visibleCols.openBalance && <td className="px-4 py-2.5 text-right font-medium text-[#0d3d3b]">{formatCurrency(row.amount)}</td>}
+                          {visibleCols.openBalance && <td className="px-4 py-2.5 text-right font-semibold text-[#0d3d3b]">{formatCurrency(row.amount)}</td>}
                           {visibleCols.days && (
                             <td className={`px-6 py-2.5 text-right font-medium ${row.daysSince > 90 ? "text-red-600" : row.daysSince > 60 ? "text-amber-600" : row.daysSince > 30 ? "text-stone-600" : "text-stone-400"}`}>
                               {row.daysSince <= 0 ? "—" : row.daysSince}

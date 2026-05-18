@@ -111,7 +111,7 @@ function EmailReportPanel({ onBack }: { onBack: () => void }) {
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-8">
             <CheckCircle2 className="w-12 h-12 text-emerald-500" />
             <p className="font-semibold text-stone-800">Report sent!</p>
-            <p className="text-xs text-stone-600 max-w-[200px]">
+            <p className="text-xs text-[#0d3d3b] max-w-[200px]">
               Check <span className="font-medium">{form.email}</span> for the attachment.
             </p>
             <button

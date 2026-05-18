@@ -93,19 +93,19 @@ export function ContractsList({ contracts, clients, suppliers, nextContractNumbe
                           {c.contractNumber}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-xs text-stone-600">{row.clientName ?? "—"}</td>
-                      <td className="px-4 py-3 text-xs text-stone-600">{row.supplierName ?? "—"}</td>
-                      <td className="px-4 py-3 text-xs text-stone-600">{c.product ?? "—"}</td>
-                      <td className="px-4 py-3 text-xs text-stone-600 whitespace-nowrap">
+                      <td className="px-4 py-3 text-xs text-[#0d3d3b]">{row.clientName ?? "—"}</td>
+                      <td className="px-4 py-3 text-xs text-[#0d3d3b]">{row.supplierName ?? "—"}</td>
+                      <td className="px-4 py-3 text-xs text-[#0d3d3b]">{c.product ?? "—"}</td>
+                      <td className="px-4 py-3 text-xs text-[#0d3d3b] whitespace-nowrap">
                         {formatPriceFormula(c.sellPriceType, c.sellPrice, c.sellMargin, c.sellMarketRef)}
                       </td>
-                      <td className="px-4 py-3 text-xs text-stone-600 whitespace-nowrap">
+                      <td className="px-4 py-3 text-xs text-[#0d3d3b] whitespace-nowrap">
                         {formatPriceFormula(c.buyPriceType, c.buyPrice, c.buyMargin, c.buyMarketRef)}
                       </td>
                       <td className="px-4 py-3">
                         {c.volumeTons ? (
                           <div className="min-w-[100px]">
-                            <div className="flex justify-between text-xs text-stone-600 mb-0.5">
+                            <div className="flex justify-between text-xs text-[#0d3d3b] mb-0.5">
                               <span>{formatNumber(row.volumeUsed, 0)} / {formatNumber(c.volumeTons, 0)} t</span>
                               {volPct != null && <span>{volPct.toFixed(0)}%</span>}
                             </div>

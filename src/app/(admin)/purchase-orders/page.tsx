@@ -108,15 +108,15 @@ export default async function PurchaseOrdersPage({ searchParams }: { searchParam
                         {row.po.poNumber}
                       </Link>
                     </td>
-                    <td className="p-3 text-xs text-stone-600 border-t border-border">{formatDate(row.po.poDate)}</td>
-                    <td className="p-3 text-xs text-stone-600 border-t border-border">{row.clientName || "-"}</td>
-                    <td className="p-3 text-xs text-stone-600 border-t border-border">{row.supplierName || "-"}</td>
-                    <td className="p-3 text-xs text-stone-600 border-t border-border">{row.productName}</td>
-                    <td className="p-3 text-xs font-medium text-[#0d3d3b] border-t border-border text-right">{formatCurrency(row.po.sellPrice)}</td>
-                    <td className="p-3 text-xs font-medium text-[#0d3d3b] border-t border-border text-right">{formatCurrency(row.po.buyPrice)}</td>
+                    <td className="p-3 text-xs text-[#0d3d3b] border-t border-border">{formatDate(row.po.poDate)}</td>
+                    <td className="p-3 text-xs text-[#0d3d3b] border-t border-border">{row.clientName || "-"}</td>
+                    <td className="p-3 text-xs text-[#0d3d3b] border-t border-border">{row.supplierName || "-"}</td>
+                    <td className="p-3 text-xs text-[#0d3d3b] border-t border-border">{row.productName}</td>
+                    <td className="p-3 text-xs font-semibold text-[#0d3d3b] border-t border-border text-right">{formatCurrency(row.po.sellPrice)}</td>
+                    <td className="p-3 text-xs font-semibold text-[#0d3d3b] border-t border-border text-right">{formatCurrency(row.po.buyPrice)}</td>
                     <td className="p-3 text-xs text-stone-400 border-t border-border text-right">{row.invoiceCount}</td>
-                    <td className="p-3 text-xs text-stone-600 border-t border-border text-right">{formatNumber(row.totalTons, 1)}</td>
-                    <td className="p-3 text-xs font-medium text-[#0d3d3b] border-t border-border text-right">{formatCurrency(revenue)}</td>
+                    <td className="p-3 text-xs text-[#0d3d3b] border-t border-border text-right">{formatNumber(row.totalTons, 1)}</td>
+                    <td className="p-3 text-xs font-semibold text-[#0d3d3b] border-t border-border text-right">{formatCurrency(revenue)}</td>
                     <td className="p-3 text-xs border-t border-border text-right font-medium">
                       <span className={profit >= 0 ? "text-[#0d3d3b]" : "text-[#0d3d3b]"}>
                         {formatCurrency(profit)}

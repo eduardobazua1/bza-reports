@@ -157,9 +157,9 @@ export function SupplierPaymentActions({
             )}
             {payments.map((p) => (
               <tr key={p.id} className="border-t border-stone-100 hover:bg-stone-50">
-                <td className="px-4 py-2 text-xs text-stone-600">{formatDate(p.paymentDate)}</td>
-                <td className="px-4 py-2 text-xs text-right font-medium text-[#0d3d3b]">{formatCurrency(p.amountUsd)}</td>
-                <td className="px-4 py-2 text-xs text-stone-600">{p.poNumber || "-"}</td>
+                <td className="px-4 py-2 text-xs text-[#0d3d3b]">{formatDate(p.paymentDate)}</td>
+                <td className="px-4 py-2 text-xs text-right font-semibold text-[#0d3d3b]">{formatCurrency(p.amountUsd)}</td>
+                <td className="px-4 py-2 text-xs text-[#0d3d3b]">{p.poNumber || "-"}</td>
                 <td className="px-4 py-2 text-stone-500 text-xs">{p.reference || p.notes || "-"}</td>
                 <td className="px-4 py-2 text-center">
                   <button

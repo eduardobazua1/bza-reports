@@ -215,7 +215,7 @@ export function AgingDetailToolbar({
             <span className="text-xs font-semibold text-stone-700 uppercase tracking-wide">Columns</span>
             <button onClick={() => setShowCustomize(false)} className="text-stone-400 hover:text-stone-600"><X className="w-3.5 h-3.5" /></button>
           </div>
-          <p className="text-xs text-stone-600">Column options are not available for detail reports.</p>
+          <p className="text-xs text-[#0d3d3b]">Column options are not available for detail reports.</p>
         </div>
       )}
 

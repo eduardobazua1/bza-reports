@@ -61,10 +61,10 @@ export default async function MonthlyBreakdownPage() {
             <tbody>
               {rows.map((r) => (
                 <tr key={r.month} className="border-t border-stone-100 hover:bg-stone-50">
-                  <td className="px-5 py-3 text-xs text-stone-600">{r.label}</td>
+                  <td className="px-5 py-3 text-xs text-[#0d3d3b]">{r.label}</td>
                   <td className="px-5 py-3 text-xs text-right font-medium text-stone-700">{formatNumber(r.tons, 1)}</td>
-                  <td className="px-5 py-3 text-xs text-right font-medium text-[#0d3d3b]">{formatCurrency(r.revenue)}</td>
-                  <td className="px-5 py-3 text-xs text-right font-medium text-[#0d3d3b]">{formatCurrency(r.cost)}</td>
+                  <td className="px-5 py-3 text-xs text-right font-semibold text-[#0d3d3b]">{formatCurrency(r.revenue)}</td>
+                  <td className="px-5 py-3 text-xs text-right font-semibold text-[#0d3d3b]">{formatCurrency(r.cost)}</td>
                   <td className={`px-5 py-3 text-xs text-right font-medium ${r.profit >= 0 ? "text-emerald-600" : "text-[#0d3d3b]"}`}>{formatCurrency(r.profit)}</td>
                   <td className={`px-5 py-3 text-xs text-right font-medium ${r.margin >= 10 ? "text-emerald-600" : "text-[#0d3d3b]"}`}>{formatPercent(r.margin)}</td>
                 </tr>
