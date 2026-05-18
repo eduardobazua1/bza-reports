@@ -398,18 +398,18 @@ export function InvoicesSection({
                   {isEditing && (
                     <tr key={`edit-${inv.id}`}>
                       <td colSpan={14} className="p-0">
-                        <div className="bg-[#0d3d3b] border-t border-[#0d3d3b] p-4 space-y-4">
-                          <p className="text-xs font-semibold text-[#0d3d3b] uppercase">Edit Invoice — {inv.invoiceNumber}</p>
+                        <div className="bg-stone-50 border-t border-stone-200 p-4 space-y-4">
+                          <p className="text-xs font-semibold text-stone-600 uppercase">Edit Invoice — {inv.invoiceNumber}</p>
 
                           {/* Row 1: identifiers */}
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             <div>
                               <label className="block text-xs text-[#0d3d3b] mb-1">Invoice # *</label>
-                              <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.invoiceNumber || ""} onChange={f("invoiceNumber")} />
+                              <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white" value={editForm.invoiceNumber || ""} onChange={f("invoiceNumber")} />
                             </div>
                             <div>
                               <label className="block text-xs text-[#0d3d3b] mb-1">Client PO</label>
-                              <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.salesDocument || ""} onChange={f("salesDocument")} placeholder="X190165" />
+                              <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white" value={editForm.salesDocument || ""} onChange={f("salesDocument")} placeholder="X190165" />
                             </div>
                             <div>
                               <label className="block text-xs text-[#0d3d3b] mb-1">Product</label>
@@ -419,12 +419,12 @@ export function InvoicesSection({
                                   {products.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
                                 </select>
                               ) : (
-                                <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.item || ""} onChange={f("item")} placeholder="Product name" />
+                                <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white" value={editForm.item || ""} onChange={f("item")} placeholder="Product name" />
                               )}
                             </div>
                             <div>
                               <label className="block text-xs text-[#0d3d3b] mb-1">Destination</label>
-                              <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.destination || ""} onChange={f("destination")} placeholder="Morelia" />
+                              <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white" value={editForm.destination || ""} onChange={f("destination")} placeholder="Morelia" />
                             </div>
                           </div>
 
@@ -432,19 +432,19 @@ export function InvoicesSection({
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             <div>
                               <label className="block text-xs text-[#0d3d3b] mb-1">Railcar #</label>
-                              <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.vehicleId || ""} onChange={f("vehicleId")} placeholder="TBOX636255" />
+                              <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white" value={editForm.vehicleId || ""} onChange={f("vehicleId")} placeholder="TBOX636255" />
                             </div>
                             <div>
                               <label className="block text-xs text-[#0d3d3b] mb-1">BOL #</label>
-                              <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.blNumber || ""} onChange={f("blNumber")} placeholder="4001124" />
+                              <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white" value={editForm.blNumber || ""} onChange={f("blNumber")} placeholder="4001124" />
                             </div>
                             <div>
                               <label className="block text-xs text-[#0d3d3b] mb-1">Ship Date</label>
-                              <input type="date" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.shipmentDate || ""} onChange={f("shipmentDate")} />
+                              <input type="date" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white" value={editForm.shipmentDate || ""} onChange={f("shipmentDate")} />
                             </div>
                             <div>
                               <label className="block text-xs text-[#0d3d3b] mb-1">Invoice Date</label>
-                              <input type="date" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.invoiceDate || ""} onChange={f("invoiceDate")} />
+                              <input type="date" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white" value={editForm.invoiceDate || ""} onChange={f("invoiceDate")} />
                             </div>
                           </div>
 
@@ -452,27 +452,27 @@ export function InvoicesSection({
                           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
                             <div>
                               <label className="block text-xs text-[#0d3d3b] mb-1">Tons ADMT *</label>
-                              <input type="number" step="0.001" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.quantityTons} onChange={f("quantityTons")} />
+                              <input type="number" step="0.001" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white" value={editForm.quantityTons} onChange={f("quantityTons")} />
                             </div>
                             <div>
                               <label className="block text-xs text-[#0d3d3b] mb-1">Bales</label>
-                              <input type="number" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.balesCount || ""} onChange={f("balesCount")} placeholder="250" />
+                              <input type="number" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white" value={editForm.balesCount || ""} onChange={f("balesCount")} placeholder="250" />
                             </div>
                             <div>
                               <label className="block text-xs text-[#0d3d3b] mb-1">Unit</label>
-                              <input type="number" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.unitsPerBale || ""} onChange={f("unitsPerBale")} placeholder="1" />
+                              <input type="number" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white" value={editForm.unitsPerBale || ""} onChange={f("unitsPerBale")} placeholder="1" />
                             </div>
                             <div>
                               <label className="block text-xs text-[#0d3d3b] mb-1">Sell Price Override</label>
-                              <input type="number" step="0.01" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.sellPriceOverride || ""} onChange={f("sellPriceOverride")} placeholder={`${poSellPrice} (default)`} />
+                              <input type="number" step="0.01" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white" value={editForm.sellPriceOverride || ""} onChange={f("sellPriceOverride")} placeholder={`${poSellPrice} (default)`} />
                             </div>
                             <div>
                               <label className="block text-xs text-[#0d3d3b] mb-1">Buy Price Override</label>
-                              <input type="number" step="0.01" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.buyPriceOverride || ""} onChange={f("buyPriceOverride")} placeholder={`${poBuyPrice} (default)`} />
+                              <input type="number" step="0.01" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white" value={editForm.buyPriceOverride || ""} onChange={f("buyPriceOverride")} placeholder={`${poBuyPrice} (default)`} />
                             </div>
                             <div>
                               <label className="block text-xs text-[#0d3d3b] mb-1">Freight Cost</label>
-                              <input type="number" step="0.01" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.freightCost || ""} onChange={f("freightCost")} placeholder="0" />
+                              <input type="number" step="0.01" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white" value={editForm.freightCost || ""} onChange={f("freightCost")} placeholder="0" />
                             </div>
                           </div>
 
@@ -496,7 +496,7 @@ export function InvoicesSection({
                             </div>
                             <div>
                               <label className="block text-xs text-[#0d3d3b] mb-1">Notes</label>
-                              <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.notes || ""} onChange={f("notes")} placeholder="Optional notes" />
+                              <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white" value={editForm.notes || ""} onChange={f("notes")} placeholder="Optional notes" />
                             </div>
                           </div>
 
