@@ -61,7 +61,7 @@ export default async function ShipmentsPage({
             <Link
               key={status}
               href={isActive ? "/shipments" : `/shipments?status=${status}`}
-              className={`bg-white rounded-md shadow-sm p-4 block hover:shadow-md transition-shadow ${isActive ? "ring-2 ring-primary" : ""}`}
+              className={`bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4 block hover:shadow-md transition-shadow ${isActive ? "ring-2 ring-primary" : ""}`}
             >
               <div className="flex items-center justify-between mb-1">
                 <span className={`text-xs px-2 py-0.5 rounded-full ${shipmentStatusColors[status]}`}>
@@ -77,7 +77,7 @@ export default async function ShipmentsPage({
 
       {/* Shipments grouped by client */}
       {Array.from(byClient.entries()).map(([clientName, rows]) => (
-        <div key={clientName} className="bg-white rounded-md shadow-sm">
+        <div key={clientName} className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b]">
           <div className="p-4 border-b border-border flex items-center justify-between">
             <h2 className="font-semibold">{clientName}</h2>
             <span className="text-sm text-muted-foreground">
@@ -158,7 +158,7 @@ export default async function ShipmentsPage({
       ))}
 
       {filtered.length === 0 && (
-        <div className="bg-white rounded-md shadow-sm p-8 text-center text-muted-foreground">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-8 text-center text-muted-foreground">
           No shipments found{filterStatus ? ` for status "${shipmentStatusLabels[filterStatus as keyof typeof shipmentStatusLabels]}"` : ""}.
         </div>
       )}

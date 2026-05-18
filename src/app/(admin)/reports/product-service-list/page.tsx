@@ -21,7 +21,7 @@ export default async function ProductServiceListPage() {
       </div>
 
       {/* Report */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] overflow-hidden">
         {/* Report title */}
         <div className="py-6 text-center border-b border-stone-100">
           <h2 className="text-lg font-bold text-stone-800">Product & Service List</h2>

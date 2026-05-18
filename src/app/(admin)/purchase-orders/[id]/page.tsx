@@ -78,7 +78,7 @@ export default async function PurchaseOrderDetailPage({
       </div>
 
       {/* ── Section 1: General Info ─────────────────────────── */}
-      <div className="bg-white rounded-md shadow-sm p-5">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-5">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-5">
           {/* Client */}
           <div>
@@ -139,7 +139,7 @@ export default async function PurchaseOrderDetailPage({
 
       {/* ── Section 2: Certifications ───────────────────────── */}
       {certType && (
-        <div className="bg-white rounded-md shadow-sm p-5">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-5">
           <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-4">
             {certType === "fsc" ? "FSC Certification" : "PEFC Certification"}
           </h3>
@@ -164,7 +164,7 @@ export default async function PurchaseOrderDetailPage({
       )}
 
       {/* ── Section 3: Financial Summary ────────────────────── */}
-      <div className="bg-white rounded-md shadow-sm p-5">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-5">
         <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-4">Financial Summary</h3>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
           <div>

@@ -110,7 +110,7 @@ export default function MarketPricesPage() {
       </div>
 
       {showForm && (
-        <div className="bg-white rounded-xl shadow-sm p-5 space-y-4">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-5 space-y-4">
           <h2 className="font-semibold text-stone-800">Add / Update Price</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div>
@@ -177,7 +177,7 @@ export default function MarketPricesPage() {
             {GRADES.map(grade => {
               const p = currentPrices.find(p => p.source === "TTO" && p.grade === grade && p.priceType === "net");
               return (
-                <div key={grade} className="bg-white rounded-xl shadow-sm p-4">
+                <div key={grade} className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4">
                   <h3 className="font-bold text-stone-900 text-lg mb-1">{grade}</h3>
                   {p && <p className="text-2xl font-bold text-stone-900">${formatNumber(p.price, 2)}</p>}
                   {p?.changeValue != null && <Change value={p.changeValue} price={p.price} />}
@@ -198,7 +198,7 @@ export default function MarketPricesPage() {
               const net = currentPrices.find(p => p.source === "RISI" && p.grade === grade && p.priceType === "net");
               if (!list && !net) return null;
               return (
-                <div key={grade} className="bg-white rounded-xl shadow-sm p-4">
+                <div key={grade} className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4">
                   <h3 className="font-bold text-stone-900 text-lg mb-2">{grade}</h3>
                   {list && (
                     <div className="mb-3">
@@ -223,7 +223,7 @@ export default function MarketPricesPage() {
 
       {/* TTO Net Price Trend Chart */}
       {chartMonths.length > 1 && (
-        <div className="bg-white rounded-xl shadow-sm p-4">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4">
           <h2 className="text-sm font-medium text-stone-700 mb-4">TTO Net Price Trend (USD/ADMT)</h2>
           <div className="flex items-center gap-4 mb-3">
             {GRADES.map(g => (
@@ -299,7 +299,7 @@ export default function MarketPricesPage() {
       )}
 
       {/* Full Price Table */}
-      <div className="bg-white rounded-md shadow-sm overflow-hidden">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] overflow-hidden">
         <div className="p-3 border-b border-border">
           <h2 className="text-sm font-medium text-muted-foreground">Price History</h2>
         </div>

@@ -5,7 +5,7 @@ export default function AnalyticsPage() {
         <h1 className="text-2xl font-bold text-stone-900">Analytics</h1>
         <p className="text-sm text-stone-400 mt-1">Advanced business analytics &amp; trends</p>
       </div>
-      <div className="bg-white rounded-xl shadow-sm p-8 text-center text-stone-400 text-sm">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-8 text-center text-stone-400 text-sm">
         Coming soon — advanced analytics will be available here.
       </div>
     </div>

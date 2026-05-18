@@ -221,7 +221,7 @@ export default function ExportPage() {
           const someChecked = group.columns.some((c) => selected.has(c.key));
 
           return (
-            <div key={group.group} className="bg-white rounded-md shadow-sm p-4">
+            <div key={group.group} className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4">
               <label className="flex items-center gap-2 mb-3 cursor-pointer">
                 <input
                   type="checkbox"

@@ -179,7 +179,7 @@ export default function SendReportPage() {
       </div>
 
       {/* Filter */}
-      <div className="bg-white rounded-md shadow-sm p-4 space-y-3">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4 space-y-3">
         <p className="text-sm font-medium">Filter</p>
         <div className="flex gap-4">
           <label className="flex items-center gap-2 cursor-pointer">
@@ -206,7 +206,7 @@ export default function SendReportPage() {
       </div>
 
       {/* Column selector */}
-      <div className="bg-white rounded-md shadow-sm p-4 space-y-3">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4 space-y-3">
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium">Columns ({columns.size} selected)</p>
           <div className="flex gap-2">
@@ -235,7 +235,7 @@ export default function SendReportPage() {
       </div>
 
       {/* Send format */}
-      <div className="bg-white rounded-md shadow-sm p-4 space-y-3">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4 space-y-3">
         <p className="text-sm font-medium">Attachment Format</p>
         <div className="flex gap-4">
           {([
@@ -258,7 +258,7 @@ export default function SendReportPage() {
       </div>
 
       {/* Email fields */}
-      <div className="bg-white rounded-md shadow-sm p-4 space-y-3">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4 space-y-3">
         <p className="text-sm font-medium">Email</p>
         <div>
           <label className="block text-sm font-medium mb-1">To</label>
@@ -308,7 +308,7 @@ export default function SendReportPage() {
 
       {/* Preview table */}
       {preview && (
-        <div className="bg-white rounded-md shadow-sm">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b]">
           <div className="p-4 border-b border-border flex items-center justify-between">
             <div>
               <h3 className="font-semibold">Report Preview</h3>

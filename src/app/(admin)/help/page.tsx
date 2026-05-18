@@ -41,7 +41,7 @@ export default function HelpPage() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm p-5">
+    <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-5">
       <h2 className="font-semibold text-stone-800 mb-3">{title}</h2>
       <div className="text-sm text-stone-600 space-y-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:space-y-1">
         {children}

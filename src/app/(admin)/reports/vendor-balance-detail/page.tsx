@@ -74,7 +74,7 @@ export default async function VendorBalanceDetailPage({
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] overflow-hidden">
         <div className="py-6 text-center border-b border-stone-100">
           <h2 className="text-lg font-bold text-stone-800">Vendor Balance Detail</h2>
           <p className="text-sm text-stone-500 mt-0.5">BZA International Services</p>

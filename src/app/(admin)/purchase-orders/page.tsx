@@ -69,23 +69,23 @@ export default async function PurchaseOrdersPage({ searchParams }: { searchParam
 
       <POListActions clients={clientsList} suppliers={suppliersList} products={productsList} nextPoNumber={nextPoNumber} />
 
-      <div className="bg-white rounded-md shadow-sm overflow-hidden">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-muted">
               <tr>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">PO #</th>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Date</th>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Client</th>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Supplier</th>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Product</th>
-                <th className="text-right p-3 text-sm font-medium text-muted-foreground">Sell</th>
-                <th className="text-right p-3 text-sm font-medium text-muted-foreground">Buy</th>
-                <th className="text-right p-3 text-sm font-medium text-muted-foreground">Inv.</th>
-                <th className="text-right p-3 text-sm font-medium text-muted-foreground">Real TN</th>
-                <th className="text-right p-3 text-sm font-medium text-muted-foreground">Revenue</th>
-                <th className="text-right p-3 text-sm font-medium text-muted-foreground">Profit</th>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Status</th>
+                <th className="text-left p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">PO #</th>
+                <th className="text-left p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Date</th>
+                <th className="text-left p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Client</th>
+                <th className="text-left p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Supplier</th>
+                <th className="text-left p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Product</th>
+                <th className="text-right p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Sell</th>
+                <th className="text-right p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Buy</th>
+                <th className="text-right p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Inv.</th>
+                <th className="text-right p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Real TN</th>
+                <th className="text-right p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Revenue</th>
+                <th className="text-right p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Profit</th>
+                <th className="text-left p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Status</th>
               </tr>
             </thead>
             <tbody>

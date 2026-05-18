@@ -196,7 +196,7 @@ export default function AssistantPage() {
       <div ref={scrollRef} className="flex-1 overflow-auto space-y-4 mb-4">
         {messages.length === 0 && (
           <div className="space-y-4">
-            <div className="bg-white rounded-md shadow-sm p-6 text-center">
+            <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-6 text-center">
               <BotMessageSquare className="w-10 h-10 text-stone-400 mx-auto mb-3" strokeWidth={1.5} />
               <p className="text-sm text-stone-500 mb-3">
                 I have real-time access to your data. Attach files by dragging them here.

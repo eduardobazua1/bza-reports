@@ -155,7 +155,7 @@ export default function ClientReportPage() {
       <div className="flex gap-4 items-start">
 
         {/* ── Main card ── */}
-        <div className="flex-1 min-w-0 bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="flex-1 min-w-0 bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] overflow-hidden">
 
           {/* Top bar: client + email */}
           <div className="px-5 pt-5 pb-4 grid grid-cols-2 gap-3">
@@ -346,7 +346,7 @@ export default function ClientReportPage() {
         </div>
 
         {/* ── Customize panel ── */}
-        <div className="w-48 shrink-0 bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="w-48 shrink-0 bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] overflow-hidden">
           {/* Teal header */}
           <div className="bg-[#0d3d3b] px-4 py-3 flex items-center justify-between">
             <span className="text-xs font-semibold text-white">Customize</span>

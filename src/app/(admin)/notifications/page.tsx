@@ -121,7 +121,7 @@ export default async function NotificationsPage() {
 
       {/* All clear */}
       {all.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20 gap-3 bg-white rounded-xl shadow-sm">
+        <div className="flex flex-col items-center justify-center py-20 gap-3 bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b]">
           <CheckCircle2 className="w-12 h-12 text-[#0d3d3b]/30" />
           <p className="text-lg font-semibold text-stone-700">All clear!</p>
           <p className="text-sm text-stone-400">No alerts or pending items right now.</p>

@@ -287,7 +287,7 @@ export default async function DashboardPage() {
 
         return (
           <Link href="/invoices?status=unpaid" className="block hover:opacity-90 transition-opacity">
-            <div className="bg-white rounded-md shadow-sm p-4">
+            <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold">Accounts Receivable (AR)</h3>
                 <span className="text-lg font-bold">{formatCurrency(arTotal)}</span>
@@ -346,7 +346,7 @@ export default async function DashboardPage() {
           <GaugeCard label="Margin" value={kpis.grossMargin} description={`$${formatNumber(kpis.grossProfit, 0)} profit`} />
 
           {/* Margin & Profit by Year */}
-          <Link href="/reports" className="bg-white rounded-md shadow-sm p-3 space-y-1.5 block hover:shadow-md transition-shadow">
+          <Link href="/reports" className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-3 space-y-1.5 block hover:shadow-md transition-shadow">
             <p className="text-xs font-medium text-muted-foreground uppercase">Margin & Profit by Year</p>
             {marginYearData.map((m) => (
               <div key={m.year} className="space-y-0.5">
@@ -365,7 +365,7 @@ export default async function DashboardPage() {
           </Link>
 
           {/* Current period */}
-          <Link href="/reports" className="bg-white rounded-md shadow-sm p-3 space-y-2 block hover:shadow-md transition-shadow">
+          <Link href="/reports" className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-3 space-y-2 block hover:shadow-md transition-shadow">
             <p className="text-xs font-medium text-muted-foreground uppercase">Current Period</p>
             <div>
               <div className="flex justify-between text-sm">
@@ -410,7 +410,7 @@ function GaugeCard({ label, value, description }: { label: string; value: number
   const color = pct >= 80 ? "#0d3d3b" : pct >= 50 ? "#0d3d3b" : "#0d3d3b";
 
   return (
-    <div className="bg-white rounded-md shadow-sm p-4 flex flex-col items-center">
+    <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4 flex flex-col items-center">
       <svg width="140" height="80" viewBox="0 0 140 85">
         <path d="M 10 75 A 60 60 0 0 1 130 75" fill="none" stroke="#e7e5e4" strokeWidth="8" strokeLinecap="round" />
         <path

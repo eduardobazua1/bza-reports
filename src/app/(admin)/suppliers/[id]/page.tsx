@@ -67,17 +67,17 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
 
       {/* KPIs */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white rounded-md shadow-sm p-4">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4">
           <p className="text-[10px] text-stone-400 uppercase tracking-wide mb-1">Total Purchases</p>
           <p className="text-xl font-bold text-stone-900">{formatCurrency(totalCost)}</p>
           <p className="text-xs text-stone-400 mt-0.5">{formatNumber(totalTons, 0)} TN · {pos.length} POs</p>
         </div>
-        <div className="bg-white rounded-md shadow-sm p-4">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4">
           <p className="text-[10px] text-stone-400 uppercase tracking-wide mb-1">Total Paid</p>
           <p className="text-xl font-bold text-[#0d3d3b]">{formatCurrency(totalPaid)}</p>
           <p className="text-xs text-stone-400 mt-0.5">{payments.length} payment{payments.length !== 1 ? "s" : ""}</p>
         </div>
-        <div className={`bg-white rounded-md shadow-sm p-4 border-l-4 ${balance > 0 ? "border-l-[#0d3d3b]" : balance < 0 ? "border-l-[#0d3d3b]" : "border-l-stone-200"}`}>
+        <div className={`bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4 border-l-4 ${balance > 0 ? "border-l-[#0d3d3b]" : balance < 0 ? "border-l-[#0d3d3b]" : "border-l-stone-200"}`}>
           <p className="text-[10px] text-stone-400 uppercase tracking-wide mb-1">Open Balance</p>
           <p className={`text-xl font-bold ${balance > 0 ? "text-[#0d3d3b]" : balance < 0 ? "text-[#0d3d3b]" : "text-stone-400"}`}>{formatCurrency(Math.abs(balance))}</p>
           <p className="text-xs text-stone-400 mt-0.5">{balance > 0 ? "You owe supplier" : balance < 0 ? "Overpaid" : "Settled"}</p>
@@ -87,7 +87,7 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
       {/* Info Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Contact */}
-        <div className="bg-white rounded-md shadow-sm p-4 space-y-3">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4 space-y-3">
           <p className="text-xs font-semibold text-stone-500 uppercase tracking-widest">Contact</p>
           <InfoRow label="Contact Name" value={supplier.contactName} />
           <InfoRow label="Email" value={supplier.contactEmail} />
@@ -108,7 +108,7 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
         </div>
 
         {/* Bank */}
-        <div className="bg-white rounded-md shadow-sm p-4 space-y-3">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4 space-y-3">
           <p className="text-xs font-semibold text-stone-500 uppercase tracking-widest">Bank / ACH Info</p>
           {!supplier.bankName && !supplier.bankAccount ? (
             <p className="text-xs text-stone-400 italic">No bank information on file.</p>
@@ -125,7 +125,7 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
         </div>
 
         {/* Cert */}
-        <div className="bg-white rounded-md shadow-sm p-4 space-y-3">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4 space-y-3">
           <p className="text-xs font-semibold text-stone-500 uppercase tracking-widest">
             {supplier.certType === "pefc" ? "PEFC Certification" : "FSC Certification"}
           </p>
@@ -148,7 +148,7 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
       </div>
 
       {/* Purchase Orders */}
-      <div className="bg-white rounded-md shadow-sm">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b]">
         <div className="px-4 py-3 border-b border-stone-100">
           <h3 className="text-sm font-semibold text-stone-800">Purchase Orders ({pos.length})</h3>
         </div>
@@ -194,7 +194,7 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
       </div>
 
       {/* Payments */}
-      <div className="bg-white rounded-md shadow-sm">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b]">
         <div className="px-4 py-3 border-b border-stone-100">
           <h3 className="text-sm font-semibold text-stone-800">Payments Made</h3>
           <p className="text-xs text-stone-400 mt-0.5">{payments.length} payment{payments.length !== 1 ? "s" : ""} · {formatCurrency(totalPaid)} paid</p>

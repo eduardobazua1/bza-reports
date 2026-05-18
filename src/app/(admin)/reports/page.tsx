@@ -97,7 +97,7 @@ export default function ReportsHubPage() {
 
       {/* Favorites */}
       {favoriteReports.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] overflow-hidden">
           <div className="px-5 py-3 bg-amber-50 border-b border-amber-100 flex items-center gap-2">
             <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
             <span className="text-sm font-semibold text-stone-700">Favorites</span>
@@ -111,7 +111,7 @@ export default function ReportsHubPage() {
       )}
 
       {/* Custom Reports */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] overflow-hidden">
         <div className="px-5 py-3 border-b border-stone-100 flex items-center justify-between">
           <span className="text-sm font-semibold text-stone-700">Custom Reports</span>
           <Link href="/custom-reports" className="text-xs text-[#0d3d3b] hover:underline font-medium">
@@ -127,7 +127,7 @@ export default function ReportsHubPage() {
       {REPORT_CATEGORIES.map(cat => {
         const open = !collapsed[cat.id];
         return (
-          <div key={cat.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div key={cat.id} className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] overflow-hidden">
             <button
               onClick={() => toggleCollapsed(cat.id)}
               className="w-full px-5 py-3.5 border-b border-stone-100 flex items-center justify-between hover:bg-stone-50 transition-colors"

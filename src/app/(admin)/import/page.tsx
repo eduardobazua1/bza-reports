@@ -155,7 +155,7 @@ export default function ImportPage() {
       <h1 className="text-2xl font-bold">Import Excel</h1>
 
       {/* File Upload */}
-      <div className="bg-white rounded-md shadow-sm p-6">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-6">
         <p className="text-sm text-muted-foreground mb-4">
           Select an Excel file with the expected format. Columns must match the layout:
           B=PO#, C=Date, D=Invoice#, G=Client, H=Client PO, M=Quantity(TN), P=Supplier, Q=Sell Price,
@@ -192,7 +192,7 @@ export default function ImportPage() {
       {parsedData.length > 0 && (
         <>
           {/* Summary by PO */}
-          <div className="bg-white rounded-md shadow-sm">
+          <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b]">
             <div className="p-4 border-b border-border flex items-center justify-between">
               <h3 className="text-lg font-semibold">
                 Summary: {parsedData.length} rows, {Object.keys(poGroups).length} POs
@@ -232,7 +232,7 @@ export default function ImportPage() {
           </div>
 
           {/* Detail Preview Table */}
-          <div className="bg-white rounded-md shadow-sm">
+          <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b]">
             <div className="p-4 border-b border-border">
               <h3 className="text-lg font-semibold">Detailed Preview</h3>
             </div>

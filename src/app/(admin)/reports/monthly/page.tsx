@@ -42,7 +42,7 @@ export default async function MonthlyBreakdownPage() {
   }), { tons: 0, revenue: 0, cost: 0, profit: 0 });
 
   return (
-    <div className="bg-white rounded-md shadow-sm">
+    <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b]">
         <div className="px-5 py-4 border-b border-stone-100">
           <h2 className="text-base font-semibold text-stone-800">Monthly Summary</h2>
         </div>
