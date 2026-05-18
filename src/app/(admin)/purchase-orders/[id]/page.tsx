@@ -209,8 +209,13 @@ export default async function PurchaseOrderDetailPage({
         <SupplierInvoicesSection
           purchaseOrderId={po.id}
           supplierId={po.supplierId}
-          initialInvoices={supplierInvoicesList}
+          initialInvoices={supplierInvoicesList as any}
           buyPrice={po.buyPrice}
+          poInvoices={po.invoices.map(inv => ({
+            id: inv.id,
+            invoiceNumber: inv.invoiceNumber,
+            quantityTons: inv.quantityTons,
+          }))}
         />
       )}
 

@@ -291,6 +291,7 @@ export const supplierInvoices = sqliteTable("supplier_invoices", {
   fileName: text("file_name"),
   fileUrl: text("file_url"),
   fileSize: integer("file_size"),
+  linkedInvoiceId: integer("linked_invoice_id").references(() => invoices.id),
   paymentStatus: text("payment_status").notNull().default("unpaid"),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });

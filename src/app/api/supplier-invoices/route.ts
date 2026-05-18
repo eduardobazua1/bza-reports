@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
   const estimatedTons = formData.get("estimatedTons") ? Number(formData.get("estimatedTons")) : null;
   const amountUsd = formData.get("amountUsd") ? Number(formData.get("amountUsd")) : null;
   const notes = (formData.get("notes") as string) || null;
+  const linkedInvoiceId = formData.get("linkedInvoiceId") ? Number(formData.get("linkedInvoiceId")) : null;
   const file = formData.get("file") as File | null;
 
   if (!purchaseOrderId || !supplierId || !invoiceNumber) {
@@ -68,7 +69,7 @@ export async function POST(req: NextRequest) {
 
   const [row] = await db
     .insert(supplierInvoices)
-    .values({ purchaseOrderId, supplierId, invoiceNumber, invoiceDate, estimatedTons, amountUsd, notes, fileName, fileUrl, fileSize })
+    .values({ purchaseOrderId, supplierId, invoiceNumber, invoiceDate, estimatedTons, amountUsd, notes, fileName, fileUrl, fileSize, linkedInvoiceId })
     .returning();
 
   return NextResponse.json({ ...row, fileUrl: row.fileName ? `/api/supplier-invoices/file?id=${row.id}` : null });

@@ -18,10 +18,15 @@ export async function PATCH(
 ) {
   const { id } = await params;
   const body = await req.json();
-  const { paymentStatus } = body;
-  await db
-    .update(supplierInvoices)
-    .set({ paymentStatus })
-    .where(eq(supplierInvoices.id, Number(id)));
+  const { paymentStatus, linkedInvoiceId } = body;
+
+  if (paymentStatus !== undefined) {
+    await db.update(supplierInvoices).set({ paymentStatus }).where(eq(supplierInvoices.id, Number(id)));
+  }
+  if (linkedInvoiceId !== undefined) {
+    await db.update(supplierInvoices)
+      .set({ linkedInvoiceId: linkedInvoiceId === null ? null : Number(linkedInvoiceId) })
+      .where(eq(supplierInvoices.id, Number(id)));
+  }
   return NextResponse.json({ ok: true });
 }

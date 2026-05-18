@@ -530,10 +530,13 @@ export async function getSupplierInvoicesByPO(poId: number) {
       notes: supplierInvoices.notes,
       fileName: supplierInvoices.fileName,
       fileSize: supplierInvoices.fileSize,
+      linkedInvoiceId: supplierInvoices.linkedInvoiceId,
+      linkedInvoiceNumber: invoices.invoiceNumber,
       paymentStatus: supplierInvoices.paymentStatus,
       createdAt: supplierInvoices.createdAt,
     })
     .from(supplierInvoices)
+    .leftJoin(invoices, eq(supplierInvoices.linkedInvoiceId, invoices.id))
     .where(eq(supplierInvoices.purchaseOrderId, poId))
     .orderBy(supplierInvoices.invoiceDate);
 

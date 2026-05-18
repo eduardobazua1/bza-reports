@@ -17,8 +17,17 @@ type SupplierInvoice = {
   fileName: string | null;
   fileUrl: string | null;
   fileSize: number | null;
+  linkedInvoiceId: number | null;
+  linkedInvoiceNumber: string | null;
   paymentStatus: string;
   createdAt: string;
+};
+
+type POInvoice = {
+  id: number;
+  invoiceNumber: string;
+  quantityTons: number;
+  sellPrice?: number;
 };
 
 function formatSize(bytes: number | null) {
@@ -33,11 +42,13 @@ export function SupplierInvoicesSection({
   supplierId,
   initialInvoices,
   buyPrice,
+  poInvoices = [],
 }: {
   purchaseOrderId: number;
   supplierId: number;
   initialInvoices: SupplierInvoice[];
   buyPrice?: number;
+  poInvoices?: POInvoice[];
 }) {
   const [invoices, setInvoices] = useState(initialInvoices);
   const [showAdd, setShowAdd] = useState(false);
@@ -49,6 +60,7 @@ export function SupplierInvoicesSection({
     estimatedTons: "",
     amountUsd: "",
     notes: "",
+    linkedInvoiceId: "",
   });
   const [file, setFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -57,6 +69,20 @@ export function SupplierInvoicesSection({
   const totalTons = invoices.reduce((s, i) => s + (i.estimatedTons || 0), 0);
   const totalAmount = invoices.reduce((s, i) => s + (i.amountUsd || 0), 0);
   const unpaidCount = invoices.filter(i => i.paymentStatus === "unpaid").length;
+
+  // Find the closest BZA invoice by tons
+  function autoMatchInvoice(tonsStr: string) {
+    if (!poInvoices.length || !tonsStr) return "";
+    const tons = parseFloat(tonsStr);
+    if (isNaN(tons)) return "";
+    let best = poInvoices[0];
+    let bestDiff = Math.abs((best.quantityTons || 0) - tons);
+    for (const inv of poInvoices) {
+      const diff = Math.abs((inv.quantityTons || 0) - tons);
+      if (diff < bestDiff) { bestDiff = diff; best = inv; }
+    }
+    return String(best.id);
+  }
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -71,14 +97,17 @@ export function SupplierInvoicesSection({
       if (form.estimatedTons) fd.append("estimatedTons", form.estimatedTons);
       if (form.amountUsd) fd.append("amountUsd", form.amountUsd);
       if (form.notes) fd.append("notes", form.notes);
+      if (form.linkedInvoiceId) fd.append("linkedInvoiceId", form.linkedInvoiceId);
       if (file) fd.append("file", file);
 
       const res = await fetch("/api/supplier-invoices", { method: "POST", body: fd });
       if (res.ok) {
         const created = await res.json();
-        setInvoices(prev => [...prev, created]);
+        // Attach linked invoice number for display
+        const linked = poInvoices.find(i => i.id === created.linkedInvoiceId);
+        setInvoices(prev => [...prev, { ...created, linkedInvoiceNumber: linked?.invoiceNumber ?? null }]);
         setShowAdd(false);
-        setForm({ invoiceNumber: "", invoiceDate: "", estimatedTons: "", amountUsd: "", notes: "" });
+        setForm({ invoiceNumber: "", invoiceDate: "", estimatedTons: "", amountUsd: "", notes: "", linkedInvoiceId: "" });
         setFile(null);
       }
     } finally {
@@ -105,6 +134,21 @@ export function SupplierInvoicesSection({
       body: JSON.stringify({ paymentStatus: next }),
     });
     setInvoices(prev => prev.map(i => i.id === inv.id ? { ...i, paymentStatus: next } : i));
+  }
+
+  async function handleLinkChange(inv: SupplierInvoice, newLinkedId: string) {
+    const linkedInvoiceId = newLinkedId ? Number(newLinkedId) : null;
+    await fetch(`/api/supplier-invoices/${inv.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ linkedInvoiceId }),
+    });
+    const linked = poInvoices.find(i => i.id === linkedInvoiceId);
+    setInvoices(prev => prev.map(i =>
+      i.id === inv.id
+        ? { ...i, linkedInvoiceId, linkedInvoiceNumber: linked?.invoiceNumber ?? null }
+        : i
+    ));
   }
 
   return (
@@ -160,7 +204,13 @@ export function SupplierInvoicesSection({
                 onChange={e => {
                   const tons = e.target.value;
                   const auto = buyPrice && tons ? (parseFloat(tons) * buyPrice).toFixed(2) : "";
-                  setForm(f => ({ ...f, estimatedTons: tons, amountUsd: auto || f.amountUsd }));
+                  const autoLinked = autoMatchInvoice(tons);
+                  setForm(f => ({
+                    ...f,
+                    estimatedTons: tons,
+                    amountUsd: auto || f.amountUsd,
+                    linkedInvoiceId: autoLinked || f.linkedInvoiceId,
+                  }));
                 }}
                 placeholder="0.000"
                 className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#0d3d3b]"
@@ -180,7 +230,24 @@ export function SupplierInvoicesSection({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {poInvoices.length > 0 && (
+              <div>
+                <label className="block text-xs text-[#0d3d3b] mb-1 font-medium">BZA Invoice</label>
+                <select
+                  value={form.linkedInvoiceId}
+                  onChange={e => setForm(f => ({ ...f, linkedInvoiceId: e.target.value }))}
+                  className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#0d3d3b]"
+                >
+                  <option value="">— none —</option>
+                  {poInvoices.map(inv => (
+                    <option key={inv.id} value={inv.id}>
+                      {inv.invoiceNumber} ({formatNumber(inv.quantityTons, 3)} TN)
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div>
               <label className="block text-xs text-[#0d3d3b] mb-1 font-medium">Notes</label>
               <input
@@ -244,6 +311,9 @@ export function SupplierInvoicesSection({
                 <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Date</th>
                 <th className="text-right px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Tons</th>
                 <th className="text-right px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Amount</th>
+                {poInvoices.length > 0 && (
+                  <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">BZA Invoice</th>
+                )}
                 <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Notes</th>
                 <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">File</th>
                 <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Status</th>
@@ -257,6 +327,22 @@ export function SupplierInvoicesSection({
                   <td className="px-4 py-2.5 text-xs text-stone-600">{formatDate(inv.invoiceDate)}</td>
                   <td className="px-4 py-2.5 text-xs text-right text-stone-700">{inv.estimatedTons ? formatNumber(inv.estimatedTons, 3) : "—"}</td>
                   <td className="px-4 py-2.5 text-xs text-right font-semibold text-stone-800">{inv.amountUsd ? formatCurrency(inv.amountUsd) : "—"}</td>
+                  {poInvoices.length > 0 && (
+                    <td className="px-4 py-2.5 text-xs">
+                      <select
+                        value={inv.linkedInvoiceId ?? ""}
+                        onChange={e => handleLinkChange(inv, e.target.value)}
+                        className="border border-stone-200 rounded px-2 py-1 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#0d3d3b] text-[#0d3d3b] font-medium"
+                      >
+                        <option value="">— none —</option>
+                        {poInvoices.map(pi => (
+                          <option key={pi.id} value={pi.id}>
+                            {pi.invoiceNumber}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  )}
                   <td className="px-4 py-2.5 text-xs text-stone-400">{inv.notes || "—"}</td>
                   <td className="px-4 py-2.5 text-xs">
                     {inv.fileUrl ? (
@@ -305,7 +391,7 @@ export function SupplierInvoicesSection({
                   <td colSpan={2} className="px-4 py-2 text-xs text-stone-600">TOTAL</td>
                   <td className="px-4 py-2 text-xs text-right text-stone-700">{formatNumber(totalTons, 3)}</td>
                   <td className="px-4 py-2 text-xs text-right text-stone-800">{formatCurrency(totalAmount)}</td>
-                  <td colSpan={4} className="px-4 py-2" />
+                  <td colSpan={poInvoices.length > 0 ? 5 : 4} className="px-4 py-2" />
                 </tr>
               </tfoot>
             )}
