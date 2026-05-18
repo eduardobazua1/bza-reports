@@ -278,6 +278,23 @@ export const supplierPaymentInvoices = sqliteTable("supplier_payment_invoices", 
   estimatedTons: real("estimated_tons"),
 });
 
+// Supplier Invoices (facturas del proveedor) - per PO, for FSC/PEFC audit + A/P reconciliation
+export const supplierInvoices = sqliteTable("supplier_invoices", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  purchaseOrderId: integer("purchase_order_id").notNull().references(() => purchaseOrders.id),
+  supplierId: integer("supplier_id").notNull().references(() => suppliers.id),
+  invoiceNumber: text("invoice_number").notNull(),
+  invoiceDate: text("invoice_date"),
+  estimatedTons: real("estimated_tons"),
+  amountUsd: real("amount_usd"),
+  notes: text("notes"),
+  fileName: text("file_name"),
+  fileUrl: text("file_url"),
+  fileSize: integer("file_size"),
+  paymentStatus: text("payment_status").notNull().default("unpaid"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
 // Supplier Orders - individual purchase orders sent to supplier under a BZA PO
 // e.g. BZA PO X0043 → Supplier Order 1: 540 TN @ $845/TN DAP Eagle Pass
 export const supplierOrders = sqliteTable("supplier_orders", {

@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getPurchaseOrder, getClients, getSuppliers } from "@/server/queries";
+import { getPurchaseOrder, getClients, getSuppliers, getSupplierInvoicesByPO } from "@/server/queries";
 import { db } from "@/db";
 import { products } from "@/db/schema";
 import {
@@ -17,6 +17,7 @@ import { ClientPOsSection } from "@/components/client-pos-section";
 import { SupplierOrdersSection } from "@/components/supplier-orders-section";
 import { InvoicesSection } from "@/components/invoices-section";
 import { POSupplierPayments } from "@/components/po-supplier-payments";
+import { SupplierInvoicesSection } from "@/components/supplier-invoices-section";
 
 export default async function PurchaseOrderDetailPage({
   params,
@@ -24,16 +25,17 @@ export default async function PurchaseOrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [po, clients, suppliers, productsList] = await Promise.all([
-    getPurchaseOrder(Number(id)),
+  const numId = Number(id);
+  const [po, clients, suppliers, productsList, supplierInvoicesList] = await Promise.all([
+    getPurchaseOrder(numId),
     getClients(),
     getSuppliers(),
     db.select({ id: products.id, name: products.name, grade: products.grade, fscLicense: products.fscLicense, chainOfCustody: products.chainOfCustody, inputClaim: products.inputClaim, outputClaim: products.outputClaim, pefc: products.pefc }).from(products).orderBy(products.name),
+    getSupplierInvoicesByPO(numId),
   ]);
 
   if (!po) notFound();
 
-  // Resolve product names
   const supplierProduct = po.supplierProductId ? productsList.find(p => p.id === po.supplierProductId) : null;
   const clientProduct = po.clientProductId ? productsList.find(p => p.id === po.clientProductId) : null;
 
@@ -202,7 +204,16 @@ export default async function PurchaseOrderDetailPage({
         />
       )}
 
-      {/* ── Section 5: Supplier Orders ──────────────────────── */}
+      {/* ── Section 5: Supplier Invoices (facturas) ─────────── */}
+      {po.supplierId && (
+        <SupplierInvoicesSection
+          purchaseOrderId={po.id}
+          supplierId={po.supplierId}
+          initialInvoices={supplierInvoicesList}
+        />
+      )}
+
+      {/* ── Section 7: Supplier Orders ──────────────────────── */}
       <SupplierOrdersSection
         purchaseOrderId={po.id}
         supplierOrders={po.supplierOrders}

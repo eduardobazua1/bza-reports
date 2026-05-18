@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, clientPurchaseOrders, supplierPayments, supplierPaymentInvoices, supplierOrders, customerPayments, customerPaymentInvoices, creditMemos, proposals, proposalItems, contracts } from "@/db/schema";
+import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, clientPurchaseOrders, supplierPayments, supplierPaymentInvoices, supplierInvoices, supplierOrders, customerPayments, customerPaymentInvoices, creditMemos, proposals, proposalItems, contracts } from "@/db/schema";
 import { eq, desc, sql, and, count, inArray, isNull } from "drizzle-orm";
 
 // ---- Clients ----
@@ -486,6 +486,33 @@ export async function getUnpaidSupplierInvoices() {
     .leftJoin(clients, eq(purchaseOrders.clientId, clients.id))
     .where(eq(invoices.supplierPaymentStatus, "unpaid"))
     .orderBy(suppliers.name, invoices.shipmentDate);
+}
+
+// ---- Supplier Invoices (facturas del proveedor) ----
+export async function getSupplierInvoicesByPO(poId: number) {
+  const rows = await db
+    .select({
+      id: supplierInvoices.id,
+      purchaseOrderId: supplierInvoices.purchaseOrderId,
+      supplierId: supplierInvoices.supplierId,
+      invoiceNumber: supplierInvoices.invoiceNumber,
+      invoiceDate: supplierInvoices.invoiceDate,
+      estimatedTons: supplierInvoices.estimatedTons,
+      amountUsd: supplierInvoices.amountUsd,
+      notes: supplierInvoices.notes,
+      fileName: supplierInvoices.fileName,
+      fileSize: supplierInvoices.fileSize,
+      paymentStatus: supplierInvoices.paymentStatus,
+      createdAt: supplierInvoices.createdAt,
+    })
+    .from(supplierInvoices)
+    .where(eq(supplierInvoices.purchaseOrderId, poId))
+    .orderBy(supplierInvoices.invoiceDate);
+
+  return rows.map(r => ({
+    ...r,
+    fileUrl: r.fileName ? `/api/supplier-invoices/file?id=${r.id}` : null,
+  }));
 }
 
 // ---- PO list for assignment dropdown ----
