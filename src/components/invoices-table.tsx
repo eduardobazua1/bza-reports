@@ -324,7 +324,7 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                       isSelected ? "bg-[#0d3d3b]/10 border-l-2 border-l-[#0d3d3b]" : "hover:bg-muted/40"
                     }`}
                   >
-                    <td className="px-3 py-1.5 text-xs text-stone-600 whitespace-nowrap">{row.invoice.invoiceNumber}</td>
+                    <td className="px-3 py-1.5 text-xs font-medium text-stone-700 whitespace-nowrap">{row.invoice.invoiceNumber}</td>
                     <td className="px-3 py-1.5 text-xs">
                       <Link href={`/purchase-orders/${row.invoice.purchaseOrderId}`} className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
                         {row.poNumber || "-"}
@@ -332,15 +332,15 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                     </td>
                     <td className="px-3 py-1.5 text-xs text-stone-700">{row.clientName || "-"}</td>
                     <td className="px-3 py-1.5 text-xs text-stone-500">{(row.invoice as any).destination || "-"}</td>
-                    <td className="px-3 py-1.5 text-xs text-right tabular-nums">{formatNumber(row.invoice.quantityTons, 2)}</td>
-                    <td className="px-3 py-1.5 text-xs text-right font-medium tabular-nums">{formatCurrency(revenue)}</td>
-                    <td className="px-3 py-1.5 text-xs text-stone-600 whitespace-nowrap">{formatDate(row.invoice.shipmentDate)}</td>
-                    <td className="px-3 py-1.5 text-xs whitespace-nowrap">
+                    <td className="px-3 py-1.5 text-xs text-right text-stone-500 tabular-nums">{formatNumber(row.invoice.quantityTons, 2)}</td>
+                    <td className="px-3 py-1.5 text-xs text-right font-medium text-stone-700 tabular-nums">{formatCurrency(revenue)}</td>
+                    <td className="px-3 py-1.5 text-xs text-stone-500 whitespace-nowrap">{formatDate(row.invoice.shipmentDate)}</td>
+                    <td className="px-3 py-1.5 text-xs text-stone-500 whitespace-nowrap">
                       {dueDate ? (
                         row.invoice.customerPaymentStatus === "unpaid" && daysOverdue > 0 ? (
                           <span className="text-[#0d3d3b] font-medium">{formatDate(dueDate)} <span className="font-bold">+{daysOverdue}d</span></span>
                         ) : (
-                          <span className="text-stone-600">{formatDate(dueDate)}</span>
+                          <span>{formatDate(dueDate)}</span>
                         )
                       ) : (
                         <span className="text-stone-400">-</span>
@@ -748,16 +748,16 @@ function ReceivePaymentPanel({
                       <p className="font-medium text-stone-800">{inv.invoiceNumber}</p>
                       {inv.invoiceDate && <p className="text-[10px] text-stone-400">{formatDate(inv.invoiceDate)}</p>}
                     </td>
-                    <td className="p-2">
+                    <td className="p-2 text-xs text-stone-500">
                       {due ? (
                         daysOverdue > 0 ? (
-                          <span className="text-[#0d3d3b] font-semibold">{formatDate(due)}<br /><span className="text-[10px]">+{daysOverdue}d overdue</span></span>
+                          <span className="text-[#0d3d3b] font-medium">{formatDate(due)}<br /><span className="text-[10px]">+{daysOverdue}d overdue</span></span>
                         ) : (
-                          <span className="text-stone-600">{formatDate(due)}</span>
+                          <span>{formatDate(due)}</span>
                         )
                       ) : "-"}
                     </td>
-                    <td className="p-2 text-right text-stone-600">{formatCurrency(amount)}</td>
+                    <td className="p-2 text-xs text-right font-medium text-stone-700">{formatCurrency(amount)}</td>
                   </tr>
                 );
               })}

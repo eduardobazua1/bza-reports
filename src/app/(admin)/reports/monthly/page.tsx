@@ -61,12 +61,12 @@ export default async function MonthlyBreakdownPage() {
             <tbody>
               {rows.map((r) => (
                 <tr key={r.month} className="border-t border-stone-100 hover:bg-stone-50">
-                  <td className="px-5 py-3 text-stone-600">{r.label}</td>
-                  <td className="px-5 py-3 text-right text-stone-600">{formatNumber(r.tons, 1)}</td>
-                  <td className="px-5 py-3 text-right text-stone-600">{formatCurrency(r.revenue)}</td>
-                  <td className="px-5 py-3 text-right text-stone-500">{formatCurrency(r.cost)}</td>
-                  <td className={`px-5 py-3 text-right font-semibold ${r.profit >= 0 ? "text-emerald-600" : "text-[#0d3d3b]"}`}>{formatCurrency(r.profit)}</td>
-                  <td className={`px-5 py-3 text-right font-medium ${r.margin >= 10 ? "text-emerald-600" : "text-[#0d3d3b]"}`}>{formatPercent(r.margin)}</td>
+                  <td className="px-5 py-3 text-xs font-medium text-stone-700">{r.label}</td>
+                  <td className="px-5 py-3 text-xs text-right font-medium text-stone-700">{formatNumber(r.tons, 1)}</td>
+                  <td className="px-5 py-3 text-xs text-right font-medium text-stone-700">{formatCurrency(r.revenue)}</td>
+                  <td className="px-5 py-3 text-xs text-right text-stone-500">{formatCurrency(r.cost)}</td>
+                  <td className={`px-5 py-3 text-xs text-right font-medium ${r.profit >= 0 ? "text-emerald-600" : "text-[#0d3d3b]"}`}>{formatCurrency(r.profit)}</td>
+                  <td className={`px-5 py-3 text-xs text-right font-medium ${r.margin >= 10 ? "text-emerald-600" : "text-[#0d3d3b]"}`}>{formatPercent(r.margin)}</td>
                 </tr>
               ))}
             </tbody>

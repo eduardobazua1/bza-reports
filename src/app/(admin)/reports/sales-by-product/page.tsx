@@ -70,7 +70,7 @@ export default async function SalesByProductPage() {
                 const barWidth = Math.round((p.totalRevenue / maxRevenue) * 120);
                 return (
                   <tr key={p.product} className="border-b border-stone-50 hover:bg-stone-50">
-                    <td className="px-6 py-3 text-stone-700 font-medium">
+                    <td className="px-6 py-3 text-xs font-medium text-stone-700">
                       <div>{p.product}</div>
                       <div className="mt-1 w-[120px] h-1.5 bg-[#0d3d3b]/10 rounded-full">
                         <div
@@ -79,13 +79,13 @@ export default async function SalesByProductPage() {
                         />
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-right text-stone-600">{p.invoiceCount}</td>
-                    <td className="px-4 py-3 text-right text-stone-600">
+                    <td className="px-4 py-3 text-xs text-right text-stone-400">{p.invoiceCount}</td>
+                    <td className="px-4 py-3 text-xs text-right font-medium text-stone-700">
                       {p.totalTons.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className="px-4 py-3 text-right text-stone-700">{formatCurrency(p.totalRevenue)}</td>
-                    <td className="px-4 py-3 text-right text-stone-600">{formatCurrency(p.totalCost)}</td>
-                    <td className="px-4 py-3 text-right text-stone-700">{formatCurrency(grossProfit)}</td>
+                    <td className="px-4 py-3 text-xs text-right font-medium text-stone-700">{formatCurrency(p.totalRevenue)}</td>
+                    <td className="px-4 py-3 text-xs text-right text-stone-500">{formatCurrency(p.totalCost)}</td>
+                    <td className="px-4 py-3 text-xs text-right font-medium text-stone-700">{formatCurrency(grossProfit)}</td>
                     <td className={`px-6 py-3 text-right ${marginColor(margin)}`}>{margin.toFixed(1)}%</td>
                   </tr>
                 );

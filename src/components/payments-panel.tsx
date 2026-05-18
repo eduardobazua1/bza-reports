@@ -352,10 +352,10 @@ export function PaymentsPanel({
                         <td className="p-3 text-xs text-right text-stone-500">{inv.quantityTons.toFixed(2)}</td>
                         <td className="p-3 text-xs text-right font-medium text-stone-700">{formatCurrency(amount)}</td>
                         <td className="p-3 text-xs text-stone-500">{formatDate(inv.shipmentDate)}</td>
-                        <td className="p-3 font-medium">
+                        <td className="p-3 text-xs text-stone-500">
                           {overdue
-                            ? <span className="text-red-600">+{daysOverdue}d overdue</span>
-                            : <span className="text-stone-600">{formatDate(inv.dueDate)}</span>
+                            ? <span className="text-red-600 font-medium">+{daysOverdue}d overdue</span>
+                            : <span>{formatDate(inv.dueDate)}</span>
                           }
                         </td>
                       </tr>

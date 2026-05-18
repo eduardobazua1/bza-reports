@@ -83,7 +83,7 @@ export function POSupplierPayments({
           <h3 className="font-semibold text-stone-700">Supplier Payments</h3>
           <p className="text-xs text-stone-400 mt-0.5">
             {payments.length} payment{payments.length !== 1 ? "s" : ""} · Total paid:{" "}
-            <span className="font-medium text-stone-600">{formatCurrency(totalPaid)}</span>
+            <span className="font-medium text-stone-700">{formatCurrency(totalPaid)}</span>
           </p>
         </div>
         <button
@@ -205,9 +205,9 @@ export function POSupplierPayments({
             )}
             {payments.map((p) => (
               <tr key={p.id} className="border-t border-stone-100 hover:bg-stone-50">
-                <td className="px-4 py-2.5 text-stone-700">{formatDate(p.paymentDate)}</td>
-                <td className="px-4 py-2.5 text-right font-medium text-stone-600">{formatCurrency(p.amountUsd)}</td>
-                <td className="px-4 py-2.5 text-stone-600">{p.reference || "—"}</td>
+                <td className="px-4 py-2.5 text-xs text-stone-500">{formatDate(p.paymentDate)}</td>
+                <td className="px-4 py-2.5 text-xs text-right font-medium text-stone-700">{formatCurrency(p.amountUsd)}</td>
+                <td className="px-4 py-2.5 text-xs text-stone-500">{p.reference || "—"}</td>
                 <td className="px-4 py-2.5 text-stone-400">{p.notes || "—"}</td>
                 <td className="px-4 py-2.5 text-right">
                   <button

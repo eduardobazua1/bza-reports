@@ -463,10 +463,10 @@ export function ClientPOsSection({
                 return (
                   <>
                     <tr key={cpo.id} className={`hover:bg-stone-50 ${editingId === cpo.id ? "bg-[#0d3d3b]/40" : ""}`}>
-                      <td className="px-4 py-3 border-t border-stone-100 text-sm font-medium text-stone-600">
+                      <td className="px-4 py-3 border-t border-stone-100 text-xs font-medium text-stone-700">
                         {cpo.clientPoNumber}
                       </td>
-                      <td className="px-4 py-3 border-t border-stone-100 text-stone-600 text-xs">{cpo.item || "—"}</td>
+                      <td className="px-4 py-3 border-t border-stone-100 text-xs text-stone-500">{cpo.item || "—"}</td>
                       <td className="px-4 py-3 border-t border-stone-100 text-stone-500">{cpo.destination || "—"}</td>
                       <td className="px-4 py-3 border-t border-stone-100 text-stone-500 text-xs">{cpo.incoterm || "—"}</td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right">
@@ -474,7 +474,7 @@ export function ClientPOsSection({
                       </td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right">
                         {convertedTons > 0 ? (
-                          <span className="font-semibold text-stone-800">
+                          <span className="font-medium text-stone-700">
                             {formatNumber(convertedTons, 2)}
                           </span>
                         ) : (
@@ -485,7 +485,7 @@ export function ClientPOsSection({
                         {cpo.sellPriceOverride ? formatCurrency(cpo.sellPriceOverride) : (sellPrice ? formatCurrency(sellPrice) : "—")}
                         {cpo.sellPriceOverride && <span className="ml-1 text-[#0d3d3b]">*</span>}
                       </td>
-                      <td className="px-4 py-3 border-t border-stone-100 text-right font-medium">
+                      <td className="px-4 py-3 border-t border-stone-100 text-xs text-right font-medium text-stone-700">
                         {amount ? formatCurrency(amount) : "—"}
                       </td>
                       <td className="px-4 py-3 border-t border-stone-100">

@@ -263,9 +263,9 @@ export function ContractDetailActions({ contract, clients, suppliers, eligiblePo
                       {po.poNumber}
                     </Link>
                   </td>
-                  <td className="px-4 py-2.5 text-stone-500">{formatDate(po.poDate)}</td>
-                  <td className="px-4 py-2.5 text-right font-medium">{formatNumber(po.plannedTons, 1)}</td>
-                  <td className="px-4 py-2.5 text-right text-stone-500">{formatNumber(shippedTons, 1)}</td>
+                  <td className="px-4 py-2.5 text-xs text-stone-500">{formatDate(po.poDate)}</td>
+                  <td className="px-4 py-2.5 text-xs text-right font-medium text-stone-700">{formatNumber(po.plannedTons, 1)}</td>
+                  <td className="px-4 py-2.5 text-xs text-right text-stone-500">{formatNumber(shippedTons, 1)}</td>
                   <td className="px-4 py-2.5">
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
                       po.status === "active"    ? "bg-[#ccfbf1] text-[#0d3d3b]" :

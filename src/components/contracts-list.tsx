@@ -93,13 +93,13 @@ export function ContractsList({ contracts, clients, suppliers, nextContractNumbe
                           {c.contractNumber}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-stone-700">{row.clientName ?? "—"}</td>
-                      <td className="px-4 py-3 text-stone-500">{row.supplierName ?? "—"}</td>
-                      <td className="px-4 py-3 text-stone-600">{c.product ?? "—"}</td>
-                      <td className="px-4 py-3 text-stone-700 whitespace-nowrap">
+                      <td className="px-4 py-3 text-xs font-medium text-stone-700">{row.clientName ?? "—"}</td>
+                      <td className="px-4 py-3 text-xs text-stone-500">{row.supplierName ?? "—"}</td>
+                      <td className="px-4 py-3 text-xs font-medium text-stone-700">{c.product ?? "—"}</td>
+                      <td className="px-4 py-3 text-xs font-medium text-stone-700 whitespace-nowrap">
                         {formatPriceFormula(c.sellPriceType, c.sellPrice, c.sellMargin, c.sellMarketRef)}
                       </td>
-                      <td className="px-4 py-3 text-stone-500 whitespace-nowrap">
+                      <td className="px-4 py-3 text-xs text-stone-500 whitespace-nowrap">
                         {formatPriceFormula(c.buyPriceType, c.buyPrice, c.buyMargin, c.buyMarketRef)}
                       </td>
                       <td className="px-4 py-3">
@@ -120,7 +120,7 @@ export function ContractsList({ contracts, clients, suppliers, nextContractNumbe
                           ? <>{formatDate(c.startDate)} → {formatDate(c.endDate)}</>
                           : "—"}
                       </td>
-                      <td className="px-4 py-3 text-center text-stone-600">{row.poCount}</td>
+                      <td className="px-4 py-3 text-xs text-center text-stone-400">{row.poCount}</td>
                       <td className="px-4 py-3">
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${contractStatusColors[c.status]}`}>
                           {contractStatusLabels[c.status]}

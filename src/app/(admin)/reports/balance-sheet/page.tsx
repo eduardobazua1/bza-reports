@@ -61,11 +61,11 @@ export default async function BalanceSheetPage() {
             <table className="w-full text-sm">
               <tbody>
                 <tr className="hover:bg-stone-50">
-                  <td className="px-6 py-3 text-stone-600">Accounts Receivable</td>
+                  <td className="px-6 py-3 text-xs font-medium text-stone-700">Accounts Receivable</td>
                   <ValueCell value={accountsReceivable} />
                 </tr>
                 <tr className="border-t border-stone-100 bg-stone-50/50">
-                  <td className="px-6 py-3 font-medium text-stone-600">Total Current Assets</td>
+                  <td className="px-6 py-3 text-xs font-medium text-stone-700">Total Current Assets</td>
                   <BoldValueCell value={totalAssets} />
                 </tr>
               </tbody>
@@ -80,11 +80,11 @@ export default async function BalanceSheetPage() {
             <table className="w-full text-sm">
               <tbody>
                 <tr className="hover:bg-stone-50">
-                  <td className="px-6 py-3 text-stone-600">Accounts Payable</td>
+                  <td className="px-6 py-3 text-xs font-medium text-stone-700">Accounts Payable</td>
                   <ValueCell value={accountsPayable} />
                 </tr>
                 <tr className="border-t border-stone-100 bg-stone-50/50">
-                  <td className="px-6 py-3 font-medium text-stone-600">Total Current Liabilities</td>
+                  <td className="px-6 py-3 text-xs font-medium text-stone-700">Total Current Liabilities</td>
                   <BoldValueCell value={totalLiabilities} />
                 </tr>
               </tbody>
@@ -99,11 +99,11 @@ export default async function BalanceSheetPage() {
             <table className="w-full text-sm">
               <tbody>
                 <tr className="hover:bg-stone-50">
-                  <td className="px-6 py-3 text-stone-600">Retained Earnings (Gross Profit)</td>
+                  <td className="px-6 py-3 text-xs font-medium text-stone-700">Retained Earnings (Gross Profit)</td>
                   <ValueCell value={grossProfit} />
                 </tr>
                 <tr className="border-t border-stone-100 bg-stone-50/50">
-                  <td className="px-6 py-3 font-medium text-stone-600">Total Equity</td>
+                  <td className="px-6 py-3 text-xs font-medium text-stone-700">Total Equity</td>
                   <BoldValueCell value={totalEquity} />
                 </tr>
               </tbody>

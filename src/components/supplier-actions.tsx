@@ -193,12 +193,12 @@ export function SupplierActions({ suppliers }: { suppliers: Supplier[] }) {
               )}
               {suppliers.map(s => (
                 <tr key={s.id} className="hover:bg-muted/50 transition-colors">
-                  <td className="p-3 text-sm font-medium border-t border-border">
+                  <td className="p-3 text-xs font-medium border-t border-border">
                     <a href={`/suppliers/${s.id}`} className="text-[#0d3d3b] hover:underline">{s.name}</a>
                   </td>
-                  <td className="p-3 text-sm border-t border-border">{s.contactName || "-"}</td>
-                  <td className="p-3 text-sm border-t border-border">{s.contactEmail || "-"}</td>
-                  <td className="p-3 text-sm border-t border-border">{[s.city, s.country].filter(Boolean).join(", ") || "-"}</td>
+                  <td className="p-3 text-xs text-stone-500 border-t border-border">{s.contactName || "-"}</td>
+                  <td className="p-3 text-xs text-stone-500 border-t border-border">{s.contactEmail || "-"}</td>
+                  <td className="p-3 text-xs text-stone-500 border-t border-border">{[s.city, s.country].filter(Boolean).join(", ") || "-"}</td>
                   <td className="p-3 text-sm border-t border-border">
                     {s.certType === "fsc" || s.fscLicense ? (
                       <span className="px-2 py-0.5 rounded text-xs font-semibold bg-[#0d3d3b]/10 text-[#0d3d3b]">FSC</span>
