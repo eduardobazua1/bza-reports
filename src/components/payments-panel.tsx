@@ -749,9 +749,6 @@ export function PaymentsPanel({
               <h3 className="text-xs font-semibold text-stone-600 uppercase tracking-wide">
                 Prepaid Balance — Pending Shipment
               </h3>
-              <p className="text-xs text-stone-400 mt-0.5">
-                BZA has paid more than the supplier has shipped on these contracts
-              </p>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
