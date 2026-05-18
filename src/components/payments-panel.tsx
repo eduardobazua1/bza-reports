@@ -325,6 +325,9 @@ export function PaymentsPanel({
                 <tbody>
                   {unpaidInvoices.map(inv => {
                     const overdue = inv.dueDate && inv.dueDate < today;
+                    const daysOverdue = overdue && inv.dueDate
+                      ? Math.floor((new Date(today).getTime() - new Date(inv.dueDate).getTime()) / 86_400_000)
+                      : 0;
                     const amount = inv.quantityTons * inv.sellPrice;
                     return (
                       <tr
@@ -349,8 +352,11 @@ export function PaymentsPanel({
                         <td className="p-3 text-right text-stone-700">{inv.quantityTons.toFixed(2)}</td>
                         <td className="p-3 text-right font-medium text-stone-800">{formatCurrency(amount)}</td>
                         <td className="p-3 text-stone-500">{formatDate(inv.shipmentDate)}</td>
-                        <td className={`p-3 font-medium ${overdue ? "text-red-600" : "text-stone-600"}`}>
-                          {formatDate(inv.dueDate)}{overdue && " ⚠"}
+                        <td className="p-3 font-medium">
+                          {overdue
+                            ? <span className="text-red-600">+{daysOverdue}d overdue</span>
+                            : <span className="text-stone-600">{formatDate(inv.dueDate)}</span>
+                          }
                         </td>
                       </tr>
                     );
