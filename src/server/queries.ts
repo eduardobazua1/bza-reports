@@ -427,6 +427,44 @@ export async function getSupplierPaymentsWithInfo() {
 }
 
 // ---- A/P: unpaid supplier invoices ----
+// Returns per-PO balance: totalPaid - totalShippedCost
+// Positive = BZA prepaid (saldo a favor), Negative = BZA still owes
+export async function getSupplierBalanceByPO() {
+  const [paid, shipped] = await Promise.all([
+    db
+      .select({
+        poId: supplierPayments.purchaseOrderId,
+        supplierName: suppliers.name,
+        poNumber: purchaseOrders.poNumber,
+        totalPaid: sql<number>`coalesce(sum(${supplierPayments.amountUsd}), 0)`,
+      })
+      .from(supplierPayments)
+      .leftJoin(suppliers, eq(supplierPayments.supplierId, suppliers.id))
+      .leftJoin(purchaseOrders, eq(supplierPayments.purchaseOrderId, purchaseOrders.id))
+      .where(sql`${supplierPayments.purchaseOrderId} is not null`)
+      .groupBy(supplierPayments.purchaseOrderId),
+    db
+      .select({
+        poId: invoices.purchaseOrderId,
+        totalShipped: sql<number>`coalesce(sum(${invoices.quantityTons} * coalesce(${invoices.buyPriceOverride}, ${purchaseOrders.buyPrice}) + coalesce(${invoices.freightCost}, 0)), 0)`,
+      })
+      .from(invoices)
+      .leftJoin(purchaseOrders, eq(invoices.purchaseOrderId, purchaseOrders.id))
+      .groupBy(invoices.purchaseOrderId),
+  ]);
+
+  const shippedByPo: Record<number, number> = {};
+  for (const r of shipped) {
+    if (r.poId != null) shippedByPo[r.poId] = r.totalShipped;
+  }
+
+  return paid.map(r => {
+    const shipped = r.poId != null ? (shippedByPo[r.poId] || 0) : 0;
+    const balance = r.totalPaid - shipped; // positive = prepaid (saldo a favor)
+    return { poId: r.poId, poNumber: r.poNumber, supplierName: r.supplierName, totalPaid: r.totalPaid, totalShipped: shipped, balance };
+  }).sort((a, b) => b.balance - a.balance);
+}
+
 export async function getUnpaidSupplierInvoices() {
   return db
     .select({

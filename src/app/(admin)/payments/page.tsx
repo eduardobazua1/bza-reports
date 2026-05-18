@@ -1,13 +1,14 @@
-import { getCustomerPaymentsWithInvoices, getUnpaidInvoicesForPayments, getSupplierPaymentsWithInfo, getUnpaidSupplierInvoices } from "@/server/queries";
+import { getCustomerPaymentsWithInvoices, getUnpaidInvoicesForPayments, getSupplierPaymentsWithInfo, getUnpaidSupplierInvoices, getSupplierBalanceByPO } from "@/server/queries";
 import { PaymentsPanel } from "@/components/payments-panel";
 
 export default async function PaymentsPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const { tab } = await searchParams;
-  const [customerPaymentsList, unpaidInvoices, supplierPaymentsList, unpaidSupplierInvoices] = await Promise.all([
+  const [customerPaymentsList, unpaidInvoices, supplierPaymentsList, unpaidSupplierInvoices, supplierBalances] = await Promise.all([
     getCustomerPaymentsWithInvoices(),
     getUnpaidInvoicesForPayments(),
     getSupplierPaymentsWithInfo(),
     getUnpaidSupplierInvoices(),
+    getSupplierBalanceByPO(),
   ]);
 
   const today = new Date().toISOString().split("T")[0];
@@ -30,6 +31,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
         unpaidInvoices={unpaidInvoices}
         supplierPayments={supplierPaymentsList as any}
         unpaidSupplierInvoices={unpaidSupplierInvoices as any}
+        supplierBalances={supplierBalances}
         totalAR={totalAR}
         overdueAR={overdueAR}
         totalCollected={totalCollected}

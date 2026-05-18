@@ -460,11 +460,21 @@ function SettleAdjModal({
   );
 }
 
+type SupplierBalance = {
+  poId: number | null;
+  poNumber: string | null;
+  supplierName: string | null;
+  totalPaid: number;
+  totalShipped: number;
+  balance: number;
+};
+
 export function PaymentsPanel({
   customerPayments,
   unpaidInvoices,
   supplierPayments,
   unpaidSupplierInvoices = [],
+  supplierBalances = [],
   totalAR,
   overdueAR,
   totalCollected,
@@ -475,6 +485,7 @@ export function PaymentsPanel({
   unpaidInvoices: UnpaidInvoice[];
   supplierPayments: SupplierPayment[];
   unpaidSupplierInvoices?: UnpaidSupplierInvoice[];
+  supplierBalances?: SupplierBalance[];
   totalAR: number;
   overdueAR: number;
   totalCollected: number;
@@ -562,6 +573,10 @@ export function PaymentsPanel({
     const totalBzaOwes = pendingAdj.reduce((s, p) => s + (p.adjustmentAmount || 0), 0);
     const totalCreditsOwed = pendingCredits.reduce((s, p) => s + Math.abs(p.adjustmentAmount || 0), 0);
 
+    // Saldo a favor: POs where BZA prepaid more than what has shipped
+    const saldoAFavor = supplierBalances.filter(b => b.balance > 0.01);
+    const totalSaldoFavor = saldoAFavor.reduce((s, b) => s + b.balance, 0);
+
     return (
       <div className="space-y-6">
         {/* KPI row */}
@@ -572,14 +587,14 @@ export function PaymentsPanel({
             sub={`${supplierPayments.length} payments`}
           />
           <StatCard
-            label="Pending Adjustments"
-            value={String(pendingAdj.length + pendingCredits.length)}
-            sub="awaiting settlement"
+            label="Saldo a Favor"
+            value={formatCurrency(totalSaldoFavor)}
+            sub={`${saldoAFavor.length} PO${saldoAFavor.length !== 1 ? "s" : ""} prepaid`}
           />
           <StatCard
-            label="BZA Owes"
+            label="BZA Owes (adj.)"
             value={formatCurrency(totalBzaOwes)}
-            sub={`${pendingAdj.length} payment${pendingAdj.length !== 1 ? "s" : ""}`}
+            sub={`${pendingAdj.length} pending`}
           />
           <StatCard
             label="Supplier Owes BZA"
@@ -587,6 +602,50 @@ export function PaymentsPanel({
             sub={`${pendingCredits.length} credit${pendingCredits.length !== 1 ? "s" : ""}`}
           />
         </div>
+
+        {/* Saldo a Favor breakdown */}
+        {saldoAFavor.length > 0 && (
+          <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-amber-500 overflow-hidden">
+            <div className="px-4 py-3 border-b border-stone-100">
+              <h3 className="text-xs font-semibold text-stone-600 uppercase tracking-wide">
+                Saldo a Favor — Prepagado Pendiente de Embarque
+              </h3>
+              <p className="text-xs text-stone-400 mt-0.5">
+                BZA ha pagado más de lo que el proveedor ha embarcado en estos contratos
+              </p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-stone-50">
+                  <tr>
+                    <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">PO</th>
+                    <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Proveedor</th>
+                    <th className="text-right px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Pagado</th>
+                    <th className="text-right px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Embarcado</th>
+                    <th className="text-right px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Saldo a Favor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {saldoAFavor.map(b => (
+                    <tr key={b.poId} className="border-t border-stone-100 hover:bg-stone-50">
+                      <td className="px-4 py-2.5 text-xs font-medium text-[#0d3d3b]">{b.poNumber || "—"}</td>
+                      <td className="px-4 py-2.5 text-xs text-[#0d3d3b]">{b.supplierName?.split("(")[0].trim() || "—"}</td>
+                      <td className="px-4 py-2.5 text-xs text-right font-semibold text-[#0d3d3b]">{formatCurrency(b.totalPaid)}</td>
+                      <td className="px-4 py-2.5 text-xs text-right text-[#0d3d3b]">{formatCurrency(b.totalShipped)}</td>
+                      <td className="px-4 py-2.5 text-xs text-right font-semibold text-amber-600">{formatCurrency(b.balance)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-stone-200 bg-stone-50">
+                    <td colSpan={4} className="px-4 py-2 text-xs font-semibold text-stone-600">TOTAL SALDO A FAVOR</td>
+                    <td className="px-4 py-2 text-xs text-right font-bold text-amber-600">{formatCurrency(totalSaldoFavor)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* Table header + add button */}
         <div className="flex items-center justify-between">
