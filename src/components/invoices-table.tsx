@@ -324,7 +324,7 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                       isSelected ? "bg-[#0d3d3b]/10 border-l-2 border-l-[#0d3d3b]" : "hover:bg-muted/40"
                     }`}
                   >
-                    <td className="px-3 py-1.5 text-xs font-medium text-stone-800 whitespace-nowrap">{row.invoice.invoiceNumber}</td>
+                    <td className="px-3 py-1.5 text-xs text-stone-600 whitespace-nowrap">{row.invoice.invoiceNumber}</td>
                     <td className="px-3 py-1.5 text-xs">
                       <Link href={`/purchase-orders/${row.invoice.purchaseOrderId}`} className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
                         {row.poNumber || "-"}
@@ -757,7 +757,7 @@ function ReceivePaymentPanel({
                         )
                       ) : "-"}
                     </td>
-                    <td className="p-2 text-right font-medium text-stone-800">{formatCurrency(amount)}</td>
+                    <td className="p-2 text-right text-stone-600">{formatCurrency(amount)}</td>
                   </tr>
                 );
               })}

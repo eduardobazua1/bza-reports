@@ -338,7 +338,7 @@ export function ARAgingDetailFullClient({ buckets, total, filterBucket, filterCl
                         <td className="px-4 py-2.5 text-stone-700">{row.customer}</td>
                         {visibleCols.dueDate     && <td className="px-4 py-2.5 text-stone-600">{fmtDate(row.dueDate)}</td>}
                         {visibleCols.amount      && <td className="px-4 py-2.5 text-right text-stone-700">{formatCurrency(row.amount)}</td>}
-                        {visibleCols.openBalance && <td className="px-4 py-2.5 text-right font-medium text-stone-800">{formatCurrency(row.amount)}</td>}
+                        {visibleCols.openBalance && <td className="px-4 py-2.5 text-right text-stone-600">{formatCurrency(row.amount)}</td>}
                         {visibleCols.pastDue     && (() => { const d = daysDisplay(row); return <td className={`px-6 py-2.5 text-right font-medium ${d.cls}`}>{d.text}</td>; })()}
                       </tr>
                     ))}
@@ -371,7 +371,7 @@ export function ARAgingDetailFullClient({ buckets, total, filterBucket, filterCl
                           <td className="px-4 py-2.5 text-stone-700">{row.customer}</td>
                           {visibleCols.dueDate     && <td className="px-4 py-2.5 text-stone-600">{fmtDate(row.dueDate)}</td>}
                           {visibleCols.amount      && <td className="px-4 py-2.5 text-right text-stone-700">{formatCurrency(row.amount)}</td>}
-                          {visibleCols.openBalance && <td className="px-4 py-2.5 text-right font-medium text-stone-800">{formatCurrency(row.amount)}</td>}
+                          {visibleCols.openBalance && <td className="px-4 py-2.5 text-right text-stone-600">{formatCurrency(row.amount)}</td>}
                           {visibleCols.pastDue     && (
                             <td className={`px-6 py-2.5 text-right font-medium ${row.pastDue > 90 ? "text-red-600" : row.pastDue > 60 ? "text-amber-600" : row.pastDue > 0 ? "text-stone-600" : "text-stone-400"}`}>
                               {row.pastDue <= 0 ? "—" : row.pastDue}

@@ -61,7 +61,7 @@ export default async function MonthlyBreakdownPage() {
             <tbody>
               {rows.map((r) => (
                 <tr key={r.month} className="border-t border-stone-100 hover:bg-stone-50">
-                  <td className="px-5 py-3 font-medium text-stone-800">{r.label}</td>
+                  <td className="px-5 py-3 text-stone-600">{r.label}</td>
                   <td className="px-5 py-3 text-right text-stone-600">{formatNumber(r.tons, 1)}</td>
                   <td className="px-5 py-3 text-right text-stone-600">{formatCurrency(r.revenue)}</td>
                   <td className="px-5 py-3 text-right text-stone-500">{formatCurrency(r.cost)}</td>

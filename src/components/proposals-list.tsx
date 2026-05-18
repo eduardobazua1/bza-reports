@@ -136,7 +136,7 @@ export function ProposalsList({ proposals }: { proposals: Proposal[] }) {
                       {p.status}
                     </span>
                   </td>
-                  <td className="p-3 text-right font-medium text-stone-800 border-t border-border">{formatCurrency(p.total)}</td>
+                  <td className="p-3 text-right text-stone-600 border-t border-border">{formatCurrency(p.total)}</td>
                   <td className="p-3 border-t border-border">
                     <Link
                       href={`/proposals/${p.id}`}

@@ -65,7 +65,7 @@ export default async function BalanceSheetPage() {
                   <ValueCell value={accountsReceivable} />
                 </tr>
                 <tr className="border-t border-stone-100 bg-stone-50/50">
-                  <td className="px-6 py-3 font-bold text-stone-800">Total Current Assets</td>
+                  <td className="px-6 py-3 font-medium text-stone-600">Total Current Assets</td>
                   <BoldValueCell value={totalAssets} />
                 </tr>
               </tbody>
@@ -84,7 +84,7 @@ export default async function BalanceSheetPage() {
                   <ValueCell value={accountsPayable} />
                 </tr>
                 <tr className="border-t border-stone-100 bg-stone-50/50">
-                  <td className="px-6 py-3 font-bold text-stone-800">Total Current Liabilities</td>
+                  <td className="px-6 py-3 font-medium text-stone-600">Total Current Liabilities</td>
                   <BoldValueCell value={totalLiabilities} />
                 </tr>
               </tbody>
@@ -103,7 +103,7 @@ export default async function BalanceSheetPage() {
                   <ValueCell value={grossProfit} />
                 </tr>
                 <tr className="border-t border-stone-100 bg-stone-50/50">
-                  <td className="px-6 py-3 font-bold text-stone-800">Total Equity</td>
+                  <td className="px-6 py-3 font-medium text-stone-600">Total Equity</td>
                   <BoldValueCell value={totalEquity} />
                 </tr>
               </tbody>

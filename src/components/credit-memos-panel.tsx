@@ -318,7 +318,7 @@ export function CreditMemosPanel({
                     <td className="px-4 py-3 text-stone-700 font-medium">{m.creditNumber || <span className="text-stone-300">—</span>}</td>
                     <td className="px-4 py-3 text-stone-700">{m.clientName}</td>
                     <td className="px-4 py-3 text-stone-500 max-w-[200px] truncate">{m.reason || <span className="text-stone-300">—</span>}</td>
-                    <td className="px-4 py-3 text-right font-semibold text-stone-800">{formatCurrency(m.amount)}</td>
+                    <td className="px-4 py-3 text-right font-medium text-stone-600">{formatCurrency(m.amount)}</td>
                     <td className="px-4 py-3 text-center"><StatusBadge status={m.status} /></td>
                     <td className="px-5 py-3">
                       <div className="flex items-center justify-end gap-1">

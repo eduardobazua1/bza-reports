@@ -341,7 +341,7 @@ export function APAgingSummaryClient({ rows, totals, asOf, timestamp }: {
                         )}
                       </td>
                     ))}
-                    <td className="px-6 py-3 text-right font-semibold text-stone-800">
+                    <td className="px-6 py-3 text-right font-medium text-stone-600">
                       <Link href={`/reports/ap-aging-detail?supplier=${encodeURIComponent(row.name)}`}
                         className="hover:underline hover:opacity-70">{formatCurrency(row.total)}</Link>
                     </td>
