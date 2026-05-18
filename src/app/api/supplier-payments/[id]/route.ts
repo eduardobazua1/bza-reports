@@ -18,7 +18,16 @@ export async function PATCH(
 ) {
   const { id } = await params;
   const body = await req.json();
-  const { actualTons, adjustmentStatus } = body;
+  const { actualTons, adjustmentStatus, purchaseOrderId } = body;
+
+  // Simple PO assignment — update only purchaseOrderId
+  if (purchaseOrderId !== undefined && actualTons === undefined && adjustmentStatus === undefined) {
+    await db
+      .update(supplierPayments)
+      .set({ purchaseOrderId: purchaseOrderId === null ? null : Number(purchaseOrderId) })
+      .where(eq(supplierPayments.id, Number(id)));
+    return NextResponse.json({ ok: true });
+  }
 
   const [payment] = await db
     .select()

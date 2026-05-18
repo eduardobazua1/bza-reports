@@ -460,6 +460,123 @@ function SettleAdjModal({
   );
 }
 
+// ─── A/P: Assign PO Modal ─────────────────────────────────────────────────────
+function AssignPOModal({
+  payment,
+  purchaseOrdersList,
+  onClose,
+  onSaved,
+}: {
+  payment: SupplierPayment;
+  purchaseOrdersList: POOption[];
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [selectedPoId, setSelectedPoId] = useState<string>(
+    payment.purchaseOrderId ? String(payment.purchaseOrderId) : ""
+  );
+  const [saving, setSaving] = useState(false);
+
+  // Filter POs to the same supplier
+  const matchingPOs = purchaseOrdersList.filter(po => po.supplierId === payment.supplierId);
+  const otherPOs = purchaseOrdersList.filter(po => po.supplierId !== payment.supplierId);
+
+  async function handleAssign(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedPoId) return;
+    setSaving(true);
+    try {
+      await fetch(`/api/supplier-payments/${payment.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ purchaseOrderId: Number(selectedPoId) }),
+      });
+      onSaved();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 space-y-4" onClick={e => e.stopPropagation()}>
+        <div>
+          <h3 className="font-semibold text-stone-800">Assign to Purchase Order</h3>
+          <p className="text-xs text-stone-400 mt-0.5">{formatDate(payment.paymentDate)} · {formatCurrency(payment.amountUsd)}</p>
+        </div>
+
+        <div className="bg-stone-50 rounded-lg p-3 space-y-1 text-xs">
+          <div className="flex justify-between">
+            <span className="text-stone-400">Supplier</span>
+            <span className="font-medium text-[#0d3d3b]">{payment.supplierName?.split("(")[0].trim() || "—"}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-stone-400">Amount Paid</span>
+            <span className="font-semibold text-[#0d3d3b]">{formatCurrency(payment.amountUsd)}</span>
+          </div>
+          {payment.estimatedTons && (
+            <div className="flex justify-between">
+              <span className="text-stone-400">Est. Tons</span>
+              <span className="text-[#0d3d3b]">{payment.estimatedTons.toFixed(3)} TN</span>
+            </div>
+          )}
+          {payment.notes && (
+            <div className="flex justify-between gap-2">
+              <span className="text-stone-400 shrink-0">Notes</span>
+              <span className="text-[#0d3d3b] text-right">{payment.notes}</span>
+            </div>
+          )}
+        </div>
+
+        <form onSubmit={handleAssign} className="space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-[#0d3d3b] mb-1">Purchase Order</label>
+            <select
+              required
+              value={selectedPoId}
+              onChange={e => setSelectedPoId(e.target.value)}
+              className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#0d3d3b]"
+            >
+              <option value="">— Select PO —</option>
+              {matchingPOs.length > 0 && (
+                <optgroup label={`${payment.supplierName?.split("(")[0].trim()} (same supplier)`}>
+                  {matchingPOs.map(po => (
+                    <option key={po.id} value={po.id}>{po.poNumber}</option>
+                  ))}
+                </optgroup>
+              )}
+              {otherPOs.length > 0 && (
+                <optgroup label="Other suppliers">
+                  {otherPOs.map(po => (
+                    <option key={po.id} value={po.id}>{po.poNumber} — {po.supplierName?.split("(")[0].trim()}</option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button type="submit" disabled={saving || !selectedPoId}
+              className="flex-1 bg-primary text-primary-foreground py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-40">
+              {saving ? "Saving..." : "Assign PO"}
+            </button>
+            <button type="button" onClick={onClose}
+              className="px-4 py-2 border border-stone-200 rounded-lg text-sm text-stone-600 hover:bg-stone-50">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+type POOption = {
+  id: number;
+  poNumber: string | null;
+  supplierId: number;
+  supplierName: string | null;
+};
+
 type SupplierBalance = {
   poId: number | null;
   poNumber: string | null;
@@ -475,6 +592,7 @@ export function PaymentsPanel({
   supplierPayments,
   unpaidSupplierInvoices = [],
   supplierBalances = [],
+  purchaseOrdersList = [],
   totalAR,
   overdueAR,
   totalCollected,
@@ -486,6 +604,7 @@ export function PaymentsPanel({
   supplierPayments: SupplierPayment[];
   unpaidSupplierInvoices?: UnpaidSupplierInvoice[];
   supplierBalances?: SupplierBalance[];
+  purchaseOrdersList?: POOption[];
   totalAR: number;
   overdueAR: number;
   totalCollected: number;
@@ -505,6 +624,7 @@ export function PaymentsPanel({
   const [showAddPayment, setShowAddPayment] = useState(false);
   const [confirmPayment, setConfirmPayment] = useState<SupplierPayment | null>(null);
   const [settlePayment, setSettlePayment] = useState<SupplierPayment | null>(null);
+  const [assignPayment, setAssignPayment] = useState<SupplierPayment | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
@@ -577,8 +697,27 @@ export function PaymentsPanel({
     const saldoAFavor = supplierBalances.filter(b => b.balance > 0.01);
     const totalSaldoFavor = saldoAFavor.reduce((s, b) => s + b.balance, 0);
 
+    // Payments without a PO linked
+    const unlinkedPayments = supplierPayments.filter(p => !p.purchaseOrderId);
+    const unlinkedTotal = unlinkedPayments.reduce((s, p) => s + p.amountUsd, 0);
+
     return (
       <div className="space-y-6">
+        {/* Unlinked payments banner */}
+        {unlinkedPayments.length > 0 && (
+          <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+            <span className="text-amber-500 text-lg leading-none mt-0.5">⚠</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-amber-800">
+                {unlinkedPayments.length} payment{unlinkedPayments.length !== 1 ? "s" : ""} ({formatCurrency(unlinkedTotal)}) not linked to a PO
+              </p>
+              <p className="text-xs text-amber-600 mt-0.5">
+                Use the <strong>Assign PO</strong> button on each row below to link them — this enables the Saldo a Favor reconciliation.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* KPI row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <StatCard
@@ -749,6 +888,15 @@ export function PaymentsPanel({
                         </td>
                         <td className="p-3">
                           <div className="flex items-center gap-1 justify-end">
+                            {!p.purchaseOrderId && (
+                              <button
+                                onClick={() => setAssignPayment(p)}
+                                title="Assign to a purchase order"
+                                className="text-[10px] font-medium px-2 py-0.5 rounded bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200"
+                              >
+                                Assign PO
+                              </button>
+                            )}
                             {needsActual && (
                               <button
                                 onClick={() => setConfirmPayment(p)}
@@ -831,6 +979,14 @@ export function PaymentsPanel({
             payment={settlePayment}
             onClose={() => setSettlePayment(null)}
             onSaved={() => { setSettlePayment(null); router.refresh(); }}
+          />
+        )}
+        {assignPayment && (
+          <AssignPOModal
+            payment={assignPayment}
+            purchaseOrdersList={purchaseOrdersList}
+            onClose={() => setAssignPayment(null)}
+            onSaved={() => { setAssignPayment(null); router.refresh(); }}
           />
         )}
       </div>

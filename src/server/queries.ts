@@ -488,6 +488,20 @@ export async function getUnpaidSupplierInvoices() {
     .orderBy(suppliers.name, invoices.shipmentDate);
 }
 
+// ---- PO list for assignment dropdown ----
+export async function getPurchaseOrdersList() {
+  return db
+    .select({
+      id: purchaseOrders.id,
+      poNumber: purchaseOrders.poNumber,
+      supplierId: purchaseOrders.supplierId,
+      supplierName: suppliers.name,
+    })
+    .from(purchaseOrders)
+    .leftJoin(suppliers, eq(purchaseOrders.supplierId, suppliers.id))
+    .orderBy(purchaseOrders.poNumber);
+}
+
 // ---- Products with sales data ----
 export async function getProducts() {
   const { products } = await import("@/db/schema");
