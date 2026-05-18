@@ -123,7 +123,7 @@ export function SupplierInvoicesSection({
           onClick={() => setShowAdd(v => !v)}
           className="px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-md hover:opacity-90"
         >
-          {showAdd ? "Cancel" : "+ Add Factura"}
+          {showAdd ? "Cancel" : "+ Add Invoice"}
         </button>
       </div>
 
@@ -213,7 +213,7 @@ export function SupplierInvoicesSection({
               disabled={saving || !form.invoiceNumber}
               className="px-4 py-2 bg-primary text-primary-foreground text-sm rounded-lg font-medium hover:opacity-90 disabled:opacity-40"
             >
-              {saving ? "Saving..." : "Save Factura"}
+              {saving ? "Saving..." : "Save Invoice"}
             </button>
             <button type="button" onClick={() => setShowAdd(false)} className="px-4 py-2 border border-stone-200 rounded-lg text-sm text-stone-600 hover:bg-stone-50">
               Cancel
@@ -225,7 +225,7 @@ export function SupplierInvoicesSection({
       {/* Table */}
       {invoices.length === 0 && !showAdd ? (
         <div className="px-4 py-6 text-center text-sm text-stone-400">
-          No supplier invoices recorded. Click "+ Add Factura" to start tracking.
+          No supplier invoices recorded. Click "+ Add Invoice" to start tracking.
         </div>
       ) : invoices.length > 0 ? (
         <div className="overflow-x-auto">
