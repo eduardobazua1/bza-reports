@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, clientPurchaseOrders, supplierPayments, supplierOrders, customerPayments, customerPaymentInvoices, creditMemos, proposals, proposalItems, contracts } from "@/db/schema";
+import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, clientPurchaseOrders, supplierPayments, supplierPaymentInvoices, supplierOrders, customerPayments, customerPaymentInvoices, creditMemos, proposals, proposalItems, contracts } from "@/db/schema";
 import { eq, desc, sql, and, count, inArray, isNull } from "drizzle-orm";
 
 // ---- Clients ----
@@ -390,7 +390,7 @@ export async function getUnpaidInvoicesForPayments() {
 }
 
 export async function getSupplierPaymentsWithInfo() {
-  return db
+  const rows = await db
     .select({
       id: supplierPayments.id,
       supplierId: supplierPayments.supplierId,
@@ -403,7 +403,9 @@ export async function getSupplierPaymentsWithInfo() {
       reference: supplierPayments.reference,
       notes: supplierPayments.notes,
       estimatedTons: supplierPayments.estimatedTons,
+      pricePerTon: supplierPayments.pricePerTon,
       actualTons: supplierPayments.actualTons,
+      actualAmount: supplierPayments.actualAmount,
       adjustmentAmount: supplierPayments.adjustmentAmount,
       adjustmentStatus: supplierPayments.adjustmentStatus,
     })
@@ -411,6 +413,17 @@ export async function getSupplierPaymentsWithInfo() {
     .leftJoin(suppliers, eq(supplierPayments.supplierId, suppliers.id))
     .leftJoin(purchaseOrders, eq(supplierPayments.purchaseOrderId, purchaseOrders.id))
     .orderBy(desc(supplierPayments.paymentDate));
+
+  // Fetch all linked invoices and filter in JS (avoids libsql inArray issues)
+  const allLinkedInvoices = await db.select().from(supplierPaymentInvoices);
+
+  const invoicesByPayment: Record<number, typeof allLinkedInvoices> = {};
+  for (const inv of allLinkedInvoices) {
+    if (!invoicesByPayment[inv.paymentId]) invoicesByPayment[inv.paymentId] = [];
+    invoicesByPayment[inv.paymentId].push(inv);
+  }
+
+  return rows.map(r => ({ ...r, invoices: invoicesByPayment[r.id] || [] }));
 }
 
 // ---- A/P: unpaid supplier invoices ----
@@ -424,6 +437,7 @@ export async function getUnpaidSupplierInvoices() {
       freightCost: invoices.freightCost,
       supplierId: suppliers.id,
       supplierName: suppliers.name,
+      purchaseOrderId: purchaseOrders.id,
       poNumber: purchaseOrders.poNumber,
       clientName: clients.name,
       buyPrice: sql<number>`coalesce(${invoices.buyPriceOverride}, ${purchaseOrders.buyPrice})`,

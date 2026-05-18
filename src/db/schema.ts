@@ -269,6 +269,15 @@ export const supplierPayments = sqliteTable("supplier_payments", {
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
+// Supplier payment → invoice coverage (many invoices per payment)
+export const supplierPaymentInvoices = sqliteTable("supplier_payment_invoices", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  paymentId: integer("payment_id").notNull().references(() => supplierPayments.id),
+  invoiceId: integer("invoice_id").references(() => invoices.id),
+  invoiceNumber: text("invoice_number").notNull(),
+  estimatedTons: real("estimated_tons"),
+});
+
 // Supplier Orders - individual purchase orders sent to supplier under a BZA PO
 // e.g. BZA PO X0043 → Supplier Order 1: 540 TN @ $845/TN DAP Eagle Pass
 export const supplierOrders = sqliteTable("supplier_orders", {
