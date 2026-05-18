@@ -57,7 +57,7 @@ const METHOD_LABELS: Record<string, string> = {
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm p-4 space-y-1">
+    <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4 space-y-1">
       <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">{label}</p>
       <p className="text-xl font-bold text-stone-800">{value}</p>
       {sub && <p className="text-xs text-stone-400">{sub}</p>}
@@ -156,20 +156,20 @@ export function PaymentsPanel({
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-muted">
                 <tr className="text-left">
-                  <th className="p-3 text-sm font-medium text-muted-foreground">Date</th>
-                  <th className="p-3 text-sm font-medium text-muted-foreground">Supplier</th>
-                  <th className="p-3 text-sm font-medium text-muted-foreground">PO</th>
-                  <th className="p-3 text-sm font-medium text-muted-foreground text-right">Amount</th>
-                  <th className="p-3 text-sm font-medium text-muted-foreground text-right">Est. Tons</th>
-                  <th className="p-3 text-sm font-medium text-muted-foreground text-right">Actual Tons</th>
-                  <th className="p-3 text-sm font-medium text-muted-foreground text-right">Adj.</th>
-                  <th className="p-3 text-sm font-medium text-muted-foreground">Method</th>
-                  <th className="p-3 text-sm font-medium text-muted-foreground">Reference</th>
+                  <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Date</th>
+                  <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Supplier</th>
+                  <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">PO</th>
+                  <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide text-right">Amount</th>
+                  <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide text-right">Est. Tons</th>
+                  <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide text-right">Actual Tons</th>
+                  <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide text-right">Adj.</th>
+                  <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Method</th>
+                  <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Reference</th>
                 </tr>
               </thead>
               <tbody>
@@ -296,7 +296,7 @@ export function PaymentsPanel({
             </div>
           )}
 
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] overflow-hidden">
             {unpaidInvoices.length === 0 ? (
               <div className="p-8 text-center text-sm text-stone-400">All invoices are paid. 🎉</div>
             ) : (
@@ -313,13 +313,13 @@ export function PaymentsPanel({
                         className="accent-primary"
                       />
                     </th>
-                    <th className="p-3 text-sm font-medium text-muted-foreground">Invoice #</th>
-                    <th className="p-3 text-sm font-medium text-muted-foreground">Client</th>
-                    <th className="p-3 text-sm font-medium text-muted-foreground">PO</th>
-                    <th className="p-3 text-sm font-medium text-muted-foreground text-right">Tons</th>
-                    <th className="p-3 text-sm font-medium text-muted-foreground text-right">Amount</th>
-                    <th className="p-3 text-sm font-medium text-muted-foreground">Ship Date</th>
-                    <th className="p-3 text-sm font-medium text-muted-foreground">Due Date</th>
+                    <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Invoice #</th>
+                    <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Client</th>
+                    <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">PO</th>
+                    <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide text-right">Tons</th>
+                    <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide text-right">Amount</th>
+                    <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Ship Date</th>
+                    <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Due Date</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -370,17 +370,17 @@ export function PaymentsPanel({
 
       {/* Payment history */}
       {subTab === "history" && (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-muted">
                 <tr className="text-left">
-                  <th className="p-3 text-sm font-medium text-muted-foreground">Date</th>
-                  <th className="p-3 text-sm font-medium text-muted-foreground">Client</th>
-                  <th className="p-3 text-sm font-medium text-muted-foreground text-right">Amount</th>
-                  <th className="p-3 text-sm font-medium text-muted-foreground">Method</th>
-                  <th className="p-3 text-sm font-medium text-muted-foreground">Reference</th>
-                  <th className="p-3 text-sm font-medium text-muted-foreground">Invoices</th>
+                  <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Date</th>
+                  <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Client</th>
+                  <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide text-right">Amount</th>
+                  <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Method</th>
+                  <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Reference</th>
+                  <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Invoices</th>
                 </tr>
               </thead>
               <tbody>

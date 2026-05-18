@@ -239,7 +239,7 @@ export function ProposalForm({ mode, proposalId, proposalNumber, clients, produc
       )}
 
       {/* Header fields */}
-      <div className="bg-white rounded-xl shadow-sm p-6 space-y-4">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-6 space-y-4">
         <h2 className="text-sm font-semibold text-stone-700 border-b border-stone-100 pb-2">Proposal Details</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -317,7 +317,7 @@ export function ProposalForm({ mode, proposalId, proposalNumber, clients, produc
       </div>
 
       {/* Line items */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] overflow-hidden">
         <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-stone-700">Line Items</h2>
           <button type="button" onClick={addLine}
@@ -452,7 +452,7 @@ export function ProposalForm({ mode, proposalId, proposalNumber, clients, produc
       </div>
 
       {/* Notes */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-6">
         <label className="block text-xs font-medium text-stone-600 mb-2">Notes & Terms</label>
         <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={4}
           placeholder="Payment terms, certification requirements, delivery conditions, validity…"

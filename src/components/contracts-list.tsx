@@ -58,7 +58,7 @@ export function ContractsList({ contracts, clients, suppliers, nextContractNumbe
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] overflow-hidden">
         {filtered.length === 0 ? (
           <div className="p-10 text-center text-sm text-muted-foreground">
             {filter === "all" ? "No contracts yet. Create your first one." : `No ${contractStatusLabels[filter].toLowerCase()} contracts.`}
@@ -68,16 +68,16 @@ export function ContractsList({ contracts, clients, suppliers, nextContractNumbe
             <table className="w-full text-sm">
               <thead className="bg-stone-50 border-b border-stone-100">
                 <tr>
-                  <th className="text-left px-4 py-3 font-medium text-stone-500 whitespace-nowrap">Contract #</th>
-                  <th className="text-left px-4 py-3 font-medium text-stone-500 whitespace-nowrap">Client</th>
-                  <th className="text-left px-4 py-3 font-medium text-stone-500 whitespace-nowrap">Supplier</th>
-                  <th className="text-left px-4 py-3 font-medium text-stone-500 whitespace-nowrap">Product</th>
-                  <th className="text-left px-4 py-3 font-medium text-stone-500 whitespace-nowrap">Sell</th>
-                  <th className="text-left px-4 py-3 font-medium text-stone-500 whitespace-nowrap">Buy</th>
-                  <th className="text-left px-4 py-3 font-medium text-stone-500 whitespace-nowrap">Volume</th>
-                  <th className="text-left px-4 py-3 font-medium text-stone-500 whitespace-nowrap">Validity</th>
-                  <th className="text-left px-4 py-3 font-medium text-stone-500 whitespace-nowrap">POs</th>
-                  <th className="text-left px-4 py-3 font-medium text-stone-500 whitespace-nowrap">Status</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-stone-400 uppercase tracking-wide whitespace-nowrap">Contract #</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-stone-400 uppercase tracking-wide whitespace-nowrap">Client</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-stone-400 uppercase tracking-wide whitespace-nowrap">Supplier</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-stone-400 uppercase tracking-wide whitespace-nowrap">Product</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-stone-400 uppercase tracking-wide whitespace-nowrap">Sell</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-stone-400 uppercase tracking-wide whitespace-nowrap">Buy</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-stone-400 uppercase tracking-wide whitespace-nowrap">Volume</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-stone-400 uppercase tracking-wide whitespace-nowrap">Validity</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-stone-400 uppercase tracking-wide whitespace-nowrap">POs</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-stone-400 uppercase tracking-wide whitespace-nowrap">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-50">

@@ -108,10 +108,10 @@ export function InvoiceTemplateEditor({ initial }: { initial?: Partial<InvoiceSe
   }
 
   return (
-    <div className="bg-white rounded-md shadow-sm">
+    <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b]">
       <div className="p-4 border-b border-stone-200 flex items-center justify-between">
         <div>
-          <h3 className="font-semibold text-stone-800">Invoice & PO Template</h3>
+          <h3 className="font-semibold text-stone-700">Invoice & PO Template</h3>
           <p className="text-xs text-stone-400 mt-0.5">Customize company info, colors, and sections shown on all PDFs</p>
         </div>
         <div className="flex items-center gap-3">
@@ -136,7 +136,7 @@ export function InvoiceTemplateEditor({ initial }: { initial?: Partial<InvoiceSe
       <div className="p-4 space-y-6">
         {/* Colors */}
         <div>
-          <h4 className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-3">Colors</h4>
+          <h4 className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-3">Colors</h4>
           <div className="flex gap-6">
             <div>
               <label className="block text-xs text-stone-500 mb-1">Primary Color</label>
@@ -185,7 +185,7 @@ export function InvoiceTemplateEditor({ initial }: { initial?: Partial<InvoiceSe
 
         {/* Company Info */}
         <div>
-          <h4 className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-3">Company</h4>
+          <h4 className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-3">Company</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Company Name" field="companyName" />
             <Field label="Tax ID" field="taxId" />
@@ -199,7 +199,7 @@ export function InvoiceTemplateEditor({ initial }: { initial?: Partial<InvoiceSe
 
         {/* Bank / Payment */}
         <div>
-          <h4 className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-3">Bank / Payment Instructions</h4>
+          <h4 className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-3">Bank / Payment Instructions</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Bank Name" field="bankName" />
             <Field label="Beneficiary" field="bankBeneficiary" />
@@ -212,7 +212,7 @@ export function InvoiceTemplateEditor({ initial }: { initial?: Partial<InvoiceSe
 
         {/* FSC */}
         <div>
-          <h4 className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-3">FSC Certificate (BZA)</h4>
+          <h4 className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-3">FSC Certificate (BZA)</h4>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Field label="Certificate Code" field="fscCode" placeholder="CU-COC-000000" />
             <Field label="Controlled Wood Code" field="fscCw" placeholder="CU-CW-000000" />
@@ -222,7 +222,7 @@ export function InvoiceTemplateEditor({ initial }: { initial?: Partial<InvoiceSe
 
         {/* Footer & Notes */}
         <div>
-          <h4 className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-3">Footer & Notes</h4>
+          <h4 className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-3">Footer & Notes</h4>
           <div className="space-y-3">
             <Field label="Footer Note" field="footerNote" />
             <div>
@@ -240,7 +240,7 @@ export function InvoiceTemplateEditor({ initial }: { initial?: Partial<InvoiceSe
 
         {/* Section Toggles */}
         <div>
-          <h4 className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-3">Sections</h4>
+          <h4 className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-3">Sections</h4>
           <div className="space-y-2">
             <Toggle label="Show payment instructions (bank details)" field="showPaymentInstructions" />
             <Toggle label="Show FSC certificate information" field="showFscSection" />

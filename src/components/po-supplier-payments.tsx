@@ -76,11 +76,11 @@ export function POSupplierPayments({
   }
 
   return (
-    <div className="bg-white rounded-md shadow-sm">
+    <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b]">
       {/* Header */}
       <div className="p-4 border-b border-stone-200 flex items-center justify-between">
         <div>
-          <h3 className="font-semibold text-stone-800">Supplier Payments</h3>
+          <h3 className="font-semibold text-stone-700">Supplier Payments</h3>
           <p className="text-xs text-stone-400 mt-0.5">
             {payments.length} payment{payments.length !== 1 ? "s" : ""} · Total paid:{" "}
             <span className="font-medium text-stone-600">{formatCurrency(totalPaid)}</span>
@@ -118,7 +118,7 @@ export function POSupplierPayments({
       {/* Add Payment Form */}
       {showForm && (
         <form onSubmit={handleAdd} className="p-4 border-b border-stone-200 bg-[#0d3d3b]/50">
-          <p className="text-xs font-semibold text-stone-600 uppercase tracking-wide mb-3">New Payment</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-3">New Payment</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>
               <label className="text-xs text-stone-500 block mb-1">Amount (USD) *</label>
@@ -188,10 +188,10 @@ export function POSupplierPayments({
         <table className="w-full text-sm">
           <thead className="bg-stone-50">
             <tr>
-              <th className="text-left px-4 py-2.5 font-medium text-stone-500">Date</th>
-              <th className="text-right px-4 py-2.5 font-medium text-stone-500">Amount</th>
-              <th className="text-left px-4 py-2.5 font-medium text-stone-500">Reference</th>
-              <th className="text-left px-4 py-2.5 font-medium text-stone-500">Notes</th>
+              <th className="text-left px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Date</th>
+              <th className="text-right px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Amount</th>
+              <th className="text-left px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Reference</th>
+              <th className="text-left px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Notes</th>
               <th className="px-4 py-2.5"></th>
             </tr>
           </thead>

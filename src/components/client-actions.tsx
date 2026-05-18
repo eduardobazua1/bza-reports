@@ -192,8 +192,8 @@ export function ClientActions({ clients }: { clients: Client[] }) {
 
       {/* Inline Form */}
       {showForm && (
-        <div className="bg-white rounded-md shadow-sm p-4">
-          <h3 className="text-lg font-semibold mb-4">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4">
+          <h3 className="text-lg font-semibold text-stone-700 mb-4">
             {editingClient ? "Edit" : "New Client"}
           </h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -346,19 +346,19 @@ export function ClientActions({ clients }: { clients: Client[] }) {
       )}
 
       {/* Clients Table */}
-      <div className="bg-white rounded-md shadow-sm">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b]">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-muted">
               <tr>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Name</th>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Contact</th>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Email</th>
-                <th className="text-center p-3 text-sm font-medium text-muted-foreground">Terms</th>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Cert</th>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Portal</th>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Portal Link</th>
-                <th className="text-right p-3 text-sm font-medium text-muted-foreground">Action</th>
+                <th className="text-left p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Name</th>
+                <th className="text-left p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Contact</th>
+                <th className="text-left p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Email</th>
+                <th className="text-center p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Terms</th>
+                <th className="text-left p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Cert</th>
+                <th className="text-left p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Portal</th>
+                <th className="text-left p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Portal Link</th>
+                <th className="text-right p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -458,9 +458,9 @@ export function ClientActions({ clients }: { clients: Client[] }) {
 
       {/* Portal Users Panel */}
       {portalUsersClientId && (
-        <div className="bg-white rounded-md shadow-sm p-4">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold">
+            <h3 className="text-base font-semibold text-stone-700">
               Portal Users — {clients.find(c => c.id === portalUsersClientId)?.name}
             </h3>
             <button onClick={() => setPortalUsersClientId(null)} className="text-sm text-muted-foreground hover:text-foreground">✕</button>

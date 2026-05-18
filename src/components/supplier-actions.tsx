@@ -27,7 +27,7 @@ function F({ label, name, dv, ph, type }: { label: string; name: string; dv?: st
   );
 }
 function ST({ children }: { children: React.ReactNode }) {
-  return <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-widest mb-3">{children}</p>;
+  return <p className="text-xs font-semibold text-stone-400 uppercase tracking-widest mb-3">{children}</p>;
 }
 
 function SupplierForm({ initial, onSave, onCancel, isPending }: {
@@ -35,8 +35,8 @@ function SupplierForm({ initial, onSave, onCancel, isPending }: {
 }) {
   const [certType, setCertType] = useState(initial?.certType || "fsc");
   return (
-    <div className="bg-white rounded-md shadow-sm p-5">
-      <h3 className="text-base font-semibold text-stone-800 mb-5">{initial ? `Edit — ${initial.name}` : "New Supplier"}</h3>
+    <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-5">
+      <h3 className="text-base font-semibold text-stone-700 mb-5">{initial ? `Edit — ${initial.name}` : "New Supplier"}</h3>
       <form onSubmit={e => { e.preventDefault(); onSave(new FormData(e.currentTarget)); }} className="space-y-6">
 
         {/* Name & Contact */}
@@ -174,17 +174,17 @@ export function SupplierActions({ suppliers }: { suppliers: Supplier[] }) {
         <SupplierForm initial={null} onSave={handleSave} onCancel={() => setShowForm(false)} isPending={isPending} />
       )}
 
-      <div className="bg-white rounded-md shadow-sm">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b]">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-muted">
               <tr>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Name</th>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Contact</th>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Email</th>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Location</th>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Cert</th>
-                <th className="text-right p-3 text-sm font-medium text-muted-foreground">Action</th>
+                <th className="text-left p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Name</th>
+                <th className="text-left p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Contact</th>
+                <th className="text-left p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Email</th>
+                <th className="text-left p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Location</th>
+                <th className="text-left p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Cert</th>
+                <th className="text-right p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Action</th>
               </tr>
             </thead>
             <tbody>

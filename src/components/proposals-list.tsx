@@ -98,7 +98,7 @@ export function ProposalsList({ proposals }: { proposals: Proposal[] }) {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] overflow-hidden">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-stone-400">
             <FileText className="w-10 h-10 mb-3 opacity-30" />
@@ -113,13 +113,13 @@ export function ProposalsList({ proposals }: { proposals: Proposal[] }) {
           <table className="w-full text-sm">
             <thead className="bg-muted">
               <tr className="text-left">
-                <th className="p-3 text-sm font-medium text-muted-foreground">Number</th>
-                <th className="p-3 text-sm font-medium text-muted-foreground">Client</th>
-                <th className="p-3 text-sm font-medium text-muted-foreground">Title</th>
-                <th className="p-3 text-sm font-medium text-muted-foreground">Date</th>
-                <th className="p-3 text-sm font-medium text-muted-foreground">Valid Until</th>
-                <th className="p-3 text-sm font-medium text-muted-foreground">Status</th>
-                <th className="p-3 text-sm font-medium text-muted-foreground text-right">Total</th>
+                <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Number</th>
+                <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Client</th>
+                <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Title</th>
+                <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Date</th>
+                <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Valid Until</th>
+                <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Status</th>
+                <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide text-right">Total</th>
                 <th className="p-3" />
               </tr>
             </thead>

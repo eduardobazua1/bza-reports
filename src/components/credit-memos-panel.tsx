@@ -248,17 +248,17 @@ export function CreditMemosPanel({
 
       {/* KPI row */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl shadow-sm p-4">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4">
           <p className="text-xs text-stone-500 font-medium uppercase tracking-wide">Open Credits</p>
           <p className="text-2xl font-bold text-[#0d3d3b] mt-1">{formatCurrency(totalOpen)}</p>
           <p className="text-xs text-stone-400 mt-0.5">{memos.filter(m => m.status === "open").length} memos</p>
         </div>
-        <div className="bg-white rounded-xl shadow-sm p-4">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4">
           <p className="text-xs text-stone-500 font-medium uppercase tracking-wide">Applied</p>
           <p className="text-2xl font-bold text-stone-700 mt-1">{formatCurrency(totalApplied)}</p>
           <p className="text-xs text-stone-400 mt-0.5">{memos.filter(m => m.status === "applied").length} memos</p>
         </div>
-        <div className="bg-white rounded-xl shadow-sm p-4">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4">
           <p className="text-xs text-stone-500 font-medium uppercase tracking-wide">Total Issued</p>
           <p className="text-2xl font-bold text-stone-700 mt-1">{formatCurrency(memos.reduce((s, m) => s + m.amount, 0))}</p>
           <p className="text-xs text-stone-400 mt-0.5">{memos.length} total</p>
@@ -266,7 +266,7 @@ export function CreditMemosPanel({
       </div>
 
       {/* Table card */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] overflow-hidden">
         {/* Toolbar */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-stone-100">
           <div className="flex gap-1">

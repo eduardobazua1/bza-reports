@@ -444,7 +444,7 @@ function CustomizePanel({
       <div className="absolute right-0 top-0 h-full w-80 bg-white shadow-2xl border-l border-stone-200 flex flex-col" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
-          <h2 className="text-sm font-semibold text-stone-800">Customize</h2>
+          <h2 className="text-sm font-semibold text-stone-700">Customize</h2>
           <button onClick={onClose} className="text-stone-400 hover:text-stone-700 text-xl leading-none">×</button>
         </div>
 
@@ -1027,9 +1027,9 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
     return (
       <div className="space-y-6">
         {REPORT_CATALOG.map(section => (
-          <div key={section.category} className="bg-white rounded-md shadow-sm">
+          <div key={section.category} className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b]">
             <div className="px-5 py-3 border-b border-stone-100">
-              <h2 className="text-sm font-semibold text-stone-800">{section.category}</h2>
+              <h2 className="text-sm font-semibold text-stone-700">{section.category}</h2>
             </div>
             <div className="divide-y divide-stone-100">
               {section.reports.map(r => (
@@ -1062,7 +1062,7 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
             All Reports
           </button>
           <span className="text-stone-300">/</span>
-          <h2 className="text-base font-semibold text-stone-800">{REPORT_LABELS[activeReport]}</h2>
+          <h2 className="text-base font-semibold text-stone-700">{REPORT_LABELS[activeReport]}</h2>
           {filtered.length !== data.length && (
             <span className="text-xs bg-stone-100 text-[#0d3d3b] border border-stone-200 px-2 py-0.5 rounded-full font-medium">{filtered.length} of {data.length} rows</span>
           )}
@@ -1124,7 +1124,7 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
       </div>
 
       {/* Report — document-style, wrapped in a thin border */}
-      <div className="border border-gray-200 rounded overflow-hidden">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] border border-gray-200 overflow-hidden">
         {activeReport === "ar-aging"    && <ARAgingReport   data={filtered} visible={arVisible}       onDrillDown={(r,t)=>setDrillDown({rows:r,title:t,mode:"ar"})} />}
         {activeReport === "pl-monthly"  && <PLMonthlyReport data={filtered} visible={monthlyVisible}  onDrillDown={(r,t)=>setDrillDown({rows:r,title:t,mode:"pl"})} />}
         {activeReport === "pl-customer" && <PLEntityReport  data={filtered} visible={clientVisible}   isClient={true}  onDrillDown={(r,t)=>setDrillDown({rows:r,title:t,mode:"pl"})} />}

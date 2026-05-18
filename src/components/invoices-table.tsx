@@ -278,7 +278,7 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
   return (
     <div className="relative flex gap-4 items-start">
       {/* Table */}
-      <div className={`bg-white rounded-md shadow-sm transition-all duration-300 ${selectedId ? "flex-1 min-w-0" : "w-full"}`}>
+      <div className={`bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] transition-all duration-300 ${selectedId ? "flex-1 min-w-0" : "w-full"}`}>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-muted">
@@ -470,11 +470,11 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
 
       {/* Side Panel */}
       {selectedRow && (
-        <div className="w-[380px] shrink-0 bg-white rounded-md shadow-sm border border-stone-200 flex flex-col max-h-[calc(100vh-120px)] sticky top-4 overflow-hidden">
+        <div className="w-[380px] shrink-0 bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] border border-stone-200 flex flex-col max-h-[calc(100vh-120px)] sticky top-4 overflow-hidden">
           {panelMode === "edit" ? (
             <div className="overflow-y-auto flex-1 p-4">
               <div className="flex items-center justify-between mb-3">
-                <span className="font-semibold text-stone-800 text-sm">Edit — {selectedRow.invoice.invoiceNumber}</span>
+                <span className="font-semibold text-stone-700 text-sm">Edit — {selectedRow.invoice.invoiceNumber}</span>
                 <button onClick={closePanel} className="text-stone-400 hover:text-stone-600 text-xl leading-none">×</button>
               </div>
               <InvoiceForm
@@ -683,7 +683,7 @@ function ReceivePaymentPanel({
       {/* Outstanding invoices */}
       <div className="flex-1 overflow-y-auto">
         <div className="px-4 py-2 border-b border-stone-100 flex items-center justify-between">
-          <span className="text-xs font-semibold text-stone-600 uppercase tracking-wide">Outstanding Transactions</span>
+          <span className="text-xs font-semibold uppercase tracking-widest text-stone-400">Outstanding Transactions</span>
           {!loading && unpaidInvoices.length > 0 && (
             <button onClick={toggleAll} className="text-xs text-primary hover:underline">
               {selectedIds.length === unpaidInvoices.length ? "Deselect all" : "Select all"}
@@ -707,9 +707,9 @@ function ReceivePaymentPanel({
                     onChange={toggleAll}
                   />
                 </th>
-                <th className="text-left p-2 font-medium text-stone-500">Invoice</th>
-                <th className="text-left p-2 font-medium text-stone-500">Due</th>
-                <th className="text-right p-2 font-medium text-stone-500">Amount</th>
+                <th className="text-left p-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Invoice</th>
+                <th className="text-left p-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Due</th>
+                <th className="text-right p-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Amount</th>
               </tr>
             </thead>
             <tbody>

@@ -66,10 +66,10 @@ export function SupplierPaymentActions({
   const shortName = supplierName.split("(")[0].trim();
 
   return (
-    <div className="bg-white rounded-md shadow-sm">
+    <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b]">
       <div className="p-4 border-b border-stone-200 flex items-center justify-between">
         <div>
-          <h3 className="font-semibold text-stone-800">Payments to {shortName}</h3>
+          <h3 className="font-semibold text-stone-700">Payments to {shortName}</h3>
           <p className="text-xs text-stone-400 mt-0.5">Total recorded: {formatCurrency(total)}</p>
         </div>
         {!showForm && (
@@ -140,10 +140,10 @@ export function SupplierPaymentActions({
         <table className="w-full text-sm">
           <thead className="bg-stone-50">
             <tr>
-              <th className="text-left px-4 py-2 font-medium text-stone-500">Date</th>
-              <th className="text-right px-4 py-2 font-medium text-stone-500">Amount</th>
-              <th className="text-left px-4 py-2 font-medium text-stone-500">PO</th>
-              <th className="text-left px-4 py-2 font-medium text-stone-500">Reference / Notes</th>
+              <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Date</th>
+              <th className="text-right px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Amount</th>
+              <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">PO</th>
+              <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Reference / Notes</th>
               <th className="px-4 py-2"></th>
             </tr>
           </thead>

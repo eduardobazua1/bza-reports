@@ -256,10 +256,10 @@ export function SupplierOrdersSection({
   );
 
   return (
-    <div className="bg-white rounded-md shadow-sm">
+    <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b]">
       <div className="p-4 border-b border-stone-200 flex items-center justify-between">
         <div>
-          <h3 className="font-semibold text-stone-800">Supplier Orders ({list.length})</h3>
+          <h3 className="font-semibold text-stone-700">Supplier Orders ({list.length})</h3>
           <div className="flex items-center gap-3 mt-0.5">
             {product && (
               <p className="text-xs text-stone-500">{product}</p>
@@ -297,14 +297,14 @@ export function SupplierOrdersSection({
           <table className="w-full text-sm">
             <thead className="bg-stone-50">
               <tr>
-                <th className="text-left px-4 py-2.5 font-medium text-stone-500">Date</th>
-                <th className="text-left px-4 py-2.5 font-medium text-stone-500">Product</th>
-                <th className="text-right px-4 py-2.5 font-medium text-stone-500">Tons</th>
-                <th className="text-right px-4 py-2.5 font-medium text-stone-500">Price/TN</th>
-                <th className="text-left px-4 py-2.5 font-medium text-stone-500">Incoterm</th>
-                <th className="text-right px-4 py-2.5 font-medium text-stone-500">Total</th>
-                <th className="text-left px-4 py-2.5 font-medium text-stone-500">Lines</th>
-                <th className="px-4 py-2.5 text-right font-medium text-stone-500">Action</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Date</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Product</th>
+                <th className="text-right px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Tons</th>
+                <th className="text-right px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Price/TN</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Incoterm</th>
+                <th className="text-right px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Total</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Lines</th>
+                <th className="px-4 py-2.5 text-right text-xs font-medium text-stone-400 uppercase tracking-wide">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -398,7 +398,7 @@ export function SupplierOrdersSection({
       {/* Add form */}
       {adding && (
         <div className="p-4 border-t border-stone-100 bg-stone-50 space-y-4">
-          <p className="text-xs font-semibold text-stone-500 uppercase">New Supplier Order — {poNumber}</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-stone-400">New Supplier Order — {poNumber}</p>
 
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div>
@@ -418,7 +418,7 @@ export function SupplierOrdersSection({
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-semibold text-stone-500 uppercase">Lines</label>
+              <label className="text-xs font-semibold uppercase tracking-widest text-stone-400">Lines</label>
               <button onClick={addLine} className="text-xs text-[#0d3d3b] hover:text-[#0d3d3b] font-medium">+ Add line</button>
             </div>
             <div className="space-y-2">
@@ -528,7 +528,7 @@ export function SupplierOrdersSection({
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-semibold text-stone-500 uppercase">Lines</label>
+                  <label className="text-xs font-semibold uppercase tracking-widest text-stone-400">Lines</label>
                   <button onClick={addEditLine} className="text-xs text-[#0d3d3b] hover:text-[#0d3d3b] font-medium">+ Add line</button>
                 </div>
                 <div className="space-y-2">

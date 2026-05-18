@@ -153,8 +153,8 @@ export function ScheduleActions({
 
       {/* Schedule form */}
       {showScheduleForm && (
-        <div className="bg-white rounded-md shadow-sm p-4">
-          <h3 className="font-semibold mb-4">Schedule Report</h3>
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4">
+          <h3 className="font-semibold text-stone-700 mb-4">Schedule Report</h3>
           <form onSubmit={handleCreate} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1">Client *</label>
@@ -213,9 +213,9 @@ export function ScheduleActions({
 
       {/* Upcoming */}
       {upcoming.length > 0 && (
-        <div className="bg-white rounded-md shadow-sm">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b]">
           <div className="p-4 border-b border-border">
-            <h3 className="font-semibold">Upcoming</h3>
+            <h3 className="font-semibold text-stone-700">Upcoming</h3>
           </div>
           <div className="divide-y divide-border">
             {upcoming.map((item) => (
@@ -242,9 +242,9 @@ export function ScheduleActions({
 
       {/* Sent history */}
       {sent.length > 0 && (
-        <div className="bg-white rounded-md shadow-sm">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b]">
           <div className="p-4 border-b border-border">
-            <h3 className="font-semibold">Send History</h3>
+            <h3 className="font-semibold text-stone-700">Send History</h3>
           </div>
           <div className="divide-y divide-border">
             {sent.map((item) => (
@@ -263,9 +263,9 @@ export function ScheduleActions({
       )}
 
       {/* Templates */}
-      <div className="bg-white rounded-md shadow-sm">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b]">
         <div className="p-4 border-b border-border">
-          <h3 className="font-semibold">Templates</h3>
+          <h3 className="font-semibold text-stone-700">Templates</h3>
         </div>
         <div className="divide-y divide-border">
           {templates.map((t) => {

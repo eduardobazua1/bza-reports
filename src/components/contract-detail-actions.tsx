@@ -149,21 +149,21 @@ export function ContractDetailActions({ contract, clients, suppliers, eligiblePo
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg shadow-sm p-4">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4">
           <p className="text-xs text-stone-400 mb-1">Client</p>
-          <p className="font-semibold text-stone-800">{contract.client?.name ?? "—"}</p>
+          <p className="font-semibold text-stone-700">{contract.client?.name ?? "—"}</p>
         </div>
-        <div className="bg-white rounded-lg shadow-sm p-4">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4">
           <p className="text-xs text-stone-400 mb-1">Supplier</p>
-          <p className="font-semibold text-stone-800">{contract.supplier?.name ?? "—"}</p>
+          <p className="font-semibold text-stone-700">{contract.supplier?.name ?? "—"}</p>
         </div>
-        <div className="bg-white rounded-lg shadow-sm p-4">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4">
           <p className="text-xs text-stone-400 mb-1">Product</p>
-          <p className="font-semibold text-stone-800">{contract.product ?? "—"}</p>
+          <p className="font-semibold text-stone-700">{contract.product ?? "—"}</p>
         </div>
-        <div className="bg-white rounded-lg shadow-sm p-4">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4">
           <p className="text-xs text-stone-400 mb-1">Validity</p>
-          <p className="font-semibold text-stone-800 text-sm">
+          <p className="font-semibold text-stone-700 text-sm">
             {contract.startDate ? formatDate(contract.startDate) : "—"} → {contract.endDate ? formatDate(contract.endDate) : "—"}
           </p>
         </div>
@@ -172,8 +172,8 @@ export function ContractDetailActions({ contract, clients, suppliers, eligiblePo
       {/* Price terms */}
       <div className="grid md:grid-cols-2 gap-4">
         {/* Sell */}
-        <div className="bg-white rounded-lg shadow-sm p-5">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-stone-400 mb-4">Client Terms (Sell)</h3>
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-5">
+          <h3 className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-4">Client Terms (Sell)</h3>
           <div className="grid grid-cols-2 gap-4">
             <InfoRow label="Price" value={formatPriceFormula(contract.sellPriceType, contract.sellPrice, contract.sellMargin, contract.sellMarketRef)} />
             <InfoRow label="Incoterm" value={contract.sellIncoterm} />
@@ -185,8 +185,8 @@ export function ContractDetailActions({ contract, clients, suppliers, eligiblePo
         </div>
 
         {/* Buy */}
-        <div className="bg-white rounded-lg shadow-sm p-5">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-stone-400 mb-4">Supplier Terms (Buy)</h3>
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-5">
+          <h3 className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-4">Supplier Terms (Buy)</h3>
           <div className="grid grid-cols-2 gap-4">
             <InfoRow label="Price" value={formatPriceFormula(contract.buyPriceType, contract.buyPrice, contract.buyMargin, contract.buyMarketRef)} />
             <InfoRow label="Incoterm" value={contract.buyIncoterm} />
@@ -200,9 +200,9 @@ export function ContractDetailActions({ contract, clients, suppliers, eligiblePo
 
       {/* Volume progress */}
       {contract.volumeTons != null && (
-        <div className="bg-white rounded-lg shadow-sm p-5">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-5">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-stone-400">
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-stone-400">
               Volume · {contractStatusLabels[contract.volumeFrequency as string] ?? contract.volumeFrequency}
             </h3>
             <span className="text-sm font-semibold text-stone-700">
@@ -223,9 +223,9 @@ export function ContractDetailActions({ contract, clients, suppliers, eligiblePo
       )}
 
       {/* Linked POs */}
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3 border-b border-stone-100">
-          <h3 className="font-semibold text-stone-800">Linked Purchase Orders</h3>
+          <h3 className="font-semibold text-stone-700">Linked Purchase Orders</h3>
           {eligiblePos.length > 0 && (
             <button
               onClick={() => setShowLink(true)}
@@ -247,11 +247,11 @@ export function ContractDetailActions({ contract, clients, suppliers, eligiblePo
           <table className="w-full text-sm">
             <thead className="bg-stone-50">
               <tr>
-                <th className="text-left px-5 py-2.5 font-medium text-stone-400 text-xs">PO #</th>
-                <th className="text-left px-4 py-2.5 font-medium text-stone-400 text-xs">Date</th>
-                <th className="text-right px-4 py-2.5 font-medium text-stone-400 text-xs">Planned TN</th>
-                <th className="text-right px-4 py-2.5 font-medium text-stone-400 text-xs">Shipped TN</th>
-                <th className="text-left px-4 py-2.5 font-medium text-stone-400 text-xs">Status</th>
+                <th className="text-left px-5 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">PO #</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Date</th>
+                <th className="text-right px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Planned TN</th>
+                <th className="text-right px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Shipped TN</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Status</th>
                 <th className="px-4 py-2.5" />
               </tr>
             </thead>

@@ -109,8 +109,8 @@ export function InvoiceForm({
   }
 
   return (
-    <div className="bg-white rounded-md shadow-sm p-4">
-      <h3 className="text-lg font-semibold mb-4">{invoice ? "Edit" : "New Invoice"}</h3>
+    <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4">
+      <h3 className="text-lg font-semibold text-stone-700 mb-4">{invoice ? "Edit" : "New Invoice"}</h3>
       <form onSubmit={handleSubmit} className="space-y-5">
         {effectivePOId && <input type="hidden" name="purchaseOrderId" value={effectivePOId} />}
 

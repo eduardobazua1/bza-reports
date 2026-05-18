@@ -51,9 +51,9 @@ export function ShipmentMap({ locationData }: { locationData: Record<string, Loc
   const activeMarkers = markers.filter((m) => m.tons > 0);
 
   return (
-    <div className="bg-white rounded-md shadow-sm overflow-hidden">
+    <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] overflow-hidden">
       <div className="p-4 border-b border-border">
-        <h3 className="text-sm font-semibold">Shipment Map — By Destination</h3>
+        <h3 className="text-sm font-semibold text-stone-700">Shipment Map — By Destination</h3>
         <div className="flex gap-4 mt-2 flex-wrap">
           {activeMarkers.map((m) => (
             <div key={m.name} className="flex items-center gap-1.5">

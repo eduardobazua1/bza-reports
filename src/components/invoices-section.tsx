@@ -229,7 +229,7 @@ export function InvoicesSection({
   const totalProfit = totalRevenue - list.reduce((s, i) => s + i.quantityTons * (i.buyPriceOverride ?? poBuyPrice) + (i.freightCost || 0), 0);
 
   return (
-    <div className="bg-white rounded-md shadow-sm">
+    <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b]">
       <div className="p-4 border-b border-stone-200">
         <h3 className="text-sm font-semibold text-stone-500 uppercase tracking-wide">Invoices ({list.length})</h3>
       </div>
@@ -237,20 +237,20 @@ export function InvoicesSection({
         <table className="w-full text-sm">
           <thead className="bg-stone-50">
             <tr>
-              <th className="text-left px-3 py-1.5 font-medium text-stone-500">Client PO</th>
-              <th className="text-left px-3 py-1.5 font-medium text-stone-500">Invoice #</th>
-              <th className="text-left px-3 py-1.5 font-medium text-stone-500">Product</th>
-              <th className="text-left px-3 py-1.5 font-medium text-stone-500">Destination</th>
-              <th className="text-left px-3 py-1.5 font-medium text-stone-500">Vehicle</th>
-              <th className="text-right px-3 py-1.5 font-medium text-stone-500">Tons</th>
-              <th className="text-right px-3 py-1.5 font-medium text-stone-500">Revenue</th>
-              <th className="text-right px-3 py-1.5 font-medium text-stone-500">Cost</th>
-              <th className="text-right px-3 py-1.5 font-medium text-stone-500">Profit</th>
-              <th className="text-left px-3 py-1.5 font-medium text-stone-500">Ship Date</th>
-              <th className="text-left px-3 py-1.5 font-medium text-stone-500">Due Date</th>
-              <th className="text-left px-3 py-1.5 font-medium text-stone-500">Status</th>
-              <th className="text-left px-3 py-1.5 font-medium text-stone-500">Payment</th>
-              <th className="px-3 py-1.5 text-right sticky right-0 bg-stone-50 z-10 font-medium text-stone-500">Action</th>
+              <th className="text-left px-3 py-1.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Client PO</th>
+              <th className="text-left px-3 py-1.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Invoice #</th>
+              <th className="text-left px-3 py-1.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Product</th>
+              <th className="text-left px-3 py-1.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Destination</th>
+              <th className="text-left px-3 py-1.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Vehicle</th>
+              <th className="text-right px-3 py-1.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Tons</th>
+              <th className="text-right px-3 py-1.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Revenue</th>
+              <th className="text-right px-3 py-1.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Cost</th>
+              <th className="text-right px-3 py-1.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Profit</th>
+              <th className="text-left px-3 py-1.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Ship Date</th>
+              <th className="text-left px-3 py-1.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Due Date</th>
+              <th className="text-left px-3 py-1.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Status</th>
+              <th className="text-left px-3 py-1.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Payment</th>
+              <th className="px-3 py-1.5 text-right sticky right-0 bg-stone-50 z-10 text-xs font-medium text-stone-400 uppercase tracking-wide">Action</th>
             </tr>
           </thead>
           <tbody>

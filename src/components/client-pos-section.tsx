@@ -392,11 +392,11 @@ export function ClientPOsSection({
   }
 
   return (
-    <div className="bg-white rounded-md shadow-sm">
+    <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b]">
       {/* Header */}
       <div className="p-4 border-b border-stone-200 flex items-center justify-between">
         <div>
-          <h3 className="font-semibold text-stone-800">Client Orders ({list.length})</h3>
+          <h3 className="font-semibold text-stone-700">Client Orders ({list.length})</h3>
           <div className="flex items-center gap-3 mt-0.5">
             {totalPlanned > 0 && (
               <p className="text-xs text-stone-400">
@@ -436,16 +436,16 @@ export function ClientPOsSection({
           <table className="w-full text-sm">
             <thead className="bg-stone-50">
               <tr>
-                <th className="text-left px-4 py-2.5 font-medium text-stone-500">Client PO</th>
-                <th className="text-left px-4 py-2.5 font-medium text-stone-500">Product</th>
-                <th className="text-left px-4 py-2.5 font-medium text-stone-500">Destination</th>
-                <th className="text-left px-4 py-2.5 font-medium text-stone-500">Incoterm</th>
-                <th className="text-right px-4 py-2.5 font-medium text-stone-500">TN</th>
-                <th className="text-right px-4 py-2.5 font-medium text-stone-500">Converted</th>
-                <th className="text-right px-4 py-2.5 font-medium text-stone-500">Price/TN</th>
-                <th className="text-right px-4 py-2.5 font-medium text-stone-500">Est. Amount</th>
-                <th className="text-left px-4 py-2.5 font-medium text-stone-500">Status</th>
-                <th className="px-4 py-2.5 text-right font-medium text-stone-500">Action</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Client PO</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Product</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Destination</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Incoterm</th>
+                <th className="text-right px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">TN</th>
+                <th className="text-right px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Converted</th>
+                <th className="text-right px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Price/TN</th>
+                <th className="text-right px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Est. Amount</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Status</th>
+                <th className="px-4 py-2.5 text-right text-xs font-medium text-stone-400 uppercase tracking-wide">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -652,7 +652,7 @@ export function ClientPOsSection({
       {/* Add new Client Order form */}
       {adding && (
         <div className="p-4 border-t border-stone-100 bg-stone-50 space-y-3">
-          <p className="text-xs font-semibold text-stone-500 uppercase">New Client Order</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-stone-400">New Client Order</p>
 
           {/* Row 1 */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

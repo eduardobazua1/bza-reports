@@ -213,7 +213,7 @@ export function ProposalDetail({ proposal }: { proposal: ProposalData }) {
         </div>
 
         {/* Proposal header card */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-6">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-6">
             {[
               { label: "Client",         value: proposal.client?.name || "—" },
@@ -252,7 +252,7 @@ export function ProposalDetail({ proposal }: { proposal: ProposalData }) {
         </div>
 
         {/* Line items table */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] overflow-hidden">
           <div className="px-6 py-4 border-b border-stone-100">
             <h2 className="text-sm font-semibold text-stone-700">Line Items</h2>
           </div>
@@ -312,7 +312,7 @@ export function ProposalDetail({ proposal }: { proposal: ProposalData }) {
 
         {/* Notes */}
         {proposal.notes && (
-          <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-6">
             <h2 className="text-sm font-semibold text-stone-700 mb-3">Notes & Terms</h2>
             <p className="text-sm text-stone-600 whitespace-pre-wrap leading-relaxed">{proposal.notes}</p>
           </div>

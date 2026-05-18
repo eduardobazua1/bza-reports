@@ -46,8 +46,8 @@ export function DashboardCharts({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Revenue by Year */}
-      <div className="bg-white rounded-md shadow-sm p-4">
-        <h3 className="text-lg font-semibold mb-4">Revenue / Cost / Profit by Year</h3>
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4">
+        <h3 className="text-lg font-semibold text-stone-700 mb-4">Revenue / Cost / Profit by Year</h3>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={revenueByYear} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
@@ -73,8 +73,8 @@ export function DashboardCharts({
       </div>
 
       {/* Profit by Client */}
-      <div className="bg-white rounded-md shadow-sm p-4">
-        <h3 className="text-lg font-semibold mb-4">Profit by Client</h3>
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4">
+        <h3 className="text-lg font-semibold text-stone-700 mb-4">Profit by Client</h3>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart

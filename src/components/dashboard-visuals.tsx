@@ -33,7 +33,7 @@ export function DashboardVisuals({
     <div className="space-y-4">
       {/* Monthly Volume Chart + Breakdown */}
       {volumeByMonth.length > 0 && (
-        <div className="bg-white rounded-md shadow-sm">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b]">
           <div className="px-4 pt-4 pb-2">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-stone-700">Monthly Volume (TN)</h3>
@@ -65,7 +65,7 @@ export function DashboardVisuals({
       )}
 
       {/* Recent Shipments Table */}
-      <div className="bg-white rounded-md shadow-sm">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b]">
         <div className="px-4 py-3 border-b border-stone-100 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-stone-700">Recent Shipments</h3>
           <Link href="/invoices" className="text-xs text-[#0d3d3b] font-medium hover:underline">

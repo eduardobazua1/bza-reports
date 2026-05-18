@@ -59,7 +59,7 @@ export function MarketPricesWidget({ prices }: { prices: Price[] }) {
   const range = maxP - minP || 1;
 
   return (
-    <Link href="/market-prices" className="bg-white rounded-md shadow-sm p-4 block hover:shadow-md transition-shadow">
+    <Link href="/market-prices" className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4 block hover:shadow-md transition-shadow">
       <div className="mb-4">
         <p className="text-xs font-medium text-stone-400 uppercase tracking-wide">Market Prices — {monthLabel(curr)}</p>
         <p className="text-[10px] text-stone-300">North America · USD/ADMT · Click for details</p>

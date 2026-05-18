@@ -278,15 +278,15 @@ export function ProductsClient({ products }: { products: Product[] }) {
         </button>
       )}
 
-      <div className="bg-white rounded-md shadow-sm">
+      <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b]">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-muted">
             <tr>
-              <th className="text-left p-3 text-sm font-medium text-muted-foreground">Name</th>
-              <th className="text-left p-3 text-sm font-medium text-muted-foreground">Grade</th>
-              <th className="text-left p-3 text-sm font-medium text-muted-foreground">Certification</th>
-              <th className="text-right p-3 text-sm font-medium text-muted-foreground">Action</th>
+              <th className="text-left p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Name</th>
+              <th className="text-left p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Grade</th>
+              <th className="text-left p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Certification</th>
+              <th className="text-right p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Action</th>
             </tr>
           </thead>
           <tbody>

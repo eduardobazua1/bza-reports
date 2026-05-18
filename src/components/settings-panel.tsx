@@ -117,7 +117,7 @@ export function SettingsPanel({ initial, users, isAdmin }: {
   const activeItem = NAV.flatMap(g => g.items).find(i => i.id === active);
 
   return (
-    <div className="flex bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden min-h-[640px]">
+    <div className="flex bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] border border-stone-200 overflow-hidden min-h-[640px]">
       <aside className="w-52 shrink-0 bg-stone-50 border-r border-stone-200 p-3 flex flex-col gap-5">
         {NAV.map(group => (
           <div key={group.group}>
@@ -140,7 +140,7 @@ export function SettingsPanel({ initial, users, isAdmin }: {
       <main className="flex-1 flex flex-col min-w-0">
         <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100">
           <div>
-            <h2 className="font-semibold text-stone-800">{activeItem?.label}</h2>
+            <h2 className="font-semibold text-stone-700">{activeItem?.label}</h2>
             <p className="text-xs text-stone-400 mt-0.5">{activeItem?.desc}</p>
           </div>
           {["company","invoice"].includes(active) && (
@@ -183,7 +183,7 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   return (
     <div className="mb-5">
       <h3 className="text-xs font-semibold text-stone-400 uppercase tracking-widest mb-2.5">{title}</h3>
-      <div className="bg-stone-50 rounded-xl p-4 border border-stone-100 space-y-4">{children}</div>
+      <div className="bg-stone-50 rounded-md p-4 border border-stone-100 space-y-4">{children}</div>
     </div>
   );
 }

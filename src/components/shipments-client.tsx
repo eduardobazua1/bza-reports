@@ -18,17 +18,17 @@ function ShipmentsTable({ rows }: { rows: InvoiceRow[] }) {
       <table className="w-full text-sm">
         <thead className="bg-muted">
           <tr>
-            <th className="text-left px-2 py-2 font-medium text-muted-foreground whitespace-nowrap">Status</th>
-            <th className="text-left px-2 py-2 font-medium text-muted-foreground whitespace-nowrap">Invoice</th>
-            <th className="text-left px-2 py-2 font-medium text-muted-foreground whitespace-nowrap">PO</th>
-            <th className="text-left px-2 py-2 font-medium text-muted-foreground whitespace-nowrap">Client PO</th>
-            <th className="text-right px-2 py-2 font-medium text-muted-foreground whitespace-nowrap">TN</th>
-            <th className="text-left px-2 py-2 font-medium text-muted-foreground whitespace-nowrap">Vehicle</th>
-            <th className="text-left px-2 py-2 font-medium text-muted-foreground whitespace-nowrap">BL #</th>
-            <th className="text-left px-2 py-2 font-medium text-muted-foreground whitespace-nowrap">Location</th>
-            <th className="text-left px-2 py-2 font-medium text-muted-foreground whitespace-nowrap">ETA</th>
-            <th className="text-left px-2 py-2 font-medium text-muted-foreground whitespace-nowrap">Ship Date</th>
-            <th className="text-center px-2 py-2 font-medium text-muted-foreground whitespace-nowrap">Action</th>
+            <th className="text-left px-2 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide whitespace-nowrap">Status</th>
+            <th className="text-left px-2 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide whitespace-nowrap">Invoice</th>
+            <th className="text-left px-2 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide whitespace-nowrap">PO</th>
+            <th className="text-left px-2 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide whitespace-nowrap">Client PO</th>
+            <th className="text-right px-2 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide whitespace-nowrap">TN</th>
+            <th className="text-left px-2 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide whitespace-nowrap">Vehicle</th>
+            <th className="text-left px-2 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide whitespace-nowrap">BL #</th>
+            <th className="text-left px-2 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide whitespace-nowrap">Location</th>
+            <th className="text-left px-2 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide whitespace-nowrap">ETA</th>
+            <th className="text-left px-2 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide whitespace-nowrap">Ship Date</th>
+            <th className="text-center px-2 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide whitespace-nowrap">Action</th>
           </tr>
         </thead>
         <tbody>
@@ -130,7 +130,7 @@ export function ShipmentsClient({ allInvoices }: Props) {
             <div
               key={status}
               onClick={() => toggleFilter(status)}
-              className={`bg-white rounded-md shadow-sm p-4 cursor-pointer transition-all hover:bg-stone-50 ring-1 ${
+              className={`bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4 cursor-pointer transition-all hover:bg-stone-50 ring-1 ${
                 isSelected
                   ? "ring-primary/40 bg-primary/5"
                   : "ring-transparent hover:ring-stone-200"
@@ -166,9 +166,9 @@ export function ShipmentsClient({ allInvoices }: Props) {
 
       {/* Shipments table grouped by client */}
       {Array.from(byClient.entries()).map(([clientName, rows]) => (
-        <div key={clientName} className={`bg-white rounded-md shadow-sm ${filter === "entregado" ? "opacity-90" : ""}`}>
+        <div key={clientName} className={`bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] ${filter === "entregado" ? "opacity-90" : ""}`}>
           <div className="p-4 border-b border-border flex items-center justify-between">
-            <h2 className="font-semibold">{clientName}</h2>
+            <h2 className="font-semibold text-stone-700">{clientName}</h2>
             <span className="text-sm text-muted-foreground">
               {rows.length} shipments &middot; {formatNumber(rows.reduce((s, r) => s + r.invoice.quantityTons, 0), 0)} TN
             </span>
@@ -178,7 +178,7 @@ export function ShipmentsClient({ allInvoices }: Props) {
       ))}
 
       {displayRows.length === 0 && (
-        <div className="bg-white rounded-md shadow-sm p-8 text-center text-muted-foreground">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-8 text-center text-muted-foreground">
           {filter ? `No shipments with status "${shipmentStatusLabels[filter]}".` : "No active shipments at this time."}
         </div>
       )}
