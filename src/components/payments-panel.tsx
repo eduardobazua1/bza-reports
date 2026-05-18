@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/utils";
 import { markInvoicesPaid } from "@/server/actions";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ChevronDown, ChevronRight, CheckCircle2, Trash2 } from "lucide-react";
 
 type CustomerPayment = {
@@ -764,7 +765,13 @@ export function PaymentsPanel({
                 <tbody>
                   {saldoAFavor.map(b => (
                     <tr key={b.poId} className="border-t border-stone-100 hover:bg-stone-50">
-                      <td className="px-4 py-2.5 text-xs font-medium text-[#0d3d3b]">{b.poNumber || "—"}</td>
+                      <td className="px-4 py-2.5 text-xs font-medium text-[#0d3d3b]">
+                        {b.poId ? (
+                          <Link href={`/purchase-orders/${b.poId}`} className="hover:underline">
+                            {b.poNumber || "—"}
+                          </Link>
+                        ) : (b.poNumber || "—")}
+                      </td>
                       <td className="px-4 py-2.5 text-xs text-[#0d3d3b]">{b.supplierName?.split("(")[0].trim() || "—"}</td>
                       <td className="px-4 py-2.5 text-xs text-right font-semibold text-[#0d3d3b]">{formatCurrency(b.totalPaid)}</td>
                       <td className="px-4 py-2.5 text-xs text-right text-[#0d3d3b]">{formatCurrency(b.totalShipped)}</td>
@@ -852,7 +859,13 @@ export function PaymentsPanel({
                         </td>
                         <td className="p-3 text-xs text-[#0d3d3b]">{formatDate(p.paymentDate)}</td>
                         <td className="p-3 text-xs text-[#0d3d3b]">{p.supplierName?.split("(")[0].trim() || "—"}</td>
-                        <td className="p-3 text-xs text-[#0d3d3b]">{p.poNumber || "—"}</td>
+                        <td className="p-3 text-xs text-[#0d3d3b]">
+                          {p.purchaseOrderId ? (
+                            <Link href={`/purchase-orders/${p.purchaseOrderId}`} className="hover:underline">
+                              {p.poNumber}
+                            </Link>
+                          ) : "—"}
+                        </td>
                         <td className="p-3 text-xs text-center text-[#0d3d3b]">
                           {p.invoices.length > 0 ? (
                             <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#0d3d3b]/10 text-[10px] font-semibold text-[#0d3d3b]">

@@ -15,6 +15,7 @@ type Doc = {
 
 const typeLabels: Record<string, string> = {
   invoice: "Invoice",
+  supplier_invoice: "Supplier Invoice",
   bl: "Bill of Lading",
   pl: "Packing List",
   other: "Other",
@@ -22,6 +23,7 @@ const typeLabels: Record<string, string> = {
 
 const typeColors: Record<string, string> = {
   invoice: "bg-[#ccfbf1] text-[#0d3d3b]",
+  supplier_invoice: "bg-amber-100 text-amber-700",
   bl: "bg-[#ccfbf1] text-[#0d3d3b]",
   pl: "bg-[#ccfbf1] text-[#0d3d3b]",
   other: "bg-stone-100 text-stone-500",
@@ -32,7 +34,7 @@ export function DocumentUpload({ invoiceId, invoiceNumber }: { invoiceId: number
   const [uploading, setUploading] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [selectedType, setSelectedType] = useState<string>("bl");
+  const [selectedType, setSelectedType] = useState<string>("supplier_invoice");
 
   async function loadDocs() {
     const res = await fetch(`/api/documents?invoiceId=${invoiceId}`);
@@ -147,6 +149,7 @@ export function DocumentUpload({ invoiceId, invoiceNumber }: { invoiceId: number
             onChange={(e) => setSelectedType(e.target.value)}
             className="text-[11px] border border-stone-200 rounded px-1.5 py-1 bg-white"
           >
+            <option value="supplier_invoice">Supplier Invoice</option>
             <option value="bl">Bill of Lading</option>
             <option value="pl">Packing List</option>
             <option value="invoice">Invoice</option>
