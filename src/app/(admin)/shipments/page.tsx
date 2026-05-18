@@ -116,10 +116,10 @@ export default async function ShipmentsPage({
                     <td className="px-2 py-1.5 border-t border-border text-right font-medium">
                       {formatNumber(row.invoice.quantityTons, 1)}
                     </td>
-                    <td className="px-2 py-1.5 border-t border-border font-mono">
+                    <td className="px-2 py-1.5 border-t border-border">
                       {row.invoice.vehicleId || <span className="text-muted-foreground">-</span>}
                     </td>
-                    <td className="px-2 py-1.5 border-t border-border font-mono">
+                    <td className="px-2 py-1.5 border-t border-border">
                       {row.invoice.blNumber || <span className="text-muted-foreground">-</span>}
                     </td>
                     <td className="px-2 py-1.5 border-t border-border">

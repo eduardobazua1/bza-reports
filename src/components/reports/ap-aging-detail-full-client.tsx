@@ -318,7 +318,7 @@ export function APAgingDetailFullClient({ buckets, total, filterBucket, filterSu
                       <tr key={i} className="border-t border-stone-50 hover:bg-stone-50">
                         {visibleCols.date     && <td className="px-6 py-2.5 text-stone-600">{fmtDate(row.date)}</td>}
                         {visibleCols.type     && <td className="px-4 py-2.5 text-stone-500">Invoice</td>}
-                        {visibleCols.invoice  && <td className="px-4 py-2.5 font-mono text-xs font-medium text-[#0d3d3b]">{row.num}</td>}
+                        {visibleCols.invoice  && <td className="px-4 py-2.5 text-xs font-medium text-[#0d3d3b]">{row.num}</td>}
                         <td className="px-4 py-2.5 text-stone-700">{row.supplier}</td>
                         {visibleCols.amount      && <td className="px-4 py-2.5 text-right text-stone-700">{formatCurrency(row.amount)}</td>}
                         {visibleCols.openBalance && <td className="px-4 py-2.5 text-right font-medium text-stone-800">{formatCurrency(row.amount)}</td>}
@@ -353,7 +353,7 @@ export function APAgingDetailFullClient({ buckets, total, filterBucket, filterSu
                         <tr key={`${bucket.key}-${i}`} className="border-t border-stone-50 hover:bg-stone-50">
                           {visibleCols.date     && <td className="px-6 py-2.5 text-stone-600">{fmtDate(row.date)}</td>}
                           {visibleCols.type     && <td className="px-4 py-2.5 text-stone-500">Invoice</td>}
-                          {visibleCols.invoice  && <td className="px-4 py-2.5 font-mono text-xs font-medium text-[#0d3d3b]">{row.num}</td>}
+                          {visibleCols.invoice  && <td className="px-4 py-2.5 text-xs font-medium text-[#0d3d3b]">{row.num}</td>}
                           <td className="px-4 py-2.5 text-stone-700">{row.supplier}</td>
                           {visibleCols.amount      && <td className="px-4 py-2.5 text-right text-stone-700">{formatCurrency(row.amount)}</td>}
                           {visibleCols.openBalance && <td className="px-4 py-2.5 text-right font-medium text-stone-800">{formatCurrency(row.amount)}</td>}

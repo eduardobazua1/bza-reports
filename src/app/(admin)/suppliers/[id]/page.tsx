@@ -215,7 +215,7 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
                 <tr key={p.payment.id} className="border-t border-stone-100 hover:bg-stone-50">
                   <td className="px-4 py-2.5 text-stone-700">{formatDate(p.payment.paymentDate)}</td>
                   <td className="px-4 py-2.5 text-right font-semibold">{formatCurrency(p.payment.amountUsd)}</td>
-                  <td className="px-4 py-2.5 font-mono text-xs font-medium text-[#0d3d3b]">{p.poNumber || "—"}</td>
+                  <td className="px-4 py-2.5 text-xs font-medium text-[#0d3d3b]">{p.poNumber || "—"}</td>
                   <td className="px-4 py-2.5 text-xs text-stone-500">{p.payment.reference || p.payment.notes || "—"}</td>
                 </tr>
               ))}

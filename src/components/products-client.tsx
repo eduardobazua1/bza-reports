@@ -183,14 +183,14 @@ function CertDisplay({ p }: { p: Product }) {
   if (p.pefc) return (
     <div className="flex flex-col gap-0.5 text-sm">
       <span className="font-medium">PEFC</span>
-      {p.pefc && <span className="text-xs font-mono text-muted-foreground">{p.pefc}</span>}
+      {p.pefc && <span className="text-xs text-muted-foreground">{p.pefc}</span>}
       {p.inputClaim && <span className="text-xs text-muted-foreground">{p.inputClaim}</span>}
     </div>
   );
   if (hasFsc) return (
     <div className="flex flex-col gap-0.5 text-sm">
       <span className="font-medium">FSC</span>
-      {p.fscLicense && <span className="text-xs font-mono text-muted-foreground">{p.fscLicense}</span>}
+      {p.fscLicense && <span className="text-xs text-muted-foreground">{p.fscLicense}</span>}
       {p.inputClaim && <span className="text-xs text-muted-foreground">{p.inputClaim}</span>}
     </div>
   );

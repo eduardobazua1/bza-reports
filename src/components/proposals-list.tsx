@@ -126,7 +126,7 @@ export function ProposalsList({ proposals }: { proposals: Proposal[] }) {
             <tbody>
               {filtered.map(p => (
                 <tr key={p.id} className="hover:bg-muted/50 transition-colors">
-                  <td className="p-3 font-mono text-xs text-stone-700 border-t border-border">{p.proposalNumber}</td>
+                  <td className="p-3 text-xs text-stone-700 border-t border-border">{p.proposalNumber}</td>
                   <td className="p-3 text-stone-700 border-t border-border">{p.clientName || "—"}</td>
                   <td className="p-3 text-stone-600 max-w-[200px] truncate border-t border-border">{p.title}</td>
                   <td className="p-3 text-stone-500 text-xs whitespace-nowrap border-t border-border">{fmtDate(p.proposalDate)}</td>

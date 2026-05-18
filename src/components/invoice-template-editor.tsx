@@ -151,7 +151,7 @@ export function InvoiceTemplateEditor({ initial }: { initial?: Partial<InvoiceSe
                   type="text"
                   value={cfg.primaryColor}
                   onChange={e => set("primaryColor", e.target.value)}
-                  className="w-24 border border-stone-200 rounded px-2 py-1 text-xs font-mono"
+                  className="w-24 border border-stone-200 rounded px-2 py-1 text-xs"
                 />
               </div>
             </div>
@@ -168,7 +168,7 @@ export function InvoiceTemplateEditor({ initial }: { initial?: Partial<InvoiceSe
                   type="text"
                   value={cfg.accentColor}
                   onChange={e => set("accentColor", e.target.value)}
-                  className="w-24 border border-stone-200 rounded px-2 py-1 text-xs font-mono"
+                  className="w-24 border border-stone-200 rounded px-2 py-1 text-xs"
                 />
               </div>
             </div>

@@ -531,7 +531,7 @@ export function ClientPOsSection({
                               <div>
                                 <label className="block text-xs text-stone-500 mb-1">Invoice # *</label>
                                 <input
-                                  className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm font-mono"
+                                  className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
                                   value={convertForm.invoiceNumber}
                                   onChange={(e) => setConvertForm((f) => ({ ...f, invoiceNumber: e.target.value }))}
                                 />
@@ -569,7 +569,7 @@ export function ClientPOsSection({
                               <div>
                                 <label className="block text-xs text-stone-500 mb-1">Railcar #</label>
                                 <input
-                                  className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm font-mono"
+                                  className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
                                   placeholder="TBOX636255"
                                   value={convertForm.vehicleId}
                                   onChange={(e) => setConvertForm((f) => ({ ...f, vehicleId: e.target.value }))}
@@ -578,7 +578,7 @@ export function ClientPOsSection({
                               <div>
                                 <label className="block text-xs text-stone-500 mb-1">BOL #</label>
                                 <input
-                                  className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm font-mono"
+                                  className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
                                   placeholder="4001124"
                                   value={convertForm.blNumber}
                                   onChange={(e) => setConvertForm((f) => ({ ...f, blNumber: e.target.value }))}
@@ -659,7 +659,7 @@ export function ClientPOsSection({
             <div>
               <label className="block text-xs text-stone-500 mb-1">Client PO # *</label>
               <input
-                className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm font-mono"
+                className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
                 placeholder="X190165"
                 value={addForm.clientPoNumber}
                 onChange={(e) => setAddForm((f) => ({ ...f, clientPoNumber: e.target.value }))}
@@ -760,7 +760,7 @@ export function ClientPOsSection({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs text-stone-500 mb-1">Client PO # *</label>
-                  <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm font-mono" value={editForm.clientPoNumber} onChange={(e) => setEditForm(f => ({ ...f, clientPoNumber: e.target.value }))} />
+                  <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.clientPoNumber} onChange={(e) => setEditForm(f => ({ ...f, clientPoNumber: e.target.value }))} />
                 </div>
                 <div>
                   <label className="block text-xs text-stone-500 mb-1">Destination</label>

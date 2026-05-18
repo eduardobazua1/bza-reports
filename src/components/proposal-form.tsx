@@ -220,7 +220,7 @@ export function ProposalForm({ mode, proposalId, proposalNumber, clients, produc
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold">{mode === "new" ? "New Proposal" : "Edit"}</h1>
-          <p className="text-sm text-stone-400 mt-0.5 font-mono">{proposalNumber}</p>
+          <p className="text-sm text-stone-400 mt-0.5">{proposalNumber}</p>
         </div>
         <div className="flex items-center gap-3">
           <button type="button" onClick={() => router.back()}
@@ -348,7 +348,7 @@ export function ProposalForm({ mode, proposalId, proposalNumber, clients, produc
                 className="px-4 py-3 space-y-2 lg:space-y-0 lg:grid lg:grid-cols-[28px_1.8fr_1.4fr_90px_64px_108px_62px_88px_32px] lg:gap-2 lg:items-center hover:bg-stone-50/50 transition-colors">
 
                 {/* Row index */}
-                <div className="hidden lg:flex items-center justify-center text-[10px] text-stone-300 font-mono select-none">
+                <div className="hidden lg:flex items-center justify-center text-[10px] text-stone-300 select-none">
                   {idx + 1}
                 </div>
 

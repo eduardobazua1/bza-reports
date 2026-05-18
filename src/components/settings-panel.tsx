@@ -434,7 +434,7 @@ function SectionInvoice({ cfg, set }: { cfg: Settings; set: (f: keyof Settings, 
                   className="w-9 h-9 rounded-lg cursor-pointer border border-stone-200 p-0.5" />
                 <input type="text" value={cfg[field]}
                   onChange={e => set(field, e.target.value)}
-                  className="w-24 border border-stone-200 rounded-lg px-2 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#4fd1c5]/40" />
+                  className="w-24 border border-stone-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4fd1c5]/40" />
                 <div className="w-7 h-7 rounded border border-stone-200" style={{ background: cfg[field] }} />
               </div>
             </div>

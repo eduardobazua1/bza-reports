@@ -76,7 +76,7 @@ export function APAgingDetailClient({ buckets, total, filterBucket, filterSuppli
                 <tr key={`${bucket.key}-${i}`} className="border-t border-stone-50 hover:bg-stone-50">
                   <td className="px-6 py-2.5 text-stone-600">{fmt(row.date)}</td>
                   <td className="px-4 py-2.5 text-stone-500">Invoice</td>
-                  <td className="px-4 py-2.5 font-mono text-xs font-medium text-[#0d3d3b]">{row.num}</td>
+                  <td className="px-4 py-2.5 text-xs font-medium text-[#0d3d3b]">{row.num}</td>
                   <td className="px-4 py-2.5 text-stone-700">{row.supplier}</td>
                   <td className="px-4 py-2.5 text-right text-stone-700">{formatCurrency(row.amount)}</td>
                   <td className="px-4 py-2.5 text-right font-medium text-stone-800">{formatCurrency(row.amount)}</td>

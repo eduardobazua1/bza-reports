@@ -379,7 +379,7 @@ function DrillDownModal({
                 const margin = r.revenue > 0 ? (r.profit / r.revenue) * 100 : 0;
                 return (
                   <tr key={i} className="border-b border-gray-100 hover:bg-gray-50">
-                    {v("invoiceNumber") && <td className="px-3 py-1.5 font-mono font-medium text-[#0d3d3b] whitespace-nowrap">{r.invoiceNumber}</td>}
+                    {v("invoiceNumber") && <td className="px-3 py-1.5 font-medium text-[#0d3d3b] whitespace-nowrap">{r.invoiceNumber}</td>}
                     {v("clientName")    && <td className="px-3 py-1.5 font-medium whitespace-nowrap">{r.clientName}</td>}
                     {v("supplierName")  && <td className="px-3 py-1.5 text-gray-500 whitespace-nowrap">{r.supplierName}</td>}
                     {v("poNumber")      && <td className="px-3 py-1.5 text-gray-500 whitespace-nowrap">{r.poNumber || "—"}</td>}

@@ -405,11 +405,11 @@ export function InvoicesSection({
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             <div>
                               <label className="block text-xs text-stone-500 mb-1">Invoice # *</label>
-                              <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm font-mono" value={editForm.invoiceNumber || ""} onChange={f("invoiceNumber")} />
+                              <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.invoiceNumber || ""} onChange={f("invoiceNumber")} />
                             </div>
                             <div>
                               <label className="block text-xs text-stone-500 mb-1">Client PO</label>
-                              <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm font-mono" value={editForm.salesDocument || ""} onChange={f("salesDocument")} placeholder="X190165" />
+                              <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.salesDocument || ""} onChange={f("salesDocument")} placeholder="X190165" />
                             </div>
                             <div>
                               <label className="block text-xs text-stone-500 mb-1">Product</label>
@@ -432,11 +432,11 @@ export function InvoicesSection({
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             <div>
                               <label className="block text-xs text-stone-500 mb-1">Railcar #</label>
-                              <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm font-mono" value={editForm.vehicleId || ""} onChange={f("vehicleId")} placeholder="TBOX636255" />
+                              <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.vehicleId || ""} onChange={f("vehicleId")} placeholder="TBOX636255" />
                             </div>
                             <div>
                               <label className="block text-xs text-stone-500 mb-1">BOL #</label>
-                              <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm font-mono" value={editForm.blNumber || ""} onChange={f("blNumber")} placeholder="4001124" />
+                              <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.blNumber || ""} onChange={f("blNumber")} placeholder="4001124" />
                             </div>
                             <div>
                               <label className="block text-xs text-stone-500 mb-1">Ship Date</label>
