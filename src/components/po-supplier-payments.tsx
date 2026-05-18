@@ -121,7 +121,7 @@ export function POSupplierPayments({
           <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-3">New Payment</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>
-              <label className="text-xs text-stone-500 block mb-1">Amount (USD) *</label>
+              <label className="text-xs text-stone-600 block mb-1">Amount (USD) *</label>
               <input
                 type="number"
                 step="0.01"
@@ -134,7 +134,7 @@ export function POSupplierPayments({
               />
             </div>
             <div>
-              <label className="text-xs text-stone-500 block mb-1">Payment Date *</label>
+              <label className="text-xs text-stone-600 block mb-1">Payment Date *</label>
               <input
                 type="date"
                 required
@@ -144,7 +144,7 @@ export function POSupplierPayments({
               />
             </div>
             <div>
-              <label className="text-xs text-stone-500 block mb-1">Reference</label>
+              <label className="text-xs text-stone-600 block mb-1">Reference</label>
               <input
                 type="text"
                 placeholder="Wire ref, check #..."
@@ -154,7 +154,7 @@ export function POSupplierPayments({
               />
             </div>
             <div>
-              <label className="text-xs text-stone-500 block mb-1">Notes</label>
+              <label className="text-xs text-stone-600 block mb-1">Notes</label>
               <input
                 type="text"
                 placeholder="Optional note"
@@ -205,9 +205,9 @@ export function POSupplierPayments({
             )}
             {payments.map((p) => (
               <tr key={p.id} className="border-t border-stone-100 hover:bg-stone-50">
-                <td className="px-4 py-2.5 text-xs text-stone-500">{formatDate(p.paymentDate)}</td>
-                <td className="px-4 py-2.5 text-xs text-right font-medium text-stone-700">{formatCurrency(p.amountUsd)}</td>
-                <td className="px-4 py-2.5 text-xs text-stone-500">{p.reference || "—"}</td>
+                <td className="px-4 py-2.5 text-xs text-stone-600">{formatDate(p.paymentDate)}</td>
+                <td className="px-4 py-2.5 text-xs text-right font-medium text-[#0d3d3b]">{formatCurrency(p.amountUsd)}</td>
+                <td className="px-4 py-2.5 text-xs text-stone-600">{p.reference || "—"}</td>
                 <td className="px-4 py-2.5 text-stone-400">{p.notes || "—"}</td>
                 <td className="px-4 py-2.5 text-right">
                   <button
@@ -226,7 +226,7 @@ export function POSupplierPayments({
             <tfoot>
               <tr className="bg-stone-50 font-semibold border-t-2 border-stone-200">
                 <td className="px-4 py-2.5 text-stone-700">TOTAL</td>
-                <td className="px-4 py-2.5 text-right text-stone-900">{formatCurrency(totalPaid)}</td>
+                <td className="px-4 py-2.5 text-right text-[#0d3d3b]">{formatCurrency(totalPaid)}</td>
                 <td colSpan={3} className="px-4 py-2.5"></td>
               </tr>
             </tfoot>

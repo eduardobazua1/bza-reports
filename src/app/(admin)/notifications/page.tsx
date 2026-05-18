@@ -61,7 +61,7 @@ function NotificationCard({ n }: { n: AppNotification }) {
             {t.label}
           </span>
         </div>
-        <p className="text-xs text-stone-500 mt-0.5 leading-relaxed">{n.description}</p>
+        <p className="text-xs text-stone-600 mt-0.5 leading-relaxed">{n.description}</p>
         {n.date && (
           <p className="text-[11px] text-stone-400 mt-1">
             {n.type === "overdue" ? "Was due" : n.type === "stale_shipment" ? "Last update" : "Date"}:{" "}

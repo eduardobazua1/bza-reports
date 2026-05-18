@@ -20,7 +20,7 @@ type Supplier = {
 function F({ label, name, dv, ph, type }: { label: string; name: string; dv?: string | null; ph?: string; type?: string }) {
   return (
     <div>
-      <label className="block text-xs text-stone-500 mb-1">{label}</label>
+      <label className="block text-xs text-stone-600 mb-1">{label}</label>
       <input name={name} type={type || "text"} defaultValue={dv || ""} placeholder={ph || ""} className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-[#0d3d3b]" />
     </div>
   );
@@ -164,7 +164,7 @@ export function SupplierDetailEdit({ supplier }: { supplier: Supplier }) {
           <section>
             <ST>Notes</ST>
             <div>
-              <label className="block text-xs text-stone-500 mb-1">Notes</label>
+              <label className="block text-xs text-stone-600 mb-1">Notes</label>
               <textarea name="notes" defaultValue={supplier.notes || ""} rows={3} placeholder="Internal notes about this supplier..." className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-[#0d3d3b] resize-none" />
             </div>
           </section>

@@ -70,7 +70,7 @@ export default async function SalesByProductPage() {
                 const barWidth = Math.round((p.totalRevenue / maxRevenue) * 120);
                 return (
                   <tr key={p.product} className="border-b border-stone-50 hover:bg-stone-50">
-                    <td className="px-6 py-3 text-xs font-medium text-stone-700">
+                    <td className="px-6 py-3 text-xs text-stone-600">
                       <div>{p.product}</div>
                       <div className="mt-1 w-[120px] h-1.5 bg-[#0d3d3b]/10 rounded-full">
                         <div
@@ -80,12 +80,12 @@ export default async function SalesByProductPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-xs text-right text-stone-400">{p.invoiceCount}</td>
-                    <td className="px-4 py-3 text-xs text-right font-medium text-stone-700">
+                    <td className="px-4 py-3 text-xs text-right text-stone-600">
                       {p.totalTons.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className="px-4 py-3 text-xs text-right font-medium text-stone-700">{formatCurrency(p.totalRevenue)}</td>
-                    <td className="px-4 py-3 text-xs text-right text-stone-500">{formatCurrency(p.totalCost)}</td>
-                    <td className="px-4 py-3 text-xs text-right font-medium text-stone-700">{formatCurrency(grossProfit)}</td>
+                    <td className="px-4 py-3 text-xs text-right font-medium text-[#0d3d3b]">{formatCurrency(p.totalRevenue)}</td>
+                    <td className="px-4 py-3 text-xs text-right font-medium text-[#0d3d3b]">{formatCurrency(p.totalCost)}</td>
+                    <td className="px-4 py-3 text-xs text-right font-medium text-[#0d3d3b]">{formatCurrency(grossProfit)}</td>
                     <td className={`px-6 py-3 text-right ${marginColor(margin)}`}>{margin.toFixed(1)}%</td>
                   </tr>
                 );
@@ -98,9 +98,9 @@ export default async function SalesByProductPage() {
                 <td className="px-4 py-3 text-right font-medium text-stone-600">
                   {totals.totalTons.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </td>
-                <td className="px-4 py-3 text-right font-medium text-stone-600">{formatCurrency(totals.totalRevenue)}</td>
-                <td className="px-4 py-3 text-right font-medium text-stone-600">{formatCurrency(totals.totalCost)}</td>
-                <td className="px-4 py-3 text-right font-medium text-stone-600">{formatCurrency(totals.grossProfit)}</td>
+                <td className="px-4 py-3 text-right font-medium text-[#0d3d3b]">{formatCurrency(totals.totalRevenue)}</td>
+                <td className="px-4 py-3 text-right font-medium text-[#0d3d3b]">{formatCurrency(totals.totalCost)}</td>
+                <td className="px-4 py-3 text-right font-medium text-[#0d3d3b]">{formatCurrency(totals.grossProfit)}</td>
                 <td className={`px-6 py-3 text-right font-bold ${marginColor(totals.totalRevenue > 0 ? (totals.grossProfit / totals.totalRevenue) * 100 : 0)}`}>
                   {totals.totalRevenue > 0 ? ((totals.grossProfit / totals.totalRevenue) * 100).toFixed(1) : "0.0"}%
                 </td>

@@ -21,7 +21,7 @@ type Supplier = {
 function F({ label, name, dv, ph, type }: { label: string; name: string; dv?: string | null; ph?: string; type?: string }) {
   return (
     <div>
-      <label className="block text-xs text-stone-500 mb-1">{label}</label>
+      <label className="block text-xs text-stone-600 mb-1">{label}</label>
       <input name={name} type={type || "text"} defaultValue={dv || ""} placeholder={ph || ""} className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-[#0d3d3b]" />
     </div>
   );
@@ -107,7 +107,7 @@ function SupplierForm({ initial, onSave, onCancel, isPending }: {
         <section>
           <ST>Notes</ST>
           <div>
-            <label className="block text-xs text-stone-500 mb-1">Notes</label>
+            <label className="block text-xs text-stone-600 mb-1">Notes</label>
             <textarea name="notes" defaultValue={initial?.notes || ""} rows={3} placeholder="Internal notes about this supplier..." className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-[#0d3d3b] resize-none" />
           </div>
         </section>
@@ -196,9 +196,9 @@ export function SupplierActions({ suppliers }: { suppliers: Supplier[] }) {
                   <td className="p-3 text-xs font-medium border-t border-border">
                     <a href={`/suppliers/${s.id}`} className="text-[#0d3d3b] hover:underline">{s.name}</a>
                   </td>
-                  <td className="p-3 text-xs text-stone-500 border-t border-border">{s.contactName || "-"}</td>
-                  <td className="p-3 text-xs text-stone-500 border-t border-border">{s.contactEmail || "-"}</td>
-                  <td className="p-3 text-xs text-stone-500 border-t border-border">{[s.city, s.country].filter(Boolean).join(", ") || "-"}</td>
+                  <td className="p-3 text-xs text-stone-600 border-t border-border">{s.contactName || "-"}</td>
+                  <td className="p-3 text-xs text-stone-600 border-t border-border">{s.contactEmail || "-"}</td>
+                  <td className="p-3 text-xs text-stone-600 border-t border-border">{[s.city, s.country].filter(Boolean).join(", ") || "-"}</td>
                   <td className="p-3 text-sm border-t border-border">
                     {s.certType === "fsc" || s.fscLicense ? (
                       <span className="px-2 py-0.5 rounded text-xs font-semibold bg-[#0d3d3b]/10 text-[#0d3d3b]">FSC</span>

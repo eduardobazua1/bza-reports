@@ -209,7 +209,7 @@ export default function ClientReportPage() {
               <span className={`relative inline-flex w-8 h-4 shrink-0 rounded-full transition-colors ${activeOnly ? "bg-[#0d3d3b]" : "bg-stone-200"}`}>
                 <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow-sm transition-transform ${activeOnly ? "translate-x-4" : "translate-x-0.5"}`} />
               </span>
-              <span className="text-xs text-stone-500 whitespace-nowrap group-hover:text-stone-700 transition-colors">Active only</span>
+              <span className="text-xs text-stone-600 whitespace-nowrap group-hover:text-stone-700 transition-colors">Active only</span>
             </button>
 
             {/* Download dropdown — right side */}

@@ -170,11 +170,11 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
               {pos.map(p => (
                 <tr key={p.po.id} className="border-t border-stone-100 hover:bg-stone-50">
                   <td className="px-4 py-2.5 text-xs font-medium"><a href={`/purchase-orders/${p.po.id}`} className="text-[#0d3d3b] hover:underline">{p.po.poNumber}</a></td>
-                  <td className="px-4 py-2.5 text-xs text-stone-500">{p.clientName || "—"}</td>
-                  <td className="px-4 py-2.5 text-xs text-stone-500">{formatDate(p.po.poDate)}</td>
-                  <td className="px-4 py-2.5 text-xs text-right font-medium text-stone-700">{formatCurrency(p.po.buyPrice)}</td>
+                  <td className="px-4 py-2.5 text-xs text-stone-600">{p.clientName || "—"}</td>
+                  <td className="px-4 py-2.5 text-xs text-stone-600">{formatDate(p.po.poDate)}</td>
+                  <td className="px-4 py-2.5 text-xs text-right font-medium text-[#0d3d3b]">{formatCurrency(p.po.buyPrice)}</td>
                   <td className="px-4 py-2.5 text-xs text-right font-medium text-stone-700">{formatNumber(p.totalTons, 1)}</td>
-                  <td className="px-4 py-2.5 text-xs text-right font-medium text-stone-700">{formatCurrency(p.totalCost)}</td>
+                  <td className="px-4 py-2.5 text-xs text-right font-medium text-[#0d3d3b]">{formatCurrency(p.totalCost)}</td>
                   <td className="px-4 py-2.5 text-xs text-right text-stone-400">{p.invoiceCount}</td>
                 </tr>
               ))}
@@ -213,10 +213,10 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
               {payments.length === 0 && <tr><td colSpan={4} className="p-6 text-center text-xs text-stone-400">No payments recorded.</td></tr>}
               {payments.map(p => (
                 <tr key={p.payment.id} className="border-t border-stone-100 hover:bg-stone-50">
-                  <td className="px-4 py-2.5 text-xs text-stone-500">{formatDate(p.payment.paymentDate)}</td>
-                  <td className="px-4 py-2.5 text-xs text-right font-medium text-stone-700">{formatCurrency(p.payment.amountUsd)}</td>
-                  <td className="px-4 py-2.5 text-xs text-stone-500">{p.poNumber || "—"}</td>
-                  <td className="px-4 py-2.5 text-xs text-stone-500">{p.payment.reference || p.payment.notes || "—"}</td>
+                  <td className="px-4 py-2.5 text-xs text-stone-600">{formatDate(p.payment.paymentDate)}</td>
+                  <td className="px-4 py-2.5 text-xs text-right font-medium text-[#0d3d3b]">{formatCurrency(p.payment.amountUsd)}</td>
+                  <td className="px-4 py-2.5 text-xs text-stone-600">{p.poNumber || "—"}</td>
+                  <td className="px-4 py-2.5 text-xs text-stone-600">{p.payment.reference || p.payment.notes || "—"}</td>
                 </tr>
               ))}
             </tbody>

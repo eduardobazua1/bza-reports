@@ -232,7 +232,7 @@ export function SupplierOrdersSection({
 
   const ProductSelect = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
     <div>
-      <label className="block text-xs text-stone-500 mb-1">Product</label>
+      <label className="block text-xs text-stone-600 mb-1">Product</label>
       {products && products.length > 0 ? (
         <select
           className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white"
@@ -262,7 +262,7 @@ export function SupplierOrdersSection({
           <h3 className="font-semibold text-stone-700">Supplier Orders ({list.length})</h3>
           <div className="flex items-center gap-3 mt-0.5">
             {product && (
-              <p className="text-xs text-stone-500">{product}</p>
+              <p className="text-xs text-stone-600">{product}</p>
             )}
             {totalTons > 0 && (
               <p className="text-xs text-stone-400">{formatNumber(totalTons, 1)} TN ordered</p>
@@ -326,7 +326,7 @@ export function SupplierOrdersSection({
                       <td className="px-4 py-3 border-t border-stone-100 text-right">{formatCurrency(price)}</td>
                       <td className="px-4 py-3 border-t border-stone-100 text-stone-500">{inc || "—"}</td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right font-semibold">{formatCurrency(total)}</td>
-                      <td className="px-4 py-3 border-t border-stone-100 text-xs text-stone-500 space-y-0.5">
+                      <td className="px-4 py-3 border-t border-stone-100 text-xs text-stone-600 space-y-0.5">
                         {ol && ol.length > 0 ? ol.map((l, i) => (
                           <div key={i}>
                             <span className="font-medium text-stone-700">{l.destination || "—"}</span>
@@ -402,16 +402,16 @@ export function SupplierOrdersSection({
 
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div>
-              <label className="block text-xs text-stone-500 mb-1">Date</label>
+              <label className="block text-xs text-stone-600 mb-1">Date</label>
               <input type="date" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={orderDate} onChange={(e) => setOrderDate(e.target.value)} />
             </div>
             <ProductSelect value={addItem} onChange={setAddItem} />
             <div>
-              <label className="block text-xs text-stone-500 mb-1">Price/TN (USD)</label>
+              <label className="block text-xs text-stone-600 mb-1">Price/TN (USD)</label>
               <input type="number" step="0.01" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="0.00" value={pricePerTon} onChange={(e) => setPricePerTon(e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs text-stone-500 mb-1">Incoterm</label>
+              <label className="block text-xs text-stone-600 mb-1">Incoterm</label>
               <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="DAP, CIF, FOB..." value={incoterm} onChange={(e) => setIncoterm(e.target.value)} />
             </div>
           </div>
@@ -432,7 +432,7 @@ export function SupplierOrdersSection({
               ))}
             </div>
             {formTotalTons > 0 && (
-              <p className="text-xs text-stone-500 mt-2">
+              <p className="text-xs text-stone-600 mt-2">
                 Total: {formatNumber(formTotalTons, 1)} TN · {formatCurrency(formTotalTons * (pricePerTon ? parseFloat(pricePerTon) : buyPrice))}
               </p>
             )}
@@ -442,7 +442,7 @@ export function SupplierOrdersSection({
             <button onClick={handleAdd} disabled={loading || formTotalTons === 0} className="text-xs bg-[#0d3d3b] text-white px-3 py-1.5 rounded hover:bg-[#0d3d3b] disabled:opacity-50">
               {loading ? "Saving..." : "Save"}
             </button>
-            <button onClick={() => { setAdding(false); setLines([emptyLine()]); }} className="text-xs text-stone-500 hover:text-stone-700 px-3 py-1.5">
+            <button onClick={() => { setAdding(false); setLines([emptyLine()]); }} className="text-xs text-stone-600 hover:text-stone-700 px-3 py-1.5">
               Cancel
             </button>
           </div>
@@ -512,16 +512,16 @@ export function SupplierOrdersSection({
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
-                  <label className="block text-xs text-stone-500 mb-1">Date</label>
+                  <label className="block text-xs text-stone-600 mb-1">Date</label>
                   <input type="date" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editDate} onChange={(e) => setEditDate(e.target.value)} />
                 </div>
                 <ProductSelect value={editItem} onChange={setEditItem} />
                 <div>
-                  <label className="block text-xs text-stone-500 mb-1">Price/TN (USD)</label>
+                  <label className="block text-xs text-stone-600 mb-1">Price/TN (USD)</label>
                   <input type="number" step="0.01" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder={String(buyPrice)} value={editPrice} onChange={(e) => setEditPrice(e.target.value)} />
                 </div>
                 <div>
-                  <label className="block text-xs text-stone-500 mb-1">Incoterm</label>
+                  <label className="block text-xs text-stone-600 mb-1">Incoterm</label>
                   <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="DAP, CIF, FOB..." value={editIncoterm} onChange={(e) => setEditIncoterm(e.target.value)} />
                 </div>
               </div>
@@ -542,7 +542,7 @@ export function SupplierOrdersSection({
                   ))}
                 </div>
                 {editTotalTons > 0 && (
-                  <p className="text-xs text-stone-500 mt-2">Total: {formatNumber(editTotalTons, 1)} TN · {formatCurrency(editTotalTons * (editPrice ? parseFloat(editPrice) : buyPrice))}</p>
+                  <p className="text-xs text-stone-600 mt-2">Total: {formatNumber(editTotalTons, 1)} TN · {formatCurrency(editTotalTons * (editPrice ? parseFloat(editPrice) : buyPrice))}</p>
                 )}
               </div>
 

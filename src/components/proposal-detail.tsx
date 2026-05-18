@@ -289,7 +289,7 @@ export function ProposalDetail({ proposal }: { proposal: ProposalData }) {
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-right text-stone-700">{fmtNum(item.tons)}</td>
+                      <td className="px-4 py-3 text-right text-stone-600">{fmtNum(item.tons)}</td>
                       <td className="px-4 py-3 text-center text-stone-500">{item.unit}</td>
                       <td className="px-4 py-3 text-right text-stone-600">{fmtUsd(item.pricePerTon)}</td>
                       <td className="px-4 py-3 text-right font-semibold text-[#0d3d3b]">{fmtUsd(lineTotal)}</td>

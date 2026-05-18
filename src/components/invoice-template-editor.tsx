@@ -81,7 +81,7 @@ export function InvoiceTemplateEditor({ initial }: { initial?: Partial<InvoiceSe
   }) {
     return (
       <div>
-        <label className="block text-xs text-stone-500 mb-1">{label}</label>
+        <label className="block text-xs text-stone-600 mb-1">{label}</label>
         <input
           type={type}
           className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
@@ -139,7 +139,7 @@ export function InvoiceTemplateEditor({ initial }: { initial?: Partial<InvoiceSe
           <h4 className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-3">Colors</h4>
           <div className="flex gap-6">
             <div>
-              <label className="block text-xs text-stone-500 mb-1">Primary Color</label>
+              <label className="block text-xs text-stone-600 mb-1">Primary Color</label>
               <div className="flex items-center gap-2">
                 <input
                   type="color"
@@ -156,7 +156,7 @@ export function InvoiceTemplateEditor({ initial }: { initial?: Partial<InvoiceSe
               </div>
             </div>
             <div>
-              <label className="block text-xs text-stone-500 mb-1">Accent Color</label>
+              <label className="block text-xs text-stone-600 mb-1">Accent Color</label>
               <div className="flex items-center gap-2">
                 <input
                   type="color"
@@ -226,7 +226,7 @@ export function InvoiceTemplateEditor({ initial }: { initial?: Partial<InvoiceSe
           <div className="space-y-3">
             <Field label="Footer Note" field="footerNote" />
             <div>
-              <label className="block text-xs text-stone-500 mb-1">Additional Notes (shown at bottom of invoice)</label>
+              <label className="block text-xs text-stone-600 mb-1">Additional Notes (shown at bottom of invoice)</label>
               <textarea
                 className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
                 rows={3}

@@ -463,10 +463,10 @@ export function ClientPOsSection({
                 return (
                   <>
                     <tr key={cpo.id} className={`hover:bg-stone-50 ${editingId === cpo.id ? "bg-[#0d3d3b]/40" : ""}`}>
-                      <td className="px-4 py-3 border-t border-stone-100 text-xs font-medium text-stone-700">
+                      <td className="px-4 py-3 border-t border-stone-100 text-xs text-stone-600">
                         {cpo.clientPoNumber}
                       </td>
-                      <td className="px-4 py-3 border-t border-stone-100 text-xs text-stone-500">{cpo.item || "—"}</td>
+                      <td className="px-4 py-3 border-t border-stone-100 text-xs text-stone-600">{cpo.item || "—"}</td>
                       <td className="px-4 py-3 border-t border-stone-100 text-stone-500">{cpo.destination || "—"}</td>
                       <td className="px-4 py-3 border-t border-stone-100 text-stone-500 text-xs">{cpo.incoterm || "—"}</td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right">
@@ -481,7 +481,7 @@ export function ClientPOsSection({
                           <span className="text-stone-300">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 border-t border-stone-100 text-right text-xs text-stone-500">
+                      <td className="px-4 py-3 border-t border-stone-100 text-right text-xs text-stone-600">
                         {cpo.sellPriceOverride ? formatCurrency(cpo.sellPriceOverride) : (sellPrice ? formatCurrency(sellPrice) : "—")}
                         {cpo.sellPriceOverride && <span className="ml-1 text-[#0d3d3b]">*</span>}
                       </td>
@@ -529,7 +529,7 @@ export function ClientPOsSection({
                             {/* Row 1: key fields pre-filled from client order */}
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                               <div>
-                                <label className="block text-xs text-stone-500 mb-1">Invoice # *</label>
+                                <label className="block text-xs text-stone-600 mb-1">Invoice # *</label>
                                 <input
                                   className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
                                   value={convertForm.invoiceNumber}
@@ -537,14 +537,14 @@ export function ClientPOsSection({
                                 />
                               </div>
                               <div>
-                                <label className="block text-xs text-stone-500 mb-1">Product</label>
+                                <label className="block text-xs text-stone-600 mb-1">Product</label>
                                 <ProductSelect
                                   value={convertForm.item}
                                   onChange={(v) => setConvertForm((f) => ({ ...f, item: v }))}
                                 />
                               </div>
                               <div>
-                                <label className="block text-xs text-stone-500 mb-1">Tons ADMT *</label>
+                                <label className="block text-xs text-stone-600 mb-1">Tons ADMT *</label>
                                 <input
                                   type="number" step="0.001"
                                   className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
@@ -553,7 +553,7 @@ export function ClientPOsSection({
                                 />
                               </div>
                               <div>
-                                <label className="block text-xs text-stone-500 mb-1">Sell Price/TN</label>
+                                <label className="block text-xs text-stone-600 mb-1">Sell Price/TN</label>
                                 <input
                                   type="number" step="0.01"
                                   className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
@@ -567,7 +567,7 @@ export function ClientPOsSection({
                             {/* Row 2: shipment details */}
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                               <div>
-                                <label className="block text-xs text-stone-500 mb-1">Railcar #</label>
+                                <label className="block text-xs text-stone-600 mb-1">Railcar #</label>
                                 <input
                                   className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
                                   placeholder="TBOX636255"
@@ -576,7 +576,7 @@ export function ClientPOsSection({
                                 />
                               </div>
                               <div>
-                                <label className="block text-xs text-stone-500 mb-1">BOL #</label>
+                                <label className="block text-xs text-stone-600 mb-1">BOL #</label>
                                 <input
                                   className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
                                   placeholder="4001124"
@@ -585,7 +585,7 @@ export function ClientPOsSection({
                                 />
                               </div>
                               <div>
-                                <label className="block text-xs text-stone-500 mb-1">Ship Date</label>
+                                <label className="block text-xs text-stone-600 mb-1">Ship Date</label>
                                 <input
                                   type="date"
                                   className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
@@ -594,7 +594,7 @@ export function ClientPOsSection({
                                 />
                               </div>
                               <div>
-                                <label className="block text-xs text-stone-500 mb-1">Invoice Date</label>
+                                <label className="block text-xs text-stone-600 mb-1">Invoice Date</label>
                                 <input
                                   type="date"
                                   className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
@@ -606,11 +606,11 @@ export function ClientPOsSection({
 
                             <div className="grid grid-cols-2 gap-3 max-w-xs">
                               <div>
-                                <label className="block text-xs text-stone-500 mb-1">Bales</label>
+                                <label className="block text-xs text-stone-600 mb-1">Bales</label>
                                 <input type="number" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="250" value={convertForm.balesCount} onChange={(e) => setConvertForm((f) => ({ ...f, balesCount: e.target.value }))} />
                               </div>
                               <div>
-                                <label className="block text-xs text-stone-500 mb-1">Unit</label>
+                                <label className="block text-xs text-stone-600 mb-1">Unit</label>
                                 <input type="number" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="1" value={convertForm.unitsPerBale} onChange={(e) => setConvertForm((f) => ({ ...f, unitsPerBale: e.target.value }))} />
                               </div>
                             </div>
@@ -657,7 +657,7 @@ export function ClientPOsSection({
           {/* Row 1 */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs text-stone-500 mb-1">Client PO # *</label>
+              <label className="block text-xs text-stone-600 mb-1">Client PO # *</label>
               <input
                 className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
                 placeholder="X190165"
@@ -666,11 +666,11 @@ export function ClientPOsSection({
               />
             </div>
             <div>
-              <label className="block text-xs text-stone-500 mb-1">Destination</label>
+              <label className="block text-xs text-stone-600 mb-1">Destination</label>
               <DestinationSelect value={addForm.destination} onChange={(v) => setAddForm((f) => ({ ...f, destination: v }))} />
             </div>
             <div>
-              <label className="block text-xs text-stone-500 mb-1">Planned Tons</label>
+              <label className="block text-xs text-stone-600 mb-1">Planned Tons</label>
               <input
                 type="number" step="0.1"
                 className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
@@ -684,11 +684,11 @@ export function ClientPOsSection({
           {/* Row 2 */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs text-stone-500 mb-1">Product</label>
+              <label className="block text-xs text-stone-600 mb-1">Product</label>
               <ProductSelect value={addForm.item} onChange={(v) => setAddForm((f) => ({ ...f, item: v }))} />
             </div>
             <div>
-              <label className="block text-xs text-stone-500 mb-1">Incoterm</label>
+              <label className="block text-xs text-stone-600 mb-1">Incoterm</label>
               <input
                 className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
                 placeholder="DAP, CIF, FOB..."
@@ -697,7 +697,7 @@ export function ClientPOsSection({
               />
             </div>
             <div>
-              <label className="block text-xs text-stone-500 mb-1">Price/TN override</label>
+              <label className="block text-xs text-stone-600 mb-1">Price/TN override</label>
               <input
                 type="number" step="0.01"
                 className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
@@ -709,7 +709,7 @@ export function ClientPOsSection({
           </div>
 
           {addForm.plannedTons && (
-            <p className="text-xs text-stone-500">
+            <p className="text-xs text-stone-600">
               Estimated: {formatCurrency(parseFloat(addForm.plannedTons) * (addForm.sellPriceOverride ? parseFloat(addForm.sellPriceOverride) : (sellPrice ?? 0)))}
             </p>
           )}
@@ -722,7 +722,7 @@ export function ClientPOsSection({
             >
               {loading ? "Saving..." : "Save"}
             </button>
-            <button onClick={() => setAdding(false)} className="text-xs text-stone-500 hover:text-stone-700 px-3 py-1.5">
+            <button onClick={() => setAdding(false)} className="text-xs text-stone-600 hover:text-stone-700 px-3 py-1.5">
               Cancel
             </button>
           </div>
@@ -759,29 +759,29 @@ export function ClientPOsSection({
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs text-stone-500 mb-1">Client PO # *</label>
+                  <label className="block text-xs text-stone-600 mb-1">Client PO # *</label>
                   <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.clientPoNumber} onChange={(e) => setEditForm(f => ({ ...f, clientPoNumber: e.target.value }))} />
                 </div>
                 <div>
-                  <label className="block text-xs text-stone-500 mb-1">Destination</label>
+                  <label className="block text-xs text-stone-600 mb-1">Destination</label>
                   <DestinationSelect value={editForm.destination} onChange={(v) => setEditForm(f => ({ ...f, destination: v }))} />
                 </div>
                 <div>
-                  <label className="block text-xs text-stone-500 mb-1">Planned Tons</label>
+                  <label className="block text-xs text-stone-600 mb-1">Planned Tons</label>
                   <input type="number" step="0.1" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editForm.plannedTons} onChange={(e) => setEditForm(f => ({ ...f, plannedTons: e.target.value }))} />
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs text-stone-500 mb-1">Product</label>
+                  <label className="block text-xs text-stone-600 mb-1">Product</label>
                   <ProductSelect value={editForm.item} onChange={(v) => setEditForm(f => ({ ...f, item: v }))} />
                 </div>
                 <div>
-                  <label className="block text-xs text-stone-500 mb-1">Incoterm</label>
+                  <label className="block text-xs text-stone-600 mb-1">Incoterm</label>
                   <input className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder="DAP, CIF, FOB..." value={editForm.incoterm} onChange={(e) => setEditForm(f => ({ ...f, incoterm: e.target.value }))} />
                 </div>
                 <div>
-                  <label className="block text-xs text-stone-500 mb-1">Price/TN override</label>
+                  <label className="block text-xs text-stone-600 mb-1">Price/TN override</label>
                   <input type="number" step="0.01" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" placeholder={sellPrice ? `${sellPrice} (default)` : "0.00"} value={editForm.sellPriceOverride} onChange={(e) => setEditForm(f => ({ ...f, sellPriceOverride: e.target.value }))} />
                 </div>
               </div>

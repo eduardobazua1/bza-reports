@@ -48,13 +48,13 @@ export default async function ProductServiceListPage() {
                 const isActive = p.totalRevenue > 0;
                 return (
                   <tr key={p.product} className="border-b border-stone-50 hover:bg-stone-50">
-                    <td className="px-6 py-3 text-stone-700 font-medium">{p.product}</td>
+                    <td className="px-6 py-3 text-stone-600 font-medium">{p.product}</td>
                     <td className="px-4 py-3 text-stone-500">Service</td>
                     <td className="px-4 py-3 text-right text-stone-600">{p.invoiceCount}</td>
                     <td className="px-4 py-3 text-right text-stone-600">
                       {p.totalTons.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className="px-4 py-3 text-right text-stone-700">
+                    <td className="px-4 py-3 text-right text-stone-600">
                       {avgRevPerTon > 0
                         ? avgRevPerTon.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 })
                         : "—"}

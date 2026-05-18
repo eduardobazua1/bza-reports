@@ -182,10 +182,10 @@ export function PaymentsPanel({
                   const adj = p.adjustmentAmount;
                   return (
                     <tr key={p.id} className="border-t border-border hover:bg-muted/50 transition-colors">
-                      <td className="p-3 text-xs text-stone-500">{formatDate(p.paymentDate)}</td>
-                      <td className="p-3 text-xs font-medium text-stone-700">{p.supplierName || "—"}</td>
-                      <td className="p-3 text-xs text-stone-500">{p.poNumber || "—"}</td>
-                      <td className="p-3 text-xs text-right font-medium text-stone-700">{formatCurrency(p.amountUsd)}</td>
+                      <td className="p-3 text-xs text-stone-600">{formatDate(p.paymentDate)}</td>
+                      <td className="p-3 text-xs text-stone-600">{p.supplierName || "—"}</td>
+                      <td className="p-3 text-xs text-stone-600">{p.poNumber || "—"}</td>
+                      <td className="p-3 text-xs text-right font-medium text-[#0d3d3b]">{formatCurrency(p.amountUsd)}</td>
                       <td className="p-3 text-xs text-right text-stone-500">{p.estimatedTons?.toFixed(1) ?? "—"}</td>
                       <td className="p-3 text-xs text-right text-stone-500">{p.actualTons?.toFixed(1) ?? "—"}</td>
                       <td className={`p-3 text-xs text-right font-medium ${
@@ -196,8 +196,8 @@ export function PaymentsPanel({
                       }`}>
                         {adj != null ? (adj > 0 ? "+" : "") + formatCurrency(adj) : "—"}
                       </td>
-                      <td className="p-3 text-xs text-stone-500">{p.paymentMethod || "—"}</td>
-                      <td className="p-3 text-xs text-stone-500">{p.reference || "—"}</td>
+                      <td className="p-3 text-xs text-stone-600">{p.paymentMethod || "—"}</td>
+                      <td className="p-3 text-xs text-stone-600">{p.reference || "—"}</td>
                     </tr>
                   );
                 })}
@@ -205,8 +205,8 @@ export function PaymentsPanel({
               {supplierPayments.length > 0 && (
                 <tfoot>
                   <tr className="bg-muted font-semibold border-t-2 border-border">
-                    <td className="p-3 text-xs text-stone-700" colSpan={3}>TOTAL</td>
-                    <td className="p-3 text-xs text-right text-stone-800">{formatCurrency(totalSupplierPaid)}</td>
+                    <td className="p-3 text-xs text-stone-600" colSpan={3}>TOTAL</td>
+                    <td className="p-3 text-xs text-right font-medium text-[#0d3d3b]">{formatCurrency(totalSupplierPaid)}</td>
                     <td colSpan={5} className="p-3" />
                   </tr>
                 </tfoot>
@@ -346,13 +346,13 @@ export function PaymentsPanel({
                             className="accent-primary"
                           />
                         </td>
-                        <td className="p-3 text-xs font-medium text-stone-700">{inv.invoiceNumber}</td>
-                        <td className="p-3 text-xs font-medium text-stone-700">{inv.clientName || "—"}</td>
-                        <td className="p-3 text-xs text-stone-500">{inv.poNumber || "—"}</td>
+                        <td className="p-3 text-xs text-stone-600">{inv.invoiceNumber}</td>
+                        <td className="p-3 text-xs text-stone-600">{inv.clientName || "—"}</td>
+                        <td className="p-3 text-xs text-stone-600">{inv.poNumber || "—"}</td>
                         <td className="p-3 text-xs text-right text-stone-500">{inv.quantityTons.toFixed(2)}</td>
-                        <td className="p-3 text-xs text-right font-medium text-stone-700">{formatCurrency(amount)}</td>
-                        <td className="p-3 text-xs text-stone-500">{formatDate(inv.shipmentDate)}</td>
-                        <td className="p-3 text-xs text-stone-500">
+                        <td className="p-3 text-xs text-right font-medium text-[#0d3d3b]">{formatCurrency(amount)}</td>
+                        <td className="p-3 text-xs text-stone-600">{formatDate(inv.shipmentDate)}</td>
+                        <td className="p-3 text-xs text-stone-600">
                           {overdue
                             ? <span className="text-red-600 font-medium">+{daysOverdue}d overdue</span>
                             : <span>{formatDate(inv.dueDate)}</span>
@@ -391,11 +391,11 @@ export function PaymentsPanel({
                 )}
                 {customerPayments.map(p => (
                   <tr key={p.id} className="border-t border-border hover:bg-muted/50 transition-colors">
-                    <td className="p-3 text-xs text-stone-500">{formatDate(p.paymentDate)}</td>
-                    <td className="p-3 text-xs font-medium text-stone-700">{p.clientName || "—"}</td>
-                    <td className="p-3 text-xs text-right font-medium text-stone-700">{formatCurrency(p.amount)}</td>
-                    <td className="p-3 text-xs text-stone-500">{METHOD_LABELS[p.paymentMethod] || p.paymentMethod}</td>
-                    <td className="p-3 text-xs text-stone-500">{p.referenceNo || "—"}</td>
+                    <td className="p-3 text-xs text-stone-600">{formatDate(p.paymentDate)}</td>
+                    <td className="p-3 text-xs text-stone-600">{p.clientName || "—"}</td>
+                    <td className="p-3 text-xs text-right font-medium text-[#0d3d3b]">{formatCurrency(p.amount)}</td>
+                    <td className="p-3 text-xs text-stone-600">{METHOD_LABELS[p.paymentMethod] || p.paymentMethod}</td>
+                    <td className="p-3 text-xs text-stone-600">{p.referenceNo || "—"}</td>
                     <td className="p-3 text-xs text-stone-400">
                       {p.invoices.length > 0 ? p.invoices.map(i => i.invoiceNumber).join(", ") : "—"}
                     </td>
@@ -436,7 +436,7 @@ export function PaymentsPanel({
             </div>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-stone-500 mb-1">Payment Date</label>
+                <label className="block text-xs text-stone-600 mb-1">Payment Date</label>
                 <input
                   type="date"
                   value={paidDate}
@@ -445,7 +445,7 @@ export function PaymentsPanel({
                 />
               </div>
               <div>
-                <label className="block text-xs text-stone-500 mb-1">Payment Method</label>
+                <label className="block text-xs text-stone-600 mb-1">Payment Method</label>
                 <select
                   value={paymentMethod}
                   onChange={e => setPaymentMethod(e.target.value)}
@@ -457,7 +457,7 @@ export function PaymentsPanel({
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-stone-500 mb-1">Reference No.</label>
+                <label className="block text-xs text-stone-600 mb-1">Reference No.</label>
                 <input
                   value={referenceNo}
                   onChange={e => setReferenceNo(e.target.value)}

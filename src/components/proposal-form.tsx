@@ -427,7 +427,7 @@ export function ProposalForm({ mode, proposalId, proposalNumber, clients, produc
 
                 {/* Delete + line total (mobile) */}
                 <div className="flex items-center justify-between lg:justify-end gap-2">
-                  <span className="lg:hidden text-xs text-stone-500 font-medium">
+                  <span className="lg:hidden text-xs text-stone-600 font-medium">
                     {lineTotal > 0 ? fmtUsd(lineTotal) : ""}
                   </span>
                   <button type="button" onClick={() => removeLine(item.id)}

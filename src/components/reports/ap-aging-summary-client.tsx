@@ -327,12 +327,12 @@ export function APAgingSummaryClient({ rows, totals, asOf, timestamp }: {
               <tbody>
                 {rows.map(row => (
                   <tr key={row.name} className="border-b border-stone-50 hover:bg-stone-50">
-                    <td className="px-6 py-3 text-stone-700 font-medium">
+                    <td className="px-6 py-3 text-stone-600 font-medium">
                       <Link href={`/reports/ap-aging-detail?supplier=${encodeURIComponent(row.name)}`}
                         className="hover:text-[#0d3d3b] hover:underline">{row.name}</Link>
                     </td>
                     {activeCols.map(c => (
-                      <td key={c.key} className={`px-4 py-3 text-right ${row[c.key] === 0 ? "text-stone-300" : c.key === "d91plus" ? "text-red-600 font-medium" : c.key === "d61_90" ? "text-amber-600" : "text-stone-700"}`}>
+                      <td key={c.key} className={`px-4 py-3 text-right ${row[c.key] === 0 ? "text-stone-300" : c.key === "d91plus" ? "text-red-600 font-medium" : c.key === "d61_90" ? "text-amber-600" : "text-stone-600"}`}>
                         {row[c.key] === 0 ? "" : (
                           <Link href={`/reports/ap-aging-detail?supplier=${encodeURIComponent(row.name)}&bucket=${BUCKET_MAP[c.key]}`}
                             className="hover:underline hover:opacity-70">
@@ -356,7 +356,7 @@ export function APAgingSummaryClient({ rows, totals, asOf, timestamp }: {
                       {totals[c.key] === 0 ? "" : formatCurrency(totals[c.key])}
                     </td>
                   ))}
-                  <td className="px-6 py-3 text-right font-bold text-stone-900 text-base">{formatCurrency(totals.total)}</td>
+                  <td className="px-6 py-3 text-right font-bold text-[#0d3d3b] text-base">{formatCurrency(totals.total)}</td>
                 </tr>
               </tfoot>
             </table>

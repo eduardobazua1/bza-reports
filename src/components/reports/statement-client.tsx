@@ -204,17 +204,17 @@ function StatementView({
       {/* Summary pills */}
       <div className="flex justify-center gap-6 py-4 border-b border-stone-100 bg-stone-50 print:bg-white">
         <div className="text-center">
-          <p className="text-xs text-stone-500 uppercase tracking-wide font-medium">Charges</p>
+          <p className="text-xs text-stone-600 uppercase tracking-wide font-medium">Charges</p>
           <p className="text-base font-bold text-stone-800 mt-0.5">{formatCurrency(totalCharges)}</p>
         </div>
         <div className="w-px bg-stone-200" />
         <div className="text-center">
-          <p className="text-xs text-stone-500 uppercase tracking-wide font-medium">Credits & Payments</p>
+          <p className="text-xs text-stone-600 uppercase tracking-wide font-medium">Credits & Payments</p>
           <p className="text-base font-bold text-[#0d3d3b] mt-0.5">{formatCurrency(totalCredits)}</p>
         </div>
         <div className="w-px bg-stone-200" />
         <div className="text-center">
-          <p className="text-xs text-stone-500 uppercase tracking-wide font-medium">Balance Due</p>
+          <p className="text-xs text-stone-600 uppercase tracking-wide font-medium">Balance Due</p>
           <p className={`text-base font-bold mt-0.5 ${balanceDue > 0 ? "text-red-600" : "text-stone-800"}`}>
             {formatCurrency(Math.abs(balanceDue))}
             {balanceDue < 0 && <span className="text-xs font-normal ml-1">(credit)</span>}
@@ -251,7 +251,7 @@ function StatementView({
                       {tx.type}
                     </span>
                   </td>
-                  <td className="px-4 py-2.5 text-stone-700 max-w-xs">{tx.description}</td>
+                  <td className="px-4 py-2.5 text-stone-600 max-w-xs">{tx.description}</td>
                   <td className="px-4 py-2.5 text-right text-stone-800">
                     {tx.amount > 0 ? formatCurrency(tx.amount) : ""}
                   </td>
@@ -268,7 +268,7 @@ function StatementView({
             <tfoot>
               <tr className="border-t-2 border-stone-300 bg-stone-50 print:bg-white">
                 <td colSpan={3} className="px-6 py-3 text-sm font-bold text-stone-800 uppercase tracking-wide">Balance Due</td>
-                <td className="px-4 py-3 text-right font-bold text-stone-800">{formatCurrency(totalCharges)}</td>
+                <td className="px-4 py-3 text-right font-bold text-[#0d3d3b]">{formatCurrency(totalCharges)}</td>
                 <td className="px-4 py-3 text-right font-bold text-[#0d3d3b]">{formatCurrency(totalCredits)}</td>
                 <td className={`px-6 py-3 text-right text-base font-bold ${balanceDue > 0 ? "text-red-600" : "text-[#0d3d3b]"}`}>
                   {formatCurrency(Math.abs(balanceDue))}
@@ -530,7 +530,7 @@ export function StatementClient({
             <span className="text-xs font-semibold text-stone-700 uppercase tracking-wide">Columns</span>
             <button onClick={() => setShowCustomize(false)} className="text-stone-400 hover:text-stone-600"><X className="w-3.5 h-3.5" /></button>
           </div>
-          <p className="text-xs text-stone-500">Column options are not available for statement reports.</p>
+          <p className="text-xs text-stone-600">Column options are not available for statement reports.</p>
         </div>
       )}
 

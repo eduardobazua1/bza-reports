@@ -126,9 +126,9 @@ export function ProposalsList({ proposals }: { proposals: Proposal[] }) {
             <tbody>
               {filtered.map(p => (
                 <tr key={p.id} className="hover:bg-muted/50 transition-colors">
-                  <td className="p-3 text-xs font-medium text-stone-700 border-t border-border">{p.proposalNumber}</td>
-                  <td className="p-3 text-xs font-medium text-stone-700 border-t border-border">{p.clientName || "—"}</td>
-                  <td className="p-3 text-xs text-stone-500 max-w-[200px] truncate border-t border-border">{p.title}</td>
+                  <td className="p-3 text-xs text-stone-600 border-t border-border">{p.proposalNumber}</td>
+                  <td className="p-3 text-xs text-stone-600 border-t border-border">{p.clientName || "—"}</td>
+                  <td className="p-3 text-xs text-stone-600 max-w-[200px] truncate border-t border-border">{p.title}</td>
                   <td className="p-3 text-stone-500 text-xs whitespace-nowrap border-t border-border">{fmtDate(p.proposalDate)}</td>
                   <td className="p-3 text-stone-500 text-xs whitespace-nowrap border-t border-border">{fmtDate(p.validUntil)}</td>
                   <td className="p-3 border-t border-border">
@@ -136,7 +136,7 @@ export function ProposalsList({ proposals }: { proposals: Proposal[] }) {
                       {p.status}
                     </span>
                   </td>
-                  <td className="p-3 text-xs text-right font-medium text-stone-700 border-t border-border">{formatCurrency(p.total)}</td>
+                  <td className="p-3 text-xs text-right font-medium text-[#0d3d3b] border-t border-border">{formatCurrency(p.total)}</td>
                   <td className="p-3 border-t border-border">
                     <Link
                       href={`/proposals/${p.id}`}

@@ -78,11 +78,11 @@ export function ARAgingDetailClient({ buckets, total, filterBucket, filterClient
                 <tr key={`${bucket.key}-${i}`} className="border-t border-stone-50 hover:bg-stone-50">
                   <td className="px-6 py-2.5 text-stone-600">{fmt(row.date)}</td>
                   <td className="px-4 py-2.5 text-stone-500">Invoice</td>
-                  <td className="px-4 py-2.5 text-xs font-medium text-[#0d3d3b]">{row.num}</td>
-                  <td className="px-4 py-2.5 text-stone-700">{row.customer}</td>
+                  <td className="px-4 py-2.5 text-xs text-stone-600">{row.num}</td>
+                  <td className="px-4 py-2.5 text-stone-600">{row.customer}</td>
                   <td className="px-4 py-2.5 text-stone-600">{fmt(row.dueDate)}</td>
-                  <td className="px-4 py-2.5 text-right text-stone-700">{formatCurrency(row.amount)}</td>
-                  <td className="px-4 py-2.5 text-right text-stone-600">{formatCurrency(row.amount)}</td>
+                  <td className="px-4 py-2.5 text-right text-[#0d3d3b]">{formatCurrency(row.amount)}</td>
+                  <td className="px-4 py-2.5 text-right font-medium text-[#0d3d3b]">{formatCurrency(row.amount)}</td>
                   <td className={`px-6 py-2.5 text-right font-medium ${row.pastDue > 90 ? "text-red-600" : row.pastDue > 60 ? "text-amber-600" : row.pastDue > 0 ? "text-stone-600" : "text-stone-400"}`}>
                     {row.pastDue === 0 ? "—" : row.pastDue > 0 ? row.pastDue : row.pastDue}
                   </td>
@@ -95,8 +95,8 @@ export function ARAgingDetailClient({ buckets, total, filterBucket, filterClient
                   <td colSpan={5} className="px-6 py-2 text-xs font-semibold text-stone-500">
                     Total for {bucket.label}
                   </td>
-                  <td className="px-4 py-2 text-right font-bold text-stone-800">{formatCurrency(bucketTotal)}</td>
-                  <td className="px-4 py-2 text-right font-bold text-stone-800">{formatCurrency(bucketTotal)}</td>
+                  <td className="px-4 py-2 text-right font-bold text-[#0d3d3b]">{formatCurrency(bucketTotal)}</td>
+                  <td className="px-4 py-2 text-right font-bold text-[#0d3d3b]">{formatCurrency(bucketTotal)}</td>
                   <td className="px-6 py-2" />
                 </tr>
               ] : []),
@@ -106,8 +106,8 @@ export function ARAgingDetailClient({ buckets, total, filterBucket, filterClient
         <tfoot>
           <tr className="border-t-2 border-stone-400">
             <td colSpan={5} className="px-6 py-3 text-sm font-bold text-stone-900 uppercase tracking-wide">TOTAL</td>
-            <td className="px-4 py-3 text-right font-bold text-stone-900 text-base">{formatCurrency(total)}</td>
-            <td className="px-4 py-3 text-right font-bold text-stone-900 text-base">{formatCurrency(total)}</td>
+            <td className="px-4 py-3 text-right font-bold text-[#0d3d3b] text-base">{formatCurrency(total)}</td>
+            <td className="px-4 py-3 text-right font-bold text-[#0d3d3b] text-base">{formatCurrency(total)}</td>
             <td className="px-6 py-3" />
           </tr>
         </tfoot>

@@ -441,7 +441,7 @@ function SectionInvoice({ cfg, set }: { cfg: Settings; set: (f: keyof Settings, 
           ))}
           <div className="flex items-end">
             <button onClick={() => { set("primaryColor", "#0d3d3b"); set("accentColor", "#4fd1c5"); }}
-              className="text-xs text-stone-500 hover:text-[#0d3d3b] border border-stone-200 rounded-lg px-3 py-2 transition-colors">
+              className="text-xs text-stone-600 hover:text-[#0d3d3b] border border-stone-200 rounded-lg px-3 py-2 transition-colors">
               ↺ BZA defaults
             </button>
           </div>
