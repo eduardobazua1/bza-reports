@@ -106,7 +106,7 @@ export function SupplierInvoicesSection({
   }
 
   return (
-    <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-amber-500">
+    <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b]">
       <div className="px-4 py-3 border-b border-stone-100 flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-stone-600 uppercase tracking-wide">
