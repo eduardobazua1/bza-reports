@@ -712,7 +712,7 @@ export function PaymentsPanel({
                 {unlinkedPayments.length} payment{unlinkedPayments.length !== 1 ? "s" : ""} ({formatCurrency(unlinkedTotal)}) not linked to a PO
               </p>
               <p className="text-xs text-amber-600 mt-0.5">
-                Use the <strong>Assign PO</strong> button on each row below to link them — this enables the Saldo a Favor reconciliation.
+                Use the <strong>Assign PO</strong> button on each row below to link them — this enables the prepaid balance reconciliation.
               </p>
             </div>
           </div>
@@ -726,7 +726,7 @@ export function PaymentsPanel({
             sub={`${supplierPayments.length} payments`}
           />
           <StatCard
-            label="Saldo a Favor"
+            label="Prepaid Balance"
             value={formatCurrency(totalSaldoFavor)}
             sub={`${saldoAFavor.length} PO${saldoAFavor.length !== 1 ? "s" : ""} prepaid`}
           />
@@ -747,10 +747,10 @@ export function PaymentsPanel({
           <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-amber-500 overflow-hidden">
             <div className="px-4 py-3 border-b border-stone-100">
               <h3 className="text-xs font-semibold text-stone-600 uppercase tracking-wide">
-                Saldo a Favor — Prepagado Pendiente de Embarque
+                Prepaid Balance — Pending Shipment
               </h3>
               <p className="text-xs text-stone-400 mt-0.5">
-                BZA ha pagado más de lo que el proveedor ha embarcado en estos contratos
+                BZA has paid more than the supplier has shipped on these contracts
               </p>
             </div>
             <div className="overflow-x-auto">
@@ -758,10 +758,10 @@ export function PaymentsPanel({
                 <thead className="bg-stone-50">
                   <tr>
                     <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">PO</th>
-                    <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Proveedor</th>
-                    <th className="text-right px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Pagado</th>
-                    <th className="text-right px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Embarcado</th>
-                    <th className="text-right px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Saldo a Favor</th>
+                    <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Supplier</th>
+                    <th className="text-right px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Paid</th>
+                    <th className="text-right px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Shipped</th>
+                    <th className="text-right px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Prepaid Balance</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -777,7 +777,7 @@ export function PaymentsPanel({
                 </tbody>
                 <tfoot>
                   <tr className="border-t-2 border-stone-200 bg-stone-50">
-                    <td colSpan={4} className="px-4 py-2 text-xs font-semibold text-stone-600">TOTAL SALDO A FAVOR</td>
+                    <td colSpan={4} className="px-4 py-2 text-xs font-semibold text-stone-600">TOTAL PREPAID BALANCE</td>
                     <td className="px-4 py-2 text-xs text-right font-bold text-amber-600">{formatCurrency(totalSaldoFavor)}</td>
                   </tr>
                 </tfoot>
