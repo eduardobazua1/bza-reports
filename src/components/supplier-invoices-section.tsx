@@ -70,16 +70,23 @@ export function SupplierInvoicesSection({
   const totalAmount = invoices.reduce((s, i) => s + (i.amountUsd || 0), 0);
   const unpaidCount = invoices.filter(i => i.paymentStatus === "unpaid").length;
 
-  // Find the closest BZA invoice by tons
+  // Default linked invoice: only one option → always use it; multiple → leave blank until tons typed
+  const defaultLinkedId = poInvoices.length === 1 ? String(poInvoices[0].id) : "";
+
+  // Find the closest BZA invoice by tons (and by cost if buyPrice is available)
   function autoMatchInvoice(tonsStr: string) {
-    if (!poInvoices.length || !tonsStr) return "";
+    if (!poInvoices.length || !tonsStr) return defaultLinkedId;
     const tons = parseFloat(tonsStr);
-    if (isNaN(tons)) return "";
+    if (isNaN(tons)) return defaultLinkedId;
+    const cost = buyPrice ? tons * buyPrice : null;
     let best = poInvoices[0];
-    let bestDiff = Math.abs((best.quantityTons || 0) - tons);
+    let bestScore = Infinity;
     for (const inv of poInvoices) {
-      const diff = Math.abs((inv.quantityTons || 0) - tons);
-      if (diff < bestDiff) { bestDiff = diff; best = inv; }
+      const tonsDiff = Math.abs((inv.quantityTons || 0) - tons);
+      // If we have cost info, also score by cost proximity (normalized)
+      const costDiff = cost && buyPrice ? Math.abs((inv.quantityTons || 0) * buyPrice - cost) : 0;
+      const score = tonsDiff + costDiff * 0.001;
+      if (score < bestScore) { bestScore = score; best = inv; }
     }
     return String(best.id);
   }
@@ -107,7 +114,7 @@ export function SupplierInvoicesSection({
         const linked = poInvoices.find(i => i.id === created.linkedInvoiceId);
         setInvoices(prev => [...prev, { ...created, linkedInvoiceNumber: linked?.invoiceNumber ?? null }]);
         setShowAdd(false);
-        setForm({ invoiceNumber: "", invoiceDate: "", estimatedTons: "", amountUsd: "", notes: "", linkedInvoiceId: "" });
+        setForm({ invoiceNumber: "", invoiceDate: "", estimatedTons: "", amountUsd: "", notes: "", linkedInvoiceId: defaultLinkedId });
         setFile(null);
       }
     } finally {
@@ -166,7 +173,10 @@ export function SupplierInvoicesSection({
           )}
         </div>
         <button
-          onClick={() => setShowAdd(v => !v)}
+          onClick={() => {
+            if (!showAdd) setForm(f => ({ ...f, linkedInvoiceId: defaultLinkedId }));
+            setShowAdd(v => !v);
+          }}
           className="px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-md hover:opacity-90"
         >
           {showAdd ? "Cancel" : "+ Add Invoice"}
