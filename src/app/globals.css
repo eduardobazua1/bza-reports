@@ -2,17 +2,34 @@
 
 @theme {
   --color-background: #f5f5f4;
-  --color-foreground: #1c1917;
+  --color-foreground: #0d3d3b;
   --color-muted: #e7e5e4;
   --color-muted-foreground: #78716c;
   --color-border: #d6d3d1;
   --color-primary: #0d3d3b;
   --color-primary-foreground: #ffffff;
-  --color-destructive: #dc2626;
+  --color-destructive: #065f46;
   --color-accent: #f5f5f4;
   --color-card: #ffffff;
-  --color-card-foreground: #1c1917;
+  --color-card-foreground: #0d3d3b;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* BZA brand: replace near-blacks with dark teal */
+  --color-stone-900: #0a2e2c;
+  --color-stone-800: #0d3d3b;
+  --color-stone-700: #0a5c5a;
+
+  /* BZA brand: replace reds with deep greens */
+  --color-red-900: #022c22;
+  --color-red-800: #022c22;
+  --color-red-700: #064e3b;
+  --color-red-600: #065f46;
+  --color-red-500: #0d3d3b;
+  --color-red-400: #0a5c5a;
+  --color-red-300: #6ee7b7;
+  --color-red-200: #a7f3d0;
+  --color-red-100: #d1fae5;
+  --color-red-50:  #ecfdf5;
 }
 
 body {
