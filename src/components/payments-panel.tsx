@@ -578,6 +578,22 @@ type POOption = {
   supplierName: string | null;
 };
 
+type OutstandingSupplierInvoice = {
+  id: number;
+  purchaseOrderId: number;
+  supplierId: number;
+  invoiceNumber: string;
+  invoiceDate: string | null;
+  estimatedTons: number | null;
+  amountUsd: number | null;
+  notes: string | null;
+  fileName: string | null;
+  fileUrl: string | null;
+  paymentStatus: string;
+  poNumber: string | null;
+  supplierName: string | null;
+};
+
 type SupplierBalance = {
   poId: number | null;
   poNumber: string | null;
@@ -594,6 +610,7 @@ export function PaymentsPanel({
   unpaidSupplierInvoices = [],
   supplierBalances = [],
   purchaseOrdersList = [],
+  outstandingSupplierInvoices = [],
   totalAR,
   overdueAR,
   totalCollected,
@@ -606,6 +623,7 @@ export function PaymentsPanel({
   unpaidSupplierInvoices?: UnpaidSupplierInvoice[];
   supplierBalances?: SupplierBalance[];
   purchaseOrdersList?: POOption[];
+  outstandingSupplierInvoices?: OutstandingSupplierInvoice[];
   totalAR: number;
   overdueAR: number;
   totalCollected: number;
@@ -623,6 +641,7 @@ export function PaymentsPanel({
 
   // A/P state
   const [showAddPayment, setShowAddPayment] = useState(false);
+  const [markingPaidId, setMarkingPaidId] = useState<number | null>(null);
   const [confirmPayment, setConfirmPayment] = useState<SupplierPayment | null>(null);
   const [settlePayment, setSettlePayment] = useState<SupplierPayment | null>(null);
   const [assignPayment, setAssignPayment] = useState<SupplierPayment | null>(null);
@@ -785,6 +804,97 @@ export function PaymentsPanel({
                     <td className="px-4 py-2 text-xs text-right font-bold text-amber-600">{formatCurrency(totalSaldoFavor)}</td>
                   </tr>
                 </tfoot>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Outstanding Supplier Invoices */}
+        {outstandingSupplierInvoices.length > 0 && (
+          <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] overflow-hidden">
+            <div className="px-4 py-3 border-b border-stone-100">
+              <h3 className="text-xs font-semibold text-stone-600 uppercase tracking-wide">
+                Outstanding Supplier Invoices ({outstandingSupplierInvoices.filter(i => i.paymentStatus === "unpaid").length})
+              </h3>
+              <p className="text-xs text-stone-400 mt-0.5">
+                Invoices received from suppliers not yet marked as paid
+              </p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-stone-50">
+                  <tr>
+                    <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">PO</th>
+                    <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Supplier</th>
+                    <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Invoice #</th>
+                    <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Date</th>
+                    <th className="text-right px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Tons</th>
+                    <th className="text-right px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Amount</th>
+                    <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">File</th>
+                    <th className="px-4 py-2 w-24"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {outstandingSupplierInvoices.map(inv => (
+                    <tr key={inv.id} className={`border-t border-stone-100 hover:bg-stone-50 ${inv.paymentStatus === "paid" ? "opacity-50" : ""}`}>
+                      <td className="px-4 py-2.5 text-xs font-medium text-[#0d3d3b]">
+                        <Link href={`/purchase-orders/${inv.purchaseOrderId}`} className="hover:underline">
+                          {inv.poNumber || "—"}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-2.5 text-xs text-stone-600">{inv.supplierName?.split("(")[0].trim() || "—"}</td>
+                      <td className="px-4 py-2.5 text-xs font-medium text-[#0d3d3b]">{inv.invoiceNumber}</td>
+                      <td className="px-4 py-2.5 text-xs text-stone-500">{formatDate(inv.invoiceDate)}</td>
+                      <td className="px-4 py-2.5 text-xs text-right text-stone-700">{inv.estimatedTons != null ? formatNumber(inv.estimatedTons, 3) : "—"}</td>
+                      <td className="px-4 py-2.5 text-xs text-right font-semibold text-stone-800">{inv.amountUsd != null ? formatCurrency(inv.amountUsd) : "—"}</td>
+                      <td className="px-4 py-2.5 text-xs">
+                        {inv.fileUrl ? (
+                          <a href={inv.fileUrl} target="_blank" rel="noopener noreferrer"
+                            className="text-[#0d3d3b] hover:underline flex items-center gap-1">
+                            <span className="truncate max-w-[100px]">{inv.fileName}</span>
+                          </a>
+                        ) : <span className="text-stone-300">—</span>}
+                      </td>
+                      <td className="px-4 py-2.5 text-xs text-right">
+                        <button
+                          onClick={async () => {
+                            setMarkingPaidId(inv.id);
+                            const next = inv.paymentStatus === "paid" ? "unpaid" : "paid";
+                            await fetch(`/api/supplier-invoices/${inv.id}`, {
+                              method: "PATCH",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ paymentStatus: next }),
+                            });
+                            setMarkingPaidId(null);
+                            router.refresh();
+                          }}
+                          disabled={markingPaidId === inv.id}
+                          className={`px-2 py-1 rounded text-[10px] font-medium transition-colors disabled:opacity-40 ${
+                            inv.paymentStatus === "paid"
+                              ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                              : "bg-[#0d3d3b]/10 text-[#0d3d3b] hover:bg-[#0d3d3b]/20"
+                          }`}
+                        >
+                          {markingPaidId === inv.id ? "…" : inv.paymentStatus === "paid" ? "Paid ✓" : "Mark Paid"}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                {outstandingSupplierInvoices.length > 0 && (
+                  <tfoot>
+                    <tr className="border-t-2 border-stone-200 bg-stone-50">
+                      <td colSpan={4} className="px-4 py-2 text-xs font-semibold text-stone-600">TOTAL OUTSTANDING</td>
+                      <td className="px-4 py-2 text-xs text-right font-semibold text-stone-700">
+                        {formatNumber(outstandingSupplierInvoices.filter(i => i.paymentStatus === "unpaid").reduce((s, i) => s + (i.estimatedTons || 0), 0), 3)}
+                      </td>
+                      <td className="px-4 py-2 text-xs text-right font-bold text-stone-800">
+                        {formatCurrency(outstandingSupplierInvoices.filter(i => i.paymentStatus === "unpaid").reduce((s, i) => s + (i.amountUsd || 0), 0))}
+                      </td>
+                      <td colSpan={2} className="px-4 py-2" />
+                    </tr>
+                  </tfoot>
+                )}
               </table>
             </div>
           </div>

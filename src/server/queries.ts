@@ -488,6 +488,34 @@ export async function getUnpaidSupplierInvoices() {
     .orderBy(suppliers.name, invoices.shipmentDate);
 }
 
+// ---- All unpaid supplier invoices for A/P panel ----
+export async function getAllUnpaidSupplierInvoices() {
+  const rows = await db
+    .select({
+      id: supplierInvoices.id,
+      purchaseOrderId: supplierInvoices.purchaseOrderId,
+      supplierId: supplierInvoices.supplierId,
+      invoiceNumber: supplierInvoices.invoiceNumber,
+      invoiceDate: supplierInvoices.invoiceDate,
+      estimatedTons: supplierInvoices.estimatedTons,
+      amountUsd: supplierInvoices.amountUsd,
+      notes: supplierInvoices.notes,
+      fileName: supplierInvoices.fileName,
+      paymentStatus: supplierInvoices.paymentStatus,
+      poNumber: purchaseOrders.poNumber,
+      supplierName: suppliers.name,
+    })
+    .from(supplierInvoices)
+    .leftJoin(purchaseOrders, eq(supplierInvoices.purchaseOrderId, purchaseOrders.id))
+    .leftJoin(suppliers, eq(supplierInvoices.supplierId, suppliers.id))
+    .orderBy(supplierInvoices.invoiceDate);
+
+  return rows.map(r => ({
+    ...r,
+    fileUrl: r.fileName ? `/api/supplier-invoices/file?id=${r.id}` : null,
+  }));
+}
+
 // ---- Supplier Invoices (facturas del proveedor) ----
 export async function getSupplierInvoicesByPO(poId: number) {
   const rows = await db

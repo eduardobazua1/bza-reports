@@ -1,15 +1,16 @@
-import { getCustomerPaymentsWithInvoices, getUnpaidInvoicesForPayments, getSupplierPaymentsWithInfo, getUnpaidSupplierInvoices, getSupplierBalanceByPO, getPurchaseOrdersList } from "@/server/queries";
+import { getCustomerPaymentsWithInvoices, getUnpaidInvoicesForPayments, getSupplierPaymentsWithInfo, getUnpaidSupplierInvoices, getSupplierBalanceByPO, getPurchaseOrdersList, getAllUnpaidSupplierInvoices } from "@/server/queries";
 import { PaymentsPanel } from "@/components/payments-panel";
 
 export default async function PaymentsPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const { tab } = await searchParams;
-  const [customerPaymentsList, unpaidInvoices, supplierPaymentsList, unpaidSupplierInvoices, supplierBalances, purchaseOrdersList] = await Promise.all([
+  const [customerPaymentsList, unpaidInvoices, supplierPaymentsList, unpaidSupplierInvoices, supplierBalances, purchaseOrdersList, outstandingSupplierInvoices] = await Promise.all([
     getCustomerPaymentsWithInvoices(),
     getUnpaidInvoicesForPayments(),
     getSupplierPaymentsWithInfo(),
     getUnpaidSupplierInvoices(),
     getSupplierBalanceByPO(),
     getPurchaseOrdersList(),
+    getAllUnpaidSupplierInvoices(),
   ]);
 
   const today = new Date().toISOString().split("T")[0];
@@ -34,6 +35,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
         unpaidSupplierInvoices={unpaidSupplierInvoices as any}
         supplierBalances={supplierBalances}
         purchaseOrdersList={purchaseOrdersList}
+        outstandingSupplierInvoices={outstandingSupplierInvoices}
         totalAR={totalAR}
         overdueAR={overdueAR}
         totalCollected={totalCollected}
