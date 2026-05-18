@@ -37,7 +37,7 @@ export default function MapInner({ markers }: { markers: MarkerData[] }) {
         <Polyline
           key={i}
           positions={[route.from as [number, number], route.to as [number, number]]}
-          pathOptions={{ color: "#f59e0b", weight: 2, dashArray: "8 4", opacity: 0.5 }}
+          pathOptions={{ color: "#0d9488", weight: 2, dashArray: "8 4", opacity: 0.5 }}
         />
       ))}
 

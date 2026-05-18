@@ -26,14 +26,14 @@ const displayNames: Record<string, string> = {
   "Chihuahua": "Chihuahua, MX",
 };
 
-// Each location gets its own color
+// Each location gets its own BZA-palette color
 const locationColors: Record<string, string> = {
-  "Laredo": "#3b82f6",
-  "Eagle Pass": "#f59e0b",
-  "El Paso": "#8b5cf6",
-  "Manzanillo": "#22c55e",
-  "Veracruz": "#ef4444",
-  "Chihuahua": "#ec4899",
+  "Laredo":     "#0d3d3b",  // BZA primary
+  "Eagle Pass": "#0d9488",  // teal-600
+  "El Paso":    "#0e7490",  // cyan-700
+  "Manzanillo": "#059669",  // emerald-600
+  "Veracruz":   "#065f46",  // emerald-800
+  "Chihuahua":  "#0f766e",  // teal-700
 };
 
 // Dynamic import to avoid SSR issues with Leaflet
