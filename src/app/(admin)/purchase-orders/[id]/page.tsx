@@ -210,6 +210,7 @@ export default async function PurchaseOrderDetailPage({
           purchaseOrderId={po.id}
           supplierId={po.supplierId}
           initialInvoices={supplierInvoicesList}
+          buyPrice={po.buyPrice}
         />
       )}
 

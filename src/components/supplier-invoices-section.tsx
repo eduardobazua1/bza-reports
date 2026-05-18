@@ -32,10 +32,12 @@ export function SupplierInvoicesSection({
   purchaseOrderId,
   supplierId,
   initialInvoices,
+  buyPrice,
 }: {
   purchaseOrderId: number;
   supplierId: number;
   initialInvoices: SupplierInvoice[];
+  buyPrice?: number;
 }) {
   const [invoices, setInvoices] = useState(initialInvoices);
   const [showAdd, setShowAdd] = useState(false);
@@ -155,13 +157,19 @@ export function SupplierInvoicesSection({
               <input
                 type="number" step="0.001" min="0"
                 value={form.estimatedTons}
-                onChange={e => setForm(f => ({ ...f, estimatedTons: e.target.value }))}
+                onChange={e => {
+                  const tons = e.target.value;
+                  const auto = buyPrice && tons ? (parseFloat(tons) * buyPrice).toFixed(2) : "";
+                  setForm(f => ({ ...f, estimatedTons: tons, amountUsd: auto || f.amountUsd }));
+                }}
                 placeholder="0.000"
                 className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#0d3d3b]"
               />
             </div>
             <div>
-              <label className="block text-xs text-[#0d3d3b] mb-1 font-medium">Amount (USD)</label>
+              <label className="block text-xs text-[#0d3d3b] mb-1 font-medium">
+                Amount (USD){buyPrice ? <span className="ml-1 text-stone-400 font-normal">@ {formatCurrency(buyPrice)}/TN</span> : ""}
+              </label>
               <input
                 type="number" step="0.01" min="0"
                 value={form.amountUsd}
