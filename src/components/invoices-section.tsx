@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useTransition } from "react";
+import React, { useState, useRef, useEffect, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { formatCurrency, formatNumber, formatDate, shipmentStatusLabels, shipmentStatusColors, paymentStatusColors } from "@/lib/utils";
@@ -266,8 +266,8 @@ export function InvoicesSection({
               const isEditing = editingId === inv.id;
 
               return (
-                <>
-                  <tr key={inv.id} className={`hover:bg-stone-50 align-middle ${isEditing ? "bg-[#0d3d3b]/40" : ""}`}>
+                <React.Fragment key={inv.id}>
+                  <tr className={`hover:bg-stone-50 align-middle ${isEditing ? "bg-[#0d3d3b]/40" : ""}`}>
                     <td className="px-3 py-1.5 border-t border-stone-100 text-stone-600">{inv.salesDocument || "—"}</td>
                     <td className="px-3 py-1.5 border-t border-stone-100 text-stone-600 whitespace-nowrap">
                       {inv.invoiceNumber.startsWith("PEND-") ? (
@@ -514,7 +514,7 @@ export function InvoicesSection({
                       </td>
                     </tr>
                   )}
-                </>
+                </React.Fragment>
               );
             })}
 

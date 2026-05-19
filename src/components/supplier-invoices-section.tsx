@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/utils";
-import { Trash2, Paperclip, ExternalLink } from "lucide-react";
+import { Trash2, Paperclip, ExternalLink, Upload } from "lucide-react";
 
 type SupplierInvoice = {
   id: number;
@@ -63,6 +63,7 @@ export function SupplierInvoicesSection({
     linkedInvoiceId: "",
   });
   const [file, setFile] = useState<File | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   const totalTons = invoices.reduce((s, i) => s + (i.estimatedTons || 0), 0);
@@ -268,19 +269,33 @@ export function SupplierInvoicesSection({
             </div>
             <div>
               <label className="block text-xs text-[#0d3d3b] mb-1 font-medium">Attach PDF (optional)</label>
-              <input
-                type="file"
-                accept=".pdf,.png,.jpg,.jpeg"
-                onChange={e => setFile(e.target.files?.[0] || null)}
-                className="block w-full text-xs text-stone-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-stone-200 file:text-xs file:font-medium file:bg-white file:text-stone-600 file:cursor-pointer hover:file:bg-stone-50"
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  onChange={e => setFile(e.target.files?.[0] || null)}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className="flex items-center gap-1.5 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 bg-white"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  {file ? file.name : "Choose file"}
+                </button>
+                {file && (
+                  <button type="button" onClick={() => setFile(null)} className="text-xs text-stone-400 hover:text-stone-600 text-lg leading-none">×</button>
+                )}
+              </div>
             </div>
           </div>
 
           <div className="flex gap-2 pt-1">
             <button
               type="submit"
-              disabled={saving || !form.invoiceNumber}
+              disabled={saving}
               className="px-4 py-2 bg-primary text-primary-foreground text-sm rounded-lg font-medium hover:opacity-90 disabled:opacity-40"
             >
               {saving ? "Saving..." : "Save Invoice"}
