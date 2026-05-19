@@ -278,16 +278,16 @@ export function SupplierInvoicesSection({
               />
             </div>
             <div>
-              <label className="block text-xs text-[#0d3d3b] mb-1 font-medium">Attach PDF (optional)</label>
-              <div className="flex items-center gap-2">
+              <label className="block text-xs text-[#0d3d3b] mb-1 font-medium">Attach file (optional)</label>
+              <div className="flex items-center gap-2 flex-wrap">
                 <input
                   ref={fileRef}
                   type="file"
-                  accept=".pdf,.png,.jpg,.jpeg"
+                  accept=".pdf,.png,.jpg,.jpeg,.xml,.zip"
                   onChange={e => {
                     const f = e.target.files?.[0] || null;
                     if (f && f.size > MAX_FILE_MB * 1024 * 1024) {
-                      setFileError(`File too large (${(f.size / 1024 / 1024).toFixed(1)} MB). Max ${MAX_FILE_MB} MB.`);
+                      setFileError(`Too large: ${(f.size / 1024 / 1024).toFixed(1)} MB — max ${MAX_FILE_MB} MB. Compress the PDF and try again.`);
                       setFile(null);
                       e.target.value = "";
                     } else {
@@ -303,13 +303,13 @@ export function SupplierInvoicesSection({
                   className="flex items-center gap-1.5 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 bg-white"
                 >
                   <Upload className="w-3.5 h-3.5" />
-                  {file ? file.name : "Choose file"}
+                  {file ? `${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)` : "Choose file"}
                 </button>
                 {file && (
                   <button type="button" onClick={() => { setFile(null); setFileError(null); }} className="text-xs text-stone-400 hover:text-stone-600 text-lg leading-none">×</button>
                 )}
                 {fileError && (
-                  <span className="text-xs text-red-500 font-medium">{fileError}</span>
+                  <span className="text-xs text-red-600 font-medium">{fileError}</span>
                 )}
               </div>
             </div>
