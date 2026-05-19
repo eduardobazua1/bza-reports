@@ -269,20 +269,19 @@ export function SupplierInvoicesSection({
             <div>
               <label className="block text-xs text-[#0d3d3b] mb-1 font-medium">Attach PDF (optional)</label>
               <div className="flex items-center gap-2">
-                <input
-                  id={`si-file-${purchaseOrderId}`}
-                  type="file"
-                  accept=".pdf,.png,.jpg,.jpeg"
-                  onChange={e => setFile(e.target.files?.[0] || null)}
-                  className="sr-only"
-                />
-                <label
-                  htmlFor={`si-file-${purchaseOrderId}`}
-                  className="flex items-center gap-1.5 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 bg-white cursor-pointer"
-                >
-                  <Upload className="w-3.5 h-3.5" />
-                  {file ? file.name : "Choose file"}
-                </label>
+                <div className="relative inline-flex">
+                  <span className="flex items-center gap-1.5 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-600 bg-white pointer-events-none">
+                    <Upload className="w-3.5 h-3.5" />
+                    {file ? file.name : "Choose file"}
+                  </span>
+                  <input
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg"
+                    onChange={e => setFile(e.target.files?.[0] || null)}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    title=""
+                  />
+                </div>
                 {file && (
                   <button type="button" onClick={() => setFile(null)} className="text-xs text-stone-400 hover:text-stone-600">×</button>
                 )}
