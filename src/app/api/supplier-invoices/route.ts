@@ -56,8 +56,8 @@ export async function POST(req: NextRequest) {
   let fileSize: number | null = null;
 
   if (file && file.size > 0) {
-    if (file.size > 10 * 1024 * 1024) {
-      return NextResponse.json({ error: "File too large. Maximum 10MB." }, { status: 400 });
+    if (file.size > 12 * 1024 * 1024) {
+      return NextResponse.json({ error: "File too large. Maximum 12 MB." }, { status: 400 });
     }
     const buffer = Buffer.from(await file.arrayBuffer());
     const base64 = buffer.toString("base64");

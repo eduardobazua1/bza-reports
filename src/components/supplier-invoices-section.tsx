@@ -63,8 +63,12 @@ export function SupplierInvoicesSection({
     linkedInvoiceId: "",
   });
   const [file, setFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+
+  const MAX_FILE_MB = 10;
 
   const totalTons = invoices.reduce((s, i) => s + (i.estimatedTons || 0), 0);
   const totalAmount = invoices.reduce((s, i) => s + (i.amountUsd || 0), 0);
@@ -93,7 +97,8 @@ export function SupplierInvoicesSection({
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.invoiceNumber) return;
+    if (!form.invoiceNumber || fileError) return;
+    setSaveError(null);
     setSaving(true);
     try {
       const fd = new FormData();
@@ -110,13 +115,18 @@ export function SupplierInvoicesSection({
       const res = await fetch("/api/supplier-invoices", { method: "POST", body: fd });
       if (res.ok) {
         const created = await res.json();
-        // Attach linked invoice number for display
         const linked = poInvoices.find(i => i.id === created.linkedInvoiceId);
         setInvoices(prev => [...prev, { ...created, linkedInvoiceNumber: linked?.invoiceNumber ?? null }]);
         setShowAdd(false);
         setForm({ invoiceNumber: "", invoiceDate: "", estimatedTons: "", amountUsd: "", notes: "", linkedInvoiceId: defaultLinkedId });
         setFile(null);
+        setSaveError(null);
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        setSaveError(errData.error || `Error ${res.status} — try a smaller file or check your connection.`);
       }
+    } catch (err: any) {
+      setSaveError("Network error — the file may be too large to upload.");
     } finally {
       setSaving(false);
     }
@@ -274,7 +284,17 @@ export function SupplierInvoicesSection({
                   ref={fileRef}
                   type="file"
                   accept=".pdf,.png,.jpg,.jpeg"
-                  onChange={e => setFile(e.target.files?.[0] || null)}
+                  onChange={e => {
+                    const f = e.target.files?.[0] || null;
+                    if (f && f.size > MAX_FILE_MB * 1024 * 1024) {
+                      setFileError(`File too large (${(f.size / 1024 / 1024).toFixed(1)} MB). Max ${MAX_FILE_MB} MB.`);
+                      setFile(null);
+                      e.target.value = "";
+                    } else {
+                      setFileError(null);
+                      setFile(f);
+                    }
+                  }}
                   className="hidden"
                 />
                 <button
@@ -286,21 +306,27 @@ export function SupplierInvoicesSection({
                   {file ? file.name : "Choose file"}
                 </button>
                 {file && (
-                  <button type="button" onClick={() => setFile(null)} className="text-xs text-stone-400 hover:text-stone-600 text-lg leading-none">×</button>
+                  <button type="button" onClick={() => { setFile(null); setFileError(null); }} className="text-xs text-stone-400 hover:text-stone-600 text-lg leading-none">×</button>
+                )}
+                {fileError && (
+                  <span className="text-xs text-red-500 font-medium">{fileError}</span>
                 )}
               </div>
             </div>
           </div>
 
+          {saveError && (
+            <p className="text-xs text-red-500 font-medium bg-red-50 border border-red-200 rounded-lg px-3 py-2">{saveError}</p>
+          )}
           <div className="flex gap-2 pt-1">
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || !!fileError}
               className="px-4 py-2 bg-primary text-primary-foreground text-sm rounded-lg font-medium hover:opacity-90 disabled:opacity-40"
             >
               {saving ? "Saving..." : "Save Invoice"}
             </button>
-            <button type="button" onClick={() => setShowAdd(false)} className="px-4 py-2 border border-stone-200 rounded-lg text-sm text-stone-600 hover:bg-stone-50">
+            <button type="button" onClick={() => { setShowAdd(false); setSaveError(null); }} className="px-4 py-2 border border-stone-200 rounded-lg text-sm text-stone-600 hover:bg-stone-50">
               Cancel
             </button>
           </div>
