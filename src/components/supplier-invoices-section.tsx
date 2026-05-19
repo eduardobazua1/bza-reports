@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/utils";
 import { Trash2, Paperclip, Upload, ExternalLink } from "lucide-react";
@@ -63,7 +63,6 @@ export function SupplierInvoicesSection({
     linkedInvoiceId: "",
   });
   const [file, setFile] = useState<File | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   const totalTons = invoices.reduce((s, i) => s + (i.estimatedTons || 0), 0);
@@ -271,20 +270,19 @@ export function SupplierInvoicesSection({
               <label className="block text-xs text-[#0d3d3b] mb-1 font-medium">Attach PDF (optional)</label>
               <div className="flex items-center gap-2">
                 <input
-                  ref={fileRef}
+                  id={`si-file-${purchaseOrderId}`}
                   type="file"
                   accept=".pdf,.png,.jpg,.jpeg"
                   onChange={e => setFile(e.target.files?.[0] || null)}
-                  className="hidden"
+                  className="sr-only"
                 />
-                <button
-                  type="button"
-                  onClick={() => fileRef.current?.click()}
-                  className="flex items-center gap-1.5 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 bg-white"
+                <label
+                  htmlFor={`si-file-${purchaseOrderId}`}
+                  className="flex items-center gap-1.5 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-600 hover:bg-stone-100 bg-white cursor-pointer"
                 >
                   <Upload className="w-3.5 h-3.5" />
                   {file ? file.name : "Choose file"}
-                </button>
+                </label>
                 {file && (
                   <button type="button" onClick={() => setFile(null)} className="text-xs text-stone-400 hover:text-stone-600">×</button>
                 )}
