@@ -117,50 +117,52 @@ export function POSupplierPayments({
 
       {/* Add Payment Form */}
       {showForm && (
-        <form onSubmit={handleAdd} className="p-4 border-b border-stone-200 bg-[#0d3d3b]/50">
+        <form onSubmit={handleAdd} className="p-4 border-b border-stone-100 bg-stone-50">
           <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-3">New Payment</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>
-              <label className="text-xs text-[#0d3d3b] block mb-1">Amount (USD) *</label>
+              <label className="text-xs text-stone-500 block mb-1">
+                Amount (USD) *
+                <span className="ml-1 font-normal text-stone-400">(negative = credit received)</span>
+              </label>
               <input
                 type="number"
                 step="0.01"
-                min="0"
                 required
                 placeholder="0.00"
                 value={form.amountUsd}
                 onChange={(e) => setForm((f) => ({ ...f, amountUsd: e.target.value }))}
-                className="w-full border border-stone-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#0d3d3b]"
+                className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#0d3d3b]"
               />
             </div>
             <div>
-              <label className="text-xs text-[#0d3d3b] block mb-1">Payment Date *</label>
+              <label className="text-xs text-stone-500 block mb-1">Payment Date *</label>
               <input
                 type="date"
                 required
                 value={form.paymentDate}
                 onChange={(e) => setForm((f) => ({ ...f, paymentDate: e.target.value }))}
-                className="w-full border border-stone-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#0d3d3b]"
+                className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#0d3d3b]"
               />
             </div>
             <div>
-              <label className="text-xs text-[#0d3d3b] block mb-1">Reference</label>
+              <label className="text-xs text-stone-500 block mb-1">Reference</label>
               <input
                 type="text"
                 placeholder="Wire ref, check #..."
                 value={form.reference}
                 onChange={(e) => setForm((f) => ({ ...f, reference: e.target.value }))}
-                className="w-full border border-stone-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#0d3d3b]"
+                className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#0d3d3b]"
               />
             </div>
             <div>
-              <label className="text-xs text-[#0d3d3b] block mb-1">Notes</label>
+              <label className="text-xs text-stone-500 block mb-1">Notes</label>
               <input
                 type="text"
                 placeholder="Optional note"
                 value={form.notes}
                 onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-                className="w-full border border-stone-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#0d3d3b]"
+                className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#0d3d3b]"
               />
             </div>
           </div>
@@ -206,7 +208,12 @@ export function POSupplierPayments({
             {payments.map((p) => (
               <tr key={p.id} className="border-t border-stone-100 hover:bg-stone-50">
                 <td className="px-4 py-2.5 text-xs text-[#0d3d3b]">{formatDate(p.paymentDate)}</td>
-                <td className="px-4 py-2.5 text-xs text-right font-semibold text-[#0d3d3b]">{formatCurrency(p.amountUsd)}</td>
+                <td className="px-4 py-2.5 text-xs text-right font-semibold">
+                  {p.amountUsd < 0
+                    ? <span className="text-emerald-700">+{formatCurrency(Math.abs(p.amountUsd))} <span className="font-normal text-emerald-600 text-[10px]">credit</span></span>
+                    : <span className="text-[#0d3d3b]">{formatCurrency(p.amountUsd)}</span>
+                  }
+                </td>
                 <td className="px-4 py-2.5 text-xs text-[#0d3d3b]">{p.reference || "—"}</td>
                 <td className="px-4 py-2.5 text-stone-400">{p.notes || "—"}</td>
                 <td className="px-4 py-2.5 text-right">
