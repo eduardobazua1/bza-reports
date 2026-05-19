@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/utils";
-import { Trash2, Paperclip, Upload, ExternalLink } from "lucide-react";
+import { Trash2, Paperclip, ExternalLink } from "lucide-react";
 
 type SupplierInvoice = {
   id: number;
@@ -268,24 +268,12 @@ export function SupplierInvoicesSection({
             </div>
             <div>
               <label className="block text-xs text-[#0d3d3b] mb-1 font-medium">Attach PDF (optional)</label>
-              <div className="flex items-center gap-2">
-                <div className="relative inline-flex">
-                  <span className="flex items-center gap-1.5 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-600 bg-white pointer-events-none">
-                    <Upload className="w-3.5 h-3.5" />
-                    {file ? file.name : "Choose file"}
-                  </span>
-                  <input
-                    type="file"
-                    accept=".pdf,.png,.jpg,.jpeg"
-                    onChange={e => setFile(e.target.files?.[0] || null)}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    title=""
-                  />
-                </div>
-                {file && (
-                  <button type="button" onClick={() => setFile(null)} className="text-xs text-stone-400 hover:text-stone-600">×</button>
-                )}
-              </div>
+              <input
+                type="file"
+                accept=".pdf,.png,.jpg,.jpeg"
+                onChange={e => setFile(e.target.files?.[0] || null)}
+                className="block w-full text-xs text-stone-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-stone-200 file:text-xs file:font-medium file:bg-white file:text-stone-600 file:cursor-pointer hover:file:bg-stone-50"
+              />
             </div>
           </div>
 
