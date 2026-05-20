@@ -107,6 +107,25 @@ function extractCoaData(text) {
   };
 }
 
+function extractPlData(texts) {
+  // Combine all PL pages (tally sheet may span 2 pages)
+  const combined = texts.join(" ");
+
+  // Bales per unit: each tally row ends with "HALSEY 6" (the 6 = bales/unit)
+  // Take the first match — it's consistent throughout
+  const balesPerUnitMatch = combined.match(/HALSEY\s+(\d+)/);
+  const balesPerUnit = balesPerUnitMatch ? parseInt(balesPerUnitMatch[1]) : null;
+
+  // Total units: "63 Total Number of Units Total Weight LOAD TOTALS"
+  const totalUnitsMatch = combined.match(/(\d+)\s+Total\s+Number\s+of\s+Units/i);
+  const totalUnits = totalUnitsMatch ? parseInt(totalUnitsMatch[1]) : null;
+
+  // Total bales = units × balesPerUnit
+  const totalBales = totalUnits && balesPerUnit ? totalUnits * balesPerUnit : null;
+
+  return { balesPerUnit, totalUnits, totalBales };
+}
+
 function extractBolData(text) {
   // Car No: "Car No. LRS 141109"  or  "Car No. TBOX 670600"
   const carMatch  = text.match(/Car\s+No\.\s+([A-Z]+)\s+(\d+)/);
@@ -204,18 +223,22 @@ async function main() {
     // Extract data
     const coaText  = pages.find(p => p.index === car.coa[0])?.text || "";
     const bolText  = pages.find(p => p.index === car.bol[0])?.text || "";
+    const plTexts  = car.pl.map(idx => pages.find(p => p.index === idx)?.text || "");
     const coaData  = extractCoaData(coaText);
     const bolData  = extractBolData(bolText);
+    const plData   = extractPlData(plTexts);
 
     // Vehicle comes from COA (cleaner format); BOL as fallback
     const vehicle = coaData.vehicle || bolData.vehicle;
 
-    console.log(`  Vehicle:     ${vehicle              || "❓ not found"}`);
-    console.log(`  BOL #:       ${bolData.bolNumber   || "❓ not found"}`);
-    console.log(`  PO:          ${bolData.poNumber    || "❓ not found"}`);
-    console.log(`  Destination: ${bolData.destination || "❓ not found"}`);
-    console.log(`  Air Dry MT:  ${coaData.airDryMt    || "❓ not found"}`);
-    console.log(`  Bales:       ${coaData.bales        || "❓ not found"} (${coaData.units || "?"} units × ${coaData.bales && coaData.units ? coaData.bales / coaData.units : "?"} bales/unit)`);
+    console.log(`  Vehicle:     ${vehicle               || "❓ not found"}`);
+    console.log(`  BOL #:       ${bolData.bolNumber    || "❓ not found"}`);
+    console.log(`  PO:          ${bolData.poNumber     || "❓ not found"}`);
+    console.log(`  Destination: ${bolData.destination  || "❓ not found"}`);
+    console.log(`  Air Dry MT:  ${coaData.airDryMt     || "❓ not found"}`);
+    console.log(`  Units:       ${plData.totalUnits    || "❓ not found"}`);
+    console.log(`  Bales/unit:  ${plData.balesPerUnit  || "❓ not found"}`);
+    console.log(`  Total bales: ${plData.totalBales    || "❓ not found"}`);
 
     const poNumber = bolData.poNumber;
 
@@ -259,7 +282,7 @@ async function main() {
     const bolFile = car.bol.length > 0 ? await savePdf(car.bol, "BOL") : null;
     const plFile  = car.pl.length  > 0 ? await savePdf(car.pl,  "PL")  : null;
 
-    results.push({ label, invoiceId, invoiceNum, vehicle, bolData, coaData, bolFile, plFile });
+    results.push({ label, invoiceId, invoiceNum, vehicle, bolData, coaData, plData, bolFile, plFile });
   }
 
   // ── Step 5: update TMS invoices + upload files ────────────────
@@ -275,21 +298,23 @@ async function main() {
     try {
       await client.execute({
         sql: `UPDATE invoices
-              SET vehicle_id  = COALESCE(?, vehicle_id),
-                  bl_number   = COALESCE(?, bl_number),
-                  bales_count = COALESCE(?, bales_count),
-                  destination = COALESCE(?, destination),
-                  updated_at  = datetime('now')
+              SET vehicle_id    = COALESCE(?, vehicle_id),
+                  bl_number     = COALESCE(?, bl_number),
+                  bales_count   = COALESCE(?, bales_count),
+                  units_per_bale = COALESCE(?, units_per_bale),
+                  destination   = COALESCE(?, destination),
+                  updated_at    = datetime('now')
               WHERE id = ?`,
         args: [
-          r.vehicle                || null,
-          r.bolData.bolNumber      || null,
-          r.coaData.bales          || null,
-          r.bolData.destination    || null,
+          r.vehicle                  || null,
+          r.bolData.bolNumber        || null,
+          r.plData.totalBales        || null,
+          r.plData.balesPerUnit      || null,
+          r.bolData.destination      || null,
           r.invoiceId,
         ],
       });
-      console.log(`  ✅ ${r.invoiceNum}: vehicle=${r.vehicle}, BOL#=${r.bolData.bolNumber}, bales=${r.coaData.bales}, dest=${r.bolData.destination}`);
+      console.log(`  ✅ ${r.invoiceNum}: vehicle=${r.vehicle}, BOL#=${r.bolData.bolNumber}, bales=${r.plData.totalBales} (${r.plData.totalUnits} units × ${r.plData.balesPerUnit}), dest=${r.bolData.destination}`);
     } catch (e) {
       console.warn(`  ⚠️  ${r.invoiceNum}: DB update failed — ${e.message}`);
     }
