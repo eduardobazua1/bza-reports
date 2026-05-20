@@ -308,7 +308,8 @@ export function IntelligenceWidget() {
 
       const res = await fetch("/api/ai", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages: aiMessages, tempPaths: allTempPaths }) });
       const data = await res.json();
-      setMessages([...newMessages, { role: "assistant", content: data.message || "No response." }]);
+      const reply = data.message || (data.error ? `⚠️ ${data.error}` : "No response.");
+      setMessages([...newMessages, { role: "assistant", content: reply }]);
     } catch {
       setMessages([...newMessages, { role: "assistant", content: "Connection error." }]);
     } finally {
