@@ -1,202 +1,343 @@
 /**
- * BZA Document Processor
+ * BZA Document Processor — Cascade Pacific Pulp
  *
  * Usage:
- *   node scripts/process-docs.mjs <pdf-path> <invoice-number>
+ *   node scripts/process-docs.mjs <pdf-path>
  *
  * Example:
- *   node scripts/process-docs.mjs ~/Desktop/shipment.pdf IX0001-1
+ *   node scripts/process-docs.mjs ~/Downloads/ShipDoc.pdf
  *
  * What it does:
- *   1. Reads the combined PDF (BOL + PL + COA)
- *   2. Detects each page type by text content
- *   3. Splits into separate files
- *   4. Saves to ~/Documents/BZA/Cascade/{BOLs|PLs|COAs}/
- *   5. Uploads each to the TMS via localhost:3000
+ *   1. Reads the combined PDF (COA + BOL + Tally Sheet per car)
+ *   2. Classifies each page by text content
+ *   3. Extracts per-car data: vehicle #, BOL #, bales, destination
+ *   4. Matches each car to its TMS invoice by air-dry metric tons
+ *   5. Splits into separate files: BOL, PL, COA
+ *   6. Saves all files to iCloud Drive / BOLS CASCADE
+ *   7. Updates TMS invoice fields (vehicle, BOL#, bales, destination)
+ *   8. Uploads BOL + PL to TMS
  */
 
 import fs from "fs";
 import path from "path";
 import os from "os";
 import { PDFDocument } from "pdf-lib";
-import pdfParse from "pdf-parse/lib/pdf-parse.js";
+import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 import { createClient } from "@libsql/client";
 import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
-const BASE_DIR = path.join(os.homedir(), "Documents", "BZA", "Cascade");
-const FOLDERS = {
-  bl:    path.join(BASE_DIR, "BOLs"),
-  pl:    path.join(BASE_DIR, "PLs"),
-  coa:   path.join(BASE_DIR, "COAs"),
-  other: path.join(BASE_DIR, "Other"),
-};
-const TMS_URL = "http://localhost:3000";
+const ICLOUD   = path.join(os.homedir(), "Library", "Mobile Documents", "com~apple~CloudDocs");
+const SAVE_DIR = path.join(ICLOUD, "BOLS CASCADE");
+const TMS_URL  = "http://localhost:3000";
 
-// Load .env.local for Turso credentials
+// Ship To city keywords → TMS destination label
+// Add more entries here as new destinations come up
+const DESTINATION_MAP = {
+  "SAN JUAN DEL RIO": "Bajio",
+  "QUERETARO":        "Bajio",
+  "MONTERREY":        "Monterrey",
+  "GUADALAJARA":      "Guadalajara",
+  "ZAPOPAN":          "Guadalajara",
+  "PUEBLA":           "Puebla",
+  "TOLUCA":           "Toluca",
+  "ECATEPEC":         "CDMX",
+  "CUAUTITLAN":       "CDMX",
+  "LERMA":            "Toluca",
+  "MANZANILLO":       "Manzanillo",
+  "VERACRUZ":         "Veracruz",
+  "LAREDO":           "Laredo",
+};
+
+// ─── Load .env.local ─────────────────────────────────────────────────────────
 function loadEnv() {
   const envPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", ".env.local");
   if (!fs.existsSync(envPath)) return;
-  const lines = readFileSync(envPath, "utf-8").split("\n");
-  for (const line of lines) {
+  for (const line of readFileSync(envPath, "utf-8").split("\n")) {
     const [k, ...rest] = line.split("=");
     if (k && rest.length) process.env[k.trim()] = rest.join("=").trim();
   }
 }
 loadEnv();
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-function detectType(text) {
+// ─── PDF Text Extraction ──────────────────────────────────────────────────────
+async function extractPageText(pdfDoc, pageIndex) {
+  // Save single page as buffer, then parse with pdfjs
+  const singleDoc = await PDFDocument.create();
+  const [copied] = await singleDoc.copyPages(pdfDoc, [pageIndex]);
+  singleDoc.addPage(copied);
+  const bytes = await singleDoc.save();
+  const doc = await pdfjsLib.getDocument({ data: new Uint8Array(bytes) }).promise;
+  const page = await doc.getPage(1);
+  const content = await page.getTextContent();
+  return content.items.map(i => i.str).join(" ").replace(/\s+/g, " ").trim();
+}
+
+// ─── Page Type Detection ──────────────────────────────────────────────────────
+function detectPageType(text) {
   const t = text.toUpperCase();
-  if (t.includes("BILL OF LADING") || t.includes("B/L NO") || t.includes("RAILROAD BILL") || t.includes("WAYBILL")) return "bl";
-  if (t.includes("PACKING LIST") || t.includes("PACK LIST") || t.includes("LISTA DE EMPAQUE")) return "pl";
-  if (t.includes("CERTIFICATE OF ANALYSIS") || t.includes("CERT OF ANALYSIS") || t.includes("CERTIFICATE OF QUALITY") || t.includes("COA")) return "coa";
+  if (t.includes("CERTIFICATE OF ANALYSIS")) return "coa";
+  if (t.includes("BILL OF LADING"))          return "bol";
+  if (t.includes("TALLY SHEET"))             return "pl";
+  // Tally continuation pages: rows of "316S 2330902xxxx 3,xxx HALSEY 6"
+  if (/\b316[A-Z]\s+\d{11}\s+[\d,]+\s+HALSEY/.test(t)) return "pl";
   return "other";
 }
 
-function typeLabel(type) {
-  return { bl: "BOL", pl: "PL", coa: "COA", other: "DOC" }[type] || "DOC";
+// ─── Data Extraction ──────────────────────────────────────────────────────────
+function extractCoaData(text) {
+  // COA table header pattern: "Car Number Air Dry Metric Tons [TYPE] [NUM] [MT]"
+  // Example: "Car Number Air Dry Metric Tons LRS 141109 90.900"
+  //          "Car Number Air Dry Metric Tons TBOX 670600 89.334"
+  const carMtMatch = text.match(/Car\s+Number\s+Air\s+Dry\s+Metric\s+Tons\s+([A-Z]+)\s+(\d+)\s+([\d.]+)/i);
+
+  // Bale/Unit count: "378 / 63" that appears after "Bale / Unit Count"
+  const baleMatch  = text.match(/Bale\s*\/\s*Unit\s*Count.*?(\d+)\s*\/\s*(\d+)/is);
+
+  // Order number suffix: "HS074117-002" → 2
+  const orderMatch = text.match(/HS\d+-(\d+)/);
+
+  return {
+    vehicle:     carMtMatch ? `${carMtMatch[1]}${carMtMatch[2]}` : null,   // TBOX670600
+    airDryMt:    carMtMatch ? parseFloat(carMtMatch[3])           : null,   // 90.900
+    bales:       baleMatch  ? parseInt(baleMatch[1])              : null,   // 378
+    units:       baleMatch  ? parseInt(baleMatch[2])              : null,   // 63
+    orderSuffix: orderMatch ? parseInt(orderMatch[1])             : null,   // 1
+  };
+}
+
+function extractBolData(text) {
+  // Car No: "Car No. LRS 141109"  or  "Car No. TBOX 670600"
+  const carMatch  = text.match(/Car\s+No\.\s+([A-Z]+)\s+(\d+)/);
+  const vehicle   = carMatch ? `${carMatch[1]}${carMatch[2]}` : null;   // No space: TBOX670600
+
+  // Shipment # → BOL number
+  const shipMatch = text.match(/Shipment\s*#\s*(\d+)/);
+  const bolNumber = shipMatch ? shipMatch[1] : null;
+
+  // PO number: "Marks X0007" or standalone "X0007"
+  const poMatch   = text.match(/\b(X\d{4})\b/);
+  const poNumber  = poMatch ? poMatch[1] : null;
+
+  // Ship To → destination  (text looks like: "Ship To: ... CITY STATE, MEXICO")
+  // Grab up to ~300 chars after "Ship To:" and check against destination map
+  const shipToIdx = text.search(/Ship\s+To:/i);
+  let destination = null;
+  if (shipToIdx !== -1) {
+    const shipToText = text.slice(shipToIdx, shipToIdx + 300).toUpperCase();
+    for (const [keyword, label] of Object.entries(DESTINATION_MAP)) {
+      if (shipToText.includes(keyword)) {
+        destination = label;
+        break;
+      }
+    }
+  }
+
+  return { vehicle, bolNumber, poNumber, destination };
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 async function main() {
-  const [,, inputPath, invoiceNumber] = process.argv;
-
-  if (!inputPath || !invoiceNumber) {
-    console.error("Usage: node scripts/process-docs.mjs <pdf-path> <invoice-number>");
-    console.error("Example: node scripts/process-docs.mjs ~/Desktop/shipment.pdf IX0001-1");
+  const [,, inputArg] = process.argv;
+  if (!inputArg) {
+    console.error("Usage: node scripts/process-docs.mjs <pdf-path>");
+    console.error("Example: node scripts/process-docs.mjs ~/Downloads/ShipDoc.pdf");
     process.exit(1);
   }
 
-  const resolvedPath = inputPath.replace(/^~/, os.homedir());
-  if (!fs.existsSync(resolvedPath)) {
-    console.error(`File not found: ${resolvedPath}`);
+  const inputPath = inputArg.replace(/^~/, os.homedir());
+  if (!fs.existsSync(inputPath)) {
+    console.error(`File not found: ${inputPath}`);
     process.exit(1);
   }
 
-  console.log(`\n📄 Processing: ${path.basename(resolvedPath)}`);
-  console.log(`📋 Invoice: ${invoiceNumber}\n`);
+  console.log(`\n📄 Processing: ${path.basename(inputPath)}`);
 
-  // Create output folders
-  Object.values(FOLDERS).forEach(f => fs.mkdirSync(f, { recursive: true }));
+  fs.mkdirSync(SAVE_DIR, { recursive: true });
 
-  // Read PDF bytes
-  const pdfBytes = fs.readFileSync(resolvedPath);
-  const pdfDoc = await PDFDocument.load(pdfBytes);
-  const totalPages = pdfDoc.getPageCount();
+  const pdfBytes = fs.readFileSync(inputPath);
+  const pdfDoc   = await PDFDocument.load(pdfBytes);
+  const total    = pdfDoc.getPageCount();
+  console.log(`📑 Total pages: ${total}\n`);
 
-  console.log(`📑 Total pages: ${totalPages}`);
+  // ── Step 1: classify every page ──────────────────────────────
+  console.log("🔍 Classifying pages...");
+  const pages = [];
+  for (let i = 0; i < total; i++) {
+    const text = await extractPageText(pdfDoc, i);
+    const type = detectPageType(text);
+    pages.push({ index: i, type, text });
+    console.log(`  Page ${i + 1}: ${type.toUpperCase().padEnd(5)}  ${text.slice(0, 60).replace(/\n/g, " ")}...`);
+  }
 
-  // Extract text per page to detect document type
-  const pageTypes = [];
-  for (let i = 0; i < totalPages; i++) {
-    // Extract single page to text
-    const singleDoc = await PDFDocument.create();
-    const [copiedPage] = await singleDoc.copyPages(pdfDoc, [i]);
-    singleDoc.addPage(copiedPage);
-    const singleBytes = await singleDoc.save();
+  // ── Step 2: group into cars (each COA starts a new car) ──────
+  const cars = [];
+  let current = null;
+  for (const p of pages) {
+    if (p.type === "coa") {
+      if (current) cars.push(current);
+      current = { coa: [p.index], bol: [], pl: [] };
+    } else if (current) {
+      if (p.type === "bol") current.bol.push(p.index);
+      else if (p.type === "pl") current.pl.push(p.index);
+      else current.pl.push(p.index); // treat unknown as PL
+    }
+  }
+  if (current) cars.push(current);
 
+  console.log(`\n✂️  Found ${cars.length} car(s) in this document\n`);
+
+  // ── Step 3: connect to DB ─────────────────────────────────────
+  const client = createClient({
+    url:       process.env.TURSO_DATABASE_URL || "file:sqlite.db",
+    authToken: process.env.TURSO_AUTH_TOKEN,
+  });
+
+  // ── Step 4: process each car ──────────────────────────────────
+  const results = [];
+
+  for (let ci = 0; ci < cars.length; ci++) {
+    const car = cars[ci];
+    console.log(`\n── Car ${ci + 1} of ${cars.length} ─────────────────────────────`);
+
+    // Extract data
+    const coaText  = pages.find(p => p.index === car.coa[0])?.text || "";
+    const bolText  = pages.find(p => p.index === car.bol[0])?.text || "";
+    const coaData  = extractCoaData(coaText);
+    const bolData  = extractBolData(bolText);
+
+    // Vehicle comes from COA (cleaner format); BOL as fallback
+    const vehicle = coaData.vehicle || bolData.vehicle;
+
+    console.log(`  Vehicle:     ${vehicle              || "❓ not found"}`);
+    console.log(`  BOL #:       ${bolData.bolNumber   || "❓ not found"}`);
+    console.log(`  PO:          ${bolData.poNumber    || "❓ not found"}`);
+    console.log(`  Destination: ${bolData.destination || "❓ not found"}`);
+    console.log(`  Air Dry MT:  ${coaData.airDryMt    || "❓ not found"}`);
+    console.log(`  Bales:       ${coaData.bales        || "❓ not found"} (${coaData.units || "?"} units × ${coaData.bales && coaData.units ? coaData.bales / coaData.units : "?"} bales/unit)`);
+
+    const poNumber = bolData.poNumber;
+
+    // Match invoice by MT
+    let invoiceId   = null;
+    let invoiceNum  = null;
+    if (poNumber && coaData.airDryMt) {
+      const res = await client.execute({
+        sql: `SELECT inv.id, inv.invoice_number
+              FROM invoices inv
+              JOIN purchase_orders po ON po.id = inv.purchase_order_id
+              WHERE po.po_number = ?
+                AND ROUND(inv.quantity_tons, 3) = ROUND(?, 3)
+              LIMIT 1`,
+        args: [poNumber, coaData.airDryMt],
+      });
+      if (res.rows.length > 0) {
+        invoiceId  = Number(res.rows[0].id);
+        invoiceNum = String(res.rows[0].invoice_number);
+        console.log(`  ✅ Matched → ${invoiceNum} (ID ${invoiceId})`);
+      } else {
+        console.warn(`  ⚠️  No invoice matched for PO ${poNumber} with ${coaData.airDryMt} MT`);
+      }
+    }
+
+    const label = invoiceNum || `${poNumber || "DOC"}-${ci + 1}`;
+
+    // ── Save files ──────────────────────────────────────────────
+    async function savePdf(pageIndices, prefix) {
+      const newDoc = await PDFDocument.create();
+      const copied = await newDoc.copyPages(pdfDoc, pageIndices);
+      copied.forEach(p => newDoc.addPage(p));
+      const bytes    = await newDoc.save();
+      const fileName = `${prefix} ${label}.pdf`;
+      const outPath  = path.join(SAVE_DIR, fileName);
+      fs.writeFileSync(outPath, bytes);
+      console.log(`  💾 Saved: ${fileName}`);
+      return { fileName, bytes, outPath };
+    }
+
+    const bolFile = car.bol.length > 0 ? await savePdf(car.bol, "BOL") : null;
+    const plFile  = car.pl.length  > 0 ? await savePdf(car.pl,  "PL")  : null;
+    if (car.coa.length > 0)               await savePdf(car.coa, "COA");
+
+    results.push({ label, invoiceId, invoiceNum, vehicle, bolData, coaData, bolFile, plFile });
+  }
+
+  // ── Step 5: update TMS invoices + upload files ────────────────
+  console.log("\n⬆️  Updating TMS...\n");
+
+  for (const r of results) {
+    if (!r.invoiceId) {
+      console.log(`  ⏭  ${r.label}: skipped (no invoice match)`);
+      continue;
+    }
+
+    // Update invoice fields directly in DB
     try {
-      const parsed = await pdfParse(Buffer.from(singleBytes));
-      const type = detectType(parsed.text);
-      pageTypes.push(type);
-      console.log(`  Page ${i + 1}: ${typeLabel(type)} — "${parsed.text.slice(0, 60).replace(/\n/g, " ").trim()}..."`);
-    } catch {
-      pageTypes.push("other");
-      console.log(`  Page ${i + 1}: OTHER (could not parse)`);
+      await client.execute({
+        sql: `UPDATE invoices
+              SET vehicle_id  = COALESCE(?, vehicle_id),
+                  bl_number   = COALESCE(?, bl_number),
+                  bales_count = COALESCE(?, bales_count),
+                  destination = COALESCE(?, destination),
+                  updated_at  = datetime('now')
+              WHERE id = ?`,
+        args: [
+          r.vehicle                || null,
+          r.bolData.bolNumber      || null,
+          r.coaData.bales          || null,
+          r.bolData.destination    || null,
+          r.invoiceId,
+        ],
+      });
+      console.log(`  ✅ ${r.invoiceNum}: vehicle=${r.vehicle}, BOL#=${r.bolData.bolNumber}, bales=${r.coaData.bales}, dest=${r.bolData.destination}`);
+    } catch (e) {
+      console.warn(`  ⚠️  ${r.invoiceNum}: DB update failed — ${e.message}`);
     }
-  }
 
-  // Group consecutive pages of same type
-  const groups = [];
-  let current = { type: pageTypes[0], pages: [0] };
-  for (let i = 1; i < totalPages; i++) {
-    if (pageTypes[i] === current.type) {
-      current.pages.push(i);
-    } else {
-      groups.push(current);
-      current = { type: pageTypes[i], pages: [i] };
-    }
-  }
-  groups.push(current);
-
-  console.log(`\n✂️  Splitting into ${groups.length} document(s):\n`);
-
-  // Look up invoice in Turso to get numeric ID
-  let invoiceId = null;
-  try {
-    const client = createClient({
-      url: process.env.TURSO_DATABASE_URL || "file:sqlite.db",
-      authToken: process.env.TURSO_AUTH_TOKEN,
-    });
-    const result = await client.execute({
-      sql: "SELECT id FROM invoices WHERE invoice_number = ?",
-      args: [invoiceNumber],
-    });
-    if (result.rows.length > 0) {
-      invoiceId = Number(result.rows[0].id);
-      console.log(`🔍 Found invoice ID: ${invoiceId} for ${invoiceNumber}\n`);
-    } else {
-      console.warn(`⚠️  Invoice "${invoiceNumber}" not found in database — files will be saved locally only.\n`);
-    }
-    client.close();
-  } catch (e) {
-    console.warn(`⚠️  Could not connect to database: ${e.message}\n`);
-  }
-
-  const savedFiles = [];
-
-  for (const group of groups) {
-    const label = typeLabel(group.type);
-    const fileName = `${label} ${invoiceNumber}.pdf`;
-    const outputDir = FOLDERS[group.type] || FOLDERS.other;
-    const outputPath = path.join(outputDir, fileName);
-
-    // Extract pages for this group
-    const newDoc = await PDFDocument.create();
-    const copiedPages = await newDoc.copyPages(pdfDoc, group.pages);
-    copiedPages.forEach(p => newDoc.addPage(p));
-    const outBytes = await newDoc.save();
-
-    fs.writeFileSync(outputPath, outBytes);
-    console.log(`  ✅ ${fileName} (${group.pages.length} page${group.pages.length > 1 ? "s" : ""}) → ${outputPath}`);
-
-    savedFiles.push({ type: group.type, label, fileName, outputPath, bytes: outBytes });
-  }
-
-  // Upload to TMS
-  if (invoiceId) {
-    console.log(`\n⬆️  Uploading to TMS (invoice ID ${invoiceId})...\n`);
-    for (const { type, label, fileName, bytes } of savedFiles) {
-      if (type === "coa") {
-        console.log(`  ⏭  Skipping ${fileName} (COA not stored in TMS)`);
-        continue;
-      }
+    // Upload BOL to TMS
+    if (r.bolFile) {
       try {
-        const blob = new Blob([bytes], { type: "application/pdf" });
-        const fd = new FormData();
-        fd.append("invoiceId", String(invoiceId));
-        fd.append("type", type);
-        fd.append("file", blob, fileName);
-
+        const blob = new Blob([r.bolFile.bytes], { type: "application/pdf" });
+        const fd   = new FormData();
+        fd.append("invoiceId", String(r.invoiceId));
+        fd.append("type", "bl");
+        fd.append("file", blob, r.bolFile.fileName);
         const res = await fetch(`${TMS_URL}/api/documents`, { method: "POST", body: fd });
-        if (res.ok) {
-          console.log(`  ✅ ${fileName} uploaded to TMS`);
-        } else {
-          const err = await res.json().catch(() => ({}));
-          console.warn(`  ⚠️  ${fileName} upload failed: ${err.error || res.status}`);
-        }
+        if (res.ok) console.log(`  ✅ ${r.bolFile.fileName} → TMS`);
+        else        console.warn(`  ⚠️  BOL upload failed: ${res.status}`);
       } catch (e) {
-        console.warn(`  ⚠️  Could not reach TMS at ${TMS_URL}: ${e.message}`);
+        console.warn(`  ⚠️  Could not reach TMS: ${e.message}`);
+      }
+    }
+
+    // Upload PL to TMS
+    if (r.plFile) {
+      try {
+        const blob = new Blob([r.plFile.bytes], { type: "application/pdf" });
+        const fd   = new FormData();
+        fd.append("invoiceId", String(r.invoiceId));
+        fd.append("type", "pl");
+        fd.append("file", blob, r.plFile.fileName);
+        const res = await fetch(`${TMS_URL}/api/documents`, { method: "POST", body: fd });
+        if (res.ok) console.log(`  ✅ ${r.plFile.fileName} → TMS`);
+        else        console.warn(`  ⚠️  PL upload failed: ${res.status}`);
+      } catch (e) {
+        console.warn(`  ⚠️  Could not reach TMS: ${e.message}`);
       }
     }
   }
 
-  console.log(`\n🎉 Done!\n`);
-  console.log(`📁 Files saved to:`);
-  savedFiles.forEach(({ outputPath }) => console.log(`   ${outputPath}`));
-  console.log();
+  client.close();
+
+  // ── Summary ───────────────────────────────────────────────────
+  console.log("\n🎉 Done!\n");
+  console.log("📋 Summary:");
+  for (const r of results) {
+    const status = r.invoiceId ? `→ ${r.invoiceNum}` : "⚠️  no match";
+    console.log(`   ${r.label.padEnd(12)} ${status}  vehicle=${r.vehicle || "?"}  BOL#=${r.bolData.bolNumber || "?"}  dest=${r.bolData.destination || "?"}`);
+  }
+  console.log(`\n📁 Files saved to: ${SAVE_DIR}\n`);
 }
 
 main().catch(e => { console.error(e); process.exit(1); });
