@@ -28,6 +28,7 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   { type: "function", function: { name: "generate_report", description: "Generate a PDF or Excel report for a client. Returns a download link. Use when user asks for a report, export, or document.", parameters: { type: "object", properties: { clientName: { type: "string", description: "Client name (fuzzy match)" }, format: { type: "string", enum: ["pdf", "excel"], description: "Report format" }, filter: { type: "string", enum: ["active", "all"], description: "active = only active shipments, all = include delivered" }, columns: { type: "string", description: "Comma-separated column keys. Options: currentLocation,poNumber,invoiceNumber,vehicleId,blNumber,quantityTons,sellPrice,shipmentStatus,shipmentDate,item,terms,transportType,customerPaymentStatus,estimatedArrival,salesDocument,billingDocument,clientPoNumber. Leave empty for defaults." } }, required: ["clientName", "format"] } } },
   { type: "function", function: { name: "schedule_report", description: "Save a future reminder in the database. Does NOT send any email, does NOT contact anyone. Use ONLY when user says 'schedule for [date]' or 'remind on [date]'. Never use this to send a report now.", parameters: { type: "object", properties: { clientName: { type: "string" }, templateName: { type: "string" }, sendDate: { type: "string" }, notes: { type: "string" } }, required: ["clientName", "sendDate"] } } },
   { type: "function", function: { name: "run_calculation", description: "Run a SQL query on the database for exact calculations. Use this for any math: sums, totals, averages, counts, filtering. Tables: invoices (invoice_number, purchase_order_id, quantity_tons, sell_price_override, buy_price_override, shipment_date, due_date, customer_payment_status, supplier_payment_status, shipment_status, item, vehicle_id, current_location), purchase_orders (po_number, po_date, client_id, supplier_id, sell_price, buy_price, product, terms, transport_type, status), clients (id, name), suppliers (id, name), supplier_payments (supplier_id, purchase_order_id, amount_usd, payment_date, estimated_tons, notes), market_prices (source, grade, region, month, price, price_type, change_value, unit). Revenue = quantity_tons * COALESCE(sell_price_override, sell_price). Cost = quantity_tons * COALESCE(buy_price_override, buy_price).", parameters: { type: "object", properties: { sql_query: { type: "string", description: "SELECT SQL query to run. Only SELECT allowed, no INSERT/UPDATE/DELETE." } }, required: ["sql_query"] } } },
+  { type: "function", function: { name: "process_shipment_documents", description: "Process a Cascade Pacific Pulp combined shipment PDF (BOL + Packing List + COA per car). Splits into individual BOL and PL files per car, saves to iCloud BOLS CASCADE folder, extracts vehicle#, BOL#, bales, units, destination from each car and updates TMS invoice fields automatically, then uploads BOL and PL files to each invoice. Call this after the user confirms they want to process the uploaded shipment document.", parameters: { type: "object", properties: { tempFilePath: { type: "string", description: "The temp file path of the uploaded PDF (from the UPLOADED PDF TEMP PATHS in context, starts with /tmp/)" } }, required: ["tempFilePath"] } } },
 ];
 
 // Alias map for fuzzy client/supplier matching
@@ -533,6 +534,36 @@ async function exec(name: string, args: Record<string, unknown>): Promise<string
       }
     }
 
+    if (name === "process_shipment_documents") {
+      const tempFilePath = args.tempFilePath as string;
+
+      // Validate
+      const { existsSync } = await import("fs");
+      if (!existsSync(tempFilePath)) {
+        return `File not found at ${tempFilePath}. The uploaded PDF temp file may have expired. Please upload the PDF again.`;
+      }
+
+      const { execFile } = await import("child_process");
+      const { promisify } = await import("util");
+      const { join } = await import("path");
+      const execFileAsync = promisify(execFile);
+
+      const nodePath = process.execPath;
+      const scriptPath = join(process.cwd(), "scripts", "process-docs.mjs");
+
+      try {
+        const { stdout, stderr } = await execFileAsync(nodePath, [scriptPath, tempFilePath], {
+          timeout: 120000,
+          env: { ...process.env },
+        });
+        const warnings = stderr ? `\n\nWarnings:\n${stderr}` : "";
+        return stdout.trim() + warnings;
+      } catch (e: unknown) {
+        const err = e as { stdout?: string; stderr?: string; message?: string };
+        return `Processing failed: ${err.message || "unknown error"}\n${err.stdout || ""}\n${err.stderr || ""}`;
+      }
+    }
+
     return "Unknown tool";
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -546,7 +577,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "OpenAI API key not configured.\n\n1. Go to https://platform.openai.com/api-keys\n2. Add $5 credit\n3. In .env.local add: OPENAI_API_KEY=sk-your-key" }, { status: 400 });
   }
 
-  const { messages: rawMessages } = await req.json();
+  const { messages: rawMessages, tempPaths } = await req.json();
 
   // Hard intercept: if user wants to send/email a report but hasn't provided an email address,
   // return directly WITHOUT calling GPT — this is the only reliable way to enforce the rule.
@@ -583,6 +614,10 @@ export async function POST(req: NextRequest) {
         if (result.rows.length > 0) preContext += `\n\n[AUTO-FETCHED INVOICE DATA — use this directly]:\n${JSON.stringify(result.rows, null, 2)}`;
       } catch { /* ignore */ }
     }
+  }
+
+  if (tempPaths?.length > 0) {
+    preContext += `\n\n[UPLOADED PDF TEMP PATHS — pass to process_shipment_documents tool]: ${tempPaths.join(", ")}`;
   }
 
   // Convert messages with imageUrl/imageUrls to OpenAI vision format
@@ -636,6 +671,14 @@ MANDATORY: For ANY question or task involving BZA data, call a tool FIRST. No ex
 - User asks to copy/duplicate a record → look it up FIRST, then create
 - NEVER say "not found", "I don't have information", or "could you provide details" for something that may exist in the DB — query first, then respond based on what the tool returns
 - Only after a tool returns empty results (rows = []) may you say it doesn't exist
+
+## SHIPMENT DOCUMENT PROCESSING (CASCADE PACIFIC PULP)
+When the user uploads a combined shipment PDF from Cascade Pacific Pulp (it will contain "Certificate of Analysis", "STRAIGHT BILL OF LADING", and "TALLY SHEET" sections):
+1. Read the parsed text to understand what's in the document — PO number, car numbers, tons, destination
+2. Show the user a summary table: # of cars, PO, vehicle IDs, BOL numbers, MT, destination
+3. Ask: "Should I process this? I'll split the files, save BOL and PL to iCloud, and update the TMS invoices."
+4. When confirmed, call process_shipment_documents with the tempFilePath from [UPLOADED PDF TEMP PATHS] in the system context
+5. Present the results clearly
 
 ## FILE PROCESSING — INVOICE & BILLING DOCUMENTS
 

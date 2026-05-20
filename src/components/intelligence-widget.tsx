@@ -285,6 +285,7 @@ export function IntelligenceWidget() {
     try {
       const allFileData: string[] = [];
       const allImageUrls: string[] = [];
+      const allTempPaths: string[] = [];
 
       for (const file of filesToProcess) {
         const formData = new FormData();
@@ -293,6 +294,7 @@ export function IntelligenceWidget() {
         const uploadData = await uploadRes.json();
         if (uploadData.type === "image" && uploadData.imageUrl) allImageUrls.push(uploadData.imageUrl);
         if (uploadData.parsedContent) allFileData.push(`[${file.name}]:\n${uploadData.parsedContent}`);
+        if (uploadData.tempPath) allTempPaths.push(uploadData.tempPath);
       }
 
       if (allImageUrls.length > 0) newMessages[newMessages.length - 1].imageUrls = allImageUrls;
@@ -304,7 +306,7 @@ export function IntelligenceWidget() {
       );
       if (allFileData.length > 0) aiMessages[aiMessages.length - 1].content += `\n\n[FILE CONTENTS]:\n${allFileData.join("\n\n---\n\n")}`;
 
-      const res = await fetch("/api/ai", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages: aiMessages }) });
+      const res = await fetch("/api/ai", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages: aiMessages, tempPaths: allTempPaths }) });
       const data = await res.json();
       setMessages([...newMessages, { role: "assistant", content: data.message || "No response." }]);
     } catch {

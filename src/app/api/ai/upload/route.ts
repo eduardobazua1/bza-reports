@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as XLSX from "xlsx";
+import { writeFileSync } from "fs";
+import { join } from "path";
+import { tmpdir } from "os";
+import { randomUUID } from "crypto";
 
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
@@ -44,6 +48,10 @@ export async function POST(req: NextRequest) {
 
     // PDF files — extract text
     if (fileName.endsWith(".pdf")) {
+      // Save raw PDF to temp file for processing tools
+      const tempPath = join(tmpdir(), `bza-${randomUUID()}.pdf`);
+      writeFileSync(tempPath, buffer);
+
       try {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         const pdfParse = require("pdf-parse");
@@ -57,6 +65,7 @@ export async function POST(req: NextRequest) {
             parsedContent: `PDF file: ${file.name} (${numPages} pages). No text found — may be a scanned image. Try uploading as image (PNG/JPG) instead.`,
             fileName: file.name,
             fileSize: file.size,
+            tempPath,
           });
         }
 
@@ -66,6 +75,7 @@ export async function POST(req: NextRequest) {
           parsedContent: `PDF: ${file.name} (${numPages} pages)\n\n${truncated}`,
           fileName: file.name,
           fileSize: file.size,
+          tempPath,
         });
       } catch (pdfErr) {
         return NextResponse.json({
@@ -73,6 +83,7 @@ export async function POST(req: NextRequest) {
           parsedContent: `PDF: ${file.name} — could not parse: ${pdfErr instanceof Error ? pdfErr.message : "unknown error"}. Try converting to image.`,
           fileName: file.name,
           fileSize: file.size,
+          tempPath,
         });
       }
     }
