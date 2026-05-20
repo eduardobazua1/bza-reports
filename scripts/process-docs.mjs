@@ -309,12 +309,12 @@ async function main() {
           r.vehicle                  || null,
           r.bolData.bolNumber        || null,
           r.plData.totalBales        || null,
-          r.plData.balesPerUnit      || null,
+          r.plData.totalUnits        || null,
           r.bolData.destination      || null,
           r.invoiceId,
         ],
       });
-      console.log(`  ✅ ${r.invoiceNum}: vehicle=${r.vehicle}, BOL#=${r.bolData.bolNumber}, bales=${r.plData.totalBales} (${r.plData.totalUnits} units × ${r.plData.balesPerUnit}), dest=${r.bolData.destination}`);
+      console.log(`  ✅ ${r.invoiceNum}: vehicle=${r.vehicle}, BOL#=${r.bolData.bolNumber}, units=${r.plData.totalUnits}, bales=${r.plData.totalBales}, dest=${r.bolData.destination}`);
     } catch (e) {
       console.warn(`  ⚠️  ${r.invoiceNum}: DB update failed — ${e.message}`);
     }
