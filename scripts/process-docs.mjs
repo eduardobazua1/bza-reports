@@ -186,7 +186,7 @@ async function main() {
   }
   if (current) cars.push(current);
 
-  console.log(`\n✂️  Found ${cars.length} car(s) in this document\n`);
+  console.log(`\n✂️  Found ${cars.length} car(s) — saving BOL + PL only (COA skipped)\n`);
 
   // ── Step 3: connect to DB ─────────────────────────────────────
   const client = createClient({
@@ -258,7 +258,6 @@ async function main() {
 
     const bolFile = car.bol.length > 0 ? await savePdf(car.bol, "BOL") : null;
     const plFile  = car.pl.length  > 0 ? await savePdf(car.pl,  "PL")  : null;
-    if (car.coa.length > 0)               await savePdf(car.coa, "COA");
 
     results.push({ label, invoiceId, invoiceNum, vehicle, bolData, coaData, bolFile, plFile });
   }
