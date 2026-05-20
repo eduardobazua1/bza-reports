@@ -319,6 +319,8 @@ async function main() {
       console.warn(`  ⚠️  ${r.invoiceNum}: DB update failed — ${e.message}`);
     }
 
+    const authHeaders = { "x-internal-key": process.env.INTERNAL_API_KEY || "" };
+
     // Upload BOL to TMS
     if (r.bolFile) {
       try {
@@ -327,9 +329,9 @@ async function main() {
         fd.append("invoiceId", String(r.invoiceId));
         fd.append("type", "bl");
         fd.append("file", blob, r.bolFile.fileName);
-        const res = await fetch(`${TMS_URL}/api/documents`, { method: "POST", body: fd });
+        const res = await fetch(`${TMS_URL}/api/documents`, { method: "POST", headers: authHeaders, body: fd });
         if (res.ok) console.log(`  ✅ ${r.bolFile.fileName} → TMS`);
-        else        console.warn(`  ⚠️  BOL upload failed: ${res.status}`);
+        else        console.warn(`  ⚠️  BOL upload failed: ${res.status} ${await res.text()}`);
       } catch (e) {
         console.warn(`  ⚠️  Could not reach TMS: ${e.message}`);
       }
@@ -343,9 +345,9 @@ async function main() {
         fd.append("invoiceId", String(r.invoiceId));
         fd.append("type", "pl");
         fd.append("file", blob, r.plFile.fileName);
-        const res = await fetch(`${TMS_URL}/api/documents`, { method: "POST", body: fd });
+        const res = await fetch(`${TMS_URL}/api/documents`, { method: "POST", headers: authHeaders, body: fd });
         if (res.ok) console.log(`  ✅ ${r.plFile.fileName} → TMS`);
-        else        console.warn(`  ⚠️  PL upload failed: ${res.status}`);
+        else        console.warn(`  ⚠️  PL upload failed: ${res.status} ${await res.text()}`);
       } catch (e) {
         console.warn(`  ⚠️  Could not reach TMS: ${e.message}`);
       }

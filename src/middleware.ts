@@ -19,6 +19,12 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
+  // Allow internal CLI requests with the secret API key
+  const internalKey = req.headers.get("x-internal-key");
+  if (internalKey && internalKey === process.env.INTERNAL_API_KEY) {
+    return NextResponse.next();
+  }
+
   // Check for auth session cookie
   const sessionToken =
     req.cookies.get("authjs.session-token")?.value ||
