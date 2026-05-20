@@ -30,7 +30,7 @@ import { readFileSync } from "fs";
 // ─── Config ──────────────────────────────────────────────────────────────────
 const ICLOUD   = path.join(os.homedir(), "Library", "Mobile Documents", "com~apple~CloudDocs");
 const SAVE_DIR = path.join(ICLOUD, "BOLS CASCADE");
-const TMS_URL  = "http://localhost:3000";
+const TMS_URL  = process.env.TMS_URL || "http://localhost:3000";
 
 // Ship To city keywords → TMS destination label
 // Add more entries here as new destinations come up
@@ -321,9 +321,13 @@ async function main() {
 
     const authHeaders = { "x-internal-key": process.env.INTERNAL_API_KEY || "" };
 
-    // Upload BOL to TMS
+    // Upload BOL to TMS (delete existing first to avoid duplicates)
     if (r.bolFile) {
       try {
+        await client.execute({
+          sql: `DELETE FROM documents WHERE invoice_id = ? AND type = 'bl'`,
+          args: [r.invoiceId],
+        });
         const blob = new Blob([r.bolFile.bytes], { type: "application/pdf" });
         const fd   = new FormData();
         fd.append("invoiceId", String(r.invoiceId));
@@ -337,9 +341,13 @@ async function main() {
       }
     }
 
-    // Upload PL to TMS
+    // Upload PL to TMS (delete existing first to avoid duplicates)
     if (r.plFile) {
       try {
+        await client.execute({
+          sql: `DELETE FROM documents WHERE invoice_id = ? AND type = 'pl'`,
+          args: [r.invoiceId],
+        });
         const blob = new Blob([r.plFile.bytes], { type: "application/pdf" });
         const fd   = new FormData();
         fd.append("invoiceId", String(r.invoiceId));

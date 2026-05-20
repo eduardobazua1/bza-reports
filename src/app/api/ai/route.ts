@@ -553,9 +553,10 @@ async function exec(name: string, args: Record<string, unknown>): Promise<string
       const scriptPath = join(process.cwd(), "scripts", "process-docs.mjs");
 
       try {
+        const tmsPort = process.env.PORT || "3000";
         const { stdout, stderr } = await execFileAsync(nodePath, [scriptPath, tempFilePath], {
           timeout: 120000,
-          env: { ...process.env },
+          env: { ...process.env, TMS_URL: `http://localhost:${tmsPort}` },
         });
         const warnings = stderr ? `\n\nWarnings:\n${stderr}` : "";
         return stdout.trim() + warnings;
