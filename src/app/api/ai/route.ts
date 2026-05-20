@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 import { db } from "@/db";
 import { createClient } from "@libsql/client";
 import { invoices, purchaseOrders, clients, suppliers, supplierPayments, scheduledReports, reportTemplates, shipmentUpdates, marketPrices, customerPayments, proposals, proposalItems, creditMemos, products } from "@/db/schema";
@@ -8,27 +8,28 @@ import * as XLSX from "xlsx";
 import { eq, sql, count, like, desc, and } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY || "" });
 
-const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
-  { type: "function", function: { name: "query_data", description: "Query business data: summary, clients, suppliers, POs, invoices, payments, shipments, proposals, credit memos, products", parameters: { type: "object", properties: { query_type: { type: "string", enum: ["summary", "unpaid_invoices", "active_pos", "all_pos", "client_list", "supplier_list", "supplier_payments", "active_shipments", "templates", "scheduled_reports", "customer_payments", "ar_aging", "proposals", "credit_memos", "products"] }, filter_name: { type: "string", description: "Optional: filter by client/supplier name" } }, required: ["query_type"] } } },
-  { type: "function", function: { name: "create_po", description: "Create purchase order", parameters: { type: "object", properties: { poNumber: { type: "string" }, clientName: { type: "string" }, supplierName: { type: "string" }, sellPrice: { type: "number" }, buyPrice: { type: "number" }, product: { type: "string" }, poDate: { type: "string" }, terms: { type: "string" }, transportType: { type: "string", enum: ["ffcc", "ship", "truck"] }, licenseFsc: { type: "string" }, chainOfCustody: { type: "string" }, inputClaim: { type: "string" }, outputClaim: { type: "string" } }, required: ["poNumber", "clientName", "supplierName", "sellPrice", "buyPrice", "product"] } } },
-  { type: "function", function: { name: "create_invoice", description: "Create invoice/shipment on a PO", parameters: { type: "object", properties: { invoiceNumber: { type: "string" }, poNumber: { type: "string" }, quantityTons: { type: "number" }, item: { type: "string" }, shipmentDate: { type: "string" }, vehicleId: { type: "string", description: "Tracking/railcar number e.g. TBOX640169" }, blNumber: { type: "string" }, currentLocation: { type: "string", description: "Current location for tracking" }, destination: { type: "string", description: "Final destination e.g. Ecatepec, Morelia, Bajio" }, balesCount: { type: "number", description: "Number of bales (from BOL)" }, unitsPerBale: { type: "number", description: "Units per bale (from BOL)" }, invoiceDate: { type: "string" }, salesDocument: { type: "string" }, billingDocument: { type: "string" } }, required: ["invoiceNumber", "poNumber", "quantityTons"] } } },
-  { type: "function", function: { name: "update_invoice", description: "Update invoice fields. Can find the invoice by ANY of: invoiceNumber, vehicleIdLookup (railcar/container), blNumberLookup (BL number), or salesDocumentLookup (client PO). When processing shipment status updates from documents, always use vehicleIdLookup with the railcar number.", parameters: { type: "object", properties: { invoiceNumber: { type: "string", description: "Invoice # (e.g. IX0043-1)" }, vehicleIdLookup: { type: "string", description: "Railcar or container # to look up the invoice (e.g. TBOX640169, RAIL123456)" }, blNumberLookup: { type: "string", description: "BL (Bill of Lading) number to look up the invoice" }, salesDocumentLookup: { type: "string", description: "Client PO / sales document number to look up the invoice" }, quantityTons: { type: "number" }, customerPaymentStatus: { type: "string", enum: ["paid", "unpaid"] }, supplierPaymentStatus: { type: "string", enum: ["paid", "unpaid"] }, shipmentStatus: { type: "string", enum: ["programado", "en_transito", "en_aduana", "entregado"] }, shipmentDate: { type: "string" }, currentLocation: { type: "string" }, destination: { type: "string" }, vehicleId: { type: "string" }, blNumber: { type: "string" }, estimatedArrival: { type: "string" }, customerPaidDate: { type: "string" }, invoiceDate: { type: "string" }, paymentTermsDays: { type: "number" }, salesDocument: { type: "string" }, billingDocument: { type: "string" }, balesCount: { type: "number" }, unitsPerBale: { type: "number" } }, required: [] } } },
-  { type: "function", function: { name: "update_po", description: "Update PO: status, prices, dates, product, certification", parameters: { type: "object", properties: { poNumber: { type: "string" }, status: { type: "string", enum: ["active", "completed", "cancelled"] }, product: { type: "string" }, sellPrice: { type: "number" }, buyPrice: { type: "number" }, poDate: { type: "string" }, terms: { type: "string" }, transportType: { type: "string", enum: ["ffcc", "ship", "truck"] }, licenseFsc: { type: "string" }, chainOfCustody: { type: "string" }, inputClaim: { type: "string" }, outputClaim: { type: "string" }, notes: { type: "string" } }, required: ["poNumber"] } } },
-  { type: "function", function: { name: "create_supplier_payment", description: "Record a payment to a supplier (advance, wire, deposit)", parameters: { type: "object", properties: { supplierName: { type: "string" }, amountUsd: { type: "number" }, paymentDate: { type: "string" }, estimatedTons: { type: "number" }, pricePerTon: { type: "number" }, poNumber: { type: "string" }, reference: { type: "string" }, notes: { type: "string" } }, required: ["supplierName", "amountUsd", "paymentDate"] } } },
-  { type: "function", function: { name: "create_client", description: "Create a new client", parameters: { type: "object", properties: { name: { type: "string" }, contactName: { type: "string" }, contactEmail: { type: "string" }, phone: { type: "string" } }, required: ["name"] } } },
-  { type: "function", function: { name: "update_client", description: "Update client info including FSC/PEFC certification fields", parameters: { type: "object", properties: { clientName: { type: "string" }, fscLicense: { type: "string" }, fscChainOfCustody: { type: "string" }, fscInputClaim: { type: "string" }, fscOutputClaim: { type: "string" }, contactName: { type: "string" }, contactEmail: { type: "string" }, phone: { type: "string" }, paymentTermsDays: { type: "number" } }, required: ["clientName"] } } },
-  { type: "function", function: { name: "create_supplier", description: "Create a new supplier", parameters: { type: "object", properties: { name: { type: "string" }, contactName: { type: "string" }, contactEmail: { type: "string" }, phone: { type: "string" } }, required: ["name"] } } },
-  { type: "function", function: { name: "update_supplier", description: "Update supplier info including FSC/PEFC certification fields", parameters: { type: "object", properties: { supplierName: { type: "string" }, fscLicense: { type: "string" }, fscChainOfCustody: { type: "string" }, fscInputClaim: { type: "string" }, fscOutputClaim: { type: "string" }, contactName: { type: "string" }, contactEmail: { type: "string" }, phone: { type: "string" } }, required: ["supplierName"] } } },
-  { type: "function", function: { name: "delete_record", description: "Delete a PO, invoice, client, supplier, or payment", parameters: { type: "object", properties: { type: { type: "string", enum: ["po", "invoice", "client", "supplier", "payment"] }, identifier: { type: "string", description: "PO number, invoice number, client name, supplier name, or payment ID" } }, required: ["type", "identifier"] } } },
-  { type: "function", function: { name: "update_shipment_tracking", description: "Update location, ETA, and status for one or more railcars/containers using their vehicle IDs. Use this ALWAYS when processing tracking screenshots, emails, or reports. Pass all vehicles at once in the updates array.", parameters: { type: "object", properties: { updates: { type: "array", description: "List of railcar updates extracted from the document", items: { type: "object", properties: { vehicleId: { type: "string", description: "Railcar or container number exactly as shown (e.g. TBOX636255, SMW608012)" }, currentLocation: { type: "string", description: "Current location city/state as shown" }, estimatedArrival: { type: "string", description: "ETA date in YYYY-MM-DD format" }, shipmentStatus: { type: "string", enum: ["programado", "en_transito", "en_aduana", "entregado"], description: "en_transito for Train Arrived/Departed, en_aduana for customs hold, entregado for delivered" } }, required: ["vehicleId"] } } }, required: ["updates"] } } },
-  { type: "function", function: { name: "update_market_price", description: "Update or set a market reference price from TTO or RISI for a grade and region. Use current month if month not specified.", parameters: { type: "object", properties: { source: { type: "string", enum: ["TTO", "RISI"], description: "Price source" }, grade: { type: "string", description: "Pulp grade e.g. NBSK, SBSK, BHK" }, region: { type: "string", description: "Region e.g. North America, Europe, China" }, price: { type: "number", description: "Price in USD/ADMT" }, priceType: { type: "string", enum: ["list", "net", "derived"], description: "Price type, default net" }, changeValue: { type: "number", description: "Change from previous month (positive or negative)" }, month: { type: "string", description: "Month in YYYY-MM format, defaults to current month" } }, required: ["source", "grade", "region", "price"] } } },
-  { type: "function", function: { name: "send_report_email", description: "Generate a shipment report and send it immediately via email RIGHT NOW. Use this when user says 'send', 'email', 'manda', 'envía'. STOP before calling this — you MUST have an email address typed by the user in this conversation. If you do not have one, ask for it first. Never auto-fill from DB.", parameters: { type: "object", properties: { clientName: { type: "string", description: "Client name (fuzzy match)" }, toEmail: { type: "string", description: "Recipient email address. REQUIRED — must be explicitly typed by the user in this conversation." }, subject: { type: "string", description: "Email subject. Defaults to 'BZA Shipment Report — [Client]'" }, message: { type: "string", description: "Body text. Defaults to a standard message." }, format: { type: "string", enum: ["excel", "pdf", "both"], description: "Report format. Default: excel" }, filter: { type: "string", enum: ["active", "all"], description: "active = active shipments only, all = include delivered. Default: active" }, columns: { type: "string", description: "Comma-separated column keys. Leave empty for defaults." } }, required: ["clientName", "toEmail"] } } },
-  { type: "function", function: { name: "generate_report", description: "Generate a PDF or Excel report for a client. Returns a download link. Use when user asks for a report, export, or document.", parameters: { type: "object", properties: { clientName: { type: "string", description: "Client name (fuzzy match)" }, format: { type: "string", enum: ["pdf", "excel"], description: "Report format" }, filter: { type: "string", enum: ["active", "all"], description: "active = only active shipments, all = include delivered" }, columns: { type: "string", description: "Comma-separated column keys. Options: currentLocation,poNumber,invoiceNumber,vehicleId,blNumber,quantityTons,sellPrice,shipmentStatus,shipmentDate,item,terms,transportType,customerPaymentStatus,estimatedArrival,salesDocument,billingDocument,clientPoNumber. Leave empty for defaults." } }, required: ["clientName", "format"] } } },
-  { type: "function", function: { name: "schedule_report", description: "Save a future reminder in the database. Does NOT send any email, does NOT contact anyone. Use ONLY when user says 'schedule for [date]' or 'remind on [date]'. Never use this to send a report now.", parameters: { type: "object", properties: { clientName: { type: "string" }, templateName: { type: "string" }, sendDate: { type: "string" }, notes: { type: "string" } }, required: ["clientName", "sendDate"] } } },
-  { type: "function", function: { name: "run_calculation", description: "Run a SQL query on the database for exact calculations. Use this for any math: sums, totals, averages, counts, filtering. Tables: invoices (invoice_number, purchase_order_id, quantity_tons, sell_price_override, buy_price_override, shipment_date, due_date, customer_payment_status, supplier_payment_status, shipment_status, item, vehicle_id, current_location), purchase_orders (po_number, po_date, client_id, supplier_id, sell_price, buy_price, product, terms, transport_type, status), clients (id, name), suppliers (id, name), supplier_payments (supplier_id, purchase_order_id, amount_usd, payment_date, estimated_tons, notes), market_prices (source, grade, region, month, price, price_type, change_value, unit). Revenue = quantity_tons * COALESCE(sell_price_override, sell_price). Cost = quantity_tons * COALESCE(buy_price_override, buy_price).", parameters: { type: "object", properties: { sql_query: { type: "string", description: "SELECT SQL query to run. Only SELECT allowed, no INSERT/UPDATE/DELETE." } }, required: ["sql_query"] } } },
-  { type: "function", function: { name: "process_shipment_documents", description: "Process a Cascade Pacific Pulp combined shipment PDF (BOL + Packing List + COA per car). Splits into individual BOL and PL files per car, saves to iCloud BOLS CASCADE folder, extracts vehicle#, BOL#, bales, units, destination from each car and updates TMS invoice fields automatically, then uploads BOL and PL files to each invoice. Call this after the user confirms they want to process the uploaded shipment document.", parameters: { type: "object", properties: { tempFilePath: { type: "string", description: "The temp file path of the uploaded PDF (from the UPLOADED PDF TEMP PATHS in context, starts with /tmp/)" } }, required: ["tempFilePath"] } } },
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const anthropicTools: any[] = [
+  { name: "query_data", description: "Query business data: summary, clients, suppliers, POs, invoices, payments, shipments, proposals, credit memos, products", input_schema: { type: "object", properties: { query_type: { type: "string", enum: ["summary", "unpaid_invoices", "active_pos", "all_pos", "client_list", "supplier_list", "supplier_payments", "active_shipments", "templates", "scheduled_reports", "customer_payments", "ar_aging", "proposals", "credit_memos", "products"] }, filter_name: { type: "string", description: "Optional: filter by client/supplier name" } }, required: ["query_type"] } },
+  { name: "create_po", description: "Create purchase order", input_schema: { type: "object", properties: { poNumber: { type: "string" }, clientName: { type: "string" }, supplierName: { type: "string" }, sellPrice: { type: "number" }, buyPrice: { type: "number" }, product: { type: "string" }, poDate: { type: "string" }, terms: { type: "string" }, transportType: { type: "string", enum: ["ffcc", "ship", "truck"] }, licenseFsc: { type: "string" }, chainOfCustody: { type: "string" }, inputClaim: { type: "string" }, outputClaim: { type: "string" } }, required: ["poNumber", "clientName", "supplierName", "sellPrice", "buyPrice", "product"] } },
+  { name: "create_invoice", description: "Create invoice/shipment on a PO", input_schema: { type: "object", properties: { invoiceNumber: { type: "string" }, poNumber: { type: "string" }, quantityTons: { type: "number" }, item: { type: "string" }, shipmentDate: { type: "string" }, vehicleId: { type: "string", description: "Tracking/railcar number e.g. TBOX640169" }, blNumber: { type: "string" }, currentLocation: { type: "string", description: "Current location for tracking" }, destination: { type: "string", description: "Final destination e.g. Ecatepec, Morelia, Bajio" }, balesCount: { type: "number", description: "Number of bales (from BOL)" }, unitsPerBale: { type: "number", description: "Units per bale (from BOL)" }, invoiceDate: { type: "string" }, salesDocument: { type: "string" }, billingDocument: { type: "string" } }, required: ["invoiceNumber", "poNumber", "quantityTons"] } },
+  { name: "update_invoice", description: "Update invoice fields. Can find the invoice by ANY of: invoiceNumber, vehicleIdLookup (railcar/container), blNumberLookup (BL number), or salesDocumentLookup (client PO). When processing shipment status updates from documents, always use vehicleIdLookup with the railcar number.", input_schema: { type: "object", properties: { invoiceNumber: { type: "string", description: "Invoice # (e.g. IX0043-1)" }, vehicleIdLookup: { type: "string", description: "Railcar or container # to look up the invoice (e.g. TBOX640169, RAIL123456)" }, blNumberLookup: { type: "string", description: "BL (Bill of Lading) number to look up the invoice" }, salesDocumentLookup: { type: "string", description: "Client PO / sales document number to look up the invoice" }, quantityTons: { type: "number" }, customerPaymentStatus: { type: "string", enum: ["paid", "unpaid"] }, supplierPaymentStatus: { type: "string", enum: ["paid", "unpaid"] }, shipmentStatus: { type: "string", enum: ["programado", "en_transito", "en_aduana", "entregado"] }, shipmentDate: { type: "string" }, currentLocation: { type: "string" }, destination: { type: "string" }, vehicleId: { type: "string" }, blNumber: { type: "string" }, estimatedArrival: { type: "string" }, customerPaidDate: { type: "string" }, invoiceDate: { type: "string" }, paymentTermsDays: { type: "number" }, salesDocument: { type: "string" }, billingDocument: { type: "string" }, balesCount: { type: "number" }, unitsPerBale: { type: "number" } }, required: [] } },
+  { name: "update_po", description: "Update PO: status, prices, dates, product, certification", input_schema: { type: "object", properties: { poNumber: { type: "string" }, status: { type: "string", enum: ["active", "completed", "cancelled"] }, product: { type: "string" }, sellPrice: { type: "number" }, buyPrice: { type: "number" }, poDate: { type: "string" }, terms: { type: "string" }, transportType: { type: "string", enum: ["ffcc", "ship", "truck"] }, licenseFsc: { type: "string" }, chainOfCustody: { type: "string" }, inputClaim: { type: "string" }, outputClaim: { type: "string" }, notes: { type: "string" } }, required: ["poNumber"] } },
+  { name: "create_supplier_payment", description: "Record a payment to a supplier (advance, wire, deposit)", input_schema: { type: "object", properties: { supplierName: { type: "string" }, amountUsd: { type: "number" }, paymentDate: { type: "string" }, estimatedTons: { type: "number" }, pricePerTon: { type: "number" }, poNumber: { type: "string" }, reference: { type: "string" }, notes: { type: "string" } }, required: ["supplierName", "amountUsd", "paymentDate"] } },
+  { name: "create_client", description: "Create a new client", input_schema: { type: "object", properties: { name: { type: "string" }, contactName: { type: "string" }, contactEmail: { type: "string" }, phone: { type: "string" } }, required: ["name"] } },
+  { name: "update_client", description: "Update client info including FSC/PEFC certification fields", input_schema: { type: "object", properties: { clientName: { type: "string" }, fscLicense: { type: "string" }, fscChainOfCustody: { type: "string" }, fscInputClaim: { type: "string" }, fscOutputClaim: { type: "string" }, contactName: { type: "string" }, contactEmail: { type: "string" }, phone: { type: "string" }, paymentTermsDays: { type: "number" } }, required: ["clientName"] } },
+  { name: "create_supplier", description: "Create a new supplier", input_schema: { type: "object", properties: { name: { type: "string" }, contactName: { type: "string" }, contactEmail: { type: "string" }, phone: { type: "string" } }, required: ["name"] } },
+  { name: "update_supplier", description: "Update supplier info including FSC/PEFC certification fields", input_schema: { type: "object", properties: { supplierName: { type: "string" }, fscLicense: { type: "string" }, fscChainOfCustody: { type: "string" }, fscInputClaim: { type: "string" }, fscOutputClaim: { type: "string" }, contactName: { type: "string" }, contactEmail: { type: "string" }, phone: { type: "string" } }, required: ["supplierName"] } },
+  { name: "delete_record", description: "Delete a PO, invoice, client, supplier, or payment", input_schema: { type: "object", properties: { type: { type: "string", enum: ["po", "invoice", "client", "supplier", "payment"] }, identifier: { type: "string", description: "PO number, invoice number, client name, supplier name, or payment ID" } }, required: ["type", "identifier"] } },
+  { name: "update_shipment_tracking", description: "Update location, ETA, and status for one or more railcars/containers using their vehicle IDs. Use this ALWAYS when processing tracking screenshots, emails, or reports. Pass all vehicles at once in the updates array.", input_schema: { type: "object", properties: { updates: { type: "array", description: "List of railcar updates extracted from the document", items: { type: "object", properties: { vehicleId: { type: "string", description: "Railcar or container number exactly as shown (e.g. TBOX636255, SMW608012)" }, currentLocation: { type: "string", description: "Current location city/state as shown" }, estimatedArrival: { type: "string", description: "ETA date in YYYY-MM-DD format" }, shipmentStatus: { type: "string", enum: ["programado", "en_transito", "en_aduana", "entregado"], description: "en_transito for Train Arrived/Departed, en_aduana for customs hold, entregado for delivered" } }, required: ["vehicleId"] } } }, required: ["updates"] } },
+  { name: "update_market_price", description: "Update or set a market reference price from TTO or RISI for a grade and region. Use current month if month not specified.", input_schema: { type: "object", properties: { source: { type: "string", enum: ["TTO", "RISI"], description: "Price source" }, grade: { type: "string", description: "Pulp grade e.g. NBSK, SBSK, BHK" }, region: { type: "string", description: "Region e.g. North America, Europe, China" }, price: { type: "number", description: "Price in USD/ADMT" }, priceType: { type: "string", enum: ["list", "net", "derived"], description: "Price type, default net" }, changeValue: { type: "number", description: "Change from previous month (positive or negative)" }, month: { type: "string", description: "Month in YYYY-MM format, defaults to current month" } }, required: ["source", "grade", "region", "price"] } },
+  { name: "send_report_email", description: "Generate a shipment report and send it immediately via email RIGHT NOW. Use this when user says 'send', 'email', 'manda', 'envía'. STOP before calling this — you MUST have an email address typed by the user in this conversation. If you do not have one, ask for it first. Never auto-fill from DB.", input_schema: { type: "object", properties: { clientName: { type: "string", description: "Client name (fuzzy match)" }, toEmail: { type: "string", description: "Recipient email address. REQUIRED — must be explicitly typed by the user in this conversation." }, subject: { type: "string", description: "Email subject. Defaults to 'BZA Shipment Report — [Client]'" }, message: { type: "string", description: "Body text. Defaults to a standard message." }, format: { type: "string", enum: ["excel", "pdf", "both"], description: "Report format. Default: excel" }, filter: { type: "string", enum: ["active", "all"], description: "active = active shipments only, all = include delivered. Default: active" }, columns: { type: "string", description: "Comma-separated column keys. Leave empty for defaults." } }, required: ["clientName", "toEmail"] } },
+  { name: "generate_report", description: "Generate a PDF or Excel report for a client. Returns a download link. Use when user asks for a report, export, or document.", input_schema: { type: "object", properties: { clientName: { type: "string", description: "Client name (fuzzy match)" }, format: { type: "string", enum: ["pdf", "excel"], description: "Report format" }, filter: { type: "string", enum: ["active", "all"], description: "active = only active shipments, all = include delivered" }, columns: { type: "string", description: "Comma-separated column keys. Options: currentLocation,poNumber,invoiceNumber,vehicleId,blNumber,quantityTons,sellPrice,shipmentStatus,shipmentDate,item,terms,transportType,customerPaymentStatus,estimatedArrival,salesDocument,billingDocument,clientPoNumber. Leave empty for defaults." } }, required: ["clientName", "format"] } },
+  { name: "schedule_report", description: "Save a future reminder in the database. Does NOT send any email, does NOT contact anyone. Use ONLY when user says 'schedule for [date]' or 'remind on [date]'. Never use this to send a report now.", input_schema: { type: "object", properties: { clientName: { type: "string" }, templateName: { type: "string" }, sendDate: { type: "string" }, notes: { type: "string" } }, required: ["clientName", "sendDate"] } },
+  { name: "run_calculation", description: "Run a SQL query on the database for exact calculations. Use this for any math: sums, totals, averages, counts, filtering. Tables: invoices (invoice_number, purchase_order_id, quantity_tons, sell_price_override, buy_price_override, shipment_date, due_date, customer_payment_status, supplier_payment_status, shipment_status, item, vehicle_id, current_location), purchase_orders (po_number, po_date, client_id, supplier_id, sell_price, buy_price, product, terms, transport_type, status), clients (id, name), suppliers (id, name), supplier_payments (supplier_id, purchase_order_id, amount_usd, payment_date, estimated_tons, notes), market_prices (source, grade, region, month, price, price_type, change_value, unit). Revenue = quantity_tons * COALESCE(sell_price_override, sell_price). Cost = quantity_tons * COALESCE(buy_price_override, buy_price).", input_schema: { type: "object", properties: { sql_query: { type: "string", description: "SELECT SQL query to run. Only SELECT allowed, no INSERT/UPDATE/DELETE." } }, required: ["sql_query"] } },
+  { name: "process_shipment_documents", description: "Process a Cascade Pacific Pulp combined shipment PDF (BOL + Packing List + COA per car). Splits into individual BOL and PL files per car, saves to iCloud BOLS CASCADE folder, extracts vehicle#, BOL#, bales, units, destination from each car and updates TMS invoice fields automatically, then uploads BOL and PL files to each invoice. Call this after the user confirms they want to process the uploaded shipment document.", input_schema: { type: "object", properties: { tempFilePath: { type: "string", description: "The temp file path of the uploaded PDF (from the UPLOADED PDF TEMP PATHS in context)" } }, required: ["tempFilePath"] } },
 ];
 
 // Alias map for fuzzy client/supplier matching
@@ -573,14 +574,13 @@ async function exec(name: string, args: Record<string, unknown>): Promise<string
 }
 
 export async function POST(req: NextRequest) {
-  if (!process.env.OPENAI_API_KEY) {
-    return NextResponse.json({ error: "OpenAI API key not configured.\n\n1. Go to https://platform.openai.com/api-keys\n2. Add $5 credit\n3. In .env.local add: OPENAI_API_KEY=sk-your-key" }, { status: 400 });
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return NextResponse.json({ error: "Anthropic API key not configured. Add ANTHROPIC_API_KEY=sk-ant-... to .env.local" }, { status: 400 });
   }
 
   const { messages: rawMessages, tempPaths } = await req.json();
 
-  // Hard intercept: if user wants to send/email a report but hasn't provided an email address,
-  // return directly WITHOUT calling GPT — this is the only reliable way to enforce the rule.
+  // Hard intercept: if user wants to send/email a report but hasn't provided an email address
   const lastUserMsg0 = [...rawMessages].reverse().find((m: { role: string; content: string }) => m.role === "user");
   const lastText0 = (lastUserMsg0?.content as string || "").toLowerCase();
   const wantsEmailReport = /\b(send|envía?|manda[rn]?|email)\b.{0,60}\b(report|reporte)\b|\b(report|reporte)\b.{0,60}\b(send|envía?|manda[rn]?|email)\b/i.test(lastText0);
@@ -588,10 +588,8 @@ export async function POST(req: NextRequest) {
   if (wantsEmailReport && !hasEmail) {
     return NextResponse.json({ message: "Sure! What email address should I send the report to?" });
   }
-  const emailReminderInjection = "";
 
   // Pre-fetch any PO/invoice numbers mentioned in the last user message
-  // This guarantees the AI always has the data — no need to rely on GPT calling the right tool
   let preContext = "";
   const lastUserMsg = [...rawMessages].reverse().find((m: { role: string; content: string }) => m.role === "user");
   if (lastUserMsg?.content) {
@@ -620,26 +618,29 @@ export async function POST(req: NextRequest) {
     preContext += `\n\n[UPLOADED PDF TEMP PATHS — pass to process_shipment_documents tool]: ${tempPaths.join(", ")}`;
   }
 
-  // Convert messages with imageUrl/imageUrls to OpenAI vision format
-  const messages = rawMessages.map((m: { role: string; content: string; imageUrl?: string; imageUrls?: string[] }) => {
+  // Convert messages to Anthropic format (images use base64 source blocks instead of image_url)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const messages: any[] = rawMessages.map((m: { role: string; content: string; imageUrl?: string; imageUrls?: string[] }) => {
     const imgUrls: string[] = m.imageUrls?.length ? m.imageUrls : m.imageUrl ? [m.imageUrl] : [];
     if (imgUrls.length > 0 && m.role === "user") {
       return {
         role: m.role,
         content: [
           { type: "text", text: m.content },
-          ...imgUrls.map(url => ({ type: "image_url", image_url: { url, detail: "high" } })),
+          ...imgUrls.map(url => {
+            const match = url.match(/^data:([^;]+);base64,(.+)$/);
+            if (match) {
+              return { type: "image", source: { type: "base64", media_type: match[1], data: match[2] } };
+            }
+            return { type: "text", text: `[Image: ${url.substring(0, 80)}]` };
+          }),
         ],
       };
     }
     return { role: m.role, content: m.content };
   });
 
-  try {
-    let response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: `${preContext ? `[SYSTEM PRE-FETCH]${preContext}\n\nThe above data was automatically pulled from the database for records mentioned in this conversation. Use it directly — do not query for these records again.\n\n` : ""}${emailReminderInjection ? emailReminderInjection + "\n\n" : ""}You are the AI assistant for BZA International Services (cellulose/pulp trading, McAllen TX). IMPORTANT: Always respond in English. Never switch to Spanish or any other language, regardless of how the user writes their message.
+  const systemPrompt = `${preContext ? `[SYSTEM PRE-FETCH]${preContext}\n\nThe above data was automatically pulled from the database for records mentioned in this conversation. Use it directly — do not query for these records again.\n\n` : ""}You are the AI assistant for BZA International Services (cellulose/pulp trading, McAllen TX). IMPORTANT: Always respond in English. Never switch to Spanish or any other language, regardless of how the user writes their message.
 
 ## ABSOLUTE RULE — EMAIL ADDRESSES
 NEVER use, mention, or assume any email address from the database, client records, users table, or anywhere in the platform.
@@ -916,38 +917,52 @@ When user asks to DOWNLOAD a report → use generate_report and return the link.
 
 When user asks to do something, DO IT immediately using tools. Always confirm with the exact number from the database.
 
-When user asks for analysis or proposals, ALWAYS start by querying market prices AND current PO prices, then provide a data-driven recommendation.` },
-        ...messages,
-      ],
-      tools, temperature: 0.1, max_tokens: 4000,
+When user asks for analysis or proposals, ALWAYS start by querying market prices AND current PO prices, then provide a data-driven recommendation.`;
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let response = await anthropic.messages.create({
+      model: "claude-opus-4-5",
+      max_tokens: 8096,
+      system: systemPrompt,
+      tools: anthropicTools,
+      messages,
     });
 
-    let msg = response.choices[0]?.message;
-    // For tool loop, use text-only messages (strip images to save tokens)
+    // Tool loop — Anthropic uses stop_reason "tool_use" and content blocks
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const allMsgs = messages.map((m: any) => ({
-      role: typeof m.role === "string" ? m.role : "user",
-      content: Array.isArray(m.content)
-        ? ((m.content as any[]).find((c) => c.type === "text") as { text: string })?.text || ""
-        : m.content,
-    }));
+    const allMsgs: any[] = [...messages];
 
-    for (let i = 0; i < 5 && msg?.tool_calls; i++) {
-      allMsgs.push(msg);
-      for (const tc of msg.tool_calls) {
-        const fn = (tc as any).function;
-        const result = await exec(fn.name, JSON.parse(fn.arguments));
-        allMsgs.push({ role: "tool" as const, tool_call_id: tc.id, content: result });
+    for (let i = 0; i < 5 && response.stop_reason === "tool_use"; i++) {
+      // Add assistant message (contains tool_use blocks)
+      allMsgs.push({ role: "assistant", content: response.content });
+
+      // Execute every tool_use block and collect results
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const toolResults: any[] = [];
+      for (const block of response.content) {
+        if (block.type === "tool_use") {
+          const result = await exec(block.name, block.input as Record<string, unknown>);
+          toolResults.push({ type: "tool_result", tool_use_id: block.id, content: result });
+        }
       }
-      response = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [{ role: "system", content: "BZA assistant for BZA International Services. Always respond in English only. Never use Spanish or any other language." }, ...allMsgs],
-        tools, temperature: 0.1, max_tokens: 4000,
+
+      // Tool results go back as a single user message
+      allMsgs.push({ role: "user", content: toolResults });
+
+      response = await anthropic.messages.create({
+        model: "claude-opus-4-5",
+        max_tokens: 8096,
+        system: "You are the BZA Intelligence assistant for BZA International Services. Always respond in English.",
+        tools: anthropicTools,
+        messages: allMsgs,
       });
-      msg = response.choices[0]?.message;
     }
 
-    return NextResponse.json({ message: msg?.content || "Done" });
+    // Extract the final text response
+    const textBlock = response.content.find(c => c.type === "text");
+    const message = textBlock?.type === "text" ? textBlock.text : "Done";
+    return NextResponse.json({ message });
   } catch (err: unknown) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Error" }, { status: 500 });
   }
