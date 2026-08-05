@@ -5,22 +5,14 @@ import { Upload, Trash2, FileText, Loader2, Mail, Send, X, Paperclip } from "luc
 
 type Doc = { id: number; itemKey: string; cert: string | null; title: string | null; fileName: string; fileSize: number | null; uploadedAt: string };
 
-// Document slots to attach for Control Union.
-const ITEMS: { key: string; title: string }[] = [
-  { key: "procedures", title: "FSC & PEFC Procedures Manual (Handbook)" },
-  { key: "labor",      title: "FSC core labour requirements self-assessment" },
-  { key: "outsourcer", title: "Outsourcer / contractor evaluation" },
-  { key: "other",      title: "Other supporting documents (values commitment, trademark license, internal & audit reports…)" },
-];
-
 const DEFAULT_RECIPIENT = "jyimgang@controlunion.com";
 
 function fmtSize(b: number | null) { if (!b) return ""; return b < 1024 * 1024 ? `${(b / 1024).toFixed(0)} KB` : `${(b / 1024 / 1024).toFixed(1)} MB`; }
 
 export function AuditPackage() {
   const [docs, setDocs] = useState<Doc[]>([]);
-  const [uploading, setUploading] = useState<string | null>(null);
-  const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
 
   const [emailOpen, setEmailOpen] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -38,16 +30,16 @@ export function AuditPackage() {
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  async function upload(itemKey: string, file: File) {
-    setUploading(itemKey);
+  async function upload(file: File) {
+    setUploading(true);
     try {
       const fd = new FormData();
-      fd.append("file", file); fd.append("itemKey", itemKey);
+      fd.append("file", file); fd.append("itemKey", "other");
       const r = await fetch("/api/audit-docs", { method: "POST", body: fd });
       if (!r.ok) throw new Error();
       await load();
     } catch { alert("Could not upload the file."); }
-    finally { setUploading(null); }
+    finally { setUploading(false); }
   }
   async function remove(id: number) {
     if (!confirm("Delete this document?")) return;
@@ -62,7 +54,6 @@ export function AuditPackage() {
     setSelected(new Set(docs.map((d) => d.id))); // preselect all by default
     setIncludeReport(true);
     setEmailOpen((v) => !v);
-    // Load the address book so recipients autocomplete from what was used before.
     fetch("/api/email-recipients")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { if (d) setAddressBook(d.addresses || []); })
@@ -87,26 +78,30 @@ export function AuditPackage() {
     finally { setSending(false); }
   }
 
-  const totalFiles = docs.length;
+  const sorted = [...docs].sort((a, b) => (b.uploadedAt || "").localeCompare(a.uploadedAt || ""));
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-stone-100 p-4 space-y-3">
-      {/* header */}
+      {/* header — one Upload button + one Send button */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Paperclip className="w-4 h-4 text-[#0d3d3b]" />
-          <div>
-            <p className="font-semibold text-stone-800">Attachments</p>
-            <p className="text-xs text-stone-400">{totalFiles} document(s) stored. Attach the handbook, assessments and supporting docs to send to Control Union.</p>
-          </div>
+          <p className="font-semibold text-stone-800">Documents <span className="text-stone-400 font-normal">({docs.length})</span></p>
         </div>
-        <button onClick={openComposer}
-          className="flex items-center gap-1.5 text-xs font-semibold bg-[#0d3d3b] text-white rounded-lg px-3 py-2 hover:opacity-90 shrink-0">
-          <Send className="w-3.5 h-3.5" /> Send
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <input ref={fileRef} type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ""; }} />
+          <button onClick={() => fileRef.current?.click()} disabled={uploading}
+            className="flex items-center gap-1.5 text-xs font-semibold border border-stone-200 text-stone-700 rounded-lg px-3 py-2 hover:bg-stone-50 disabled:opacity-50">
+            {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-[#0d3d3b]" />} Upload
+          </button>
+          <button onClick={openComposer}
+            className="flex items-center gap-1.5 text-xs font-semibold border border-stone-200 text-stone-700 rounded-lg px-3 py-2 hover:bg-stone-50">
+            <Send className="w-3.5 h-3.5 text-[#0d3d3b]" /> Send
+          </button>
+        </div>
       </div>
 
-      {sent && <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-2 text-xs text-emerald-800">{sent}</div>}
+      {sent && <div className="bg-[#e6f1ee] border border-[#0d3d3b]/20 rounded-lg p-2 text-xs text-[#0d3d3b]">{sent}</div>}
 
       {/* email composer */}
       {emailOpen && (
@@ -133,42 +128,22 @@ export function AuditPackage() {
         </div>
       )}
 
-      {/* attachment slots */}
-      <div className="divide-y divide-stone-50">
-        {ITEMS.map((item) => {
-          const files = docs.filter((d) => d.itemKey === item.key);
-          return (
-            <div key={item.key} className="py-2.5 first:pt-0">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-stone-700">{item.title}</p>
-                  {files.length > 0 && (
-                    <div className="mt-1.5 space-y-1">
-                      {files.map((f) => (
-                        <div key={f.id} className="flex items-center gap-2 text-xs text-stone-600">
-                          {emailOpen && <input type="checkbox" checked={selected.has(f.id)} onChange={() => toggle(f.id)} className="shrink-0" />}
-                          <FileText className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-                          <a href={`/api/audit-docs?id=${f.id}`} className="text-[#0d3d3b] hover:underline truncate max-w-[360px]" title={f.fileName}>{f.fileName}</a>
-                          <span className="text-stone-300 shrink-0">{fmtSize(f.fileSize)}</span>
-                          <button onClick={() => remove(f.id)} className="text-red-400 hover:text-red-600 shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="shrink-0">
-                  <input ref={(el) => { fileRefs.current[item.key] = el; }} type="file" className="hidden"
-                    onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(item.key, f); e.target.value = ""; }} />
-                  <button onClick={() => fileRefs.current[item.key]?.click()} disabled={uploading === item.key}
-                    className="flex items-center gap-1.5 text-xs font-semibold border border-stone-200 text-stone-700 rounded-lg px-3 py-1.5 hover:bg-stone-50 disabled:opacity-50">
-                    {uploading === item.key ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-[#0d3d3b]" />} Upload
-                  </button>
-                </div>
-              </div>
+      {/* flat, ordered document list */}
+      {sorted.length === 0 ? (
+        <p className="text-xs text-stone-400 py-6 text-center">No documents yet — use <strong>Upload</strong> to add the handbook, assessments and supporting files.</p>
+      ) : (
+        <div className="divide-y divide-stone-50">
+          {sorted.map((f) => (
+            <div key={f.id} className="flex items-center gap-2.5 py-2 text-sm">
+              {emailOpen && <input type="checkbox" checked={selected.has(f.id)} onChange={() => toggle(f.id)} className="shrink-0" />}
+              <FileText className="w-4 h-4 text-stone-400 shrink-0" />
+              <a href={`/api/audit-docs?id=${f.id}`} className="text-stone-700 hover:text-[#0d3d3b] hover:underline truncate" title={f.fileName}>{f.fileName}</a>
+              <span className="text-[11px] text-stone-300 shrink-0 ml-auto">{fmtSize(f.fileSize)}</span>
+              <button onClick={() => remove(f.id)} title="Delete" className="text-stone-300 hover:text-stone-600 shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

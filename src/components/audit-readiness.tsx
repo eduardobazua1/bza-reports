@@ -13,21 +13,22 @@ function levelOf(r: ReadinessRow): Level {
   if (r.auditValidation === "Pending Customer Verification") return "pending";
   return "ready";
 }
+// BZA palette only — teal + stone, no yellow/red. Intensity encodes severity.
 const LEVEL_STYLE: Record<Level, string> = {
-  ready: "bg-emerald-100 text-emerald-700",
-  pending: "bg-amber-100 text-amber-700",
-  attention: "bg-red-100 text-red-700",
+  ready: "bg-[#e6f1ee] text-[#0d3d3b]",     // light teal — all good
+  pending: "bg-stone-100 text-stone-600",   // neutral — waiting on customer
+  attention: "bg-[#0d3d3b] text-white",     // filled dark teal — stands out, action needed
 };
 const LEVEL_LABEL: Record<Level, string> = { ready: "Audit-ready", pending: "Pending customer", attention: "Needs attention" };
 
 function Dot({ ok }: { ok: boolean }) {
   return ok
-    ? <Check className="w-3.5 h-3.5 text-emerald-600 inline" />
-    : <X className="w-3.5 h-3.5 text-red-500 inline" />;
+    ? <Check className="w-3.5 h-3.5 text-[#0d3d3b] inline" />
+    : <X className="w-3.5 h-3.5 text-stone-400 inline" />;
 }
 
 export function AuditReadiness({ rows }: { rows: ReadinessRow[] }) {
-  const [onlyIssues, setOnlyIssues] = useState(false);
+  const [onlyIssues, setOnlyIssues] = useState(true); // short by default — show only what needs attention
 
   const withLevel = useMemo(() => rows.map((r) => ({ r, level: levelOf(r) })), [rows]);
   const counts = useMemo(() => {
@@ -46,21 +47,18 @@ export function AuditReadiness({ rows }: { rows: ReadinessRow[] }) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-stone-100 p-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <p className="font-semibold text-stone-800">Audit readiness by operation</p>
-          <p className="text-xs text-stone-400">Each shipment: supplier invoice + BL + PL attached, and the claim validated end-to-end.</p>
-        </div>
+        <p className="font-semibold text-stone-800">Audit readiness by operation</p>
         <label className="flex items-center gap-2 text-xs text-stone-600">
           <input type="checkbox" checked={onlyIssues} onChange={(e) => setOnlyIssues(e.target.checked)} /> Show only items needing attention
         </label>
       </div>
 
-      {/* summary */}
+      {/* summary — BZA palette only */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 my-3">
-        <Kpi icon={ShieldCheck} cls="text-emerald-600 bg-emerald-50" label="Audit-ready" value={counts.ready} />
-        <Kpi icon={Clock} cls="text-amber-600 bg-amber-50" label="Pending customer" value={counts.pending} />
-        <Kpi icon={AlertTriangle} cls="text-red-600 bg-red-50" label="Needs attention" value={counts.attention} />
-        <Kpi icon={Check} cls="text-stone-600 bg-stone-50" label="Docs complete" value={`${counts.docComplete}/${rows.length}`} />
+        <Kpi icon={ShieldCheck} cls="text-[#0d3d3b] bg-[#e6f1ee]" label="Audit-ready" value={counts.ready} />
+        <Kpi icon={Clock} cls="text-stone-600 bg-stone-100" label="Pending customer" value={counts.pending} />
+        <Kpi icon={AlertTriangle} cls="text-white bg-[#0d3d3b]" label="Needs attention" value={counts.attention} />
+        <Kpi icon={Check} cls="text-[#12514e] bg-[#e6f1ee]" label="Docs complete" value={`${counts.docComplete}/${rows.length}`} />
       </div>
 
       <div className="overflow-x-auto">

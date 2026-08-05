@@ -21,13 +21,13 @@ export function AlertsBanner({ groups, total }: { groups: AlertGroup[]; total: n
         {groups.map((g) => {
           const Icon = ICON[g.key] ?? Bell;
           const isOpen = open === g.key;
-          const accent = g.severity === "high" ? "text-red-600" : "text-amber-600";
+          const accent = g.severity === "high" ? "text-[#0d3d3b]" : "text-stone-500";
           return (
             <div key={g.key}>
               <button onClick={() => setOpen(isOpen ? null : g.key)} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-stone-50 text-left">
                 <Icon className={`w-4 h-4 ${accent} shrink-0`} />
                 <span className="text-sm font-medium text-stone-700">{g.title}</span>
-                <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${g.severity === "high" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>{g.count}</span>
+                <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${g.severity === "high" ? "bg-[#0d3d3b] text-white" : "bg-stone-100 text-stone-600"}`}>{g.count}</span>
                 <Link href={g.href} className="ml-auto text-[11px] text-[#0d3d3b] hover:underline shrink-0" onClick={(e) => e.stopPropagation()}>View all →</Link>
                 <ChevronDown className={`w-4 h-4 text-stone-400 transition-transform shrink-0 ${isOpen ? "rotate-180" : ""}`} />
               </button>

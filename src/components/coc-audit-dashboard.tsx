@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Download, Loader2, ShieldCheck, AlertTriangle, Clock, FileWarning, FileText, Upload, Check } from "lucide-react";
+import { Download, Loader2, FileText, Upload, Check } from "lucide-react";
 
 type CustCert = {
   id: number; clientId: number; clientName: string; scheme: string;
@@ -9,15 +9,7 @@ type CustCert = {
   expiryDate: string | null; status: string; lastVerifiedAt: string | null; fileName: string | null;
 };
 
-const STATUS_STYLE: Record<string, string> = {
-  "Verified": "bg-emerald-100 text-emerald-700",
-  "Verified (No Claim)": "bg-emerald-50 text-emerald-600",
-  "Pending Customer Verification": "bg-amber-100 text-amber-700",
-  "Review Required": "bg-red-100 text-red-700",
-  "Document Missing": "bg-red-100 text-red-700",
-};
-
-export function CocAuditDashboard({ summary }: { summary: Record<string, number> }) {
+export function CocAuditDashboard() {
   const [certs, setCerts] = useState<CustCert[]>([]);
   const [dl, setDl] = useState<string | null>(null);
   const [saved, setSaved] = useState<number | null>(null);
@@ -65,35 +57,11 @@ export function CocAuditDashboard({ summary }: { summary: Record<string, number>
     finally { setUploading(null); }
   }
 
-  const total = Object.values(summary).reduce((a, b) => a + b, 0);
-  const cards = [
-    { key: "Verified", label: "Verified", icon: ShieldCheck, cls: "text-emerald-600 bg-emerald-50" },
-    { key: "Verified (No Claim)", label: "Verified (No Claim)", icon: ShieldCheck, cls: "text-emerald-600 bg-emerald-50" },
-    { key: "Pending Customer Verification", label: "Pending Customer", icon: Clock, cls: "text-amber-600 bg-amber-50" },
-    { key: "Review Required", label: "Review Required", icon: AlertTriangle, cls: "text-red-600 bg-red-50" },
-    { key: "Document Missing", label: "Document Missing", icon: FileWarning, cls: "text-red-600 bg-red-50" },
-  ].filter((c) => summary[c.key]);
-
   return (
     <div className="space-y-4">
-      {/* 1 — KPIs */}
-      <div className="bg-white rounded-xl shadow-sm border border-stone-100 p-4">
-        <p className="font-semibold text-stone-800">Audit KPIs</p>
-        <p className="text-xs text-stone-400 mb-3">{total} operations validated end-to-end: Supplier docs → Input Claim → BZA → Customer → Output Claim.</p>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-          {cards.map((c) => (
-            <div key={c.key} className={`rounded-lg p-3 ${c.cls}`}>
-              <div className="flex items-center gap-1.5 text-[11px] font-semibold"><c.icon className="w-3.5 h-3.5" /> {c.label}</div>
-              <div className="text-2xl font-bold mt-1">{summary[c.key]}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Customer Certification Master */}
       <div className="bg-white rounded-xl shadow-sm border border-stone-100 p-4">
-        <p className="font-semibold text-stone-800">Customer Certification Master</p>
-        <p className="text-xs text-stone-400 mb-3">BZA may only transfer an FSC/PEFC claim to a customer with a valid certificate. Set each customer&apos;s status to <strong>Valid</strong> to clear the &quot;Pending Customer&quot; operations.</p>
+        <p className="font-semibold text-stone-800 mb-3">Customer Certification Master</p>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
@@ -106,7 +74,7 @@ export function CocAuditDashboard({ summary }: { summary: Record<string, number>
               {certs.map((c) => (
                 <tr key={c.id} className="border-b border-stone-50">
                   <td className="py-2 pr-2 font-medium text-stone-700 max-w-[180px] truncate" title={c.clientName}>
-                    {c.clientName}{saved === c.id && <Check className="inline w-3 h-3 text-emerald-600 ml-1" />}
+                    {c.clientName}{saved === c.id && <Check className="inline w-3 h-3 text-[#0d3d3b] ml-1" />}
                   </td>
                   <td className="pr-2 uppercase">{c.scheme}</td>
                   <td className="pr-2"><input value={c.certificateNumber || ""} onChange={(e) => setCert(c.id, { certificateNumber: e.target.value })} onBlur={() => autoSave(c)}
@@ -117,7 +85,7 @@ export function CocAuditDashboard({ summary }: { summary: Record<string, number>
                     className="w-24 border border-stone-200 rounded px-2 py-1" placeholder="2028-01-29" /></td>
                   <td className="pr-2">
                     <select value={c.status} onChange={(e) => { setCert(c.id, { status: e.target.value }); autoSave({ ...c, status: e.target.value }); }}
-                      className={`border border-stone-200 rounded px-2 py-1 ${c.status === "valid" ? "text-emerald-700" : "text-amber-700"}`}>
+                      className={`border border-stone-200 rounded px-2 py-1 ${c.status === "valid" ? "text-[#0d3d3b] font-semibold" : "text-stone-500"}`}>
                       <option value="pending">Pending</option><option value="valid">Valid</option>
                       <option value="expired">Expired</option><option value="suspended">Suspended</option>
                     </select>
@@ -147,8 +115,7 @@ export function CocAuditDashboard({ summary }: { summary: Record<string, number>
 
       {/* 3 — Document generators */}
       <div className="bg-white rounded-xl shadow-sm border border-stone-100 p-4">
-        <p className="font-semibold text-stone-800">Document generator</p>
-        <p className="text-xs text-stone-400 mb-3">Generate the audit reports from the TMS.</p>
+        <p className="font-semibold text-stone-800 mb-3">Document generator</p>
         <div className="flex flex-wrap gap-2">
           <button onClick={() => download("sales")} disabled={dl !== null}
             className="flex items-center gap-1.5 text-xs font-semibold bg-[#0d3d3b] text-white rounded-lg px-3 py-2 hover:opacity-90 disabled:opacity-50">
@@ -159,8 +126,8 @@ export function CocAuditDashboard({ summary }: { summary: Record<string, number>
             {dl === "audit" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5 text-[#0d3d3b]" />} CoC Audit Validation Report
           </button>
           <button onClick={() => download("exceptions")} disabled={dl !== null}
-            className="flex items-center gap-1.5 text-xs font-semibold border border-red-200 text-red-700 rounded-lg px-3 py-2 hover:bg-red-50 disabled:opacity-50">
-            {dl === "exceptions" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} Exception Report
+            className="flex items-center gap-1.5 text-xs font-semibold border border-stone-200 text-stone-700 rounded-lg px-3 py-2 hover:bg-stone-50 disabled:opacity-50">
+            {dl === "exceptions" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5 text-[#0d3d3b]" />} Exception Report
           </button>
         </div>
       </div>
