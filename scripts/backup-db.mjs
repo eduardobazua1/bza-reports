@@ -15,6 +15,20 @@ import { createCipheriv, randomBytes, createHash } from "node:crypto";
 const RETENTION = Number(process.env.BACKUP_RETENTION || 14);
 const PREFIX = "backups/";
 
+// Retry a Turso query a few times — backups shouldn't die on a transient network blip.
+async function exec(c, stmt, tries = 4) {
+  let lastErr;
+  for (let i = 0; i < tries; i++) {
+    try {
+      return await c.execute(stmt);
+    } catch (e) {
+      lastErr = e;
+      await new Promise((r) => setTimeout(r, 1000 * (i + 1)));
+    }
+  }
+  throw lastErr;
+}
+
 function esc(v) {
   if (v === null || v === undefined) return "NULL";
   if (typeof v === "number") return Number.isFinite(v) ? String(v) : "NULL";
@@ -31,11 +45,9 @@ async function buildDump() {
   if (!url || !authToken) throw new Error("TURSO_DATABASE_URL / TURSO_AUTH_TOKEN missing.");
   const c = createClient({ url, authToken });
 
-  const schema = await c.execute(
-    `select type, name, sql from sqlite_master
+  const schema = await exec(c, `select type, name, sql from sqlite_master
      where sql is not null and name not like 'sqlite_%'
-     order by case type when 'table' then 0 when 'index' then 1 when 'trigger' then 2 else 3 end, name`
-  );
+     order by case type when 'table' then 0 when 'index' then 1 when 'trigger' then 2 else 3 end, name`);
   const parts = ["PRAGMA foreign_keys=OFF;", "BEGIN TRANSACTION;"];
   let tables = 0, rows = 0;
 
@@ -43,11 +55,27 @@ async function buildDump() {
     const name = String(t.name);
     parts.push(`${t.sql};`);
     tables++;
-    const res = await c.execute(`SELECT * FROM "${name}"`);
-    const cols = res.columns.map((x) => `"${x}"`).join(", ");
-    for (const row of res.rows) {
-      parts.push(`INSERT INTO "${name}" (${cols}) VALUES (${res.columns.map((x) => esc(row[x])).join(", ")});`);
-      rows++;
+    // Read in small batches: Turso's HTTP API rejects a single response that is too
+    // large (400), and these tables store base64 PDF blobs (tens of MB each).
+    // Keyset pagination by rowid — O(n), avoids the O(n²) rescan that OFFSET causes on blob tables.
+    const BATCH = 25;
+    let lastRid = 0, cols = null, dataCols = null;
+    for (;;) {
+      const res = await exec(c, {
+        sql: `SELECT rowid AS __rid, * FROM "${name}" WHERE rowid > ? ORDER BY rowid LIMIT ?`,
+        args: [lastRid, BATCH],
+      });
+      if (res.rows.length === 0) break;
+      if (!dataCols) {
+        dataCols = res.columns.filter((x) => x !== "__rid");
+        cols = dataCols.map((x) => `"${x}"`).join(", ");
+      }
+      for (const row of res.rows) {
+        lastRid = row.__rid;
+        parts.push(`INSERT INTO "${name}" (${cols}) VALUES (${dataCols.map((x) => esc(row[x])).join(", ")});`);
+        rows++;
+      }
+      if (res.rows.length < BATCH) break;
     }
   }
   for (const o of schema.rows.filter((r) => r.type !== "table")) parts.push(`${o.sql};`);
