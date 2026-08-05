@@ -135,8 +135,8 @@ export function DashboardApp({
       </div>
 
       {tab === "exec" && <ExecTab s={s} periodLabel={periodLabel} activePOs={activePOs} supplierBalance={supplierBalance} supplierBalanceNet={supplierBalanceNet} creditInsurance={creditInsurance} latestPrices={latestPrices} onNav={setTab} />}
-      {tab === "ops" && <OpsTab s={s} />}
-      {tab === "fin" && <FinTab s={s} supplierBalance={supplierBalance} supplierBalanceNet={supplierBalanceNet} />}
+      {tab === "ops" && <OpsTab s={s} rows={scoped} period={period} periodLabel={periodLabel} />}
+      {tab === "fin" && <FinTab s={s} rows={scoped} periodLabel={periodLabel} supplierBalance={supplierBalance} supplierBalanceNet={supplierBalanceNet} onNav={setTab} />}
       {tab === "hist" && <HistTab hist={hist} />}
     </div>
   );
@@ -205,7 +205,10 @@ function ExecTab({ s, periodLabel, activePOs, supplierBalance, supplierBalanceNe
         <div className="space-y-4">
           <Card>
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-stone-700">AR aging</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-stone-700">AR aging</h3>
+                <Link href="/reports/ar-aging-detail" className="text-[11px] text-[#0d3d3b] hover:underline">View →</Link>
+              </div>
               <span className="text-sm font-bold tabular-nums">{formatCurrency(s.arTotal)}</span>
             </div>
             <div className="flex h-8 rounded-lg overflow-hidden gap-0.5 my-3">
@@ -216,7 +219,7 @@ function ExecTab({ s, periodLabel, activePOs, supplierBalance, supplierBalanceNe
               <Seg v={s.ar61plus} color={G.l2} />
             </div>
             <div className="space-y-1.5 text-xs">
-              <AgeRow color={G.d1} label={`Overdue · ${s.overdueCount} inv.`} amt={s.arOverdue} />
+              <Link href="/invoices?status=unpaid" className="block hover:bg-stone-50 rounded -mx-1 px-1"><AgeRow color={G.d1} label={`Overdue · ${s.overdueCount} inv.`} amt={s.arOverdue} /></Link>
               <AgeRow color={G.d3} label="Due 0–30d" amt={s.ar0to30} />
               <AgeRow color={G.m} label="Due 31–60d" amt={s.ar31to60} />
               <AgeRow color={G.l1} label="Due 61d+" amt={s.ar61plus} />
@@ -225,8 +228,8 @@ function ExecTab({ s, periodLabel, activePOs, supplierBalance, supplierBalanceNe
           <Card>
             <h3 className="text-sm font-semibold text-stone-700 mb-3">Rates</h3>
             <div className="flex justify-around">
-              <Gauge label="Delivery" value={s.deliveryRate} sub={`${s.deliveredCount}/${s.shipments}`} />
-              <Gauge label="Collection" value={s.collectionRate} sub={`${s.paidCount}/${s.shipments}`} />
+              <Link href="/reports/shipments" className="hover:opacity-80 transition-opacity" title="See shipments"><Gauge label="Delivery" value={s.deliveryRate} sub={`${s.deliveredCount}/${s.shipments}`} /></Link>
+              <Link href="/payments" className="hover:opacity-80 transition-opacity" title="See customer payments"><Gauge label="Collection" value={s.collectionRate} sub={`${s.paidCount}/${s.shipments}`} /></Link>
             </div>
           </Card>
         </div>
@@ -242,7 +245,10 @@ function LatestPriceCard({ items }: { items: PriceRow[] }) {
   return (
     <Card>
       <div className="flex items-center justify-between mb-1">
-        <h3 className="text-sm font-semibold text-stone-700">Latest price by product</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-stone-700">Latest price by product</h3>
+          <Link href="/market-prices" className="text-[11px] text-[#0d3d3b] hover:underline">Market prices →</Link>
+        </div>
         <span className="text-[11px] font-bold uppercase tracking-wider text-stone-400">Most recent shipment · $/TN</span>
       </div>
       <div className="overflow-x-auto">
@@ -281,18 +287,31 @@ function LatestPriceCard({ items }: { items: PriceRow[] }) {
 }
 
 // ============================ Operations ============================
-function OpsTab({ s }: { s: Stats }) {
+type DrillKey = "volume" | "shipments" | "delivered" | "sales" | "margin";
+const DRILLS: Record<DrillKey, { label: string; val: (r: Row) => number; fmt: (v: number) => string }> = {
+  volume:    { label: "Volume", val: (r) => r.tons, fmt: (v) => `${formatNumber(v, 0)} TN` },
+  shipments: { label: "Shipments", val: () => 1, fmt: (v) => String(Math.round(v)) },
+  delivered: { label: "Delivered", val: (r) => (r.shipmentStatus === "entregado" ? 1 : 0), fmt: (v) => String(Math.round(v)) },
+  sales:     { label: "Sales", val: (r) => r.tons * r.sellPrice, fmt: (v) => compactUSD(v) },
+  margin:    { label: "Gross Profit", val: (r) => r.tons * (r.sellPrice - r.buyPrice), fmt: (v) => compactUSD(v) },
+};
+
+function OpsTab({ s, rows, period, periodLabel }: { s: Stats; rows: Row[]; period: Period; periodLabel: string }) {
   const inTransit = s.inTransit;
+  const [drill, setDrill] = useState<DrillKey | null>(null);
+  const toggle = (k: DrillKey) => setDrill((d) => (d === k ? null : k));
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-3 md:grid-cols-6 gap-2.5">
-        <Stat label="Volume TN" value={formatNumber(s.tons, 0)} color={G.d2} href="/invoices" />
-        <Stat label="Shipments" value={s.shipments.toString()} color={G.d2} href="/invoices" />
-        <Stat label="In transit" value={inTransit.length.toString()} color={G.m} href="/invoices" />
-        <Stat label="Delivered" value={s.deliveredCount.toString()} color={G.d3} href="/invoices" />
-        <Stat label="Sales" value={compactUSD(s.revenue)} color={G.d4} href="/reports" />
-        <Stat label="Margin" value={formatPercent(s.margin)} color={G.d1} href="/reports" />
+        <Stat label="Volume TN" value={formatNumber(s.tons, 0)} color={G.d2} onClick={() => toggle("volume")} selected={drill === "volume"} />
+        <Stat label="Shipments" value={s.shipments.toString()} color={G.d2} onClick={() => toggle("shipments")} selected={drill === "shipments"} />
+        <Stat label="In transit" value={inTransit.length.toString()} color={G.m} href="/reports/shipments" />
+        <Stat label="Delivered" value={s.deliveredCount.toString()} color={G.d3} onClick={() => toggle("delivered")} selected={drill === "delivered"} />
+        <Stat label="Sales" value={compactUSD(s.revenue)} color={G.d4} onClick={() => toggle("sales")} selected={drill === "sales"} />
+        <Stat label="Margin" value={formatPercent(s.margin)} color={G.d1} onClick={() => toggle("margin")} selected={drill === "margin"} />
       </div>
+
+      {drill && <DrillPanel drill={drill} rows={rows} period={period} periodLabel={periodLabel} onClose={() => setDrill(null)} />}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
@@ -342,61 +361,114 @@ function OpsTab({ s }: { s: Stats }) {
 }
 
 // ============================ Financial ============================
-function FinTab({ s, supplierBalance, supplierBalanceNet }: { s: Stats; supplierBalance: number; supplierBalanceNet: number }) {
+function FinTab({ s, rows, periodLabel, supplierBalance, supplierBalanceNet, onNav }: { s: Stats; rows: Row[]; periodLabel: string; supplierBalance: number; supplierBalanceNet: number; onNav: (t: Tab) => void }) {
   const ar = s.arTotal;
   const ap = supplierBalance;
   const net = ar - ap;
   const maxV = Math.max(ar, ap, 1);
   const maxClient = Math.max(...s.topClients.map((c) => c.tons), 1);
+  const [selClient, setSelClient] = useState<string | null>(null);
+
+  const clientShipments = useMemo(() => {
+    if (!selClient) return [];
+    return rows
+      .filter((r) => (r.clientName || "—") === selClient)
+      .map((r) => ({ r, sales: r.tons * r.sellPrice }))
+      .sort((a, b) => b.sales - a.sales);
+  }, [selClient, rows]);
+  const clientTotals = useMemo(() => ({
+    tons: clientShipments.reduce((n, x) => n + x.r.tons, 0),
+    sales: clientShipments.reduce((n, x) => n + x.sales, 0),
+  }), [clientShipments]);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <Card className="lg:row-span-2">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-stone-700">Margin & profit by year</h3>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-stone-400">USD</span>
+          <button onClick={() => onNav("hist")} className="text-[11px] font-semibold text-[#0d3d3b] hover:underline">Full history →</button>
         </div>
         <div className="flex items-end gap-4 h-44 mt-5">
           {s.byYear.map((y) => {
             const max = Math.max(...s.byYear.map((x) => x.tons), 1);
             const hot = y.year === String(new Date().getFullYear());
             return (
-              <div key={y.year} className="flex-1 flex flex-col items-center justify-end gap-1.5 h-full">
+              <button key={y.year} type="button" onClick={() => onNav("hist")} title={`See ${y.year} month by month`}
+                className="flex-1 flex flex-col items-center justify-end gap-1.5 h-full hover:opacity-80 transition-opacity">
                 <span className="text-[10px] font-bold" style={{ color: G.d4 }}>{formatPercent(y.margin)}</span>
                 <span className="text-[11px] font-bold tabular-nums">{compactUSD(y.profit)}</span>
                 <div className="w-3/5 max-w-[46px] rounded-t-md" style={{ height: `${(y.tons / max) * 100}%`, background: hot ? `linear-gradient(180deg, ${G.d2}, ${G.d1})` : `linear-gradient(180deg, ${G.m}, ${G.d3})` }} />
                 <span className="text-[11px] tabular-nums" style={{ color: hot ? G.d2 : "#a8a29e", fontWeight: hot ? 700 : 400 }}>{y.year}</span>
-              </div>
+              </button>
             );
           })}
         </div>
-        <p className="text-[11px] text-stone-400 mt-3 pt-3 border-t border-stone-100">Bar height = volume · label = profit & margin</p>
+        <p className="text-[11px] text-stone-400 mt-3 pt-3 border-t border-stone-100">Bar height = volume · label = profit &amp; margin · click a year for the full monthly history</p>
       </Card>
 
       <Card>
         <h3 className="text-sm font-semibold text-stone-700">Cash position</h3>
         <div className="flex items-center gap-2 mt-4">
-          <CashSide label="Receivable" value={compactUSD(ar)} color={G.d3} pct={(ar / maxV) * 100} />
+          <Link href="/invoices?status=unpaid" className="flex-1 rounded-lg hover:bg-stone-50 transition-colors" title="See unpaid customer invoices">
+            <CashSide label="Receivable" value={compactUSD(ar)} color={G.d3} pct={(ar / maxV) * 100} />
+          </Link>
           <span className="text-stone-300 font-bold pb-4">−</span>
-          <CashSide label="Payable" value={compactUSD(ap)} color={G.l1} pct={(ap / maxV) * 100} />
+          <Link href="/accounts-payable" className="flex-1 rounded-lg hover:bg-stone-50 transition-colors" title="See accounts payable">
+            <CashSide label="Payable" value={compactUSD(ap)} color={G.l1} pct={(ap / maxV) * 100} />
+          </Link>
           <span className="text-stone-300 font-bold pb-4">=</span>
-          <CashSide label="Net" value={`${net >= 0 ? "+" : "−"}${compactUSD(Math.abs(net))}`} color={G.d1} pct={(Math.abs(net) / maxV) * 100} />
+          <div className="flex-1">
+            <CashSide label="Net" value={`${net >= 0 ? "+" : "−"}${compactUSD(Math.abs(net))}`} color={G.d1} pct={(Math.abs(net) / maxV) * 100} />
+          </div>
         </div>
+        <p className="text-[11px] text-stone-400 mt-3">Click Receivable / Payable for the detail.</p>
       </Card>
 
       <Card>
-        <h3 className="text-sm font-semibold text-stone-700">Top clients by volume</h3>
-        <div className="flex flex-col gap-2.5 mt-4">
-          {s.topClients.map((c, i) => (
-            <div key={c.name} className="grid grid-cols-[110px_1fr_auto] items-center gap-3 text-xs">
-              <span className="text-stone-500 truncate">{c.name}</span>
-              <div className="h-2.5 bg-stone-100 rounded-full overflow-hidden">
-                <div className="h-full rounded-full" style={{ width: `${(c.tons / maxClient) * 100}%`, background: shade(i) }} />
+        {selClient ? (
+          <>
+            <div className="flex items-center justify-between mb-3">
+              <div className="min-w-0">
+                <button onClick={() => setSelClient(null)} className="text-[11px] text-[#0d3d3b] hover:underline">← Top clients</button>
+                <h3 className="text-sm font-semibold text-stone-700 truncate">{selClient}</h3>
+                <p className="text-[11px] text-stone-400">{periodLabel} · {clientShipments.length} shipments · {formatNumber(clientTotals.tons, 0)} TN · {compactUSD(clientTotals.sales)}</p>
               </div>
-              <span className="font-bold tabular-nums">{formatNumber(c.tons, 0)} TN</span>
             </div>
-          ))}
-          {s.topClients.length === 0 && <p className="text-xs text-stone-400">No data in this period</p>}
-        </div>
+            <div className="space-y-1 max-h-72 overflow-y-auto">
+              {clientShipments.map(({ r, sales }) => (
+                <Link key={r.id} href={`/api/invoice-pdf?invoice=${encodeURIComponent(r.invoiceNumber)}`} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-3 py-1.5 px-2 rounded hover:bg-stone-50">
+                  <span className="w-2 h-2 rounded-full flex-none" style={{ background: destColor(r.destination) }} />
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-stone-700 truncate">{r.invoiceNumber}</p>
+                    <p className="text-[11px] text-stone-400 truncate">{r.shipmentDate ? formatDate(r.shipmentDate) : "—"} · {r.destination || "—"}</p>
+                  </div>
+                  <div className="ml-auto text-right shrink-0">
+                    <p className="text-xs font-extrabold tabular-nums">{compactUSD(sales)}</p>
+                    <p className="text-[11px] text-stone-400">{formatNumber(r.tons, 0)} TN</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            <h3 className="text-sm font-semibold text-stone-700">Top clients by volume</h3>
+            <p className="text-[11px] text-stone-400 mb-3">Click a client for their shipments.</p>
+            <div className="flex flex-col gap-2.5">
+              {s.topClients.map((c, i) => (
+                <button key={c.name} onClick={() => setSelClient(c.name)} className="grid grid-cols-[110px_1fr_auto] items-center gap-3 text-xs group text-left">
+                  <span className="text-stone-500 group-hover:text-[#0d3d3b] truncate">{c.name}</span>
+                  <div className="h-2.5 bg-stone-100 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full group-hover:opacity-80" style={{ width: `${(c.tons / maxClient) * 100}%`, background: shade(i) }} />
+                  </div>
+                  <span className="font-bold tabular-nums">{formatNumber(c.tons, 0)} TN</span>
+                </button>
+              ))}
+              {s.topClients.length === 0 && <p className="text-xs text-stone-400">No data in this period</p>}
+            </div>
+          </>
+        )}
       </Card>
     </div>
   );
@@ -434,6 +506,12 @@ function HistTab({ hist }: { hist: Historical }) {
                     <stop offset="95%" stopColor={G.m} stopOpacity={0} />
                   </linearGradient>
                 </defs>
+                <XAxis dataKey="month" hide />
+                <Tooltip
+                  formatter={(v) => [`${formatNumber(Number(v), 0)} TN`, "Volume"]}
+                  labelFormatter={(l) => { const [y, m] = String(l).split("-"); return m ? `${MONTHS[Number(m) - 1]} 20${y}` : String(l); }}
+                  contentStyle={{ background: "#fff", border: "1px solid #e7e5e4", borderRadius: 6, fontSize: 11 }}
+                />
                 <Area type="monotone" dataKey="tons" stroke={G.m} strokeWidth={2} fill="url(#msG)" dot={false} />
               </AreaChart>
             </ResponsiveContainer>
@@ -555,15 +633,104 @@ function MiniKPI({ label, value, sub, valueColor, href }: { label: string; value
   );
   return href ? <Link href={href} className="block">{inner}</Link> : inner;
 }
-function Stat({ label, value, color, href }: { label: string; value: string; color: string; href?: string }) {
+function Stat({ label, value, color, href, onClick, selected }: { label: string; value: string; color: string; href?: string; onClick?: () => void; selected?: boolean }) {
   const inner = (
-    <div className="bg-white rounded-xl shadow-sm border border-stone-100 p-3 relative overflow-hidden h-full hover:shadow-md transition-shadow">
+    <div className={`bg-white rounded-xl shadow-sm border p-3 relative overflow-hidden h-full transition-shadow hover:shadow-md ${selected ? "border-[#0d3d3b] ring-1 ring-[#0d3d3b]/30" : "border-stone-100"}`}>
       <span className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: color }} />
       <p className="text-lg font-extrabold tracking-tight tabular-nums pl-1">{value}</p>
       <p className="text-[10px] uppercase tracking-wide text-stone-400 mt-0.5 pl-1">{label}</p>
     </div>
   );
+  if (onClick) return <button type="button" onClick={onClick} className="block w-full text-left cursor-pointer">{inner}</button>;
   return href ? <Link href={href} className="block">{inner}</Link> : inner;
+}
+
+// Period-aware breakdown shown when an Operations KPI is clicked.
+// Groups by month (all/year period) or by client (this-month period).
+function DrillPanel({ drill, rows, period, periodLabel, onClose }: { drill: DrillKey; rows: Row[]; period: Period; periodLabel: string; onClose: () => void }) {
+  const cfg = DRILLS[drill];
+  const byClient = period === "month";
+  const [sub, setSub] = useState<string | null>(null); // 2nd level: a group drilled into
+  const keyOf = (r: Row) => (byClient ? (r.clientName || "—") : (r.shipmentDate?.slice(0, 7) || "—"));
+  const monthLabel = (ym: string) => {
+    const [y, m] = ym.split("-");
+    return m ? `${MONTHS[Number(m) - 1]} ${String(y).slice(2)}` : ym;
+  };
+  const groupLabel = (k: string) => (byClient ? k : monthLabel(k));
+
+  const { entries, total } = useMemo(() => {
+    const g = new Map<string, number>();
+    for (const r of rows) g.set(keyOf(r), (g.get(keyOf(r)) || 0) + cfg.val(r));
+    let list = [...g.entries()].filter(([, v]) => v !== 0);
+    list = byClient ? list.sort((a, b) => b[1] - a[1]) : list.sort((a, b) => a[0].localeCompare(b[0]));
+    return { entries: list, total: list.reduce((sum, [, v]) => sum + v, 0) };
+  }, [rows, cfg, byClient]); // eslint-disable-line react-hooks/exhaustive-deps
+  const max = Math.max(...entries.map(([, v]) => v), 1);
+
+  // 2nd level: the individual shipments inside the selected group (that count for this metric).
+  const detail = useMemo(() => {
+    if (!sub) return [];
+    return rows
+      .filter((r) => keyOf(r) === sub && cfg.val(r) !== 0)
+      .map((r) => ({ r, v: cfg.val(r) }))
+      .sort((a, b) => b.v - a.v);
+  }, [sub, rows, cfg]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <Card>
+      <div className="flex items-center justify-between mb-3">
+        <div className="min-w-0">
+          {sub ? (
+            <>
+              <button onClick={() => setSub(null)} className="text-[11px] text-[#0d3d3b] hover:underline">← {cfg.label} by {byClient ? "customer" : "month"}</button>
+              <h3 className="text-sm font-semibold text-stone-700 truncate">{cfg.label} · {groupLabel(sub)} <span className="text-stone-400 font-normal">({detail.length} shipment{detail.length === 1 ? "" : "s"})</span></h3>
+            </>
+          ) : (
+            <>
+              <h3 className="text-sm font-semibold text-stone-700">{cfg.label} — by {byClient ? "customer" : "month"}</h3>
+              <p className="text-[11px] text-stone-400">{periodLabel} · total {cfg.fmt(total)} · <span className="text-stone-400">click a {byClient ? "customer" : "month"} for detail</span></p>
+            </>
+          )}
+        </div>
+        <button onClick={onClose} className="text-xs text-stone-400 hover:text-stone-700 shrink-0 ml-3">Close ✕</button>
+      </div>
+
+      {/* Level 2: individual shipments */}
+      {sub ? (
+        <div className="space-y-1 max-h-80 overflow-y-auto">
+          {detail.map(({ r, v }) => (
+            <Link key={r.id} href={`/api/invoice-pdf?invoice=${encodeURIComponent(r.invoiceNumber)}`} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-3 py-1.5 px-2 rounded hover:bg-stone-50">
+              <span className="w-2 h-2 rounded-full flex-none" style={{ background: destColor(r.destination) }} />
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-stone-700 truncate">{r.invoiceNumber}</p>
+                <p className="text-[11px] text-stone-400 truncate">{byClient ? (r.shipmentDate ? formatDate(r.shipmentDate) : "—") : (r.clientName || "—")} · {r.destination || "—"}</p>
+              </div>
+              <div className="ml-auto text-right shrink-0">
+                <p className="text-xs font-extrabold tabular-nums">{cfg.fmt(v)}</p>
+                <p className="text-[11px] text-stone-400">{formatNumber(r.tons, 0)} TN</p>
+              </div>
+            </Link>
+          ))}
+          {detail.length === 0 && <p className="text-xs text-stone-400 py-4 text-center">No shipments.</p>}
+        </div>
+      ) : entries.length === 0 ? (
+        <p className="text-xs text-stone-400 py-4 text-center">No data in this period.</p>
+      ) : (
+        <div className="space-y-1.5 max-h-72 overflow-y-auto">
+          {entries.map(([k, v]) => (
+            <button key={k} onClick={() => setSub(k)} className="w-full flex items-center gap-3 group text-left">
+              <span className="text-xs text-stone-500 group-hover:text-[#0d3d3b] w-28 shrink-0 truncate" title={groupLabel(k)}>{groupLabel(k)}</span>
+              <div className="flex-1 bg-stone-100 rounded h-4 overflow-hidden">
+                <div className="h-full rounded transition-all group-hover:opacity-80" style={{ width: `${(v / max) * 100}%`, background: G.d3 }} />
+              </div>
+              <span className="text-xs font-bold text-stone-700 tabular-nums w-20 text-right shrink-0">{cfg.fmt(v)}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
 }
 function KBox({ label, value, unit, sub, valueColor, href }: { label: string; value: string; unit?: string; sub: string; valueColor?: string; href?: string }) {
   const inner = (
