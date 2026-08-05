@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { formatNumber } from "@/lib/utils";
+import { apiMutate } from "@/lib/api-mutate";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 type Price = {
@@ -59,14 +60,19 @@ export default function MarketPricesPage() {
 
   async function savePrice() {
     setSaving(true);
-    await fetch("/api/market-prices", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, price: parseFloat(form.price), changeValue: form.changeValue ? parseFloat(form.changeValue) : null }),
-    });
-    await load();
-    setSaving(false);
-    setShowForm(false);
+    try {
+      await apiMutate("/api/market-prices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, price: parseFloat(form.price), changeValue: form.changeValue ? parseFloat(form.changeValue) : null }),
+      });
+      await load();
+      setShowForm(false);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Couldn't save the price.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   useEffect(() => { load(); }, []);

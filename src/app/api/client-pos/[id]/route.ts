@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { clientPurchaseOrders } from "@/db/schema";
+import { clientPurchaseOrders, invoices } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function DELETE(
@@ -8,7 +8,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  await db.delete(clientPurchaseOrders).where(eq(clientPurchaseOrders.id, Number(id)));
+  const cid = Number(id);
+  // Detach linked invoices (keep them) so the delete doesn't fail on the FK.
+  await db.update(invoices).set({ clientPoId: null }).where(eq(invoices.clientPoId, cid));
+  await db.delete(clientPurchaseOrders).where(eq(clientPurchaseOrders.id, cid));
   return NextResponse.json({ ok: true });
 }
 

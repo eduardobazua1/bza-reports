@@ -64,6 +64,8 @@ export function InvoiceListActions({
   const [docsLoading, setDocsLoading] = useState(false);
   const [emailLogs, setEmailLogs] = useState<EmailLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
+  const [addressBook, setAddressBook] = useState<string[]>([]);
+  const [lastRecipients, setLastRecipients] = useState<{ to: string; cc: string | null } | null>(null);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -81,6 +83,11 @@ export function InvoiceListActions({
     setDocsLoading(true);
     setShowSend(true);
     setShowHistory(false);
+    // Pull the address book + last recipients used for this client (no need to dig through your mail).
+    fetch(`/api/email-recipients?invoiceNumber=${encodeURIComponent(invoice.invoiceNumber)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d) { setAddressBook(d.addresses || []); setLastRecipients(d.last || null); } })
+      .catch(() => {});
     try {
       const res = await fetch(`/api/documents?invoiceId=${invoice.id}`);
       if (res.ok) {
@@ -92,6 +99,12 @@ export function InvoiceListActions({
     } finally {
       setDocsLoading(false);
     }
+  }
+
+  function useLastRecipients() {
+    if (!lastRecipients) return;
+    setSendTo(lastRecipients.to);
+    setSendCc(lastRecipients.cc || "");
   }
 
   async function openHistory() {
@@ -147,16 +160,31 @@ export function InvoiceListActions({
   if (showSend) {
     return (
       <div className="flex flex-col gap-2 items-end">
+        <datalist id={`email-book-${invoice.id}`}>
+          {addressBook.map((a) => <option key={a} value={a} />)}
+        </datalist>
+        {lastRecipients && (
+          <button
+            type="button"
+            onClick={useLastRecipients}
+            className="text-[10px] text-[#0d3d3b] hover:underline font-medium"
+            title={`To: ${lastRecipients.to}${lastRecipients.cc ? ` · CC: ${lastRecipients.cc}` : ""}`}
+          >
+            ↩ Use last recipients
+          </button>
+        )}
         <div className="flex items-center gap-2 flex-wrap justify-end">
           <input
             type="email"
+            list={`email-book-${invoice.id}`}
             className="border border-stone-300 rounded px-2 py-1 text-xs w-44"
             placeholder="To"
             value={sendTo}
             onChange={(e) => setSendTo(e.target.value)}
           />
           <input
-            type="email"
+            type="text"
+            list={`email-book-${invoice.id}`}
             className="border border-stone-300 rounded px-2 py-1 text-xs w-36"
             placeholder="CC (optional)"
             value={sendCc}

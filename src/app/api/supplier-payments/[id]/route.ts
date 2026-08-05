@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { supplierPayments } from "@/db/schema";
+import { supplierPayments, supplierPaymentInvoices, bankTransactions } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function DELETE(
@@ -8,7 +8,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  await db.delete(supplierPayments).where(eq(supplierPayments.id, Number(id)));
+  const pid = Number(id);
+  // Clear dependents first, else the delete fails (FK) and the row reappears on reload.
+  await db.delete(supplierPaymentInvoices).where(eq(supplierPaymentInvoices.paymentId, pid));
+  await db.update(bankTransactions).set({ reconciledSupplierPaymentId: null }).where(eq(bankTransactions.reconciledSupplierPaymentId, pid));
+  await db.delete(supplierPayments).where(eq(supplierPayments.id, pid));
   return NextResponse.json({ ok: true });
 }
 

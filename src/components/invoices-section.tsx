@@ -4,6 +4,8 @@ import React, { useState, useRef, useEffect, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { formatCurrency, formatNumber, formatDate, shipmentStatusLabels, shipmentStatusColors, paymentStatusColors } from "@/lib/utils";
+import { apiMutate } from "@/lib/api-mutate";
+import { DateField } from "@/components/date-field";
 import { DocumentUpload } from "@/components/document-upload";
 import { duplicateInvoice } from "@/server/actions";
 
@@ -15,9 +17,11 @@ function PaperclipIcon({ className }: { className?: string }) {
   );
 }
 
+type EmailLog = { sentAt: string; sentTo: string; sentCc: string | null; openCount: number | null; firstOpenedAt: string | null };
 type Invoice = {
   id: number;
   invoiceNumber: string;
+  emailLogs?: EmailLog[];
   salesDocument: string | null;
   destination: string | null;
   vehicleId: string | null;
@@ -52,6 +56,14 @@ function calcDueDate(inv: Invoice, clientTermsDays: number): string | null {
   return d.toISOString().split("T")[0];
 }
 
+// Date + time in the viewer's local timezone (matches their own clock).
+function fmtSentDateTime(d: string | null | undefined) {
+  if (!d) return "—";
+  const dt = new Date(d);
+  if (isNaN(dt.getTime())) return "—";
+  return dt.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
 export function InvoicesSection({
   invoices: initialInvoices,
   poSellPrice,
@@ -73,14 +85,46 @@ export function InvoicesSection({
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [sentHistId, setSentHistId] = useState<number | null>(null);
+  const [sentHistPos, setSentHistPos] = useState<{ top: number; left: number; maxH: number } | null>(null);
+  const sentHistRef = useRef<HTMLDivElement>(null);
   const [attachmentsId, setAttachmentsId] = useState<number | null>(null);
+  const [docCounts, setDocCounts] = useState<Record<number, number>>({});
   const router = useRouter();
   const [, startTransition] = useTransition();
+
+  // Load doc counts for all invoices on mount
+  useEffect(() => {
+    async function loadCounts() {
+      const counts: Record<number, number> = {};
+      await Promise.all(initialInvoices.map(async (inv) => {
+        try {
+          const res = await fetch(`/api/documents?invoiceId=${inv.id}`);
+          if (res.ok) {
+            const docs = await res.json();
+            counts[inv.id] = docs.length;
+          }
+        } catch {}
+      }));
+      setDocCounts(counts);
+    }
+    loadCounts();
+  }, []);
+
+  function refreshDocCounts(invoiceId: number) {
+    fetch(`/api/documents?invoiceId=${invoiceId}`)
+      .then(r => r.json())
+      .then(docs => setDocCounts(prev => ({ ...prev, [invoiceId]: docs.length })))
+      .catch(() => {});
+  }
 
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setOpenDropdownId(null);
+      }
+      if (sentHistRef.current && !sentHistRef.current.contains(e.target as Node)) {
+        setSentHistId(null);
       }
     }
     document.addEventListener("mousedown", handler);
@@ -94,7 +138,7 @@ export function InvoicesSection({
   const [selectedDocIds, setSelectedDocIds] = useState<number[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
-  const [editForm, setEditForm] = useState<Partial<Invoice> & { quantityTons: string; sellPriceOverride: string; buyPriceOverride: string; freightCost: string; balesCount: string; unitsPerBale: string }>({
+  const [editForm, setEditForm] = useState<Omit<Partial<Invoice>, "quantityTons" | "sellPriceOverride" | "buyPriceOverride" | "freightCost" | "balesCount" | "unitsPerBale"> & { quantityTons: string; sellPriceOverride: string; buyPriceOverride: string; freightCost: string; balesCount: string; unitsPerBale: string }>({
     invoiceNumber: "",
     salesDocument: "",
     destination: "",
@@ -173,6 +217,8 @@ export function InvoicesSection({
     });
     if (res.ok) {
       const data = await res.json();
+      const rec: EmailLog = { sentAt: data.sentAt || new Date().toISOString(), sentTo: data.sentTo || sendTo, sentCc: sendCc || null, openCount: 0, firstOpenedAt: null };
+      setList(prev => prev.map(i => i.id === inv.id ? { ...i, emailLogs: [rec, ...(i.emailLogs || [])] } : i));
       setSentId(inv.id);
       setSendingId(null);
       alert(`Sent! ${data.attachmentCount} attachment(s) delivered.`);
@@ -275,6 +321,40 @@ export function InvoicesSection({
                       ) : (
                         inv.invoiceNumber
                       )}
+                      {inv.notes && (
+                        <div
+                          className="text-[10px] text-stone-400 italic font-normal whitespace-normal max-w-[150px] leading-tight mt-0.5"
+                          title={inv.notes}
+                        >
+                          {inv.notes}
+                        </div>
+                      )}
+                      {(inv.emailLogs?.length ?? 0) > 0 && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            if (sentHistId === inv.id) { setSentHistId(null); return; }
+                            const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                            const POP_MAX = 340; // full popover cap; inner list scrolls beyond this
+                            const spaceBelow = window.innerHeight - r.bottom - 8;
+                            const spaceAbove = r.top - 8;
+                            let top: number, maxH: number;
+                            if (spaceBelow >= 180 || spaceBelow >= spaceAbove) {
+                              top = r.bottom + 4;
+                              maxH = Math.max(120, Math.min(POP_MAX, spaceBelow));
+                            } else {
+                              maxH = Math.max(120, Math.min(POP_MAX, spaceAbove));
+                              top = Math.max(8, r.top - maxH - 4);
+                            }
+                            setSentHistPos({ top, left: Math.min(r.left, window.innerWidth - 280), maxH });
+                            setSentHistId(inv.id);
+                          }}
+                          className="mt-0.5 flex w-fit items-center gap-1 rounded-full bg-[#0d3d3b]/10 text-[#0d3d3b] px-1.5 py-0.5 text-[9px] font-medium hover:bg-[#0d3d3b]/20 cursor-pointer"
+                          suppressHydrationWarning
+                        >
+                          ✓ Sent{inv.emailLogs!.length > 1 ? ` ·${inv.emailLogs!.length}×` : ""}{inv.emailLogs![0].openCount ? " · opened" : ""}
+                        </button>
+                      )}
                     </td>
                     <td className="px-3 py-1.5 border-t border-stone-100 text-stone-600 text-xs max-w-[140px]">
                       <span className="block truncate" title={inv.item || ""}>{inv.item || "—"}</span>
@@ -306,9 +386,14 @@ export function InvoicesSection({
                         <button
                           onClick={() => setAttachmentsId(attachmentsId === inv.id ? null : inv.id)}
                           title="Attachments"
-                          className="text-stone-400 hover:text-stone-600 p-1 rounded hover:bg-stone-100"
+                          className="relative text-stone-400 hover:text-stone-600 p-1 rounded hover:bg-stone-100"
                         >
                           <PaperclipIcon className="w-3.5 h-3.5" />
+                          {(docCounts[inv.id] ?? 0) > 0 && (
+                            <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-teal-500 text-white text-[7px] font-bold rounded-full flex items-center justify-center leading-none">
+                              {docCounts[inv.id]}
+                            </span>
+                          )}
                         </button>
                         <div className="flex items-center gap-0">
                           <div ref={openDropdownId === inv.id ? dropdownRef : undefined}>
@@ -440,11 +525,11 @@ export function InvoicesSection({
                             </div>
                             <div>
                               <label className="block text-xs text-[#0d3d3b] mb-1">Ship Date</label>
-                              <input type="date" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white" value={editForm.shipmentDate || ""} onChange={f("shipmentDate")} />
+                              <DateField value={editForm.shipmentDate || ""} onChange={(v) => setEditForm(prev => ({ ...prev, shipmentDate: v }))} />
                             </div>
                             <div>
                               <label className="block text-xs text-[#0d3d3b] mb-1">Invoice Date</label>
-                              <input type="date" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white" value={editForm.invoiceDate || ""} onChange={f("invoiceDate")} />
+                              <DateField value={editForm.invoiceDate || ""} onChange={(v) => setEditForm(prev => ({ ...prev, invoiceDate: v }))} />
                             </div>
                           </div>
 
@@ -539,12 +624,13 @@ export function InvoicesSection({
       {attachmentsId !== null && (() => {
         const inv = list.find(i => i.id === attachmentsId);
         if (!inv) return null;
+        const closeModal = () => { refreshDocCounts(inv.id); setAttachmentsId(null); };
         return (
-          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setAttachmentsId(null)}>
+          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={closeModal}>
             <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-5" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-4">
                 <p className="text-sm font-semibold text-stone-700">Attachments — {inv.invoiceNumber}</p>
-                <button onClick={() => setAttachmentsId(null)} className="text-stone-400 hover:text-stone-600 text-xl leading-none">×</button>
+                <button onClick={closeModal} className="text-stone-400 hover:text-stone-600 text-xl leading-none">×</button>
               </div>
               <DocumentUpload invoiceId={inv.id} invoiceNumber={inv.invoiceNumber} />
             </div>
@@ -560,16 +646,60 @@ export function InvoicesSection({
           <div ref={dropdownRef} style={{ position: "fixed", top: dropdownPos.top, right: dropdownPos.right, zIndex: 9999 }} className="bg-white border border-stone-200 rounded-md shadow-lg min-w-[150px] py-1 text-left">
             <button onClick={() => { setOpenDropdownId(null); openEdit(inv); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">View/Edit</button>
             <a href={`/api/invoice-pdf?invoice=${inv.invoiceNumber}`} target="_blank" rel="noopener noreferrer" className="block w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50" onClick={() => setOpenDropdownId(null)}>Print</a>
-            {!inv.invoiceNumber.startsWith("PEND-") && (
-              sentId === inv.id ? (
-                <span className="block px-4 py-2 text-sm text-[#0d3d3b] font-medium">Sent ✓</span>
-              ) : (
-                <button onClick={() => { setOpenDropdownId(null); openSend(inv); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">Send</button>
-              )
-            )}
+            {!inv.invoiceNumber.startsWith("PEND-") && (() => {
+              const logs = inv.emailLogs || [];
+              const last = logs[0];
+              return (
+                <>
+                  <button onClick={() => { setOpenDropdownId(null); openSend(inv); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">
+                    {logs.length > 0 ? "Re-send" : "Send"}
+                  </button>
+                  {last && (
+                    <div className="px-4 py-1.5 text-[10px] text-stone-400 leading-tight border-t border-stone-100" suppressHydrationWarning>
+                      Sent {fmtSentDateTime(last.sentAt)}{logs.length > 1 ? ` · ${logs.length} times` : ""}
+                      <br />to {last.sentTo}
+                      {last.openCount ? <><br /><span className="text-[#0d3d3b]">Opened by client{last.firstOpenedAt ? ` · ${fmtSentDateTime(last.firstOpenedAt)}` : ""}</span></> : null}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
             <button onClick={() => { setOpenDropdownId(null); startTransition(async () => { await duplicateInvoice(inv.id); router.refresh(); }); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">Duplicate</button>
             <div className="border-t border-stone-100 my-1" />
-            <button onClick={() => { setOpenDropdownId(null); if (!confirm(`Delete invoice ${inv.invoiceNumber}?`)) return; fetch(`/api/invoices/${inv.id}`, { method: "DELETE" }).then(() => router.refresh()); }} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</button>
+            <button onClick={async () => { setOpenDropdownId(null); if (!confirm(`Delete invoice ${inv.invoiceNumber}?`)) return; try { await apiMutate(`/api/invoices/${inv.id}`, { method: "DELETE" }); router.refresh(); } catch (err) { alert(err instanceof Error ? err.message : "Couldn't delete this invoice."); } }} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</button>
+          </div>,
+          document.body
+        );
+      })()}
+
+      {/* Send-history popover — opens when clicking the "✓ Sent" badge */}
+      {sentHistId !== null && sentHistPos && typeof document !== "undefined" && (() => {
+        const inv = list.find(i => i.id === sentHistId);
+        const logs = inv?.emailLogs || [];
+        if (!inv || logs.length === 0) return null;
+        return createPortal(
+          <div ref={sentHistRef} style={{ position: "fixed", top: sentHistPos.top, left: sentHistPos.left, zIndex: 9999, width: 272, maxHeight: sentHistPos.maxH }} className="bg-white border border-stone-200 rounded-lg shadow-xl overflow-hidden flex flex-col">
+            <div className="px-3 py-2 bg-[#0d3d3b] flex items-center justify-between shrink-0">
+              <span className="text-xs font-semibold text-white">Send history — {inv.invoiceNumber}</span>
+              <span className="text-[10px] text-[#6ee7b7]">{logs.length} send{logs.length > 1 ? "s" : ""}</span>
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-stone-100">
+              {logs.map((log, i) => (
+                <div key={i} className="px-3 py-2">
+                  <p className="text-xs font-medium text-stone-800" suppressHydrationWarning>{fmtSentDateTime(log.sentAt)}</p>
+                  <p className="text-[11px] text-stone-500 mt-0.5">to {log.sentTo}</p>
+                  {log.sentCc && <p className="text-[10px] text-stone-400">cc {log.sentCc}</p>}
+                  {log.openCount ? (
+                    <p className="text-[10px] text-[#0d3d3b] mt-0.5" suppressHydrationWarning>
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#0d3d3b] mr-1 align-middle" />
+                      Opened by client{log.firstOpenedAt ? ` · ${fmtSentDateTime(log.firstOpenedAt)}` : ""}
+                    </p>
+                  ) : (
+                    <p className="text-[10px] text-stone-300 mt-0.5">Not opened yet</p>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>,
           document.body
         );

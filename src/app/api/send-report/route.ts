@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
       item: invoices.item,
       shipmentDate: invoices.shipmentDate,
       shipmentStatus: invoices.shipmentStatus,
+      destination: invoices.destination,
       terms: purchaseOrders.terms,
       transportType: purchaseOrders.transportType,
       vehicleId: invoices.vehicleId,
@@ -81,7 +82,8 @@ export async function POST(req: NextRequest) {
     shipmentDate: { header: "Ship Date", getValue: (r) => r.shipmentDate },
     shipmentStatus: { header: "Status", getValue: (r) => ({ programado: "Scheduled", en_transito: "In Transit", en_aduana: "Customs", entregado: "Delivered" }[r.shipmentStatus ?? ""] || r.shipmentStatus) },
     estimatedArrival: { header: "ETA", getValue: (r) => r.estimatedArrival },
-    terms: { header: "Terms", getValue: (r) => r.terms },
+    destination: { header: "Final Destination", getValue: (r) => r.destination },
+    terms: { header: "Incoterm", getValue: (r) => r.terms },
     transportType: { header: "Transport", getValue: (r) => r.transportType === "ffcc" ? "FFCC" : r.transportType === "ship" ? "Ship" : r.transportType === "truck" ? "Truck" : r.transportType },
     licenseFsc: { header: "License #", getValue: (r) => r.licenseFsc },
     chainOfCustody: { header: "Chain of Custody", getValue: (r) => r.chainOfCustody },
@@ -174,7 +176,7 @@ async function generatePdfBuffer(
     currentLocation: 75, lastLocationUpdate: 65, poNumber: 50, clientPoNumber: 55,
     invoiceNumber: 60, vehicleId: 65, blNumber: 55, quantityTons: 50, sellPrice: 45,
     billingDocument: 55, item: 70, shipmentDate: 60, shipmentStatus: 55, estimatedArrival: 60,
-    terms: 70, transportType: 55, licenseFsc: 60, chainOfCustody: 55, inputClaim: 60, outputClaim: 60,
+    destination: 70, terms: 70, transportType: 55, licenseFsc: 60, chainOfCustody: 55, inputClaim: 60, outputClaim: 60,
   };
   const totalBase = selectedCols.reduce((s, c) => s + (baseWidths[c] || 50), 0);
   const scale = W / totalBase;

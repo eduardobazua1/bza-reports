@@ -5,7 +5,8 @@ import { ReportsTabs } from "@/components/reports-tabs";
 
 export default function ReportsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const showTabs = pathname !== "/reports/client-report";
+  const noTabs = ["/reports/client-report", "/reports/audit-export"];
+  const showTabs = !noTabs.includes(pathname);
 
   return (
     <div className="space-y-6">

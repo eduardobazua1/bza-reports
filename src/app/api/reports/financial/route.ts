@@ -189,12 +189,12 @@ export async function GET(req: NextRequest) {
 
     const entityMap = new Map<string, { invoices: number; tons: number; revenue: number; costNoFreight: number; freight: number; cost: number; profit: number; receivable: number; paidInv: number; unpaidInv: number; transports: Record<string, number> }>();
     data.forEach((r) => {
-      const name = (r as Record<string, string>)[nameKey];
+      const name = (r as unknown as Record<string, string>)[nameKey];
       if (!entityMap.has(name)) entityMap.set(name, { invoices: 0, tons: 0, revenue: 0, costNoFreight: 0, freight: 0, cost: 0, profit: 0, receivable: 0, paidInv: 0, unpaidInv: 0, transports: {} });
       const e = entityMap.get(name)!;
       e.invoices += 1; e.tons += r.quantityTons; e.revenue += r.revenue;
       e.costNoFreight += r.costNoFreight; e.freight += r.freight; e.cost += r.cost; e.profit += r.profit;
-      if ((r as Record<string, string>)[payKey] === "paid") e.paidInv += 1;
+      if ((r as unknown as Record<string, string>)[payKey] === "paid") e.paidInv += 1;
       else { e.unpaidInv += 1; e.receivable += r.revenue; }
       e.transports[r.transportType] = (e.transports[r.transportType] || 0) + r.quantityTons;
     });

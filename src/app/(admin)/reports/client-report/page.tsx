@@ -17,11 +17,12 @@ const ALL_COLS: { key: string; label: string; default: boolean }[] = [
   { key: "sellPrice",         label: "Price",              default: true  },
   { key: "shipmentStatus",    label: "Status",             default: true  },
   { key: "shipmentDate",      label: "Ship Date",          default: true  },
+  { key: "destination",       label: "Final Destination",  default: false },
   { key: "lastLocationUpdate",label: "Last Update",        default: false },
   { key: "estimatedArrival",  label: "ETA",                default: false },
   { key: "item",              label: "Item",               default: false },
   { key: "billingDocument",   label: "Billing Doc.",       default: false },
-  { key: "terms",             label: "Terms",              default: false },
+  { key: "terms",             label: "Incoterm",           default: false },
   { key: "transportType",     label: "Transport",          default: false },
   { key: "licenseFsc",        label: "License #",          default: false },
   { key: "chainOfCustody",    label: "Chain of Custody",   default: false },
@@ -59,18 +60,30 @@ export default function ClientReportPage() {
   const [extraOpen, setExtraOpen] = useState(false);
   const [preview, setPreview] = useState<PreviewRow[]>([]);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [addressBook, setAddressBook] = useState<string[]>([]);
+  const [lastRecipients, setLastRecipients] = useState<{ to: string; cc: string | null } | null>(null);
 
   useEffect(() => {
     fetch("/api/clients")
       .then(r => r.json())
       .then(data => { if (Array.isArray(data)) setClients(data); })
       .catch(() => {});
+    // Address book for autocomplete (from prior sends).
+    fetch("/api/email-recipients")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setAddressBook(d.addresses || []); })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
-    if (!clientId) { setEmail(""); setPreview([]); return; }
+    if (!clientId) { setEmail(""); setPreview([]); setLastRecipients(null); return; }
     const c = clients.find(c => c.id === clientId);
     setEmail(c?.contactEmail ?? "");
+    // Last recipient used for this client, so "Use last" can fill it.
+    fetch(`/api/email-recipients?clientId=${clientId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setLastRecipients(d.last || null); })
+      .catch(() => {});
   }, [clientId, clients]);
 
   const fetchPreview = useCallback(async () => {
@@ -171,14 +184,28 @@ export default function ClientReportPage() {
               </select>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-stone-400 uppercase tracking-wide mb-1.5">Recipient email</label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-[11px] font-semibold text-stone-400 uppercase tracking-wide">Recipient email</label>
+                {lastRecipients && lastRecipients.to !== email && (
+                  <button
+                    type="button"
+                    onClick={() => setEmail(lastRecipients.to)}
+                    className="text-[11px] text-[#0d3d3b] hover:underline font-medium"
+                    title={`Last used: ${lastRecipients.to}`}
+                  >
+                    ↩ Use last recipient
+                  </button>
+                )}
+              </div>
               <input
                 type="email"
+                list="client-report-email-book"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="email@client.com"
                 className="w-full text-sm border border-stone-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]/20 text-stone-700"
               />
+              <datalist id="client-report-email-book">{addressBook.map(a => <option key={a} value={a} />)}</datalist>
             </div>
           </div>
 

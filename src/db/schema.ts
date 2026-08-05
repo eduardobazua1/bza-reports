@@ -10,6 +10,21 @@ export const users = sqliteTable("users", {
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
+// Audit / activity log — who did what, when (field-level diffs in `changes`)
+export const activityLog = sqliteTable("activity_log", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id"),
+  userName: text("user_name"),
+  userEmail: text("user_email"),
+  action: text("action").notNull(),        // create | update | delete | login | logout | view | export | send | pay
+  entity: text("entity").notNull(),         // invoice | purchase_order | client | supplier | payment | user | page ...
+  entityId: text("entity_id"),
+  entityLabel: text("entity_label"),        // human label, e.g. invoice number / client name
+  changes: text("changes"),                 // JSON: [{ field, before, after }]
+  meta: text("meta"),                       // JSON: extra context (ip, path, etc.)
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
 export const clients = sqliteTable("clients", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
@@ -63,6 +78,12 @@ export const suppliers = sqliteTable("suppliers", {
   fscInputClaim: text("fsc_input_claim"),
   fscOutputClaim: text("fsc_output_claim"),
   pefc: text("pefc"),            // PEFC number (when certType = "pefc")
+  certFileName:  text("cert_file_name"),
+  certFileUrl:   text("cert_file_url"),
+  certFileSize:  integer("cert_file_size"),
+  certFile2Name: text("cert_file2_name"),
+  certFile2Url:  text("cert_file2_url"),
+  certFile2Size: integer("cert_file2_size"),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
@@ -188,6 +209,10 @@ export const invoices = sqliteTable("invoices", {
   customerPaidDate: text("customer_paid_date"), // actual date client paid
   supplierInvoiceNumber: text("supplier_invoice_number"), // supplier's invoice # for reference
   supplierPaidDate: text("supplier_paid_date"), // actual date we paid supplier
+  // Per-invoice certification override (null = inherit from PO). For mixed POs where some
+  // cars are "PEFC/FSC Certified" and others are "Controlled Sources"/none.
+  certType: text("cert_type"), // "pefc" | "fsc" | "none" | null (null = inherit PO)
+  outputClaim: text("output_claim"), // e.g. "100% PEFC Certified"; null = inherit PO
   notes: text("notes"),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
@@ -294,6 +319,29 @@ export const supplierInvoices = sqliteTable("supplier_invoices", {
   linkedInvoiceId: integer("linked_invoice_id").references(() => invoices.id),
   paymentStatus: text("payment_status").notNull().default("unpaid"),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  // CoC audit evidence (extracted from the supplier's transaction documents — never inferred)
+  supplierStatementRaw: text("supplier_statement_raw"),      // verbatim fibre/CoC line from the supplier doc
+  supplierCertDocumented: text("supplier_cert_documented"),  // cert code as printed on the doc, or "Not stated…"
+  inputClaimEvidenced: text("input_claim_evidenced"),        // registrable input claim, or "No … Claim Evidenced"
+  evidenceSource: text("evidence_source"),                   // Supplier Invoice / Packing List / Bill of Lading / Multiple Documents / Not Evidenced
+  auditValidation: text("audit_validation"),                 // last computed validation snapshot
+});
+
+// Customer Certification Master — BZA may only transfer an FSC/PEFC claim to a customer with a valid certificate.
+export const customerCertificates = sqliteTable("customer_certificates", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  clientId: integer("client_id").notNull().references(() => clients.id),
+  scheme: text("scheme").notNull(),                          // 'fsc' | 'pefc'
+  certificateNumber: text("certificate_number"),
+  certifier: text("certifier"),
+  issueDate: text("issue_date"),
+  expiryDate: text("expiry_date"),
+  status: text("status").notNull().default("pending"),       // 'valid' | 'expired' | 'suspended' | 'pending'
+  verificationSource: text("verification_source"),
+  lastVerifiedAt: text("last_verified_at"),
+  fileName: text("file_name"),                               // attached certificate PDF
+  fileUrl: text("file_url"),                                 // base64 data URL
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
 // Supplier Orders - individual purchase orders sent to supplier under a BZA PO
@@ -376,6 +424,17 @@ export const customerPaymentInvoices = sqliteTable("customer_payment_invoices", 
 });
 
 // Email send history for invoices
+// Log of each time a Supplier Order (PO to supplier) PDF was emailed.
+// Enables re-sending and a real send history that persists across reloads.
+export const supplierOrderSends = sqliteTable("supplier_order_sends", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  supplierOrderId: integer("supplier_order_id").notNull().references(() => supplierOrders.id),
+  purchaseOrderId: integer("purchase_order_id").notNull().references(() => purchaseOrders.id),
+  sentAt: text("sent_at").notNull().$defaultFn(() => new Date().toISOString()),
+  sentTo: text("sent_to").notNull(),
+  note: text("note"), // optional, e.g. "corrected version"
+});
+
 export const invoiceEmailLogs = sqliteTable("invoice_email_logs", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   invoiceId: integer("invoice_id").notNull().references(() => invoices.id),
@@ -394,7 +453,7 @@ export const invoiceEmailLogs = sqliteTable("invoice_email_logs", {
 export const documents = sqliteTable("documents", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   invoiceId: integer("invoice_id").notNull().references(() => invoices.id),
-  type: text("type", { enum: ["invoice", "bl", "pl", "other"] }).notNull(),
+  type: text("type", { enum: ["invoice", "bl", "pl", "other", "supplier_invoice"] }).notNull(),
   fileName: text("file_name").notNull(),
   fileUrl: text("file_url").notNull(),
   fileSize: integer("file_size"),
@@ -454,4 +513,175 @@ export const pushSubscriptions = sqliteTable("push_subscriptions", {
   auth:     text("auth").notNull(),
   userAgent: text("user_agent"),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// =============================================================================
+// FINANCIAL MODULE — Bank accounts, transactions, OpEx, capital, period close
+// =============================================================================
+
+// Bank accounts BZA operates (Vantage Checking #45161, Money Market #45069, etc.)
+export const bankAccounts = sqliteTable("bank_accounts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),                          // "Vantage Business Checking"
+  bank: text("bank").notNull(),                          // "Vantage Bank Texas"
+  accountNumberMasked: text("account_number_masked").notNull(), // "XXX45161"
+  accountType: text("account_type", { enum: ["checking", "money_market", "savings", "other"] }).notNull(),
+  currency: text("currency").notNull().default("USD"),
+  openingBalance: real("opening_balance").notNull().default(0),
+  openingDate: text("opening_date").notNull(),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  notes: text("notes"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Bank transactions — every line from bank statements (imported via CSV/PDF)
+export const bankTransactions = sqliteTable("bank_transactions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  bankAccountId: integer("bank_account_id").notNull().references(() => bankAccounts.id),
+  transactionDate: text("transaction_date").notNull(),     // YYYY-MM-DD
+  amount: real("amount").notNull(),                        // signed: positive=credit, negative=debit
+  balanceAfter: real("balance_after"),                     // running balance if available from statement
+  descriptionRaw: text("description_raw").notNull(),       // verbatim from bank
+  vendorName: text("vendor_name"),                         // extracted/inferred counterparty
+  // Categorization
+  category: text("category", { enum: [
+    "Revenue", "COGS", "OpEx", "Capital", "Distribution",
+    "Other Income", "Internal Transfer", "Uncategorized"
+  ] }).notNull().default("Uncategorized"),
+  subcategory: text("subcategory"),                        // e.g. "Wire Fees", "Commissions — Sasson"
+  manuallyCategorized: integer("manually_categorized", { mode: "boolean" }).notNull().default(false),
+  // Reconciliation to other records
+  reconciledInvoiceId: integer("reconciled_invoice_id").references(() => invoices.id),
+  reconciledSupplierPaymentId: integer("reconciled_supplier_payment_id").references(() => supplierPayments.id),
+  reconciledOpExpenseId: integer("reconciled_op_expense_id"),  // forward ref — operatingExpenses below
+  reconciledCapitalId: integer("reconciled_capital_id"),       // forward ref — capitalMovements below
+  // Internal transfer pairing — both halves should sum to 0
+  internalTransferPairId: integer("internal_transfer_pair_id"),
+  // Import provenance
+  importedFrom: text("imported_from"),                     // filename or "manual"
+  importedAt: text("imported_at").notNull().$defaultFn(() => new Date().toISOString()),
+  // Period locking
+  accountingPeriodId: integer("accounting_period_id"),     // forward ref — accountingPeriods below
+  notes: text("notes"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Pattern-based rules for auto-categorizing imported bank transactions
+export const transactionCategoryRules = sqliteTable("transaction_category_rules", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  // Matching: case-insensitive substring match on description_raw
+  pattern: text("pattern").notNull(),                      // e.g. "CELULOSA ARAUCO", "EULER HERMES"
+  matchType: text("match_type", { enum: ["contains", "starts_with", "regex"] }).notNull().default("contains"),
+  // Output classification
+  category: text("category", { enum: [
+    "Revenue", "COGS", "OpEx", "Capital", "Distribution",
+    "Other Income", "Internal Transfer", "Uncategorized"
+  ] }).notNull(),
+  subcategory: text("subcategory"),
+  vendorName: text("vendor_name"),
+  // If this rule should also reconcile to a specific entity
+  defaultReconcileType: text("default_reconcile_type", { enum: ["invoice", "supplier_payment", "op_expense", "capital", "none"] }).notNull().default("none"),
+  // Priority — higher wins (e.g. "WIRE FEE" rule should beat customer name rule because fees contain customer names)
+  priority: integer("priority").notNull().default(100),
+  active: integer("active", { mode: "boolean" }).notNull().default(true),
+  notes: text("notes"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Operating expenses (commissions, prof services, bank fees, insurance, etc.)
+export const operatingExpenses = sqliteTable("operating_expenses", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  expenseDate: text("expense_date").notNull(),
+  category: text("category").notNull(),                    // "Commissions", "Professional Services", etc.
+  vendor: text("vendor").notNull(),                        // "Salvador Sasson", "Drage CPA"
+  amount: real("amount").notNull(),                        // positive number = expense
+  currency: text("currency").notNull().default("USD"),
+  // Optional linkage
+  bankTransactionId: integer("bank_transaction_id").references(() => bankTransactions.id),
+  purchaseOrderId: integer("purchase_order_id").references(() => purchaseOrders.id),
+  invoiceId: integer("invoice_id").references(() => invoices.id),
+  // Period locking
+  accountingPeriodId: integer("accounting_period_id"),
+  notes: text("notes"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Capital movements: contributions from members, distributions, return of capital
+export const capitalMovements = sqliteTable("capital_movements", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  movementDate: text("movement_date").notNull(),
+  movementType: text("movement_type", { enum: [
+    "contribution",         // member puts capital in
+    "distribution",         // distribution to member (taxable)
+    "owner_personal",       // payment for owner's personal use (e.g. Capital One CC, personal wires)
+    "spouse_business",      // wires for spouse-related business (not BZA)
+    "return_of_capital"     // return of capital to member (reduces basis, not taxable)
+  ] }).notNull(),
+  memberName: text("member_name").notNull(),               // "CREA Investments BZA LLC", "Jesús E. Bazua", etc.
+  amount: real("amount").notNull(),                        // positive = inflow to BZA equity; negative = outflow
+  currency: text("currency").notNull().default("USD"),
+  bankTransactionId: integer("bank_transaction_id").references(() => bankTransactions.id),
+  accountingPeriodId: integer("accounting_period_id"),
+  notes: text("notes"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Accounting periods — monthly close workflow
+export const accountingPeriods = sqliteTable("accounting_periods", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  periodYear: integer("period_year").notNull(),
+  periodMonth: integer("period_month").notNull(),          // 1-12
+  status: text("status", { enum: ["open", "closing", "closed", "published"] }).notNull().default("open"),
+  closedAt: text("closed_at"),
+  closedByUserId: integer("closed_by_user_id").references(() => users.id),
+  publishedAt: text("published_at"),
+  notes: text("notes"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Period balance snapshots — frozen at close, used for historical reporting and BS roll-forward
+export const periodSnapshots = sqliteTable("period_snapshots", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  accountingPeriodId: integer("accounting_period_id").notNull().references(() => accountingPeriods.id),
+  lineItem: text("line_item").notNull(),                   // e.g. "Cash — #XXX45161", "AR — Kimberly Clark", "Total Equity"
+  lineCategory: text("line_category", { enum: [
+    "asset_cash", "asset_ar", "asset_inventory", "asset_supplier_prepay", "asset_other",
+    "liability_ap", "liability_customer_deposit", "liability_debt", "liability_accrued", "liability_other",
+    "equity_contributed", "equity_distributed", "equity_retained", "equity_total"
+  ] }).notNull(),
+  amount: real("amount").notNull(),
+  source: text("source", { enum: ["computed", "manual_adjustment"] }).notNull().default("computed"),
+  notes: text("notes"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// BZA Compliance Certificates (FSC CoC, PEFC CoC, etc.)
+export const certificates = sqliteTable("certificates", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),                       // "FSC Chain of Custody"
+  certType: text("cert_type").notNull(),               // "fsc" | "pefc" | "other"
+  certCode: text("cert_code"),                         // "CU-COC-892954"
+  issuedBy: text("issued_by"),                         // "Control Union Certifications"
+  issuedTo: text("issued_to"),                         // "BZA International Services LLC"
+  validFrom: text("valid_from"),                       // "2023-01-30"
+  validUntil: text("valid_until"),                     // "2028-01-29"
+  standard: text("standard"),                          // FSC-STD-40-004 V3-1 ...
+  notes: text("notes"),
+  fileName: text("file_name"),
+  fileUrl: text("file_url"),                           // base64 data URL
+  fileSize: integer("file_size"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Documents for the FSC/PEFC audit package (handbook, labor assessment, etc.), stored to download & send.
+export const auditDocuments = sqliteTable("audit_documents", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  itemKey: text("item_key").notNull(),   // which of the 10 checklist items (e.g. "procedures", "labor", ...)
+  cert: text("cert"),                     // "fsc" | "pefc" | "both" | null
+  title: text("title"),
+  fileName: text("file_name").notNull(),
+  fileUrl: text("file_url").notNull(),    // base64 data URL
+  fileSize: integer("file_size"),
+  uploadedAt: text("uploaded_at").notNull().$defaultFn(() => new Date().toISOString()),
 });

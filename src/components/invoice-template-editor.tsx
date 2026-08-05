@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { apiMutate } from "@/lib/api-mutate";
 
 type InvoiceSettings = {
   companyName: string;
@@ -64,13 +65,18 @@ export function InvoiceTemplateEditor({ initial }: { initial?: Partial<InvoiceSe
 
   async function handleSave() {
     setSaving(true);
-    await fetch("/api/settings?key=invoice", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(cfg),
-    });
-    setSaving(false);
-    setSaved(true);
+    try {
+      await apiMutate("/api/settings?key=invoice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(cfg),
+      });
+      setSaved(true); // only claim "Saved" once the server confirms
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Couldn't save the template.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   function Field({ label, field, type = "text", placeholder }: {

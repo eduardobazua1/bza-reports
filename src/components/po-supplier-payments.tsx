@@ -3,15 +3,19 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { DateField } from "@/components/date-field";
 import { Trash2 } from "lucide-react";
 
 type Payment = {
   id: number;
   amountUsd: number;
   paymentDate: string;
+  paymentMethod?: string | null;
   reference: string | null;
   notes: string | null;
 };
+
+const PAYMENT_METHODS = ["Wire transfer", "Check", "ACH", "Cash", "Other"];
 
 export function POSupplierPayments({
   purchaseOrderId,
@@ -27,10 +31,12 @@ export function POSupplierPayments({
   const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
   const [form, setForm] = useState({
     amountUsd: "",
     paymentDate: new Date().toISOString().split("T")[0],
+    paymentMethod: "Wire transfer",
     reference: "",
     notes: "",
   });
@@ -42,23 +48,53 @@ export function POSupplierPayments({
     e.preventDefault();
     if (!form.amountUsd || !form.paymentDate) return;
     setSaving(true);
+    setError(null);
     try {
-      const res = await fetch("/api/supplier-payments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          supplierId,
-          purchaseOrderId,
-          amountUsd: parseFloat(form.amountUsd),
-          paymentDate: form.paymentDate,
-          reference: form.reference || null,
-          notes: form.notes || null,
-        }),
+      const payload = JSON.stringify({
+        supplierId,
+        purchaseOrderId,
+        amountUsd: parseFloat(form.amountUsd),
+        paymentDate: form.paymentDate,
+        paymentMethod: form.paymentMethod || null,
+        reference: form.reference || null,
+        notes: form.notes || null,
       });
-      if (!res.ok) throw new Error("Failed to save");
-      setForm({ amountUsd: "", paymentDate: new Date().toISOString().split("T")[0], reference: "", notes: "" });
+      // Retry ONLY when fetch throws (network-level failure, e.g. the dev server
+      // is momentarily down). A thrown fetch never reached the server, so retrying
+      // can't create a duplicate. HTTP error responses are NOT retried here.
+      let res: Response | null = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          res = await fetch("/api/supplier-payments", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: payload,
+          });
+          break;
+        } catch {
+          if (attempt < 2) await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+        }
+      }
+      if (!res) {
+        throw new Error("Couldn't reach the server. Check that the app is running and your connection, then try again.");
+      }
+      // Session expired: middleware redirects our POST to the login page (arrives as 200 HTML),
+      // so res.ok would be misleadingly true. Detect the redirect / non-JSON response.
+      const isJson = res.headers.get("content-type")?.includes("application/json");
+      if (res.redirected || res.url.includes("/login") || !isJson) {
+        throw new Error("Your session expired. Reload the page, log in again, then re-enter this payment.");
+      }
+      if (!res.ok) {
+        let msg = `Couldn't save the payment (error ${res.status}).`;
+        try { const j = await res.json(); if (j?.error) msg = j.error; } catch { /* keep default */ }
+        throw new Error(msg);
+      }
+      // Success — reset and refresh. Keep the form's data on failure so nothing is lost.
+      setForm({ amountUsd: "", paymentDate: new Date().toISOString().split("T")[0], paymentMethod: "Wire transfer", reference: "", notes: "" });
       setShowForm(false);
       router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't save the payment.");
     } finally {
       setSaving(false);
     }
@@ -119,11 +155,10 @@ export function POSupplierPayments({
       {showForm && (
         <form onSubmit={handleAdd} className="p-4 border-b border-stone-100 bg-stone-50">
           <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-3">New Payment</p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             <div>
               <label className="text-xs text-stone-500 block mb-1">
                 Amount (USD) *
-                <span className="ml-1 font-normal text-stone-400">(negative = credit received)</span>
               </label>
               <input
                 type="number"
@@ -137,19 +172,29 @@ export function POSupplierPayments({
             </div>
             <div>
               <label className="text-xs text-stone-500 block mb-1">Payment Date *</label>
-              <input
-                type="date"
+              <DateField
                 required
                 value={form.paymentDate}
-                onChange={(e) => setForm((f) => ({ ...f, paymentDate: e.target.value }))}
-                className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#0d3d3b]"
+                onChange={(v) => setForm((f) => ({ ...f, paymentDate: v }))}
               />
             </div>
             <div>
-              <label className="text-xs text-stone-500 block mb-1">Reference</label>
+              <label className="text-xs text-stone-500 block mb-1">Method</label>
+              <select
+                value={form.paymentMethod}
+                onChange={(e) => setForm((f) => ({ ...f, paymentMethod: e.target.value }))}
+                className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#0d3d3b]"
+              >
+                {PAYMENT_METHODS.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-stone-500 block mb-1">Reference #</label>
               <input
                 type="text"
-                placeholder="Wire ref, check #..."
+                placeholder="Wire / check #"
                 value={form.reference}
                 onChange={(e) => setForm((f) => ({ ...f, reference: e.target.value }))}
                 className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#0d3d3b]"
@@ -166,6 +211,12 @@ export function POSupplierPayments({
               />
             </div>
           </div>
+          {error && (
+            <div className="mt-3 flex items-start gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+              <span className="font-semibold">Couldn&apos;t save:</span>
+              <span>{error}</span>
+            </div>
+          )}
           <div className="flex gap-2 mt-3">
             <button
               type="submit"
@@ -176,7 +227,7 @@ export function POSupplierPayments({
             </button>
             <button
               type="button"
-              onClick={() => setShowForm(false)}
+              onClick={() => { setShowForm(false); setError(null); }}
               className="px-4 py-1.5 text-sm font-medium bg-stone-100 text-stone-600 rounded-md hover:bg-stone-200 transition-colors"
             >
               Cancel
@@ -192,6 +243,7 @@ export function POSupplierPayments({
             <tr>
               <th className="text-left px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Date</th>
               <th className="text-right px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Amount</th>
+              <th className="text-left px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Method</th>
               <th className="text-left px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Reference</th>
               <th className="text-left px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Notes</th>
               <th className="px-4 py-2.5"></th>
@@ -200,7 +252,7 @@ export function POSupplierPayments({
           <tbody>
             {payments.length === 0 && (
               <tr>
-                <td colSpan={5} className="p-6 text-center text-stone-400 text-sm">
+                <td colSpan={6} className="p-6 text-center text-stone-400 text-sm">
                   No payments recorded for this PO yet.
                 </td>
               </tr>
@@ -213,6 +265,11 @@ export function POSupplierPayments({
                     ? <span className="text-emerald-700">+{formatCurrency(Math.abs(p.amountUsd))} <span className="font-normal text-emerald-600 text-[10px]">credit</span></span>
                     : <span className="text-[#0d3d3b]">{formatCurrency(p.amountUsd)}</span>
                   }
+                </td>
+                <td className="px-4 py-2.5 text-xs">
+                  {p.paymentMethod
+                    ? <span className="inline-flex items-center rounded-full bg-[#0d3d3b]/8 text-[#0d3d3b] px-2 py-0.5 text-[11px] font-medium">{p.paymentMethod}</span>
+                    : <span className="text-stone-300">—</span>}
                 </td>
                 <td className="px-4 py-2.5 text-xs text-[#0d3d3b]">{p.reference || "—"}</td>
                 <td className="px-4 py-2.5 text-stone-400">{p.notes || "—"}</td>

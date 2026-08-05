@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { BzaLogo } from "@/components/bza-logo";
+import { DateField } from "@/components/date-field";
 import { formatDate, formatNumber, shipmentStatusLabels, transportTypeLabels } from "@/lib/utils";
 
 type DocInfo = { id: number; type: string };
@@ -215,12 +216,12 @@ export function PortalClient({ token, userName }: { token: string; userName?: st
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-stone-400 uppercase">From</label>
-                  <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+                  <DateField value={dateFrom} onChange={setDateFrom}
                     className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm" />
                 </div>
                 <div>
                   <label className="text-[10px] text-stone-400 uppercase">To</label>
-                  <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+                  <DateField value={dateTo} onChange={setDateTo}
                     className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm" />
                 </div>
               </div>

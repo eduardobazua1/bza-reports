@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getPurchaseOrder, getClients, getSuppliers, getSupplierInvoicesByPO } from "@/server/queries";
 import { db } from "@/db";
 import { products } from "@/db/schema";
+import { withRetry } from "@/lib/retry";
 import {
   formatCurrency,
   formatNumber,
@@ -26,13 +27,13 @@ export default async function PurchaseOrderDetailPage({
 }) {
   const { id } = await params;
   const numId = Number(id);
-  const [po, clients, suppliers, productsList, supplierInvoicesList] = await Promise.all([
+  const [po, clients, suppliers, productsList, supplierInvoicesList] = await withRetry(() => Promise.all([
     getPurchaseOrder(numId),
     getClients(),
     getSuppliers(),
     db.select({ id: products.id, name: products.name, grade: products.grade, fscLicense: products.fscLicense, chainOfCustody: products.chainOfCustody, inputClaim: products.inputClaim, outputClaim: products.outputClaim, pefc: products.pefc }).from(products).orderBy(products.name),
     getSupplierInvoicesByPO(numId),
-  ]);
+  ]));
 
   if (!po) notFound();
 
@@ -143,7 +144,7 @@ export default async function PurchaseOrderDetailPage({
       {certType && (
         <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-5">
           <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-4">
-            {certType === "fsc" ? "FSC Certification" : "PEFC Certification"}
+            Certification
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-4">
             {certType === "pefc" && po.pefc && (
@@ -158,9 +159,7 @@ export default async function PurchaseOrderDetailPage({
             {po.inputClaim && (
               <InfoItem label="Input Claim" value={po.inputClaim} />
             )}
-            {po.outputClaim && (
-              <InfoItem label="Output Claim" value={po.outputClaim} />
-            )}
+            <InfoItem label="Output Claim" value={po.outputClaim || "None"} />
           </div>
         </div>
       )}

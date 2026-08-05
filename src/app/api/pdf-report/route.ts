@@ -43,6 +43,7 @@ type Row = {
   shipmentStatus: string;
   customerPaymentStatus: string;
   supplierPaymentStatus: string;
+  destination: string | null;
   terms: string | null;
   transportType: string | null;
   vehicleId: string | null;
@@ -93,7 +94,8 @@ const columnDefs: Record<string, { header: string; baseWidth: number; align: "le
   product: { header: "Product", baseWidth: 70, align: "left", getValue: (r) => r.product || "-" },
   shipmentDate: { header: "Ship Date", baseWidth: 60, align: "left", getValue: (r) => r.shipmentDate || "-" },
   shipmentStatus: { header: "Status", baseWidth: 55, align: "left", getValue: (r) => statusLabels[r.shipmentStatus] || r.shipmentStatus },
-  terms: { header: "Terms", baseWidth: 70, align: "left", getValue: (r) => r.terms || "-" },
+  destination: { header: "Final Destination", baseWidth: 75, align: "left", getValue: (r) => r.destination || "-" },
+  terms: { header: "Incoterm", baseWidth: 70, align: "left", getValue: (r) => r.terms || "-" },
   transportType: { header: "Transport", baseWidth: 55, align: "left", getValue: (r) => transportLabels[r.transportType ?? ""] || r.transportType || "-" },
   customerPaymentStatus: { header: "Payment", baseWidth: 50, align: "left", getValue: (r) => r.customerPaymentStatus === "paid" ? "Paid" : "Pending" },
   supplierPaymentStatus: { header: "Supp. Payment", baseWidth: 55, align: "left", getValue: (r) => r.supplierPaymentStatus === "paid" ? "Paid" : "Pending" },
@@ -173,6 +175,7 @@ async function generatePdf({ clientId, columns: requestedColumns, filter }: { cl
       shipmentStatus: invoices.shipmentStatus,
       customerPaymentStatus: invoices.customerPaymentStatus,
       supplierPaymentStatus: invoices.supplierPaymentStatus,
+      destination: invoices.destination,
       terms: purchaseOrders.terms,
       transportType: purchaseOrders.transportType,
       vehicleId: invoices.vehicleId,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendEmail, isEmailConfigured } from "@/lib/email";
-import { buildGenericPdf } from "@/app/api/reports/pdf/route";
+import { buildGenericPdf } from "@/lib/reports-pdf-builder";
 
 export const dynamic = "force-dynamic";
 

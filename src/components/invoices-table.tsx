@@ -2,11 +2,13 @@
 
 import { useState, useRef, useEffect, useTransition } from "react";
 import { createPortal } from "react-dom";
+import { DateField } from "@/components/date-field";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { deleteInvoice, markInvoicesPaid, duplicateInvoice, markInvoiceUnpaid, updateInvoice } from "@/server/actions";
 import { InvoiceForm } from "@/components/invoice-form";
-import { Trash2 } from "lucide-react";
+import { Trash2, ShieldAlert } from "lucide-react";
+import { classifyInvoice, coverForClient } from "@/lib/credit-insurance";
 import {
   formatCurrency,
   formatNumber,
@@ -314,6 +316,14 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                   );
                 }
                 const isOverdue = dueDate && daysOverdue > 0 && row.invoice.customerPaymentStatus === "unpaid";
+                // Credit-insurance attention level: covered buyer + unpaid + in default / about to cross 60d
+                const insCover = row.clientId != null ? coverForClient(row.clientId) : undefined;
+                let insLevel: "critical" | "soon" | null = null;
+                if (insCover && dueDate && row.invoice.customerPaymentStatus === "unpaid") {
+                  const st = classifyInvoice(dueDate, new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())));
+                  if (st.key === "in_default") insLevel = "critical";
+                  else if (st.key === "crossing") insLevel = "soon";
+                }
                 const isSelected = selectedId === row.invoice.id;
 
                 return (
@@ -376,6 +386,15 @@ export function InvoicesTable({ rows }: { rows: InvoiceRow[] }) {
                     </td>
                     <td className="px-3 py-1.5 text-xs text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-3">
+                        {insLevel && (
+                          <Link
+                            href="/credit-insurance"
+                            title={insLevel === "critical" ? "Credit insurance — needs attention (report)" : "Credit insurance — approaching 60 days"}
+                            className={insLevel === "critical" ? "text-[#0d3d3b] hover:opacity-80" : "text-[#0d3d3b]/40 hover:text-[#0d3d3b]/70"}
+                          >
+                            <ShieldAlert className="w-4 h-4" />
+                          </Link>
+                        )}
                         {row.invoice.customerPaymentStatus === "unpaid" && row.clientId && (
                           <button
                             onClick={() => openPanel(row, "payment")}
@@ -631,11 +650,10 @@ function ReceivePaymentPanel({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-stone-600 mb-1">Payment date</label>
-            <input
-              type="date"
+            <DateField
               className="w-full border border-stone-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
               value={paymentDate}
-              onChange={(e) => setPaymentDate(e.target.value)}
+              onChange={setPaymentDate}
             />
           </div>
           <div>

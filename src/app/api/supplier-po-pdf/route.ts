@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const buffer = await generateSupplierPoPdf(Number(poId), soId ? Number(soId) : null);
-    return new NextResponse(buffer, {
+    return new NextResponse(new Uint8Array(buffer), {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `inline; filename="SupplierPO_${po.poNumber}_BZA.pdf"`,

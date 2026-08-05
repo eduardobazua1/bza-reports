@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Fragment } from "react";
 import { createPortal } from "react-dom";
 import { formatNumber, formatCurrency } from "@/lib/utils";
+import { apiMutate } from "@/lib/api-mutate";
+import { DateField } from "@/components/date-field";
 import { Trash2 } from "lucide-react";
 
 const PRESET_DESTINATIONS = [
@@ -281,26 +283,28 @@ export function ClientPOsSection({
   async function handleAdd() {
     if (!addForm.clientPoNumber) return;
     setLoading(true);
-    const res = await fetch("/api/client-pos", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        purchaseOrderId,
-        clientPoNumber: addForm.clientPoNumber,
-        destination: addForm.destination || null,
-        plannedTons: addForm.plannedTons ? parseFloat(addForm.plannedTons) : null,
-        item: addForm.item || null,
-        incoterm: addForm.incoterm || null,
-        sellPriceOverride: addForm.sellPriceOverride ? parseFloat(addForm.sellPriceOverride) : null,
-      }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      setList((prev) => [...prev, data]);
+    try {
+      const data = await apiMutate<ClientPO>("/api/client-pos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          purchaseOrderId,
+          clientPoNumber: addForm.clientPoNumber,
+          destination: addForm.destination || null,
+          plannedTons: addForm.plannedTons ? parseFloat(addForm.plannedTons) : null,
+          item: addForm.item || null,
+          incoterm: addForm.incoterm || null,
+          sellPriceOverride: addForm.sellPriceOverride ? parseFloat(addForm.sellPriceOverride) : null,
+        }),
+      });
+      if (data) setList((prev) => [...prev, data]);
       setAddForm({ clientPoNumber: "", destination: "", plannedTons: "", item: product || "", incoterm: poTerms || "", sellPriceOverride: sellPrice ? String(sellPrice) : "" });
       setAdding(false);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Couldn't create the Client PO.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   function openEdit(cpo: ClientPO) {
@@ -320,19 +324,19 @@ export function ClientPOsSection({
 
   async function handleEdit(cpo: ClientPO) {
     setEditLoading(true);
-    const res = await fetch(`/api/client-pos/${cpo.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        clientPoNumber: editForm.clientPoNumber,
-        destination: editForm.destination || null,
-        plannedTons: editForm.plannedTons ? parseFloat(editForm.plannedTons) : null,
-        item: editForm.item || null,
-        incoterm: editForm.incoterm || null,
-        sellPriceOverride: editForm.sellPriceOverride ? parseFloat(editForm.sellPriceOverride) : null,
-      }),
-    });
-    if (res.ok) {
+    try {
+      await apiMutate(`/api/client-pos/${cpo.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientPoNumber: editForm.clientPoNumber,
+          destination: editForm.destination || null,
+          plannedTons: editForm.plannedTons ? parseFloat(editForm.plannedTons) : null,
+          item: editForm.item || null,
+          incoterm: editForm.incoterm || null,
+          sellPriceOverride: editForm.sellPriceOverride ? parseFloat(editForm.sellPriceOverride) : null,
+        }),
+      });
       setList((prev) => prev.map((p) =>
         p.id === cpo.id ? {
           ...p,
@@ -345,26 +349,42 @@ export function ClientPOsSection({
         } : p
       ));
       setEditingId(null);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Couldn't save the Client PO.");
+    } finally {
+      setEditLoading(false);
     }
-    setEditLoading(false);
   }
 
   async function handleDelete(id: number) {
     if (!confirm("Delete this Client PO?")) return;
-    await fetch(`/api/client-pos/${id}`, { method: "DELETE" });
-    setList((prev) => prev.filter((p) => p.id !== id));
+    try {
+      await apiMutate(`/api/client-pos/${id}`, { method: "DELETE" });
+      setList((prev) => prev.filter((p) => p.id !== id)); // only after the server confirms
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Couldn't delete this Client PO.");
+    }
   }
 
   const statusColors: Record<string, string> = {
-    pending: "bg-stone-100 text-[#0d3d3b]",
-    partial: "bg-stone-100 text-[#0d3d3b]",
-    complete: "bg-stone-100 text-[#0d3d3b]",
+    pending: "bg-stone-100 text-stone-500",
+    partial: "bg-[#0d3d3b]/10 text-[#0d3d3b]",
+    complete: "bg-emerald-100 text-emerald-700",
   };
   const statusLabels: Record<string, string> = {
     pending: "Pending",
     partial: "Partial",
-    complete: "Complete",
+    complete: "Completed",
   };
+  // Derive status from delivered (converted) vs planned tons.
+  // >=95% of planned counts as completed: a railcar arriving full but slightly
+  // under weight (e.g. 88/90) is done; a PO missing a whole car stays partial.
+  function deriveStatus(planned: number | null, converted: number): "pending" | "partial" | "complete" {
+    if (!converted || converted <= 0.001) return "pending";
+    if (!planned || planned <= 0) return converted > 0 ? "partial" : "pending";
+    if (converted >= planned * 0.95) return "complete";
+    return "partial";
+  }
 
   let invoiceCounter = 0;
 
@@ -461,8 +481,8 @@ export function ClientPOsSection({
                       .reduce((s, inv) => s + inv.quantityTons, 0);
 
                 return (
-                  <>
-                    <tr key={cpo.id} className={`hover:bg-stone-50 ${editingId === cpo.id ? "bg-[#0d3d3b]/40" : ""}`}>
+                  <Fragment key={cpo.id}>
+                    <tr className={`hover:bg-stone-50 ${editingId === cpo.id ? "bg-[#0d3d3b]/40" : ""}`}>
                       <td className="px-4 py-3 border-t border-stone-100 text-xs text-[#0d3d3b]">
                         {cpo.clientPoNumber}
                       </td>
@@ -489,9 +509,14 @@ export function ClientPOsSection({
                         {amount ? formatCurrency(amount) : "—"}
                       </td>
                       <td className="px-4 py-3 border-t border-stone-100">
-                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[cpo.status]}`}>
-                          {statusLabels[cpo.status]}
-                        </span>
+                        {(() => {
+                          const derived = deriveStatus(cpo.plannedTons, convertedTons);
+                          return (
+                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[derived]}`}>
+                              {statusLabels[derived]}
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right">
                         <div className="flex items-center justify-end gap-0">
@@ -586,20 +611,16 @@ export function ClientPOsSection({
                               </div>
                               <div>
                                 <label className="block text-xs text-[#0d3d3b] mb-1">Ship Date</label>
-                                <input
-                                  type="date"
-                                  className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
+                                <DateField
                                   value={convertForm.shipmentDate}
-                                  onChange={(e) => setConvertForm((f) => ({ ...f, shipmentDate: e.target.value }))}
+                                  onChange={(v) => setConvertForm((f) => ({ ...f, shipmentDate: v }))}
                                 />
                               </div>
                               <div>
                                 <label className="block text-xs text-[#0d3d3b] mb-1">Invoice Date</label>
-                                <input
-                                  type="date"
-                                  className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm"
+                                <DateField
                                   value={convertForm.invoiceDate}
-                                  onChange={(e) => setConvertForm((f) => ({ ...f, invoiceDate: e.target.value }))}
+                                  onChange={(v) => setConvertForm((f) => ({ ...f, invoiceDate: v }))}
                                 />
                               </div>
                             </div>
@@ -641,7 +662,7 @@ export function ClientPOsSection({
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>

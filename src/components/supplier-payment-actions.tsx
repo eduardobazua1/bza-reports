@@ -2,14 +2,18 @@
 
 import { useState, useTransition } from "react";
 import { createSupplierPayment, deleteSupplierPayment } from "@/server/payment-actions";
+import { DateField } from "@/components/date-field";
 import { useRouter } from "next/navigation";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { Trash2 } from "lucide-react";
+
+const PAYMENT_METHODS = ["Wire transfer", "Check", "ACH", "Cash", "Other"];
 
 type Payment = {
   id: number;
   amountUsd: number;
   paymentDate: string;
+  paymentMethod?: string | null;
   reference: string | null;
   notes: string | null;
   poNumber: string | null;
@@ -46,6 +50,7 @@ export function SupplierPaymentActions({
         purchaseOrderId: fd.get("poId") ? Number(fd.get("poId")) : undefined,
         amountUsd: Number(fd.get("amount")),
         paymentDate: fd.get("date") as string,
+        paymentMethod: (fd.get("method") as string) || undefined,
         reference: (fd.get("reference") as string) || undefined,
         notes: (fd.get("notes") as string) || undefined,
       });
@@ -84,7 +89,7 @@ export function SupplierPaymentActions({
 
       {showForm && (
         <div className="p-4 border-b border-stone-100 bg-stone-50">
-          <form onSubmit={handleCreate} className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          <form onSubmit={handleCreate} className="grid grid-cols-1 sm:grid-cols-5 gap-3">
             <div>
               <label className="block text-xs font-medium text-stone-600 mb-1">Amount (USD) *</label>
               <input
@@ -95,8 +100,8 @@ export function SupplierPaymentActions({
             </div>
             <div>
               <label className="block text-xs font-medium text-stone-600 mb-1">Date *</label>
-              <input
-                name="date" type="date" required
+              <DateField
+                name="date"
                 defaultValue={new Date().toISOString().split("T")[0]}
                 className="w-full border border-stone-200 rounded px-3 py-2 text-sm"
               />
@@ -111,14 +116,26 @@ export function SupplierPaymentActions({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-stone-600 mb-1">Reference / Notes</label>
+              <label className="block text-xs font-medium text-stone-600 mb-1">Method</label>
+              <select
+                name="method"
+                defaultValue="Wire transfer"
+                className="w-full border border-stone-200 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#0d3d3b]"
+              >
+                {PAYMENT_METHODS.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-stone-600 mb-1">Reference #</label>
               <input
                 name="reference"
-                placeholder="# wire / nota"
-                className="w-full border border-stone-200 rounded px-3 py-2 text-sm"
+                placeholder="Wire / check #"
+                className="w-full border border-stone-200 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#0d3d3b]"
               />
             </div>
-            <div className="sm:col-span-4 flex gap-2">
+            <div className="sm:col-span-5 flex gap-2">
               <button
                 type="submit" disabled={isPending}
                 className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
@@ -143,6 +160,7 @@ export function SupplierPaymentActions({
               <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Date</th>
               <th className="text-right px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Amount</th>
               <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">PO</th>
+              <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Method</th>
               <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Reference / Notes</th>
               <th className="px-4 py-2"></th>
             </tr>
@@ -150,7 +168,7 @@ export function SupplierPaymentActions({
           <tbody>
             {payments.length === 0 && (
               <tr>
-                <td colSpan={5} className="p-6 text-center text-stone-400">
+                <td colSpan={6} className="p-6 text-center text-stone-400">
                   No payments recorded.
                 </td>
               </tr>
@@ -160,6 +178,11 @@ export function SupplierPaymentActions({
                 <td className="px-4 py-2 text-xs text-[#0d3d3b]">{formatDate(p.paymentDate)}</td>
                 <td className="px-4 py-2 text-xs text-right font-semibold text-[#0d3d3b]">{formatCurrency(p.amountUsd)}</td>
                 <td className="px-4 py-2 text-xs text-[#0d3d3b]">{p.poNumber || "-"}</td>
+                <td className="px-4 py-2 text-xs">
+                  {p.paymentMethod
+                    ? <span className="inline-flex items-center rounded-full bg-[#0d3d3b]/8 text-[#0d3d3b] px-2 py-0.5 text-[11px] font-medium">{p.paymentMethod}</span>
+                    : <span className="text-stone-300">—</span>}
+                </td>
                 <td className="px-4 py-2 text-stone-500 text-xs">{p.reference || p.notes || "-"}</td>
                 <td className="px-4 py-2 text-center">
                   <button

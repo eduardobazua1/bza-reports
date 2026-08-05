@@ -2,13 +2,49 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { db } from "@/db";
 import { createClient } from "@libsql/client";
-import { invoices, purchaseOrders, clients, suppliers, supplierPayments, scheduledReports, reportTemplates, shipmentUpdates, marketPrices, customerPayments, proposals, proposalItems, creditMemos, products } from "@/db/schema";
+import { invoices, purchaseOrders, clients, suppliers, supplierPayments, scheduledReports, reportTemplates, shipmentUpdates, marketPrices, customerPayments, proposals, proposalItems, creditMemos, products, documents, supplierInvoices, clientPurchaseOrders } from "@/db/schema";
 import { sendEmail, isEmailConfigured } from "@/lib/email";
 import * as XLSX from "xlsx";
 import { eq, sql, count, like, desc, and } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY || "" });
+
+// Claude model with vision — overridable via env. Must be a current, valid model id.
+const AI_MODEL = process.env.BZA_AI_MODEL || "claude-sonnet-4-5";
+const AI_MAX_TOKENS = 8096;
+
+const ICLOUD_BOLS = "/Users/eduardobazua/Library/Mobile Documents/com~apple~CloudDocs/BOLS CASCADE";
+
+// Read a PDF temp file → base64 data URL (whole file). For supplier invoices we
+// keep only page 1 via pdf-lib.
+async function pdfToDataUrl(path: string, page1Only = false): Promise<{ dataUrl: string; size: number; buffer: Buffer }> {
+  const { readFileSync } = await import("fs");
+  let buf = readFileSync(path);
+  if (page1Only) {
+    const { PDFDocument } = await import("pdf-lib");
+    const src = await PDFDocument.load(buf, { ignoreEncryption: true });
+    if (src.getPageCount() > 1) {
+      const nd = await PDFDocument.create();
+      const [pg] = await nd.copyPages(src, [0]);
+      nd.addPage(pg);
+      buf = Buffer.from(await nd.save());
+    }
+  }
+  return { dataUrl: "data:application/pdf;base64," + buf.toString("base64"), size: buf.length, buffer: buf };
+}
+
+async function saveToICloud(fileName: string, buffer: Buffer): Promise<boolean> {
+  try {
+    const { writeFileSync, mkdirSync, existsSync } = await import("fs");
+    const { join } = await import("path");
+    if (!existsSync(ICLOUD_BOLS)) mkdirSync(ICLOUD_BOLS, { recursive: true });
+    writeFileSync(join(ICLOUD_BOLS, fileName), buffer);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const anthropicTools: any[] = [
@@ -29,7 +65,10 @@ const anthropicTools: any[] = [
   { name: "generate_report", description: "Generate a PDF or Excel report for a client. Returns a download link. Use when user asks for a report, export, or document.", input_schema: { type: "object", properties: { clientName: { type: "string", description: "Client name (fuzzy match)" }, format: { type: "string", enum: ["pdf", "excel"], description: "Report format" }, filter: { type: "string", enum: ["active", "all"], description: "active = only active shipments, all = include delivered" }, columns: { type: "string", description: "Comma-separated column keys. Options: currentLocation,poNumber,invoiceNumber,vehicleId,blNumber,quantityTons,sellPrice,shipmentStatus,shipmentDate,item,terms,transportType,customerPaymentStatus,estimatedArrival,salesDocument,billingDocument,clientPoNumber. Leave empty for defaults." } }, required: ["clientName", "format"] } },
   { name: "schedule_report", description: "Save a future reminder in the database. Does NOT send any email, does NOT contact anyone. Use ONLY when user says 'schedule for [date]' or 'remind on [date]'. Never use this to send a report now.", input_schema: { type: "object", properties: { clientName: { type: "string" }, templateName: { type: "string" }, sendDate: { type: "string" }, notes: { type: "string" } }, required: ["clientName", "sendDate"] } },
   { name: "run_calculation", description: "Run a SQL query on the database for exact calculations. Use this for any math: sums, totals, averages, counts, filtering. Tables: invoices (invoice_number, purchase_order_id, quantity_tons, sell_price_override, buy_price_override, shipment_date, due_date, customer_payment_status, supplier_payment_status, shipment_status, item, vehicle_id, current_location), purchase_orders (po_number, po_date, client_id, supplier_id, sell_price, buy_price, product, terms, transport_type, status), clients (id, name), suppliers (id, name), supplier_payments (supplier_id, purchase_order_id, amount_usd, payment_date, estimated_tons, notes), market_prices (source, grade, region, month, price, price_type, change_value, unit). Revenue = quantity_tons * COALESCE(sell_price_override, sell_price). Cost = quantity_tons * COALESCE(buy_price_override, buy_price).", input_schema: { type: "object", properties: { sql_query: { type: "string", description: "SELECT SQL query to run. Only SELECT allowed, no INSERT/UPDATE/DELETE." } }, required: ["sql_query"] } },
-  { name: "process_shipment_documents", description: "Process a Cascade Pacific Pulp combined shipment PDF (BOL + Packing List + COA per car). Splits into individual BOL and PL files per car, saves to iCloud BOLS CASCADE folder, extracts vehicle#, BOL#, bales, units, destination from each car and updates TMS invoice fields automatically, then uploads BOL and PL files to each invoice. Call this after the user confirms they want to process the uploaded shipment document.", input_schema: { type: "object", properties: { tempFilePath: { type: "string", description: "The temp file path of the uploaded PDF (from the UPLOADED PDF TEMP PATHS in context)" } }, required: ["tempFilePath"] } },
+  { name: "process_shipment_documents", description: "DEPRECATED for the per-document workflow. Only for a single Cascade combined PDF (BOL+PL+COA per car) when the user explicitly asks. For separate invoice/delivery-note/packing-list files, do NOT use this — read the page images yourself and use attach_document + create_supplier_invoice + create_client_po.", input_schema: { type: "object", properties: { tempFilePath: { type: "string", description: "The temp file path of the uploaded PDF (from the UPLOADED PDF TEMP PATHS in context)" } }, required: ["tempFilePath"] } },
+  { name: "attach_document", description: "Attach an uploaded PDF (from UPLOADED PDF TEMP PATHS) to an invoice as a BOL or Packing List. Renames to 'BOL {invoiceNumber}.pdf' or 'PL {invoiceNumber}.pdf', stores it on the invoice, and saves a copy to the iCloud BOLS CASCADE folder.", input_schema: { type: "object", properties: { invoiceNumber: { type: "string", description: "BZA invoice number to attach to, e.g. IX0046-1" }, type: { type: "string", enum: ["bl", "pl"], description: "bl = Bill of Lading / Delivery Note, pl = Packing List" }, tempFilePath: { type: "string", description: "Temp path of the uploaded PDF from UPLOADED PDF TEMP PATHS" } }, required: ["invoiceNumber", "type", "tempFilePath"] } },
+  { name: "create_supplier_invoice", description: "Create a supplier invoice (factura del proveedor / 'SI') for a PO from an uploaded PDF. Uses ONLY page 1 of the PDF, names it 'SI {invoiceNumber}.pdf', and links it to a BZA invoice.", input_schema: { type: "object", properties: { poNumber: { type: "string", description: "BZA PO number, e.g. X0046" }, invoiceNumber: { type: "string", description: "Supplier's invoice number, e.g. 500572" }, linkedInvoiceNumber: { type: "string", description: "BZA invoice it belongs to, e.g. IX0046-1" }, amountUsd: { type: "number" }, invoiceDate: { type: "string", description: "YYYY-MM-DD (use the Load Date)" }, estimatedTons: { type: "number", description: "ADMT from the invoice" }, tempFilePath: { type: "string", description: "Temp path of the uploaded supplier invoice PDF" } }, required: ["poNumber", "invoiceNumber", "tempFilePath"] } },
+  { name: "create_client_po", description: "Create a Client Order (client purchase order) on a PO and optionally link invoices to it by destination. planned_tons = what the client ordered (e.g. 90 per railcar). item = the CLIENT product (clientProductId), incoterm from the PO terms.", input_schema: { type: "object", properties: { poNumber: { type: "string", description: "BZA PO number, e.g. X0046" }, clientPoNumber: { type: "string", description: "Client's PO number, e.g. X195603" }, destination: { type: "string", description: "Destination city, e.g. Bajio" }, plannedTons: { type: "number", description: "Tons the client ordered (90 x #railcars)" }, item: { type: "string", description: "Client product name (defaults to PO's client product)" }, incoterm: { type: "string", description: "Defaults to PO terms" }, linkInvoicesByDestination: { type: "boolean", description: "If true, link all invoices of this PO with this destination to the new Client PO" } }, required: ["poNumber", "clientPoNumber", "destination", "plannedTons"] } },
 ];
 
 // Alias map for fuzzy client/supplier matching
@@ -566,6 +605,81 @@ async function exec(name: string, args: Record<string, unknown>): Promise<string
       }
     }
 
+    if (name === "attach_document") {
+      const invNum = (args.invoiceNumber as string)?.toUpperCase();
+      const docType = args.type as "bl" | "pl";
+      const tempFilePath = args.tempFilePath as string;
+      const { existsSync } = await import("fs");
+      if (!existsSync(tempFilePath)) return `File not found at ${tempFilePath} — the upload may have expired. Ask the user to re-upload.`;
+      const inv = await db.query.invoices.findFirst({ where: like(invoices.invoiceNumber, invNum) });
+      if (!inv) return `Invoice ${invNum} not found. Create the invoice first.`;
+      const fileName = `${docType === "bl" ? "BOL" : "PL"} ${inv.invoiceNumber}.pdf`;
+      const { dataUrl, size, buffer } = await pdfToDataUrl(tempFilePath, false);
+      // replace existing doc of this type, else insert
+      const existing = await db.query.documents.findFirst({ where: and(eq(documents.invoiceId, inv.id), eq(documents.type, docType)) });
+      if (existing) {
+        await db.update(documents).set({ fileName, fileUrl: dataUrl, fileSize: size }).where(eq(documents.id, existing.id));
+      } else {
+        await db.insert(documents).values({ invoiceId: inv.id, type: docType, fileName, fileUrl: dataUrl, fileSize: size });
+      }
+      const cloud = await saveToICloud(fileName, buffer);
+      return `Attached ${fileName} to ${inv.invoiceNumber} (${(size / 1024).toFixed(0)} KB)${cloud ? " and saved to iCloud" : ""}.`;
+    }
+
+    if (name === "create_supplier_invoice") {
+      const poNum = (args.poNumber as string)?.toUpperCase();
+      const siNum = args.invoiceNumber as string;
+      const tempFilePath = args.tempFilePath as string;
+      const { existsSync } = await import("fs");
+      if (!existsSync(tempFilePath)) return `File not found at ${tempFilePath} — re-upload needed.`;
+      const po = await db.query.purchaseOrders.findFirst({ where: like(purchaseOrders.poNumber, poNum) });
+      if (!po) return `PO ${poNum} not found.`;
+      let linkedInvoiceId: number | null = null;
+      if (args.linkedInvoiceNumber) {
+        const li = await db.query.invoices.findFirst({ where: like(invoices.invoiceNumber, (args.linkedInvoiceNumber as string).toUpperCase()) });
+        linkedInvoiceId = li?.id ?? null;
+      }
+      const fileName = `SI ${siNum}.pdf`;
+      const { dataUrl, size } = await pdfToDataUrl(tempFilePath, true); // page 1 only
+      const existing = await db.query.supplierInvoices.findFirst({ where: and(eq(supplierInvoices.purchaseOrderId, po.id), eq(supplierInvoices.invoiceNumber, siNum)) });
+      if (existing) {
+        await db.update(supplierInvoices).set({ fileName, fileUrl: dataUrl, fileSize: size, amountUsd: (args.amountUsd as number) ?? existing.amountUsd, invoiceDate: (args.invoiceDate as string) ?? existing.invoiceDate, estimatedTons: (args.estimatedTons as number) ?? existing.estimatedTons, linkedInvoiceId: linkedInvoiceId ?? existing.linkedInvoiceId }).where(eq(supplierInvoices.id, existing.id));
+        return `Updated supplier invoice ${fileName} on ${po.poNumber}.`;
+      }
+      await db.insert(supplierInvoices).values({ purchaseOrderId: po.id, supplierId: po.supplierId, invoiceNumber: siNum, invoiceDate: (args.invoiceDate as string) || null, estimatedTons: (args.estimatedTons as number) ?? null, amountUsd: (args.amountUsd as number) ?? null, fileName, fileUrl: dataUrl, fileSize: size, paymentStatus: "paid", linkedInvoiceId });
+      return `Created supplier invoice ${fileName} on ${po.poNumber}${linkedInvoiceId ? ` → linked to ${args.linkedInvoiceNumber}` : ""} (${(size / 1024).toFixed(0)} KB, page 1 only).`;
+    }
+
+    if (name === "create_client_po") {
+      const poNum = (args.poNumber as string)?.toUpperCase();
+      const cpoNum = args.clientPoNumber as string;
+      const dest = args.destination as string;
+      const po = await db.query.purchaseOrders.findFirst({ where: like(purchaseOrders.poNumber, poNum) });
+      if (!po) return `PO ${poNum} not found.`;
+      // default item = client product
+      let item = (args.item as string) || null;
+      if (!item && po.clientProductId) {
+        const cp = await db.query.products.findFirst({ where: eq(products.id, po.clientProductId) });
+        item = cp?.name ?? null;
+      }
+      const incoterm = (args.incoterm as string) || po.terms || null;
+      const existing = await db.query.clientPurchaseOrders.findFirst({ where: eq(clientPurchaseOrders.clientPoNumber, cpoNum) });
+      let cpoId: number;
+      if (existing) {
+        cpoId = existing.id;
+        await db.update(clientPurchaseOrders).set({ destination: dest, plannedTons: args.plannedTons as number, item, incoterm }).where(eq(clientPurchaseOrders.id, existing.id));
+      } else {
+        const [row] = await db.insert(clientPurchaseOrders).values({ purchaseOrderId: po.id, clientPoNumber: cpoNum, destination: dest, plannedTons: args.plannedTons as number, status: "pending", item, incoterm }).returning();
+        cpoId = row.id;
+      }
+      let linked = 0;
+      if (args.linkInvoicesByDestination) {
+        const r = await db.update(invoices).set({ clientPoId: cpoId, salesDocument: cpoNum }).where(and(eq(invoices.purchaseOrderId, po.id), eq(invoices.destination, dest)));
+        linked = (r as unknown as { rowsAffected?: number }).rowsAffected ?? 0;
+      }
+      return `Client PO ${cpoNum} (${dest}, ${args.plannedTons}t, item: ${item || "—"}) ${existing ? "updated" : "created"} on ${po.poNumber}${args.linkInvoicesByDestination ? `, linked ${linked} invoice(s)` : ""}.`;
+    }
+
     return "Unknown tool";
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -579,7 +693,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Anthropic API key not configured. Add ANTHROPIC_API_KEY=sk-ant-... to .env.local" }, { status: 400 });
   }
 
-  const { messages: rawMessages, tempPaths } = await req.json();
+  const { messages: rawMessages, tempPaths, tempFiles } = await req.json();
 
   // Hard intercept: if user wants to send/email a report but hasn't provided an email address
   const lastUserMsg0 = [...rawMessages].reverse().find((m: { role: string; content: string }) => m.role === "user");
@@ -615,8 +729,16 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  if (tempPaths?.length > 0) {
-    preContext += `\n\n[UPLOADED PDF TEMP PATHS — pass to process_shipment_documents tool]: ${tempPaths.join(", ")}`;
+  if (Array.isArray(tempFiles) && tempFiles.length > 0) {
+    // Pair each original filename with its temp path so the model passes the RIGHT
+    // file to attach_document (bl/pl) and create_supplier_invoice. The filename
+    // tells which is the Delivery Note (BOL), Packing List, or Invoice.
+    const lines = tempFiles
+      .map((f: { name?: string; path?: string }) => `- ${f.name || "file"} → ${f.path || ""}`)
+      .join("\n");
+    preContext += `\n\n[UPLOADED FILES — each PDF was rendered to page images above that you can READ. Use the filename to know which is the Delivery Note (BOL), Packing List (PL), or supplier Invoice, and pass its exact path to attach_document / create_supplier_invoice]:\n${lines}`;
+  } else if (tempPaths?.length > 0) {
+    preContext += `\n\n[UPLOADED PDF TEMP PATHS — pass the matching path to attach_document / create_supplier_invoice. Each PDF was also rendered to page images you can READ above]: ${tempPaths.join(", ")}`;
   }
 
   // Convert messages to Anthropic format (images use base64 source blocks instead of image_url)
@@ -709,53 +831,46 @@ MANDATORY: For ANY question or task involving BZA data, call a tool FIRST. No ex
 - NEVER say "not found", "I don't have information", or "could you provide details" for something that may exist in the DB — query first, then respond based on what the tool returns
 - Only after a tool returns empty results (rows = []) may you say it doesn't exist
 
-## SHIPMENT DOCUMENT PROCESSING (CASCADE PACIFIC PULP)
-When the user uploads a combined shipment PDF from Cascade Pacific Pulp (it will contain "Certificate of Analysis", "STRAIGHT BILL OF LADING", and "TALLY SHEET" sections):
-1. Read the parsed text to understand what's in the document — PO number, car numbers, tons, destination
-2. Show the user a summary table: # of cars, PO, vehicle IDs, BOL numbers, MT, destination
-3. Ask: "Should I process this? I'll split the files, save BOL and PL to iCloud, and update the TMS invoices."
-4. When confirmed, call process_shipment_documents with the tempFilePath from [UPLOADED PDF TEMP PATHS] in the system context
-5. Present the results clearly
+## SHIPMENT DOCUMENT PROCESSING — THE FULL PER-PO WORKFLOW
+The user uploads the documents for a PO's shipments: typically, per railcar/container, an INVOICE (supplier invoice), a DELIVERY NOTE (the BOL), and a PACKING LIST — as SEPARATE PDF files. Each uploaded PDF is rendered to page images that you can READ directly (the docs are scanned, so do not rely on text extraction — read the images).
 
-## FILE PROCESSING — INVOICE & BILLING DOCUMENTS
+Your job is to replicate the exact manual process: read the images, build a mapping, CONFIRM with the user, then write everything: invoice tracking fields + attach BOL & PL + create the supplier invoice + create/link the Client PO. The Client PO status auto-completes when delivered ≥95% of planned (do not set status manually).
 
-### SUPPLIER DOCUMENTS (BOL, PACKING LIST, SHIPPING ADVICE) — CASCADE PACIFIC PULP FORMAT
-When the user uploads a supplier document, extract ALL available fields and call create_invoice (or update_invoice if it already exists).
+### Step 1 — READ each document image and extract:
+- **Invoice #** (supplier's, e.g. 500572), **BZA PO #** (e.g. X0046, shown as "Customer's P.O. X0046-A"), **Load No** (e.g. 101473), **Delivery Note #** (e.g. 300886), **Vehicle/railcar** (e.g. TBOX675715), **ADMT** (e.g. 90.630 — this is quantityTons), **Units** (e.g. 63), **amount USD**, **Load Date**, **Destination** (Final destination / Consignee city).
 
-EXACT field labels as they appear in CPP documents:
-
-| Label in document | System field | Notes |
+### Step 2 — FIELD MAPPING (Cascade Pacific Pulp — rail/furgón):
+| Source on document | System field | Rule |
 |---|---|---|
-| Railcar # / container # (e.g. TBOX631440) | vehicleId | Found on BOL and PL |
-| Delivery Note # (e.g. 300142) | blNumber | Found on BOL and PL — NOT the BOL# header |
-| "Bales" or "Bales in Unit" (e.g. 372) | balesCount | Found on Packing List |
-| "Units" per bale (e.g. 62) | unitsPerBale | Found on BOL |
-| Net weight in kg → DIVIDE BY 1000 for TN | quantityTons | e.g. 89865 kg = 89.865 TN |
-| Loading date / dispatch date (same value) | shipmentDate AND invoiceDate | Use same date for both fields |
-| Final Destination field (or from Consignee address) | destination | Use the final destination city, e.g. "Morelia" |
-| Client PO # | salesDocument | NOT in document — always ask user before saving |
-| Invoice # / reference # | invoiceNumber | BZA assigns this — ask if not provided |
-| Origin / mill location | currentLocation | e.g. Halsey, OR |
-| BZA PO # (e.g. X0043) | poNumber | Required for create_invoice — ask if not provided |
+| Vehicle ID / Car # (TBOX675715) | vehicleId | railcar, no spaces |
+| **Delivery Note #** (300886) | **blNumber** | ⚠️ the DELIVERY NOTE number, NOT the Load No (101473) and NOT a "BOL #" header |
+| ADMT (90.630) | quantityTons | already metric tons, do NOT divide |
+| Units (63) | unitsPerBale | from the invoice/delivery note |
+| Units × 6 (63×6=378) | balesCount | Cascade = 6 bales per unit |
+| **Load Date** (06/03/2026) | shipmentDate AND **invoiceDate** | invoice_date = Load Date (NOT the supplier invoice's printed date) |
+| Final destination city | destination | short city: Bajio, Ramos Arizpe, Orizaba, Morelia, Ecatepec, Laredo, Eagle Pass |
+| Client PO # | salesDocument / Client PO | from the client order (ask if unknown) |
 
-FIELDS THE USER ENTERS MANUALLY (do NOT try to extract from document):
-- estimatedArrival (ETA) — user sets this manually after
-- salesDocument (client PO) — always ask the user for this
+### Step 3 — PRODUCT (item) on the BZA invoice = the CLIENT product, NOT the supplier product.
+The PO has a supplier product (e.g. "White Gold 316") and a different client product (e.g. "Woodpulp - Softwood Cascade FSC Controlled Wood"). The BZA invoice 'item' must be the **client product**. The create_client_po tool defaults item to the client product automatically — do the same on invoices.
 
-FIELDS INHERITED FROM THE PO (do NOT ask, do NOT extract from document — already set):
-- sellPrice / sellPriceOverride — defined on the PO
-- buyPrice / buyPriceOverride — defined on the PO
-- item / product description — defined on the PO
+### Arauco / Celulosa Arauco (ocean / contenedores) — different:
+- vehicleId = **vessel name** (e.g. "MSC KANOKO - FA335R"), blNumber = **booking / sea waybill** (e.g. MEDUD9905172).
+- **1 B/L = 1 invoice** with MANY containers (104 bales each), NOT one car per invoice. Incoterm CIF (port). Product EKP / Bleached Eucalyptus Kraft Pulp.
 
-IMPORTANT — common mistakes to avoid:
-- "Bales in Unit" or "Bales" = balesCount (can be large, e.g. 372)
-- "Units" = unitsPerBale (sheets per bale, e.g. 62) — do NOT confuse these two
-- Weight is in kg in CPP docs → always divide by 1000 to get metric tons
-- blNumber = "Delivery Note" number, NOT the document header "BOL #"
-- destination = city extracted from Consignee address field
+### Step 4 — SHOW THE USER A MAPPING TABLE and ask to confirm. Columns: BZA invoice (IX{PO}-{n}), Vehicle, Delivery Note (bl), ADMT, Destination, Client PO, Load Date. Flag anything uncertain. End with "¿Procedo?" / "Should I go ahead?" and WAIT.
 
-- If multiple railcars in one document → create one invoice per vehicle.
-- After extracting, show the user a summary table and ask: 1) BZA PO number, 2) Client PO (salesDocument), 3) Invoice number (IX____). Then confirm before saving.
+### Step 5 — ON CONFIRMATION, for EACH shipment, call tools in this order:
+1. **create_invoice** (or update_invoice if it exists) — invoiceNumber IX{PO}-{n}, poNumber, quantityTons=ADMT, item=client product, vehicleId, blNumber=Delivery Note, balesCount, unitsPerBale, destination, shipmentDate=Load Date, invoiceDate=Load Date, salesDocument=Client PO.
+2. **attach_document** type=bl, tempFilePath = the DELIVERY NOTE pdf for that load.
+3. **attach_document** type=pl, tempFilePath = the PACKING LIST pdf for that load.
+4. **create_supplier_invoice** poNumber, invoiceNumber (supplier's #), linkedInvoiceNumber=IX{PO}-{n}, amountUsd, invoiceDate=Load Date, estimatedTons=ADMT, tempFilePath = the INVOICE pdf (page 1 is taken automatically).
+5. If the Client PO does not exist yet: **create_client_po** with linkInvoicesByDestination=true.
+
+Match each load to its Client PO by DESTINATION (and ADMT). If destinations don't line up with the Client POs, STOP and ask the user — do not guess.
+
+### CLIENT BILLING DOCUMENTS (FACTURAS, SAP BILLING DOCS)
+When the user uploads a client invoice, billing document, or SAP output (factura):
 
 ### CLIENT BILLING DOCUMENTS (FACTURAS, SAP BILLING DOCS)
 When the user uploads a client invoice, billing document, or SAP output (factura):
@@ -958,8 +1073,8 @@ When user asks for analysis or proposals, ALWAYS start by querying market prices
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let response = await anthropic.messages.create({
-      model: "claude-opus-4-5",
-      max_tokens: 8096,
+      model: AI_MODEL,
+      max_tokens: AI_MAX_TOKENS,
       system: systemPrompt,
       tools: anthropicTools,
       messages,
@@ -987,8 +1102,8 @@ When user asks for analysis or proposals, ALWAYS start by querying market prices
       allMsgs.push({ role: "user", content: toolResults });
 
       response = await anthropic.messages.create({
-        model: "claude-opus-4-5",
-        max_tokens: 8096,
+        model: AI_MODEL,
+        max_tokens: AI_MAX_TOKENS,
         system: "You are the BZA Intelligence assistant for BZA International Services. Always respond in English.",
         tools: anthropicTools,
         messages: allMsgs,

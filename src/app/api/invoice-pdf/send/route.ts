@@ -48,15 +48,17 @@ export async function POST(req: NextRequest) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://app.bza-is.com";
     const pixelUrl = `${appUrl}/api/track/open?t=${trackingId}`;
 
+    let logRow: { sentAt: string; sentTo: string } | undefined;
     if (inv) {
-      await db.insert(invoiceEmailLogs).values({
+      const [row] = await db.insert(invoiceEmailLogs).values({
         invoiceId: inv.id,
         invoiceNumber,
         sentTo: Array.isArray(to) ? to.join(", ") : to,
         sentCc: cc ? (Array.isArray(cc) ? cc.join(", ") : cc) : null,
         attachmentCount: attachments.length,
         trackingId,
-      });
+      }).returning();
+      logRow = row;
     }
 
     await sendEmail({
@@ -69,13 +71,13 @@ export async function POST(req: NextRequest) {
         ${docsHtml}
         <p>If you have any questions, please don't hesitate to contact us.</p>
         <br/>
-        <p>Best regards,<br/>Eduardo Bazua<br/>BZA International Services, LLC<br/>accounting@bza-is.com | www.bza-is.com</p>
+        <p>Best regards,<br/>Accounting team<br/>BZA International Services, LLC<br/>accounting@bza-is.com | www.bza-is.com</p>
         <img src="${pixelUrl}" width="1" height="1" style="display:none" alt="" />
       `,
       attachments,
     });
 
-    return NextResponse.json({ ok: true, attachmentCount: attachments.length });
+    return NextResponse.json({ ok: true, attachmentCount: attachments.length, sentAt: logRow?.sentAt, sentTo: logRow?.sentTo });
   } catch (err) {
     console.error("Invoice send error:", err);
     return NextResponse.json({ error: err instanceof Error ? err.message : "Failed to send email" }, { status: 500 });

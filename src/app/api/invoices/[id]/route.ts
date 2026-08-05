@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { invoices, purchaseOrders } from "@/db/schema";
+import {
+  invoices, purchaseOrders, shipmentUpdates, documents, invoiceEmailLogs,
+  supplierPaymentInvoices, customerPaymentInvoices, supplierPayments,
+  supplierInvoices, creditMemos, bankTransactions, operatingExpenses,
+} from "@/db/schema";
 import { eq, and, ne } from "drizzle-orm";
 
 export async function PATCH(
@@ -73,6 +77,19 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  await db.delete(invoices).where(eq(invoices.id, Number(id)));
+  const iid = Number(id);
+  // Remove rows that belong to this invoice (its shipment log, docs, email logs, payment links).
+  await db.delete(shipmentUpdates).where(eq(shipmentUpdates.invoiceId, iid));
+  await db.delete(documents).where(eq(documents.invoiceId, iid));
+  await db.delete(invoiceEmailLogs).where(eq(invoiceEmailLogs.invoiceId, iid));
+  await db.delete(supplierPaymentInvoices).where(eq(supplierPaymentInvoices.invoiceId, iid));
+  await db.delete(customerPaymentInvoices).where(eq(customerPaymentInvoices.invoiceId, iid));
+  // Detach independent records that merely reference it (keep the payment/memo/expense itself).
+  await db.update(supplierPayments).set({ invoiceId: null }).where(eq(supplierPayments.invoiceId, iid));
+  await db.update(supplierInvoices).set({ linkedInvoiceId: null }).where(eq(supplierInvoices.linkedInvoiceId, iid));
+  await db.update(creditMemos).set({ invoiceId: null }).where(eq(creditMemos.invoiceId, iid));
+  await db.update(bankTransactions).set({ reconciledInvoiceId: null }).where(eq(bankTransactions.reconciledInvoiceId, iid));
+  await db.update(operatingExpenses).set({ invoiceId: null }).where(eq(operatingExpenses.invoiceId, iid));
+  await db.delete(invoices).where(eq(invoices.id, iid));
   return NextResponse.json({ ok: true });
 }

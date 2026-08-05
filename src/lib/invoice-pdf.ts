@@ -22,6 +22,8 @@ const DEFAULTS = {
   fscCode: "CU-COC-892954",
   fscCw: "CU-CW-892954",
   fscExpiration: "29-01-28",
+  pefcCode: "CU-PEFC-COC-903182",
+  pefcExpiration: "23-06-29",
   footerNote: "All invoice amounts are stated in USD.",
   showPaymentInstructions: true,
   showFscSection: true,
@@ -250,16 +252,34 @@ export async function generateInvoicePdf(invoiceNumber: string): Promise<Buffer>
     y += 6;
   }
 
-  // FSC / PEFC section
-  if (cfg.showFscSection !== false) {
-    const isPefc = po.certType === "pefc";
-    dt(isPefc ? "PEFC CERTIFICATE" : "FSC CERTIFICATE", M, y, 6.5, fontB, GRAY); y += 9;
+  // FSC / PEFC section \u2014 only show when BZA has a real output claim (not "None", "None FSC", "None PEFC", etc.)
+  // Per-invoice override: a mixed PO (some cars Certified, some Controlled Sources) sets the
+  // invoice-level certType/outputClaim; when null the invoice inherits the PO's values.
+  const certType    = inv.certType    ?? po.certType;
+  const outputClaim = inv.outputClaim ?? po.outputClaim;
+  const outputOk = outputClaim && !outputClaim.trim().toLowerCase().startsWith("none");
+  const hasCert  = outputOk && certType && (certType as string) !== "none";
+  if (cfg.showFscSection !== false && hasCert) {
+    const isPefc = certType === "pefc";
+    dt("CERTIFICATION", M, y, 6.5, fontB, GRAY); y += 9;
+
     if (isPefc) {
-      dt(`PEFC Number: ${po.pefc || "\u2014"}`, M, y, 7, font, DARK);
+      const bzaPefc = [
+        cfg.pefcCode       ? `PEFC: ${cfg.pefcCode}`            : null,
+        cfg.pefcExpiration ? `Exp: ${cfg.pefcExpiration}`        : null,
+        outputClaim        ? `Claim: ${outputClaim}`             : null,
+      ].filter(Boolean).join("   \u00B7   ");
+      if (bzaPefc) { dt(bzaPefc, M, y, 7, font, DARK); y += 9; }
     } else {
-      dt(`Code: ${cfg.fscCode}   \u00B7   Controlled Wood: ${cfg.fscCw}   \u00B7   Expiration: ${cfg.fscExpiration}`, M, y, 7, font, DARK);
+      const bzaFsc = [
+        cfg.fscCode        ? `FSC: ${cfg.fscCode}`               : null,
+        cfg.fscCw          ? `CW: ${cfg.fscCw}`                  : null,
+        cfg.fscExpiration  ? `Exp: ${cfg.fscExpiration}`          : null,
+        outputClaim        ? `Claim: ${outputClaim}`              : null,
+      ].filter(Boolean).join("   \u00B7   ");
+      if (bzaFsc) { dt(bzaFsc, M, y, 7, font, DARK); y += 9; }
     }
-    y += 10;
+    y += 4;
   }
 
   if (cfg.invoiceNotes) {

@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { portalUsers } from "@/db/schema";
+import { portalUsers, portalCodes } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -41,6 +41,8 @@ export async function DELETE(req: NextRequest) {
   const { id } = await req.json();
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
+  // Remove the user's login codes first (they FK-reference the user).
+  await db.delete(portalCodes).where(eq(portalCodes.portalUserId, id));
   await db.delete(portalUsers).where(eq(portalUsers.id, id));
   return NextResponse.json({ ok: true });
 }

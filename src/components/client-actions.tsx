@@ -3,6 +3,7 @@
 import { useState, useTransition, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { createClient, updateClient, deleteClient } from "@/server/actions";
+import { apiMutate } from "@/lib/api-mutate";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 
@@ -98,12 +99,16 @@ export function ClientActions({ clients }: { clients: Client[] }) {
 
   async function handleRemovePortalUser(id: number) {
     if (!confirm("Remove this user's portal access?")) return;
-    await fetch("/api/portal-users", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
-    setPortalUsersList(prev => prev.filter(u => u.id !== id));
+    try {
+      await apiMutate("/api/portal-users", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      setPortalUsersList(prev => prev.filter(u => u.id !== id));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Couldn't remove portal access.");
+    }
   }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {

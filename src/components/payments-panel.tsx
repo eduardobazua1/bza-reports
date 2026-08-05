@@ -2,10 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/utils";
+import { apiMutate } from "@/lib/api-mutate";
 import { markInvoicesPaid } from "@/server/actions";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronDown, ChevronRight, CheckCircle2, Trash2 } from "lucide-react";
+import { APOverview } from "@/components/ap-overview";
 
 type CustomerPayment = {
   id: number;
@@ -145,7 +147,7 @@ function AddPaymentModal({
 
     setSaving(true);
     try {
-      await fetch("/api/supplier-payments", {
+      await apiMutate("/api/supplier-payments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -165,7 +167,9 @@ function AddPaymentModal({
           })),
         }),
       });
-      onSaved();
+      onSaved(); // only after the server confirms
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Couldn't save the payment.");
     } finally {
       setSaving(false);
     }
@@ -314,7 +318,7 @@ function ConfirmActualModal({
     if (!actualTons) return;
     setSaving(true);
     try {
-      await fetch(`/api/supplier-payments/${payment.id}`, {
+      await apiMutate(`/api/supplier-payments/${payment.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -322,7 +326,9 @@ function ConfirmActualModal({
           adjustmentStatus: settleNow ? "settled" : undefined,
         }),
       });
-      onSaved();
+      onSaved(); // only after the server confirms
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Couldn't confirm the actual tons.");
     } finally {
       setSaving(false);
     }
@@ -368,7 +374,7 @@ function ConfirmActualModal({
         </div>
 
         {adj !== null && (
-          <div className={`rounded-lg p-3 text-sm space-y-1 ${adj > 0.01 ? "bg-amber-50 border border-amber-200" : adj < -0.01 ? "bg-[#0d3d3b]/5 border border-[#0d3d3b]/20" : "bg-stone-50 border border-stone-200"}`}>
+          <div className={`rounded-lg p-3 text-sm space-y-1 ${adj > 0.01 ? "bg-[#0d3d3b]/8 border border-[#0d3d3b]/25" : adj < -0.01 ? "bg-[#0d3d3b]/5 border border-[#0d3d3b]/20" : "bg-stone-50 border border-stone-200"}`}>
             <div className="flex justify-between text-xs">
               <span className="text-stone-500">Difference</span>
               <span className="font-medium text-[#0d3d3b]">{(actual - estTons) > 0 ? "+" : ""}{(actual - estTons).toFixed(3)} TN</span>
@@ -377,7 +383,7 @@ function ConfirmActualModal({
               <span className="text-stone-600">
                 {adj > 0.01 ? "BZA owes supplier" : adj < -0.01 ? "Supplier owes BZA" : "No adjustment"}
               </span>
-              <span className={adj > 0.01 ? "text-amber-700" : adj < -0.01 ? "text-[#0d3d3b]" : "text-stone-400"}>
+              <span className={adj > 0.01 ? "text-[#0d3d3b]" : adj < -0.01 ? "text-[#0d3d3b]" : "text-stone-400"}>
                 {Math.abs(adj) > 0.01 ? formatCurrency(Math.abs(adj)) : "Settled"}
               </span>
             </div>
@@ -420,12 +426,14 @@ function SettleAdjModal({
   async function handleSettle() {
     setSaving(true);
     try {
-      await fetch(`/api/supplier-payments/${payment.id}`, {
+      await apiMutate(`/api/supplier-payments/${payment.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ adjustmentStatus: "settled" }),
       });
-      onSaved();
+      onSaved(); // only after the server confirms
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Couldn't settle the adjustment.");
     } finally {
       setSaving(false);
     }
@@ -442,7 +450,7 @@ function SettleAdjModal({
           </div>
           <div className="flex justify-between text-xs">
             <span className="text-stone-400">Adjustment</span>
-            <span className={`font-semibold ${adj > 0 ? "text-amber-700" : "text-[#0d3d3b]"}`}>
+            <span className="font-semibold text-[#0d3d3b]">
               {adj > 0 ? `BZA pays +${formatCurrency(adj)}` : `Supplier refunds ${formatCurrency(Math.abs(adj))}`}
             </span>
           </div>
@@ -487,12 +495,14 @@ function AssignPOModal({
     if (!selectedPoId) return;
     setSaving(true);
     try {
-      await fetch(`/api/supplier-payments/${payment.id}`, {
+      await apiMutate(`/api/supplier-payments/${payment.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ purchaseOrderId: Number(selectedPoId) }),
       });
-      onSaved();
+      onSaved(); // only after the server confirms
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Couldn't assign the PO.");
     } finally {
       setSaving(false);
     }
@@ -698,8 +708,10 @@ export function PaymentsPanel({
     if (!confirm("Delete this payment record?")) return;
     setDeletingId(id);
     try {
-      await fetch(`/api/supplier-payments/${id}`, { method: "DELETE" });
-      router.refresh();
+      await apiMutate(`/api/supplier-payments/${id}`, { method: "DELETE" });
+      router.refresh(); // only after the server confirms
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Couldn't delete this payment.");
     } finally {
       setDeletingId(null);
     }
@@ -707,17 +719,6 @@ export function PaymentsPanel({
 
   // ── ACCOUNTS PAYABLE ──────────────────────────────────────────────────────
   if (isAP) {
-    // KPI calculations
-    const pendingAdj = supplierPayments.filter(p => p.adjustmentStatus === "pending" && (p.adjustmentAmount || 0) > 0);
-    const pendingCredits = supplierPayments.filter(p => p.adjustmentStatus === "pending" && (p.adjustmentAmount || 0) < 0);
-    const totalBzaOwes = pendingAdj.reduce((s, p) => s + (p.adjustmentAmount || 0), 0);
-    const totalCreditsOwed = pendingCredits.reduce((s, p) => s + Math.abs(p.adjustmentAmount || 0), 0);
-
-    // Saldo a favor: POs where BZA prepaid more than what has shipped
-    const saldoAFavor = supplierBalances.filter(b => b.balance > 0.01);
-    const totalSaldoFavor = saldoAFavor.reduce((s, b) => s + b.balance, 0);
-
-    // Payments without a PO linked
     const unlinkedPayments = supplierPayments.filter(p => !p.purchaseOrderId);
     const unlinkedTotal = unlinkedPayments.reduce((s, p) => s + p.amountUsd, 0);
 
@@ -725,404 +726,24 @@ export function PaymentsPanel({
       <div className="space-y-6">
         {/* Unlinked payments banner */}
         {unlinkedPayments.length > 0 && (
-          <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
-            <span className="text-amber-500 text-lg leading-none mt-0.5">⚠</span>
+          <div className="flex items-start gap-3 bg-[#0d3d3b]/8 border border-[#0d3d3b]/25 rounded-lg px-4 py-3">
+            <span className="text-[#0d3d3b] text-lg leading-none mt-0.5">⚠</span>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-amber-800">
+              <p className="text-sm font-medium text-[#0d3d3b]">
                 {unlinkedPayments.length} payment{unlinkedPayments.length !== 1 ? "s" : ""} ({formatCurrency(unlinkedTotal)}) not linked to a PO
               </p>
-              <p className="text-xs text-amber-600 mt-0.5">
+              <p className="text-xs text-[#0d3d3b]/70 mt-0.5">
                 Use the <strong>Assign PO</strong> button on each row below to link them — this enables the prepaid balance reconciliation.
               </p>
             </div>
           </div>
         )}
 
-        {/* KPI row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <StatCard
-            label="Total Paid Out"
-            value={formatCurrency(totalSupplierPaid)}
-            sub={`${supplierPayments.length} payments`}
-          />
-          <StatCard
-            label="Prepaid Balance"
-            value={formatCurrency(totalSaldoFavor)}
-            sub={`${saldoAFavor.length} PO${saldoAFavor.length !== 1 ? "s" : ""} prepaid`}
-          />
-          <StatCard
-            label="BZA Owes (adj.)"
-            value={formatCurrency(totalBzaOwes)}
-            sub={`${pendingAdj.length} pending`}
-          />
-          <StatCard
-            label="Supplier Owes BZA"
-            value={formatCurrency(totalCreditsOwed)}
-            sub={`${pendingCredits.length} credit${pendingCredits.length !== 1 ? "s" : ""}`}
-          />
-        </div>
-
-        {/* Saldo a Favor breakdown */}
-        {saldoAFavor.length > 0 && (
-          <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-amber-500 overflow-hidden">
-            <div className="px-4 py-3 border-b border-stone-100">
-              <h3 className="text-xs font-semibold text-stone-600 uppercase tracking-wide">
-                Prepaid Balance — Pending Shipment
-              </h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-stone-50">
-                  <tr>
-                    <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">PO</th>
-                    <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Supplier</th>
-                    <th className="text-right px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Paid</th>
-                    <th className="text-right px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Shipped</th>
-                    <th className="text-right px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Prepaid Balance</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {saldoAFavor.map(b => (
-                    <tr key={b.poId} className="border-t border-stone-100 hover:bg-stone-50">
-                      <td className="px-4 py-2.5 text-xs font-medium text-[#0d3d3b]">
-                        {b.poId ? (
-                          <Link href={`/purchase-orders/${b.poId}`} className="hover:underline">
-                            {b.poNumber || "—"}
-                          </Link>
-                        ) : (b.poNumber || "—")}
-                      </td>
-                      <td className="px-4 py-2.5 text-xs text-[#0d3d3b]">{b.supplierName?.split("(")[0].trim() || "—"}</td>
-                      <td className="px-4 py-2.5 text-xs text-right font-semibold text-[#0d3d3b]">{formatCurrency(b.totalPaid)}</td>
-                      <td className="px-4 py-2.5 text-xs text-right text-[#0d3d3b]">{formatCurrency(b.totalShipped)}</td>
-                      <td className="px-4 py-2.5 text-xs text-right font-semibold text-amber-600">{formatCurrency(b.balance)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t-2 border-stone-200 bg-stone-50">
-                    <td colSpan={4} className="px-4 py-2 text-xs font-semibold text-stone-600">TOTAL PREPAID BALANCE</td>
-                    <td className="px-4 py-2 text-xs text-right font-bold text-amber-600">{formatCurrency(totalSaldoFavor)}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Outstanding Supplier Invoices — grouped by PO with remaining balance */}
-        {outstandingSupplierInvoices.length > 0 && (() => {
-          // Group by PO
-          const poGroups: Record<number, OutstandingSupplierInvoice[]> = {};
-          for (const inv of outstandingSupplierInvoices) {
-            const key = inv.purchaseOrderId;
-            if (!poGroups[key]) poGroups[key] = [];
-            poGroups[key].push(inv);
-          }
-          // Build paid lookup from supplierBalances
-          const paidByPO: Record<number, number> = {};
-          for (const b of supplierBalances) {
-            if (b.poId != null) paidByPO[b.poId] = b.totalPaid;
-          }
-
-          const totalInvoiced = outstandingSupplierInvoices.reduce((s, i) => s + (i.amountUsd || 0), 0);
-          const totalPaidForInvoicedPOs = Object.keys(poGroups).reduce((s, k) => s + (paidByPO[Number(k)] || 0), 0);
-          const totalRemaining = Math.max(0, totalInvoiced - totalPaidForInvoicedPOs);
-
-          return (
-            <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] overflow-hidden">
-              <div className="px-4 py-3 border-b border-stone-100 flex items-center justify-between">
-                <h3 className="text-xs font-semibold text-stone-600 uppercase tracking-wide">
-                  Supplier Invoices ({outstandingSupplierInvoices.length})
-                </h3>
-                {totalRemaining > 0.01 && (
-                  <span className="text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
-                    {formatCurrency(totalRemaining)} pending payment
-                  </span>
-                )}
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-stone-50">
-                    <tr>
-                      <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Invoice #</th>
-                      <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Date</th>
-                      <th className="text-right px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Tons</th>
-                      <th className="text-right px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Invoiced</th>
-                      <th className="text-right px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Paid (A/P)</th>
-                      <th className="text-right px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">Remaining</th>
-                      <th className="text-left px-4 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide">File</th>
-                      <th className="px-4 py-2 w-24"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.entries(poGroups).map(([poIdStr, invs]) => {
-                      const poId = Number(poIdStr);
-                      const first = invs[0];
-                      const poInvoiced = invs.reduce((s, i) => s + (i.amountUsd || 0), 0);
-                      const poPaid = paidByPO[poId] || 0;
-                      const poRemaining = poInvoiced - poPaid;
-
-                      return (
-                        <>
-                          {/* PO group header */}
-                          <tr key={`po-${poId}`} className="bg-stone-50 border-t border-stone-200">
-                            <td colSpan={3} className="px-4 py-2 text-xs font-semibold text-[#0d3d3b]">
-                              <Link href={`/purchase-orders/${poId}`} className="hover:underline">
-                                {first.poNumber || "—"}
-                              </Link>
-                              <span className="ml-2 font-normal text-stone-400">{first.supplierName?.split("(")[0].trim()}</span>
-                            </td>
-                            <td className="px-4 py-2 text-xs text-right font-semibold text-stone-700">{formatCurrency(poInvoiced)}</td>
-                            <td className="px-4 py-2 text-xs text-right text-[#0d3d3b]">{formatCurrency(poPaid)}</td>
-                            <td className="px-4 py-2 text-xs text-right font-bold">
-                              {Math.abs(poRemaining) < 0.01
-                                ? <span className="text-emerald-600">Fully paid</span>
-                                : poRemaining > 0
-                                ? <span className="text-amber-600">{formatCurrency(poRemaining)}</span>
-                                : <span className="text-[#0d3d3b]">Overpaid {formatCurrency(Math.abs(poRemaining))}</span>
-                              }
-                            </td>
-                            <td colSpan={2} className="px-4 py-2" />
-                          </tr>
-                          {/* Invoice rows */}
-                          {invs.map(inv => (
-                            <tr key={inv.id} className={`border-t border-stone-100 hover:bg-stone-50 ${inv.paymentStatus === "paid" ? "opacity-50" : ""}`}>
-                              <td className="px-4 py-2 text-xs font-medium text-[#0d3d3b] pl-8">{inv.invoiceNumber}</td>
-                              <td className="px-4 py-2 text-xs text-stone-500">{formatDate(inv.invoiceDate)}</td>
-                              <td className="px-4 py-2 text-xs text-right text-stone-600">{inv.estimatedTons != null ? formatNumber(inv.estimatedTons, 3) : "—"}</td>
-                              <td className="px-4 py-2 text-xs text-right text-stone-700">{inv.amountUsd != null ? formatCurrency(inv.amountUsd) : "—"}</td>
-                              <td className="px-4 py-2 text-xs text-right text-stone-400">—</td>
-                              <td className="px-4 py-2 text-xs text-right text-stone-400">—</td>
-                              <td className="px-4 py-2 text-xs">
-                                {inv.fileUrl
-                                  ? <a href={inv.fileUrl} target="_blank" rel="noopener noreferrer" className="text-[#0d3d3b] hover:underline truncate max-w-[100px] block">{inv.fileName}</a>
-                                  : <span className="text-stone-300">—</span>}
-                              </td>
-                              <td className="px-4 py-2 text-xs text-right">
-                                <button
-                                  onClick={async () => {
-                                    setMarkingPaidId(inv.id);
-                                    const next = inv.paymentStatus === "paid" ? "unpaid" : "paid";
-                                    await fetch(`/api/supplier-invoices/${inv.id}`, {
-                                      method: "PATCH",
-                                      headers: { "Content-Type": "application/json" },
-                                      body: JSON.stringify({ paymentStatus: next }),
-                                    });
-                                    setMarkingPaidId(null);
-                                    router.refresh();
-                                  }}
-                                  disabled={markingPaidId === inv.id}
-                                  className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors disabled:opacity-40 ${
-                                    inv.paymentStatus === "paid"
-                                      ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                                      : "bg-[#0d3d3b]/10 text-[#0d3d3b] hover:bg-[#0d3d3b]/20"
-                                  }`}
-                                >
-                                  {markingPaidId === inv.id ? "…" : inv.paymentStatus === "paid" ? "Paid ✓" : "Mark Paid"}
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </>
-                      );
-                    })}
-                  </tbody>
-                  <tfoot>
-                    <tr className="border-t-2 border-stone-200 bg-stone-50">
-                      <td colSpan={3} className="px-4 py-2 text-xs font-semibold text-stone-600">TOTAL</td>
-                      <td className="px-4 py-2 text-xs text-right font-bold text-stone-800">{formatCurrency(totalInvoiced)}</td>
-                      <td className="px-4 py-2 text-xs text-right font-semibold text-[#0d3d3b]">{formatCurrency(totalPaidForInvoicedPOs)}</td>
-                      <td className={`px-4 py-2 text-xs text-right font-bold ${totalRemaining > 0.01 ? "text-amber-600" : "text-emerald-600"}`}>
-                        {totalRemaining > 0.01 ? formatCurrency(totalRemaining) : "Fully paid"}
-                      </td>
-                      <td colSpan={2} className="px-4 py-2" />
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* Table header + add button */}
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-stone-600 uppercase tracking-wide">Payment History</h2>
-          <button
-            onClick={() => setShowAddPayment(true)}
-            className="px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity"
-          >
-            + Add Payment
-          </button>
-        </div>
-
-        {/* Payments table */}
-        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted">
-                <tr className="text-left">
-                  <th className="p-3 w-8"></th>
-                  <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Date</th>
-                  <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Supplier</th>
-                  <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">PO</th>
-                  <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide text-center">Invoices</th>
-                  <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide text-right">Est. TN</th>
-                  <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide text-right">Act. TN</th>
-                  <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide text-right">$/TN</th>
-                  <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide text-right">Amount Paid</th>
-                  <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide text-right">Adjustment</th>
-                  <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Status</th>
-                  <th className="p-3 w-20"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {supplierPayments.length === 0 && (
-                  <tr>
-                    <td colSpan={12} className="p-8 text-center text-stone-400">
-                      No supplier payments recorded. Click "+ Add Payment" to start tracking.
-                    </td>
-                  </tr>
-                )}
-                {supplierPayments.map(p => {
-                  const adj = p.adjustmentAmount;
-                  const isExpanded = expandedRows.has(p.id);
-                  const needsActual = p.invoices.length > 0 && p.actualTons == null;
-                  const derivedPpt = p.pricePerTon || (p.estimatedTons && p.estimatedTons > 0 ? p.amountUsd / p.estimatedTons : null);
-                  const statusLabel =
-                    p.adjustmentStatus === "settled" ? "Settled"
-                    : p.adjustmentStatus === "pending" ? "Pending"
-                    : p.actualTons != null ? "Confirmed"
-                    : p.invoices.length > 0 ? "Awaiting Shipment"
-                    : "—";
-                  const statusColor =
-                    p.adjustmentStatus === "settled" ? "bg-emerald-50 text-emerald-700"
-                    : p.adjustmentStatus === "pending" ? "bg-amber-50 text-amber-700"
-                    : p.actualTons != null ? "bg-stone-100 text-[#0d3d3b]"
-                    : p.invoices.length > 0 ? "bg-stone-100 text-stone-500"
-                    : "bg-stone-50 text-stone-400";
-
-                  return (
-                    <>
-                      <tr key={p.id} className="border-t border-border hover:bg-muted/50 transition-colors">
-                        <td className="p-3">
-                          {p.invoices.length > 0 && (
-                            <button onClick={() => toggleRow(p.id)} className="text-stone-400 hover:text-stone-600">
-                              {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                            </button>
-                          )}
-                        </td>
-                        <td className="p-3 text-xs text-[#0d3d3b]">{formatDate(p.paymentDate)}</td>
-                        <td className="p-3 text-xs text-[#0d3d3b]">{p.supplierName?.split("(")[0].trim() || "—"}</td>
-                        <td className="p-3 text-xs text-[#0d3d3b]">
-                          {p.purchaseOrderId ? (
-                            <Link href={`/purchase-orders/${p.purchaseOrderId}`} className="hover:underline">
-                              {p.poNumber}
-                            </Link>
-                          ) : "—"}
-                        </td>
-                        <td className="p-3 text-xs text-center text-[#0d3d3b]">
-                          {p.invoices.length > 0 ? (
-                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#0d3d3b]/10 text-[10px] font-semibold text-[#0d3d3b]">
-                              {p.invoices.length}
-                            </span>
-                          ) : "—"}
-                        </td>
-                        <td className="p-3 text-xs text-right text-[#0d3d3b]">{p.estimatedTons?.toFixed(3) ?? "—"}</td>
-                        <td className={`p-3 text-xs text-right ${p.actualTons != null ? "text-[#0d3d3b] font-medium" : "text-stone-300"}`}>
-                          {p.actualTons?.toFixed(3) ?? "—"}
-                        </td>
-                        <td className="p-3 text-xs text-right text-[#0d3d3b]">
-                          {derivedPpt ? formatCurrency(derivedPpt) : "—"}
-                        </td>
-                        <td className="p-3 text-xs text-right font-semibold text-[#0d3d3b]">{formatCurrency(p.amountUsd)}</td>
-                        <td className={`p-3 text-xs text-right font-semibold ${
-                          adj == null ? "text-stone-300"
-                          : adj > 0.01 ? "text-amber-600"
-                          : adj < -0.01 ? "text-[#0d3d3b]"
-                          : "text-stone-400"
-                        }`}>
-                          {adj != null && Math.abs(adj) > 0.01
-                            ? (adj > 0 ? `+${formatCurrency(adj)}` : `−${formatCurrency(Math.abs(adj))}`)
-                            : adj != null ? "—" : "—"}
-                        </td>
-                        <td className="p-3">
-                          <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-medium ${statusColor}`}>
-                            {statusLabel}
-                          </span>
-                        </td>
-                        <td className="p-3">
-                          <div className="flex items-center gap-1 justify-end">
-                            {!p.purchaseOrderId && (
-                              <button
-                                onClick={() => setAssignPayment(p)}
-                                title="Assign to a purchase order"
-                                className="text-[10px] font-medium px-2 py-0.5 rounded bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200"
-                              >
-                                Assign PO
-                              </button>
-                            )}
-                            {needsActual && (
-                              <button
-                                onClick={() => setConfirmPayment(p)}
-                                title="Confirm actual tons"
-                                className="text-[10px] font-medium px-2 py-0.5 rounded bg-[#0d3d3b]/10 text-[#0d3d3b] hover:bg-[#0d3d3b]/20"
-                              >
-                                Confirm
-                              </button>
-                            )}
-                            {p.adjustmentStatus === "pending" && adj != null && Math.abs(adj) > 0.01 && (
-                              <button
-                                onClick={() => setSettlePayment(p)}
-                                title="Settle adjustment"
-                                className="text-[10px] font-medium px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                              >
-                                <CheckCircle2 className="w-3 h-3 inline mr-0.5" />Settle
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleDeletePayment(p.id)}
-                              disabled={deletingId === p.id}
-                              title="Delete"
-                              className="p-1 rounded text-stone-300 hover:text-red-500 hover:bg-red-50 disabled:opacity-50"
-                            >
-                              {deletingId === p.id ? "…" : <Trash2 className="w-3 h-3" />}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                      {isExpanded && p.invoices.length > 0 && (
-                        <tr key={`${p.id}-exp`} className="bg-stone-50 border-t border-stone-100">
-                          <td colSpan={12} className="px-8 py-3">
-                            <p className="text-[10px] uppercase font-semibold tracking-widest text-stone-400 mb-2">Invoices covered by this payment</p>
-                            <div className="flex flex-wrap gap-2">
-                              {p.invoices.map(inv => (
-                                <div key={inv.id} className="flex items-center gap-1.5 bg-white border border-stone-200 rounded px-2 py-1">
-                                  <span className="text-xs font-medium text-[#0d3d3b]">{inv.invoiceNumber}</span>
-                                  {inv.estimatedTons && (
-                                    <span className="text-[10px] text-stone-400">{inv.estimatedTons.toFixed(3)} TN</span>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </>
-                  );
-                })}
-              </tbody>
-              {supplierPayments.length > 0 && (
-                <tfoot>
-                  <tr className="bg-muted font-semibold border-t-2 border-border">
-                    <td className="p-3 text-xs text-[#0d3d3b]" colSpan={8}>TOTAL</td>
-                    <td className="p-3 text-xs text-right font-semibold text-[#0d3d3b]">{formatCurrency(totalSupplierPaid)}</td>
-                    <td colSpan={3} className="p-3" />
-                  </tr>
-                </tfoot>
-              )}
-            </table>
-          </div>
-        </div>
+        <APOverview
+          supplierInvoices={outstandingSupplierInvoices}
+          supplierPayments={supplierPayments}
+          onAddPayment={() => setShowAddPayment(true)}
+        />
 
         {showAddPayment && (
           <AddPaymentModal

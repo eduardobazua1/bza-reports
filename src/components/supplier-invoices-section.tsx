@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/utils";
+import { apiMutate } from "@/lib/api-mutate";
 import { Trash2, Paperclip, ExternalLink, Upload } from "lucide-react";
 
 type SupplierInvoice = {
@@ -136,8 +137,10 @@ export function SupplierInvoicesSection({
     if (!confirm("Delete this supplier invoice?")) return;
     setDeletingId(id);
     try {
-      await fetch(`/api/supplier-invoices/${id}`, { method: "DELETE" });
-      setInvoices(prev => prev.filter(i => i.id !== id));
+      await apiMutate(`/api/supplier-invoices/${id}`, { method: "DELETE" });
+      setInvoices(prev => prev.filter(i => i.id !== id)); // only after the server confirms
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Couldn't delete this invoice.");
     } finally {
       setDeletingId(null);
     }
@@ -145,27 +148,35 @@ export function SupplierInvoicesSection({
 
   async function togglePaid(inv: SupplierInvoice) {
     const next = inv.paymentStatus === "paid" ? "unpaid" : "paid";
-    await fetch(`/api/supplier-invoices/${inv.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ paymentStatus: next }),
-    });
-    setInvoices(prev => prev.map(i => i.id === inv.id ? { ...i, paymentStatus: next } : i));
+    try {
+      await apiMutate(`/api/supplier-invoices/${inv.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentStatus: next }),
+      });
+      setInvoices(prev => prev.map(i => i.id === inv.id ? { ...i, paymentStatus: next } : i));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Couldn't update payment status.");
+    }
   }
 
   async function handleLinkChange(inv: SupplierInvoice, newLinkedId: string) {
     const linkedInvoiceId = newLinkedId ? Number(newLinkedId) : null;
-    await fetch(`/api/supplier-invoices/${inv.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ linkedInvoiceId }),
-    });
-    const linked = poInvoices.find(i => i.id === linkedInvoiceId);
-    setInvoices(prev => prev.map(i =>
-      i.id === inv.id
-        ? { ...i, linkedInvoiceId, linkedInvoiceNumber: linked?.invoiceNumber ?? null }
-        : i
-    ));
+    try {
+      await apiMutate(`/api/supplier-invoices/${inv.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ linkedInvoiceId }),
+      });
+      const linked = poInvoices.find(i => i.id === linkedInvoiceId);
+      setInvoices(prev => prev.map(i =>
+        i.id === inv.id
+          ? { ...i, linkedInvoiceId, linkedInvoiceNumber: linked?.invoiceNumber ?? null }
+          : i
+      ));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Couldn't update the link.");
+    }
   }
 
   return (

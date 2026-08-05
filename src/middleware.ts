@@ -9,6 +9,7 @@ export function middleware(req: NextRequest) {
     pathname.startsWith("/portal") ||
     pathname.startsWith("/api/portal") ||
     pathname.startsWith("/api/mobile") ||
+    pathname.startsWith("/api/cron") ||
     pathname.startsWith("/api/documents/download") ||
     pathname.startsWith("/api/invoice-pdf") ||
     pathname.startsWith("/login") ||

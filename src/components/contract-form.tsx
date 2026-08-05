@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { X } from "lucide-react";
 import { createContract, updateContract } from "@/server/actions";
+import { DateField } from "@/components/date-field";
 import { useRouter } from "next/navigation";
 
 type Client   = { id: number; name: string };
@@ -244,10 +245,10 @@ export function ContractForm({ clients, suppliers, nextContractNumber, existing,
             </Field>
 
             <Field label="Start Date">
-              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className={inputCls} />
+              <DateField value={startDate} onChange={setStartDate} className={inputCls} />
             </Field>
             <Field label="End Date">
-              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className={inputCls} />
+              <DateField value={endDate} onChange={setEndDate} className={inputCls} />
             </Field>
 
             <Field label="Volume Committed (t)">

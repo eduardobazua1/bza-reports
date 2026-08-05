@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { updateInvoice } from "@/server/actions";
 import { useRouter } from "next/navigation";
 import { shipmentStatusLabels, shipmentStatusColors } from "@/lib/utils";
+import { DateField } from "@/components/date-field";
 
 const statuses = [
   { value: "programado", label: "Scheduled" },
@@ -112,6 +113,8 @@ export function ShipmentActions({
   // Close when clicking outside
   useEffect(() => {
     function handler(e: MouseEvent) {
+      // ignore clicks inside the DateField calendar (it portals to document.body, outside this panel)
+      if ((e.target as Element)?.closest?.("[data-datefield-popup]")) return;
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) setOpen(false);
     }
     document.addEventListener("mousedown", handler);
@@ -202,7 +205,7 @@ export function ShipmentActions({
           </div>
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1">ETA</label>
-            <input type="date" value={eta} onChange={(e) => setEta(e.target.value)}
+            <DateField value={eta} onChange={setEta}
               className="w-full text-xs border border-border rounded px-2 py-1.5 bg-background" />
           </div>
           <div className="flex gap-2 pt-1">

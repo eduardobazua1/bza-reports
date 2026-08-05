@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bza-v2';
+const CACHE_NAME = 'bza-v3';
 
 // Install — cache core assets
 self.addEventListener('install', (event) => {
@@ -24,19 +24,41 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch — network first, fallback to cache
+// Fetch — cache STATIC ASSETS ONLY (network-first). Never cache HTML pages,
+// navigations, RSC payloads, or API calls: those must always come from the
+// network so fresh data never gets masked by a stale cached page.
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET' || event.request.url.includes('/api/')) return;
+  const req = event.request;
+  if (req.method !== 'GET') return;
+
+  let url;
+  try { url = new URL(req.url); } catch { return; }
+
+  // Detect dynamic content that must NEVER be served from cache.
+  const isRSC =
+    url.searchParams.has('_rsc') ||
+    req.headers.get('RSC') === '1' ||
+    (req.headers.get('Accept') || '').includes('text/x-component');
+  const isDynamic =
+    url.pathname.startsWith('/api/') ||
+    req.mode === 'navigate' ||
+    req.destination === 'document' ||
+    isRSC;
+
+  // Let the browser fetch dynamic content directly — the SW stays out of it.
+  if (isDynamic) return;
+
+  // Static assets (images, fonts, /_next/static chunks): network-first, cache fallback.
   event.respondWith(
-    fetch(event.request)
+    fetch(req)
       .then((response) => {
         if (response.ok) {
           const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
         }
         return response;
       })
-      .catch(() => caches.match(event.request))
+      .catch(() => caches.match(req))
   );
 });
 

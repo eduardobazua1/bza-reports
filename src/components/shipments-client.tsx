@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Search, X } from "lucide-react";
 import { formatNumber, formatDate, shipmentStatusLabels, shipmentStatusColors } from "@/lib/utils";
 import { ShipmentActions } from "@/components/shipment-actions";
 import type { getInvoices } from "@/server/queries";
@@ -96,17 +96,32 @@ function groupByClient(rows: InvoiceRow[]) {
   return map;
 }
 
+function matchesSearch(row: InvoiceRow, q: string) {
+  const inv = row.invoice;
+  return [
+    inv.invoiceNumber, row.poNumber, inv.salesDocument, row.clientPoNumber,
+    inv.vehicleId, inv.blNumber, inv.currentLocation, row.clientName, inv.destination,
+  ].some((v) => v && String(v).toLowerCase().includes(q));
+}
+
 export function ShipmentsClient({ allInvoices }: Props) {
   // null = show all active (non-delivered); a status = show only that status
   const [filter, setFilter] = useState<Status | null>(null);
+  const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
 
   const active = allInvoices.filter((r) => r.invoice.shipmentStatus !== "entregado");
-  const totalActiveTons = active.reduce((s, r) => s + r.invoice.quantityTons, 0);
+
+  // Base set: a selected status card wins; otherwise a search spans ALL shipments
+  // (so delivered ones are findable too), and with no search we show active only.
+  const base = filter
+    ? allInvoices.filter((r) => r.invoice.shipmentStatus === filter)
+    : q
+      ? allInvoices
+      : active;
 
   // Which rows to display in the table section
-  const displayRows = filter
-    ? allInvoices.filter((r) => r.invoice.shipmentStatus === filter)
-    : active;
+  const displayRows = q ? base.filter((r) => matchesSearch(r, q)) : base;
 
   const byClient = groupByClient(displayRows);
 
@@ -116,7 +131,29 @@ export function ShipmentsClient({ allInvoices }: Props) {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Active Shipments</h1>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <h1 className="text-2xl font-bold">Active Shipments</h1>
+        <div className="relative w-full sm:w-80">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search invoice, PO, client, vehicle, BL…"
+            className="w-full border border-stone-200 rounded-lg pl-9 pr-8 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/40"
+          />
+          {query && (
+            <button onClick={() => setQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600">
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {q && (
+        <p className="text-xs text-muted-foreground -mt-2">
+          {displayRows.length} result{displayRows.length === 1 ? "" : "s"} for &ldquo;{query.trim()}&rdquo; across all shipments.
+        </p>
+      )}
 
       {/* Summary cards — all clickable as filters */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -179,7 +216,11 @@ export function ShipmentsClient({ allInvoices }: Props) {
 
       {displayRows.length === 0 && (
         <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-8 text-center text-muted-foreground">
-          {filter ? `No shipments with status "${shipmentStatusLabels[filter]}".` : "No active shipments at this time."}
+          {q
+            ? `No shipments match "${query.trim()}".`
+            : filter
+              ? `No shipments with status "${shipmentStatusLabels[filter]}".`
+              : "No active shipments at this time."}
         </div>
       )}
     </div>

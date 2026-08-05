@@ -1,11 +1,14 @@
 export const dynamic = "force-dynamic";
 
 import { db } from "@/db";
-import { suppliers, supplierPayments, purchaseOrders, invoices, clients } from "@/db/schema";
-import { eq, sql, count } from "drizzle-orm";
+import { suppliers, supplierPayments, purchaseOrders, invoices, clients, supplierInvoices } from "@/db/schema";
+import { eq, sql, count, and, isNotNull } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { formatCurrency, formatNumber, formatDate } from "@/lib/utils";
 import { SupplierDetailEdit } from "@/components/supplier-detail-edit";
+import { APDetailDrawer } from "@/components/ap-detail-drawer";
+import { SupplierStrategicKpis } from "@/components/supplier-strategic-kpis";
+import { SupplierTabs } from "@/components/supplier-tabs";
 
 function InfoRow({ label, value }: { label: string; value?: string | null }) {
   if (!value) return null;
@@ -38,16 +41,218 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
     .orderBy(purchaseOrders.poNumber);
 
   const payments = await db
-    .select({ payment: supplierPayments, poNumber: purchaseOrders.poNumber })
+    .select({
+      payment: supplierPayments,
+      poNumber: purchaseOrders.poNumber,
+      purchaseOrderId: supplierPayments.purchaseOrderId,
+    })
     .from(supplierPayments)
     .leftJoin(purchaseOrders, eq(supplierPayments.purchaseOrderId, purchaseOrders.id))
     .where(eq(supplierPayments.supplierId, supplier.id))
     .orderBy(supplierPayments.paymentDate);
 
+  // Per-PO supplier invoice totals (A/P)
+  const supplierInvoiceTotals = await db
+    .select({
+      purchaseOrderId: supplierInvoices.purchaseOrderId,
+      totalInvoiced: sql<number>`coalesce(sum(${supplierInvoices.amountUsd}), 0)`,
+    })
+    .from(supplierInvoices)
+    .where(eq(supplierInvoices.supplierId, supplier.id))
+    .groupBy(supplierInvoices.purchaseOrderId);
+
+  // Per-PO payment totals
+  const paymentTotals = await db
+    .select({
+      purchaseOrderId: supplierPayments.purchaseOrderId,
+      totalPaidPo: sql<number>`coalesce(sum(${supplierPayments.amountUsd}), 0)`,
+    })
+    .from(supplierPayments)
+    .where(eq(supplierPayments.supplierId, supplier.id))
+    .groupBy(supplierPayments.purchaseOrderId);
+
+  // Build maps: poId → invoiced / paid
+  const invoicedByPo = new Map<number, number>();
+  for (const row of supplierInvoiceTotals) {
+    if (row.purchaseOrderId != null) invoicedByPo.set(row.purchaseOrderId, row.totalInvoiced);
+  }
+  const paidByPo = new Map<number, number>();
+  for (const row of paymentTotals) {
+    if (row.purchaseOrderId != null) paidByPo.set(row.purchaseOrderId, row.totalPaidPo);
+  }
+
+  // Build A/P balance rows: shipped cost vs paid, per PO (same basis as the headline
+  // balance). Uses each PO's invoiced cost, not supplierInvoices docs, so a PO with
+  // payments but no invoice doc loaded doesn't read as a credit.
+  const allPoIds = new Set<number>([
+    ...pos.filter(p => (p.totalCost || 0) > 0).map(p => p.po.id),
+    ...paidByPo.keys(),
+  ]);
+  const apRows = pos
+    .filter(p => allPoIds.has(p.po.id))
+    .map(p => {
+      const invoiced = p.totalCost || 0;
+      const paid = paidByPo.get(p.po.id) ?? 0;
+      return { po: p.po, invoiced, paid, balance: invoiced - paid };
+    });
+
+  // ============ STRATEGIC KPIs (Margin Engine) ============
+  // Revenue/cost/margin from invoices (sell vs buy)
+  const marginAgg = await db
+    .select({
+      cars: count(invoices.id),
+      tons: sql<number>`coalesce(sum(${invoices.quantityTons}), 0)`,
+      revenue: sql<number>`coalesce(sum(${invoices.quantityTons} * coalesce(${invoices.sellPriceOverride}, ${purchaseOrders.sellPrice})), 0)`,
+      cost: sql<number>`coalesce(sum(${invoices.quantityTons} * coalesce(${invoices.buyPriceOverride}, ${purchaseOrders.buyPrice})), 0)`,
+      avgCar: sql<number>`coalesce(avg(${invoices.quantityTons}), 0)`,
+      minCar: sql<number>`coalesce(min(${invoices.quantityTons}), 0)`,
+      maxCar: sql<number>`coalesce(max(${invoices.quantityTons}), 0)`,
+    })
+    .from(invoices)
+    .innerJoin(purchaseOrders, eq(invoices.purchaseOrderId, purchaseOrders.id))
+    .where(eq(purchaseOrders.supplierId, supplier.id));
+  const m = marginAgg[0] ?? { cars: 0, tons: 0, revenue: 0, cost: 0, avgCar: 0, minCar: 0, maxCar: 0 };
+  const grossMargin = (m.revenue || 0) - (m.cost || 0);
+  const marginPct = m.revenue ? (grossMargin / m.revenue) * 100 : 0;
+  const marginPerTon = m.tons ? grossMargin / m.tons : 0;
+
+  // Margin by shipment year (trend)
+  const marginByYear = await db
+    .select({
+      yr: sql<string>`substr(${invoices.shipmentDate}, 1, 4)`,
+      cars: count(invoices.id),
+      tons: sql<number>`coalesce(sum(${invoices.quantityTons}), 0)`,
+      revenue: sql<number>`coalesce(sum(${invoices.quantityTons} * coalesce(${invoices.sellPriceOverride}, ${purchaseOrders.sellPrice})), 0)`,
+      cost: sql<number>`coalesce(sum(${invoices.quantityTons} * coalesce(${invoices.buyPriceOverride}, ${purchaseOrders.buyPrice})), 0)`,
+    })
+    .from(invoices)
+    .innerJoin(purchaseOrders, eq(invoices.purchaseOrderId, purchaseOrders.id))
+    .where(and(eq(purchaseOrders.supplierId, supplier.id), isNotNull(invoices.shipmentDate)))
+    .groupBy(sql`substr(${invoices.shipmentDate}, 1, 4)`)
+    .orderBy(sql`substr(${invoices.shipmentDate}, 1, 4)`);
+  const yearRows = marginByYear.map(y => {
+    const margin = (y.revenue || 0) - (y.cost || 0);
+    return {
+      yr: y.yr,
+      cars: y.cars,
+      tons: y.tons || 0,
+      revenue: y.revenue || 0,
+      cost: y.cost || 0,
+      margin,
+      marginPct: y.revenue ? (margin / y.revenue) * 100 : 0,
+      marginPerTon: y.tons ? margin / y.tons : 0,
+    };
+  });
+
+  // Concentration by destination
+  const byDest = await db
+    .select({
+      destination: invoices.destination,
+      cars: count(invoices.id),
+      tons: sql<number>`coalesce(sum(${invoices.quantityTons}), 0)`,
+    })
+    .from(invoices)
+    .innerJoin(purchaseOrders, eq(invoices.purchaseOrderId, purchaseOrders.id))
+    .where(and(eq(purchaseOrders.supplierId, supplier.id), isNotNull(invoices.destination)))
+    .groupBy(invoices.destination)
+    .orderBy(sql`count(${invoices.id}) desc`);
+  const destRows = byDest.map(d => ({ destination: d.destination as string, cars: d.cars, tons: d.tons || 0 }));
+
+  // Price spread trend: margin/ton of first vs latest PO (by po_number)
+  const spreadRows = pos
+    .filter(p => (p.po.sellPrice ?? 0) > 0 && (p.po.buyPrice ?? 0) > 0)
+    .map(p => ({ poNumber: p.po.poNumber, spread: (p.po.sellPrice ?? 0) - (p.po.buyPrice ?? 0) }));
+  const firstSpread = spreadRows[0]?.spread ?? 0;
+  const lastSpread = spreadRows[spreadRows.length - 1]?.spread ?? 0;
+
+  const kpi = {
+    cars: m.cars, tons: m.tons || 0, revenue: m.revenue || 0, cost: m.cost || 0,
+    grossMargin, marginPct, marginPerTon,
+    avgCar: m.avgCar || 0, minCar: m.minCar || 0, maxCar: m.maxCar || 0,
+    yearRows, destRows, spreadRows, firstSpread, lastSpread,
+  };
+
+  // Full supplier invoice details for the drawer
+  const supplierInvoiceDetails = await db
+    .select({
+      id: supplierInvoices.id,
+      purchaseOrderId: supplierInvoices.purchaseOrderId,
+      invoiceNumber: supplierInvoices.invoiceNumber,
+      invoiceDate: supplierInvoices.invoiceDate,
+      estimatedTons: supplierInvoices.estimatedTons,
+      amountUsd: supplierInvoices.amountUsd,
+      paymentStatus: supplierInvoices.paymentStatus,
+      fileName: supplierInvoices.fileName,
+      linkedInvoiceId: supplierInvoices.linkedInvoiceId,
+      linkedInvoiceNumber: invoices.invoiceNumber,
+    })
+    .from(supplierInvoices)
+    .leftJoin(invoices, eq(supplierInvoices.linkedInvoiceId, invoices.id))
+    .where(eq(supplierInvoices.supplierId, supplier.id))
+    .orderBy(supplierInvoices.invoiceDate);
+
+  // Build invoicesByPo map for drawer
+  const invoicesByPo: Record<number, {
+    id: number;
+    invoiceNumber: string;
+    invoiceDate: string | null;
+    estimatedTons: number;
+    amountUsd: number;
+    paymentStatus: string | null;
+    fileName: string | null;
+    linkedInvoiceId: number | null;
+    linkedInvoiceNumber?: string | null;
+  }[]> = {};
+  for (const inv of supplierInvoiceDetails) {
+    const poId = inv.purchaseOrderId;
+    if (!invoicesByPo[poId]) invoicesByPo[poId] = [];
+    invoicesByPo[poId].push({
+      id: inv.id,
+      invoiceNumber: inv.invoiceNumber,
+      invoiceDate: inv.invoiceDate ?? null,
+      estimatedTons: inv.estimatedTons ?? 0,
+      amountUsd: inv.amountUsd ?? 0,
+      paymentStatus: inv.paymentStatus ?? null,
+      fileName: inv.fileName ?? null,
+      linkedInvoiceId: inv.linkedInvoiceId ?? null,
+      linkedInvoiceNumber: inv.linkedInvoiceNumber ?? null,
+    });
+  }
+
+  // Build paymentsByPo map for drawer
+  const paymentsByPo: Record<number, {
+    id: number;
+    paymentDate: string | null;
+    amountUsd: number;
+    reference: string | null;
+    notes: string | null;
+  }[]> = {};
+  for (const p of payments) {
+    const poId = p.purchaseOrderId;
+    if (poId == null) continue;
+    if (!paymentsByPo[poId]) paymentsByPo[poId] = [];
+    paymentsByPo[poId].push({
+      id: p.payment.id,
+      paymentDate: p.payment.paymentDate ?? null,
+      amountUsd: p.payment.amountUsd,
+      reference: p.payment.reference ?? null,
+      notes: p.payment.notes ?? null,
+    });
+  }
+
+  // Totals. NOTE: the balance is shipped cost vs paid (same basis as the dashboard).
+  // It must NOT use supplierInvoices — a supplier with payments but no invoice docs
+  // loaded would show a phantom credit (Arauco showed −$19.3M that way).
+  const totalInvoiced = supplierInvoiceTotals.reduce((s, r) => s + (r.totalInvoiced || 0), 0);
+  const totalPaid = payments.reduce((s, p) => s + p.payment.amountUsd, 0);
+
   const totalTons = pos.reduce((s, p) => s + (p.totalTons || 0), 0);
   const totalCost = pos.reduce((s, p) => s + (p.totalCost || 0), 0);
-  const totalPaid = payments.reduce((s, p) => s + p.payment.amountUsd, 0);
   const balance = totalCost - totalPaid;
+
+  const apTotalInvoiced = apRows.reduce((s, r) => s + r.invoiced, 0);
+  const apTotalPaid = apRows.reduce((s, r) => s + r.paid, 0);
+  const apTotalBalance = apTotalInvoiced - apTotalPaid;
 
   const addressParts = [supplier.address, supplier.city, supplier.state, supplier.zip, supplier.country].filter(Boolean);
 
@@ -65,10 +270,59 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
         <SupplierDetailEdit supplier={supplier} />
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* A/P Hero — Level 1: General position */}
+      <div className={`bg-white rounded-lg shadow-sm border-l-[5px] overflow-hidden ${balance > 0 ? "border-l-red-500" : "border-l-[#0d3d3b]"}`}>
+        <div className="px-5 py-4">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-[10px] text-stone-400 uppercase tracking-widest font-medium mb-1">
+                Accounts Payable
+              </p>
+              <p className={`text-4xl font-bold tracking-tight ${balance > 0 ? "text-red-600" : "text-[#0d3d3b]"}`}>
+                {balance === 0 ? "—" : formatCurrency(Math.abs(balance))}
+              </p>
+              <p className="text-sm text-stone-500 mt-1.5">
+                {balance > 0
+                  ? "Outstanding balance you owe"
+                  : balance < 0
+                  ? "Credit in your favor"
+                  : "✓ Fully settled"}
+              </p>
+            </div>
+            <div className="text-right">
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${balance > 0 ? "bg-red-100 text-red-700" : "bg-[#0d3d3b]/10 text-[#0d3d3b]"}`}>
+                {balance > 0 ? "⚠ Pending" : balance < 0 ? "↑ Credit" : "✓ Settled"}
+              </span>
+              <p className="text-xs text-stone-400 mt-2">
+                {apRows.filter(r => r.balance > 0).length} PO{apRows.filter(r => r.balance > 0).length !== 1 ? "s" : ""} with open balance
+              </p>
+            </div>
+          </div>
+          {/* Payment progress bar */}
+          {totalCost > 0 && (
+            <div className="mt-4">
+              <div className="flex justify-between text-[10px] text-stone-400 mb-1.5">
+                <span>{formatCurrency(totalPaid)} paid of {formatCurrency(totalCost)} shipped</span>
+                <span className="font-medium">{Math.min(100, Math.round(totalPaid / totalCost * 100))}%</span>
+              </div>
+              <div className="h-2 bg-stone-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all bg-[#0d3d3b]"
+                  style={{ width: `${Math.min(100, totalPaid / totalCost * 100)}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <SupplierTabs
+        overview={
+        <div className="space-y-5">
+      {/* KPI Cards — Level 2: Supporting metrics */}
+      <div className="grid grid-cols-4 gap-3">
         <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4">
-          <p className="text-[10px] text-stone-400 uppercase tracking-wide mb-1">Total Purchases</p>
+          <p className="text-[10px] text-stone-400 uppercase tracking-wide mb-1">Total Cost (shipped)</p>
           <p className="text-xl font-bold text-stone-900">{formatCurrency(totalCost)}</p>
           <p className="text-xs text-stone-400 mt-0.5">{formatNumber(totalTons, 0)} TN · {pos.length} POs</p>
         </div>
@@ -77,14 +331,25 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
           <p className="text-xl font-bold text-[#0d3d3b]">{formatCurrency(totalPaid)}</p>
           <p className="text-xs text-stone-400 mt-0.5">{payments.length} payment{payments.length !== 1 ? "s" : ""}</p>
         </div>
-        <div className={`bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4 border-l-4 ${balance > 0 ? "border-l-[#0d3d3b]" : balance < 0 ? "border-l-[#0d3d3b]" : "border-l-stone-200"}`}>
-          <p className="text-[10px] text-stone-400 uppercase tracking-wide mb-1">Open Balance</p>
-          <p className={`text-xl font-bold ${balance > 0 ? "text-[#0d3d3b]" : balance < 0 ? "text-[#0d3d3b]" : "text-stone-400"}`}>{formatCurrency(Math.abs(balance))}</p>
-          <p className="text-xs text-stone-400 mt-0.5">{balance > 0 ? "You owe supplier" : balance < 0 ? "Overpaid" : "Settled"}</p>
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-red-400 p-4">
+          <p className="text-[10px] text-stone-400 uppercase tracking-wide mb-1">POs Pending</p>
+          <p className="text-xl font-bold text-red-600">{apRows.filter(r => r.balance > 0).length}</p>
+          <p className="text-xs text-stone-400 mt-0.5">
+            {formatCurrency(apRows.filter(r => r.balance > 0).reduce((s, r) => s + r.balance, 0))} owed
+          </p>
+        </div>
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4">
+          <p className="text-[10px] text-stone-400 uppercase tracking-wide mb-1">POs Settled</p>
+          <p className="text-xl font-bold text-[#0d3d3b]">{apRows.filter(r => r.balance <= 0).length}</p>
+          <p className="text-xs text-stone-400 mt-0.5">of {apRows.length} with activity</p>
         </div>
       </div>
 
-      {/* Info Cards */}
+      {/* Strategic KPIs — Margin Engine (clickable drill-down) */}
+      <SupplierStrategicKpis kpi={kpi} supplierName={supplier.name} />
+        </div>
+        }
+        profile={
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Contact */}
         <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4 space-y-3">
@@ -126,26 +391,89 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
 
         {/* Cert */}
         <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] p-4 space-y-3">
-          <p className="text-xs font-semibold text-stone-500 uppercase tracking-widest">
-            {supplier.certType === "pefc" ? "PEFC Certification" : "FSC Certification"}
-          </p>
+          <p className="text-xs font-semibold text-stone-500 uppercase tracking-widest">Certification</p>
           {!supplier.fscLicense && !supplier.pefc ? (
             <p className="text-xs text-stone-400 italic">No certification on file.</p>
-          ) : supplier.certType === "pefc" ? (
-            <>
-              <InfoRow label="PEFC License" value={supplier.pefc} />
-              <InfoRow label="Chain of Custody" value={supplier.fscChainOfCustody} />
-            </>
           ) : (
-            <>
-              <InfoRow label="FSC License" value={supplier.fscLicense} />
-              <InfoRow label="Chain of Custody" value={supplier.fscChainOfCustody} />
-              <InfoRow label="Input Claim" value={supplier.fscInputClaim} />
-              <InfoRow label="Output Claim" value={supplier.fscOutputClaim} />
-            </>
+            <div className="space-y-3">
+              {supplier.fscLicense && (
+                <div className="space-y-2">
+                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">FSC</p>
+                  <InfoRow label="License" value={supplier.fscLicense} />
+                  <InfoRow label="Chain of Custody" value={supplier.fscChainOfCustody} />
+                  <InfoRow label="Input Claim" value={supplier.fscInputClaim} />
+                </div>
+              )}
+              {supplier.pefc && (
+                <div className="space-y-2">
+                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">PEFC</p>
+                  <InfoRow label="Certificate" value={supplier.pefc} />
+                  <InfoRow label="Input Claim" value={supplier.fscInputClaim && !supplier.fscLicense ? supplier.fscInputClaim : "100% PEFC Certified"} />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Attached documents */}
+          {(supplier.certFileUrl || supplier.certFile2Url) && (
+            <div className="pt-3 border-t border-stone-100">
+              <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest mb-2">
+                Attached Documents
+              </p>
+              <div className="space-y-1.5">
+                {supplier.certFileName && supplier.certFileUrl && (
+                  <a href={supplier.certFileUrl} download={supplier.certFileName}
+                    className="group flex items-center gap-2.5 rounded-md border border-stone-150 bg-stone-50/60 px-2.5 py-2 hover:border-[#0d3d3b]/30 hover:bg-[#0d3d3b]/5 transition-colors">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-[#0d3d3b]/10 text-[#0d3d3b]">
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-xs font-medium text-stone-700 group-hover:text-[#0d3d3b]">
+                        {supplier.certFileName.replace("Timestamped_", "")}
+                      </span>
+                      <span className="block text-[10px] text-stone-400">PDF · click to download</span>
+                    </span>
+                    <svg className="h-3.5 w-3.5 shrink-0 text-stone-300 group-hover:text-[#0d3d3b]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
+                    </svg>
+                  </a>
+                )}
+                {supplier.certFile2Name && supplier.certFile2Url && (
+                  <a href={supplier.certFile2Url} download={supplier.certFile2Name}
+                    className="group flex items-center gap-2.5 rounded-md border border-stone-150 bg-stone-50/60 px-2.5 py-2 hover:border-[#0d3d3b]/30 hover:bg-[#0d3d3b]/5 transition-colors">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-[#0d3d3b]/10 text-[#0d3d3b]">
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-xs font-medium text-stone-700 group-hover:text-[#0d3d3b]">
+                        {supplier.certFile2Name.replace("Timestamped_", "")}
+                      </span>
+                      <span className="block text-[10px] text-stone-400">PDF · click to download</span>
+                    </span>
+                    <svg className="h-3.5 w-3.5 shrink-0 text-stone-300 group-hover:text-[#0d3d3b]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
+                    </svg>
+                  </a>
+                )}
+              </div>
+            </div>
           )}
         </div>
       </div>
+        }
+        activity={
+        <div className="space-y-5">
+      {/* A/P Balance by PO — with drill-down drawer */}
+      <APDetailDrawer
+        apRows={apRows}
+        invoicesByPo={invoicesByPo}
+        paymentsByPo={paymentsByPo}
+        supplierName={supplier.name}
+      />
 
       {/* Purchase Orders */}
       <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b]">
@@ -232,6 +560,9 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
           </table>
         </div>
       </div>
+        </div>
+        }
+      />
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { createInvoice, updateInvoice } from "@/server/actions";
+import { DateField } from "@/components/date-field";
 import { useRouter } from "next/navigation";
 
 type Invoice = {
@@ -50,7 +51,7 @@ export function InvoiceForm({
   purchaseOrderId,
   onCancel,
 }: {
-  invoice?: Invoice;
+  invoice?: Partial<Invoice>;
   purchaseOrderId?: number;
   onCancel?: () => void;
 }) {
@@ -99,7 +100,7 @@ export function InvoiceForm({
 
     startTransition(async () => {
       if (invoice) {
-        await updateInvoice(invoice.id, data);
+        await updateInvoice(invoice.id!, data);
       } else {
         await createInvoice(data as Parameters<typeof createInvoice>[0]);
       }
@@ -175,16 +176,16 @@ export function InvoiceForm({
           <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-2">Dates</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Field label="Ship Date">
-              <input name="shipmentDate" type="date" defaultValue={invoice?.shipmentDate || ""} className={inputCls} />
+              <DateField name="shipmentDate" defaultValue={invoice?.shipmentDate || ""} className={inputCls} />
             </Field>
             <Field label="Invoice Date">
-              <input name="invoiceDate" type="date" defaultValue={invoice?.invoiceDate || ""} className={inputCls} />
+              <DateField name="invoiceDate" defaultValue={invoice?.invoiceDate || ""} className={inputCls} />
             </Field>
             <Field label="ETA">
-              <input name="estimatedArrival" type="date" defaultValue={invoice?.estimatedArrival || ""} className={inputCls} />
+              <DateField name="estimatedArrival" defaultValue={invoice?.estimatedArrival || ""} className={inputCls} />
             </Field>
             <Field label="Due Date">
-              <input name="dueDate" type="date" defaultValue={invoice?.dueDate || ""} className={inputCls} />
+              <DateField name="dueDate" defaultValue={invoice?.dueDate || ""} className={inputCls} />
             </Field>
           </div>
         </div>

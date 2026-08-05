@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { apiMutate } from "@/lib/api-mutate";
 import { FileText, Upload, Trash2, Download, File } from "lucide-react";
 
 type Doc = {
@@ -71,12 +72,16 @@ export function DocumentUpload({ invoiceId, invoiceNumber }: { invoiceId: number
 
   async function handleDelete(doc: Doc) {
     if (!confirm(`Delete ${typeLabels[doc.type]}: ${doc.fileName}?`)) return;
-    await fetch("/api/documents", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: doc.id, fileUrl: doc.fileUrl }),
-    });
-    await loadDocs();
+    try {
+      await apiMutate("/api/documents", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: doc.id, fileUrl: doc.fileUrl }),
+      });
+      await loadDocs();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Couldn't delete the document.");
+    }
   }
 
   function formatSize(bytes: number | null) {

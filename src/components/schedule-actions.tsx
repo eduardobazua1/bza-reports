@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { createScheduledReport, markScheduleSent, cancelSchedule, createTemplate, deleteTemplate, updateTemplate } from "@/server/schedule-actions";
+import { DateField } from "@/components/date-field";
 import { useRouter } from "next/navigation";
 
 type Template = { id: number; name: string; format: string; description: string | null; isSystem: boolean; columns: string };
@@ -176,7 +177,7 @@ export function ScheduleActions({
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Send Date *</label>
-              <input type="date" name="sendDate" required defaultValue={today} className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background" />
+              <DateField name="sendDate" defaultValue={today} className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Remind (email)</label>

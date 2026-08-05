@@ -6,13 +6,14 @@ export const dynamic = "force-dynamic";
 export default async function StatementsPage({
   searchParams,
 }: {
-  searchParams: { client?: string; from?: string; to?: string };
+  searchParams: Promise<{ client?: string; from?: string; to?: string }>;
 }) {
   const clients = await getClients();
+  const sp = await searchParams;
 
-  const clientId = searchParams.client ? Number(searchParams.client) : null;
-  const fromDate = searchParams.from ?? "";
-  const toDate   = searchParams.to   ?? "";
+  const clientId = sp.client ? Number(sp.client) : null;
+  const fromDate = sp.from ?? "";
+  const toDate   = sp.to   ?? "";
 
   const statement = clientId
     ? await getClientStatement(clientId, fromDate || undefined, toDate || undefined)

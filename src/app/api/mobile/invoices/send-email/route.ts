@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
         ${docsHtml}
         <p>If you have any questions, please don't hesitate to contact us.</p>
         <br/>
-        <p>Best regards,<br/>Eduardo Bazua<br/>BZA International Services, LLC<br/>accounting@bza-is.com | www.bza-is.com</p>
+        <p>Best regards,<br/>Accounting team<br/>BZA International Services, LLC<br/>accounting@bza-is.com | www.bza-is.com</p>
         <img src="${appUrl}/api/track/open?t=${trackingId}" width="1" height="1" style="display:none" alt="" />
       `,
       attachments,

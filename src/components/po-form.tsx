@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef, useEffect } from "react";
 import { createPurchaseOrder, updatePurchaseOrder } from "@/server/actions";
+import { DateField } from "@/components/date-field";
 import { useRouter } from "next/navigation";
 
 const INCOTERMS = [
@@ -385,7 +386,7 @@ export function POForm({
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Date</label>
-            <input name="poDate" type="date" defaultValue={purchaseOrder?.poDate || new Date().toISOString().slice(0, 10)} className={inp} />
+            <DateField name="poDate" defaultValue={purchaseOrder?.poDate || new Date().toISOString().slice(0, 10)} className={inp} />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">
@@ -424,12 +425,24 @@ export function POForm({
               <input value={chainOfCustody} onChange={(e) => setChainOfCustody(e.target.value)} className={inp} />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Input Claim</label>
-              <input value={inputClaim} onChange={(e) => setInputClaim(e.target.value)} className={inp} />
+              <label className="block text-sm font-medium mb-1">Input Claim <span className="text-muted-foreground font-normal text-xs">(supplier)</span></label>
+              <select value={inputClaim} onChange={(e) => setInputClaim(e.target.value)} className={inp}>
+                <option value="">— Select —</option>
+                <option value="FSC Controlled Wood">FSC Controlled Wood</option>
+                <option value="FSC Mix Credit">FSC Mix Credit</option>
+                <option value="FSC Mix 70%">FSC Mix 70%</option>
+                <option value="FSC 100%">FSC 100%</option>
+              </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Output Claim</label>
-              <input value={outputClaim} onChange={(e) => setOutputClaim(e.target.value)} className={inp} />
+              <label className="block text-sm font-medium mb-1">Output Claim <span className="text-muted-foreground font-normal text-xs">(BZA → invoice)</span></label>
+              <select value={outputClaim} onChange={(e) => setOutputClaim(e.target.value)} className={inp}>
+                <option value="">— None (no cert in invoice) —</option>
+                <option value="FSC Controlled Wood">FSC Controlled Wood</option>
+                <option value="FSC Mix Credit">FSC Mix Credit</option>
+                <option value="FSC Mix 70%">FSC Mix 70%</option>
+                <option value="FSC 100%">FSC 100%</option>
+              </select>
             </div>
           </div>
         )}
@@ -440,16 +453,24 @@ export function POForm({
               <input value={pefc} onChange={(e) => setPefc(e.target.value)} className={inp} />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Input Claim</label>
-              <input value={inputClaim} onChange={(e) => setInputClaim(e.target.value)} className={inp} />
-            </div>
-            <div>
               <label className="block text-sm font-medium mb-1">Chain of Custody</label>
               <input value={chainOfCustody} onChange={(e) => setChainOfCustody(e.target.value)} className={inp} />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Output Claim</label>
-              <input value={outputClaim} onChange={(e) => setOutputClaim(e.target.value)} className={inp} />
+              <label className="block text-sm font-medium mb-1">Input Claim <span className="text-muted-foreground font-normal text-xs">(supplier)</span></label>
+              <select value={inputClaim} onChange={(e) => setInputClaim(e.target.value)} className={inp}>
+                <option value="">— Select —</option>
+                <option value="100% PEFC Certified">100% PEFC Certified</option>
+                <option value="PEFC Certified">PEFC Certified</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Output Claim <span className="text-muted-foreground font-normal text-xs">(BZA → invoice)</span></label>
+              <select value={outputClaim} onChange={(e) => setOutputClaim(e.target.value)} className={inp}>
+                <option value="">— None (no cert in invoice) —</option>
+                <option value="100% PEFC Certified">100% PEFC Certified</option>
+                <option value="PEFC Certified">PEFC Certified</option>
+              </select>
             </div>
           </div>
         )}

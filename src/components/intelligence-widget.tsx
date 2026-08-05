@@ -286,6 +286,7 @@ export function IntelligenceWidget() {
       const allFileData: string[] = [];
       const allImageUrls: string[] = [];
       const allTempPaths: string[] = [];
+      const allTempFiles: { name: string; path: string }[] = [];
 
       for (const file of filesToProcess) {
         const formData = new FormData();
@@ -293,8 +294,14 @@ export function IntelligenceWidget() {
         const uploadRes = await fetch("/api/ai/upload", { method: "POST", body: formData });
         const uploadData = await uploadRes.json();
         if (uploadData.type === "image" && uploadData.imageUrl) allImageUrls.push(uploadData.imageUrl);
+        // PDFs render to one image per page so the model can read scanned docs
+        if (Array.isArray(uploadData.imageUrls)) allImageUrls.push(...uploadData.imageUrls);
         if (uploadData.parsedContent) allFileData.push(`[${file.name}]:\n${uploadData.parsedContent}`);
-        if (uploadData.tempPath) allTempPaths.push(uploadData.tempPath);
+        if (uploadData.tempPath) {
+          allTempPaths.push(uploadData.tempPath);
+          // pair the original filename with its temp path so the model knows which is BOL/PL/Invoice
+          allTempFiles.push({ name: uploadData.fileName || file.name, path: uploadData.tempPath });
+        }
       }
 
       if (allImageUrls.length > 0) newMessages[newMessages.length - 1].imageUrls = allImageUrls;
@@ -306,7 +313,7 @@ export function IntelligenceWidget() {
       );
       if (allFileData.length > 0) aiMessages[aiMessages.length - 1].content += `\n\n[FILE CONTENTS]:\n${allFileData.join("\n\n---\n\n")}`;
 
-      const res = await fetch("/api/ai", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages: aiMessages, tempPaths: allTempPaths }) });
+      const res = await fetch("/api/ai", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages: aiMessages, tempPaths: allTempPaths, tempFiles: allTempFiles }) });
       const data = await res.json();
       const reply = data.message || (data.error ? `⚠️ ${data.error}` : "No response.");
       setMessages([...newMessages, { role: "assistant", content: reply }]);

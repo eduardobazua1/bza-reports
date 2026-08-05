@@ -1,0 +1,167 @@
+"use client";
+
+import { useState, useMemo, useEffect } from "react";
+import { formatCurrency, formatNumber, formatDate } from "@/lib/utils";
+
+const SPREAD = 1.35; // JP Morgan spread over SOFR, per the KC program
+
+export type FactoringRow = {
+  id: number;
+  invoiceNumber: string;
+  poNumber: string | null;
+  amount: number;
+  shipmentDate: string | null;
+  dueDate: string | null;
+};
+
+// Days between today and a due date (0 if at/past due).
+function daysToDue(dueDate: string | null): number | null {
+  if (!dueDate) return null;
+  const due = new Date(dueDate + "T00:00:00");
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const d = Math.round((due.getTime() - today.getTime()) / 86400000);
+  return Math.max(0, d);
+}
+
+export function FactoringCalculator({ rows }: { rows: FactoringRow[] }) {
+  const [sofr, setSofr] = useState(4.3);
+
+  // Persist the SOFR rate locally so it survives reloads (no DB change for the MVP).
+  useEffect(() => {
+    const saved = localStorage.getItem("bza-sofr");
+    if (saved) setSofr(Number(saved));
+  }, []);
+  useEffect(() => {
+    localStorage.setItem("bza-sofr", String(sofr));
+  }, [sofr]);
+
+  const rate = (sofr + SPREAD) / 100; // effective annual discount rate
+
+  const computed = useMemo(() => {
+    return rows.map((r) => {
+      const days = daysToDue(r.dueDate);
+      // Cost is proportional to days advanced. At/after due date → 0 (nothing to discount).
+      const cost = days === null ? null : r.amount * rate * (days / 360);
+      const net = cost === null ? null : r.amount - cost;
+      const costPct = cost === null ? null : (cost / r.amount) * 100;
+      return { ...r, days, cost, net, costPct };
+    });
+  }, [rows, rate]);
+
+  const totals = useMemo(() => {
+    let face = 0, cost = 0, net = 0, eligible = 0, noDate = 0, atDue = 0;
+    for (const r of computed) {
+      face += r.amount;
+      if (r.days === null) { noDate++; continue; }
+      if (r.days === 0) atDue++;
+      eligible += r.amount;
+      cost += r.cost ?? 0;
+      net += r.net ?? 0;
+    }
+    return { face, cost, net, eligible, noDate, atDue };
+  }, [computed]);
+
+  return (
+    <div className="space-y-5">
+      {/* Rate controls + summary */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
+        <div className="bg-white rounded-xl shadow-sm border border-stone-100 p-4">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-stone-400">Discount rate</p>
+          <div className="flex items-baseline gap-1 mt-2">
+            <input
+              type="number"
+              step="0.01"
+              value={sofr}
+              onChange={(e) => setSofr(Number(e.target.value))}
+              className="w-20 text-2xl font-extrabold text-[#0d3d3b] border-b border-stone-200 focus:outline-none focus:border-[#0d3d3b] tabular-nums"
+            />
+            <span className="text-sm text-stone-500 font-semibold">% SOFR</span>
+          </div>
+          <p className="text-xs text-stone-400 mt-1">+ {SPREAD}% spread = <span className="font-bold text-stone-700">{(sofr + SPREAD).toFixed(2)}%</span> annual</p>
+        </div>
+        <SummaryTile label="Open KC receivable" value={formatCurrency(totals.face)} sub={`${rows.length} invoices`} />
+        <SummaryTile label="Cash if discounted today" value={formatCurrency(totals.net)} sub={`on ${formatCurrency(totals.eligible)} eligible`} accent />
+        <SummaryTile label="Total discount cost" value={formatCurrency(totals.cost)} sub={totals.face > 0 ? `${((totals.cost / totals.eligible) * 100 || 0).toFixed(2)}% of eligible` : ""} />
+      </div>
+
+      {(totals.noDate > 0 || totals.atDue > 0) && (
+        <p className="text-xs text-stone-500">
+          {totals.atDue > 0 && <>⏱ <strong>{totals.atDue}</strong> invoice(s) at/past due → $0 cost (nothing left to discount, collect only). </>}
+          {totals.noDate > 0 && <>⚠ <strong>{totals.noDate}</strong> with no due date → can&apos;t be calculated (fill in `due_date`).</>}
+        </p>
+      )}
+
+      {/* Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-stone-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-[11px] font-bold uppercase tracking-wider text-stone-400 border-b border-stone-100">
+                <th className="px-4 py-2.5">Invoice</th>
+                <th className="px-4 py-2.5">PO</th>
+                <th className="px-4 py-2.5 text-right">Amount</th>
+                <th className="px-4 py-2.5">Due date</th>
+                <th className="px-4 py-2.5 text-right">Days left</th>
+                <th className="px-4 py-2.5 text-right">Discount cost</th>
+                <th className="px-4 py-2.5 text-right">Net today</th>
+              </tr>
+            </thead>
+            <tbody>
+              {computed.map((r) => (
+                <tr key={r.id} className="border-b border-stone-50 hover:bg-stone-50">
+                  <td className="px-4 py-2 font-medium text-stone-800 whitespace-nowrap">{r.invoiceNumber}</td>
+                  <td className="px-4 py-2 text-stone-500">{r.poNumber ?? "—"}</td>
+                  <td className="px-4 py-2 text-right tabular-nums text-stone-700">{formatCurrency(r.amount)}</td>
+                  <td className="px-4 py-2 text-stone-500 whitespace-nowrap">{r.dueDate ? formatDate(r.dueDate) : <span className="text-amber-600">sin fecha</span>}</td>
+                  <td className="px-4 py-2 text-right tabular-nums">
+                    {r.days === null ? "—" : r.days === 0
+                      ? <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-500">al venc.</span>
+                      : <span className="text-stone-700">{r.days}</span>}
+                  </td>
+                  <td className="px-4 py-2 text-right tabular-nums">
+                    {r.cost === null ? "—" : (
+                      <span style={{ color: `hsl(0 ${Math.min(70, (r.costPct ?? 0) * 60)}% 42%)` }}>
+                        {formatCurrency(r.cost)}<span className="text-[10px] text-stone-400"> · {(r.costPct ?? 0).toFixed(2)}%</span>
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-2 text-right tabular-nums font-semibold text-[#0d3d3b]">{r.net === null ? "—" : formatCurrency(r.net)}</td>
+                </tr>
+              ))}
+              {computed.length === 0 && (
+                <tr><td colSpan={7} className="px-4 py-8 text-center text-stone-400">No open Kimberly-Clark invoices.</td></tr>
+              )}
+            </tbody>
+            {computed.length > 0 && (
+              <tfoot>
+                <tr className="border-t-2 border-stone-200 font-bold text-stone-800">
+                  <td className="px-4 py-2.5" colSpan={2}>Total ({rows.length})</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums">{formatCurrency(totals.face)}</td>
+                  <td colSpan={2}></td>
+                  <td className="px-4 py-2.5 text-right tabular-nums text-red-700">{formatCurrency(totals.cost)}</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums text-[#0d3d3b]">{formatCurrency(totals.net)}</td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
+      </div>
+
+      <p className="text-xs text-stone-400">
+        Cost = amount × ({(sofr + SPREAD).toFixed(2)}% ÷ 360) × days to due. The further the due date, the more it costs to advance;
+        near the due date the cost approaches $0. JP Morgan Supply Chain Finance — Kimberly-Clark program only.
+      </p>
+    </div>
+  );
+}
+
+function SummaryTile({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: boolean }) {
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-stone-100 p-4">
+      <p className="text-[11px] font-bold uppercase tracking-wider text-stone-400">{label}</p>
+      <p className={`text-2xl font-extrabold mt-1.5 tabular-nums ${accent ? "text-[#1c6b66]" : "text-stone-800"}`}>{value}</p>
+      {sub && <p className="text-xs text-stone-400 mt-1">{sub}</p>}
+    </div>
+  );
+}

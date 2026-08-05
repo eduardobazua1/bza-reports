@@ -75,10 +75,21 @@ export async function generateSupplierPoPdf(poId: number, soId?: number | null):
   let lineItems: { description: string; qty: number; rate: number; amount: number }[];
   let poDate: string;
   let effectiveIncoterm: string;
+  // Reference shown to the supplier. When a PO has more than one supplier order, add a sequence
+  // suffix (X0048-1, X0048-2, …) so each order sent to the supplier is distinguishable.
+  let poRef = po.poNumber;
 
   if (soId) {
     const so = await db.query.supplierOrders.findFirst({ where: eq(supplierOrders.id, soId) });
     if (!so) throw new Error("Supplier order not found");
+    const poSos = await db.select({ id: supplierOrders.id })
+      .from(supplierOrders)
+      .where(eq(supplierOrders.purchaseOrderId, poId))
+      .orderBy(supplierOrders.id);
+    if (poSos.length > 1) {
+      const seq = poSos.findIndex((s) => s.id === soId) + 1;
+      if (seq > 0) poRef = `${po.poNumber}-${seq}`;
+    }
     const price = so.pricePerTon ?? po.buyPrice;
     poDate = so.orderDate || po.poDate || new Date().toISOString().split("T")[0];
     effectiveIncoterm = so.incoterm ?? po.terms ?? "";
@@ -208,7 +219,7 @@ export async function generateSupplierPoPdf(poId: number, soId?: number | null):
   const BW = 150; const BX = M + W - BW;
   drawRect(BX, y - 2, BW, 32, TEAL);
   drawText("PO NUMBER", BX + 8, y + 3, 6.5, fontB, CYAN);
-  drawText(po.poNumber, BX + 8, y + 13, 9, fontB, WHITE);
+  drawText(poRef, BX + 8, y + 13, 9, fontB, WHITE);
   y += 40;
 
   // Date & Incoterm row

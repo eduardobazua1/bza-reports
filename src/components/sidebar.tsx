@@ -27,6 +27,8 @@ import {
   ScrollText,
   Send,
   FileMinus,
+  Landmark,
+  Award,
   type LucideIcon,
 } from "lucide-react";
 
@@ -141,6 +143,8 @@ const mainEntries: RootEntry[] = [
       { href: "/purchase-orders", label: "Purchase Orders" },
       { href: "/invoices",        label: "Invoices" },
       { href: "/payments",        label: "Payments (A/R)" },
+      { href: "/factoring",       label: "Factoring (JPM)" },
+      { href: "/credit-insurance", label: "Credit Insurance" },
       { href: "/products",        label: "Products & Services" },
       { href: "/credit-memos",    label: "Credit Memo" },
     ],
@@ -149,8 +153,20 @@ const mainEntries: RootEntry[] = [
     label: "Expenses", icon: Wallet,
     children: [
       { href: "/suppliers",              label: "Vendors" },
+      { href: "/accounts-payable",       label: "Accounts Payable" },
       { href: "/payments?tab=supplier",  label: "Payments (A/P)" },
       { href: "/supplier-orders",        label: "Purchase Orders" },
+    ],
+  },
+  {
+    label: "Financials", icon: Landmark,
+    children: [
+      { href: "/financials",                  label: "Bank Accounts" },
+      { href: "/financials/transactions",     label: "Transactions" },
+      { href: "/financials/expenses",         label: "Operating Expenses" },
+      { href: "/financials/capital",          label: "Capital & Distributions" },
+      { href: "/financials/income-statement", label: "Income Statement" },
+      { href: "/financials/balance-sheet",    label: "Balance Sheet" },
     ],
   },
   {
@@ -158,8 +174,11 @@ const mainEntries: RootEntry[] = [
     children: [
       { href: "/reports",               label: "Standard Reports" },
       { href: "/reports/client-report", label: "Client Report"    },
+      { href: "/reports/audit-export",  label: "FSC/PEFC Audit Package" },
     ],
   },
+  { href: "/certificates", label: "Certificates", icon: Award },
+  { href: "/activity", label: "Activity Log", icon: ScrollText },
 ];
 
 
@@ -251,7 +270,7 @@ export function Sidebar({ userName, topBarIcons }: { userName: string; topBarIco
   const btnDesktopRef = useRef<HTMLButtonElement>(null);
   const btnMobileRef  = useRef<HTMLButtonElement>(null);
 
-  function toggleQuick(ref: React.RefObject<HTMLButtonElement>) {
+  function toggleQuick(ref: React.RefObject<HTMLButtonElement | null>) {
     if (quickOpen) {
       setQuickOpen(false);
       setAnchorRect(null);

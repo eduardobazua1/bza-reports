@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { apiMutate } from "@/lib/api-mutate";
+import { createUser, updateUser, resetPassword } from "@/server/user-actions";
 
 // ─── Field definition ────────────────────────────────────────────────────────
 export type InvoiceField = {
@@ -104,14 +107,19 @@ export function SettingsPanel({ initial, users, isAdmin }: {
 
   async function handleSave() {
     setSaving(true);
-    await fetch("/api/settings?key=invoice", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(cfg),
-    });
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    try {
+      await apiMutate("/api/settings?key=invoice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(cfg),
+      });
+      setSaved(true); // only claim "Saved" once the server confirms
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Couldn't save settings.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   const activeItem = NAV.flatMap(g => g.items).find(i => i.id === active);
@@ -504,30 +512,117 @@ function SectionInvoice({ cfg, set }: { cfg: Settings; set: (f: keyof Settings, 
 
 // ─── Users ────────────────────────────────────────────────────────────────────
 function SectionUsers({ users, isAdmin }: { users: UserRow[]; isAdmin: boolean }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState<number | "new" | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({ name: "", email: "", password: "", role: "viewer" as "admin" | "viewer" });
+  const [err, setErr] = useState("");
+
+  async function run<T>(key: number | "new", fn: () => Promise<T>) {
+    setBusy(key); setErr("");
+    try { await fn(); router.refresh(); }
+    catch (e) { setErr(e instanceof Error ? e.message : "Something went wrong"); }
+    finally { setBusy(null); }
+  }
+
+  async function handleAdd() {
+    if (!form.name || !form.email || form.password.length < 6) { setErr("Name, email and a 6+ char password are required."); return; }
+    setBusy("new"); setErr("");
+    const res = await createUser(form);
+    setBusy(null);
+    if (res?.error) { setErr(res.error); return; }
+    setForm({ name: "", email: "", password: "", role: "viewer" });
+    setShowAdd(false);
+    router.refresh();
+  }
+
   return (
     <>
       <Card title="Team Members">
         <div className="space-y-2">
           {users.map(u => (
-            <div key={u.id} className="flex items-center justify-between py-2 px-3 bg-white rounded-lg border border-stone-100">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#0d3d3b]/10 flex items-center justify-center text-sm font-semibold text-[#0d3d3b]">
+            <div key={u.id} className="flex items-center justify-between py-2 px-3 bg-white rounded-lg border border-stone-100 gap-2 flex-wrap">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-8 h-8 rounded-full bg-[#0d3d3b]/10 flex items-center justify-center text-sm font-semibold text-[#0d3d3b] flex-none">
                   {(u.name || u.email).charAt(0).toUpperCase()}
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-stone-800">{u.name || "—"}</p>
-                  <p className="text-xs text-stone-400">{u.email}</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-stone-800 truncate">{u.name || "—"}</p>
+                  <p className="text-xs text-stone-400 truncate">{u.email}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${u.role === "admin" ? "bg-[#0d3d3b]/10 text-[#0d3d3b]" : "bg-stone-100 text-stone-500"}`}>{u.role}</span>
-                <span className={`text-[11px] px-2 py-0.5 rounded-full ${u.isActive ? "bg-emerald-50 text-emerald-600" : "bg-[#0d3d3b] text-[#0d3d3b]"}`}>{u.isActive ? "Active" : "Inactive"}</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                {isAdmin ? (
+                  <select
+                    value={u.role}
+                    disabled={busy === u.id}
+                    onChange={(e) => run(u.id, () => updateUser(u.id, { role: e.target.value as "admin" | "viewer" }))}
+                    className="text-[11px] font-medium rounded-full border border-stone-200 px-2 py-0.5 bg-white text-stone-600"
+                  >
+                    <option value="admin">admin</option>
+                    <option value="viewer">viewer</option>
+                  </select>
+                ) : (
+                  <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${u.role === "admin" ? "bg-[#0d3d3b]/10 text-[#0d3d3b]" : "bg-stone-100 text-stone-500"}`}>{u.role}</span>
+                )}
+                <span className={`text-[11px] px-2 py-0.5 rounded-full ${u.isActive ? "bg-emerald-50 text-emerald-600" : "bg-stone-200 text-stone-500"}`}>{u.isActive ? "Active" : "Inactive"}</span>
+                {isAdmin && (
+                  <>
+                    <button
+                      disabled={busy === u.id}
+                      onClick={() => run(u.id, () => updateUser(u.id, { isActive: !u.isActive }))}
+                      className="text-[11px] font-medium px-2 py-1 rounded-lg border border-stone-200 text-stone-600 hover:bg-stone-50 disabled:opacity-50"
+                    >
+                      {u.isActive ? "Deactivate" : "Activate"}
+                    </button>
+                    <button
+                      disabled={busy === u.id}
+                      onClick={() => {
+                        const pw = window.prompt(`New password for ${u.email} (min 6 chars):`);
+                        if (pw && pw.length >= 6) run(u.id, () => resetPassword(u.id, pw));
+                        else if (pw) setErr("Password must be at least 6 characters.");
+                      }}
+                      className="text-[11px] font-medium px-2 py-1 rounded-lg border border-stone-200 text-stone-600 hover:bg-stone-50 disabled:opacity-50"
+                    >
+                      Reset password
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           ))}
         </div>
+
+        {isAdmin && (
+          <div className="mt-3">
+            {!showAdd ? (
+              <button onClick={() => { setShowAdd(true); setErr(""); }} className="text-sm font-semibold px-3 py-1.5 rounded-lg text-white" style={{ background: "#0d3d3b" }}>
+                + Add user
+              </button>
+            ) : (
+              <div className="rounded-lg border border-stone-200 p-3 bg-stone-50 space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Full name" className="border border-stone-200 rounded-lg px-3 py-1.5 text-sm" />
+                  <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="email@bza-is.com" type="email" className="border border-stone-200 rounded-lg px-3 py-1.5 text-sm" />
+                  <input value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Temp password (6+ chars)" type="text" className="border border-stone-200 rounded-lg px-3 py-1.5 text-sm" />
+                  <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as "admin" | "viewer" })} className="border border-stone-200 rounded-lg px-3 py-1.5 text-sm bg-white">
+                    <option value="viewer">viewer — read only</option>
+                    <option value="admin">admin — full access</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button disabled={busy === "new"} onClick={handleAdd} className="text-sm font-semibold px-3 py-1.5 rounded-lg text-white disabled:opacity-50" style={{ background: "#0d3d3b" }}>
+                    {busy === "new" ? "Creating…" : "Create user"}
+                  </button>
+                  <button onClick={() => { setShowAdd(false); setErr(""); }} className="text-sm px-3 py-1.5 rounded-lg border border-stone-200 text-stone-600">Cancel</button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        {err && <p className="text-xs text-red-600 mt-2">{err}</p>}
+        {!isAdmin && <p className="text-xs text-stone-400 mt-2">Only admins can add or edit team members.</p>}
       </Card>
-      {isAdmin && <p className="text-xs text-stone-400">To add or remove users, edit the database directly or contact your system administrator.</p>}
     </>
   );
 }

@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { db } from "@/db";
-import { users } from "@/db/schema";
+import { users, activityLog } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
@@ -27,6 +27,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         );
 
         if (!isValid) return null;
+
+        // Audit: record the sign-in (never block login if logging fails)
+        try {
+          await db.insert(activityLog).values({
+            userId: user.id,
+            userName: user.name,
+            userEmail: user.email,
+            action: "login",
+            entity: "auth",
+            entityLabel: user.email,
+            createdAt: new Date().toISOString(),
+          });
+        } catch { /* ignore */ }
 
         return {
           id: String(user.id),

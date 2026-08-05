@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/sidebar";
 import { IntelligenceWidget } from "@/components/intelligence-widget";
 import { NotificationsDropdown } from "@/components/notifications-dropdown";
 import { SettingsDropdown } from "@/components/settings-dropdown";
+import { ActivityTracker } from "@/components/activity-tracker";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -11,6 +12,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex h-screen">
+      <ActivityTracker />
       <Sidebar
         userName={session.user?.name || "Usuario"}
         topBarIcons={

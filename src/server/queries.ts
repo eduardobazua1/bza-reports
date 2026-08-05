@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, clientPurchaseOrders, supplierPayments, supplierPaymentInvoices, supplierInvoices, supplierOrders, customerPayments, customerPaymentInvoices, creditMemos, proposals, proposalItems, contracts } from "@/db/schema";
+import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, clientPurchaseOrders, supplierPayments, supplierPaymentInvoices, supplierInvoices, supplierOrders, supplierOrderSends, invoiceEmailLogs, customerPayments, customerPaymentInvoices, creditMemos, proposals, proposalItems, contracts } from "@/db/schema";
 import { eq, desc, sql, and, count, inArray, isNull } from "drizzle-orm";
 
 // ---- Clients ----
@@ -55,6 +55,21 @@ export async function getPurchaseOrder(id: number) {
     .where(eq(invoices.purchaseOrderId, id))
     .orderBy(invoices.invoiceNumber);
 
+  // Email send history per invoice (when the invoice was emailed to the client)
+  const invIds = poInvoices.map((i) => i.id);
+  const emailLogsByInvoice: Record<number, { sentAt: string; sentTo: string; sentCc: string | null; openCount: number | null; firstOpenedAt: string | null }[]> = {};
+  if (invIds.length > 0) {
+    const logs = await db
+      .select()
+      .from(invoiceEmailLogs)
+      .where(inArray(invoiceEmailLogs.invoiceId, invIds))
+      .orderBy(desc(invoiceEmailLogs.sentAt));
+    for (const l of logs) {
+      (emailLogsByInvoice[l.invoiceId] ||= []).push({ sentAt: l.sentAt, sentTo: l.sentTo, sentCc: l.sentCc, openCount: l.openCount, firstOpenedAt: l.firstOpenedAt });
+    }
+  }
+  const poInvoicesWithLogs = poInvoices.map((i) => ({ ...i, emailLogs: emailLogsByInvoice[i.id] || [] }));
+
   const clientPos = await db
     .select()
     .from(clientPurchaseOrders)
@@ -73,7 +88,19 @@ export async function getPurchaseOrder(id: number) {
     .where(eq(supplierOrders.purchaseOrderId, id))
     .orderBy(supplierOrders.createdAt);
 
-  return { ...po, client, supplier, invoices: poInvoices, clientPos, payments, supplierOrders: suppOrders };
+  // Send history per supplier order (for re-send + tracking)
+  const sends = await db
+    .select()
+    .from(supplierOrderSends)
+    .where(eq(supplierOrderSends.purchaseOrderId, id))
+    .orderBy(desc(supplierOrderSends.sentAt));
+  const sendsByOrder: Record<number, { sentAt: string; sentTo: string; note: string | null }[]> = {};
+  for (const s of sends) {
+    (sendsByOrder[s.supplierOrderId] ||= []).push({ sentAt: s.sentAt, sentTo: s.sentTo, note: s.note });
+  }
+  const suppOrdersWithSends = suppOrders.map(o => ({ ...o, sends: sendsByOrder[o.id] || [] }));
+
+  return { ...po, client, supplier, invoices: poInvoicesWithLogs, clientPos, payments, supplierOrders: suppOrdersWithSends };
 }
 
 // ---- Invoices ----

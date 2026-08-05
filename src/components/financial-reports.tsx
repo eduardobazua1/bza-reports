@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { formatCurrency, formatNumber, formatPercent, shipmentStatusLabels } from "@/lib/utils";
+import { DateField } from "@/components/date-field";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -584,9 +585,9 @@ function ARAgingReport({ data, visible, onDrillDown }: {
     total: sum([...b.current,...b.d30,...b.d60,...b.d90,...b.d91]),
     allRows: [...b.current,...b.d30,...b.d60,...b.d90,...b.d91],
   })).sort((a,b) => {
-    const va = (a as Record<string,number>)[sortCol] ?? 0;
-    const vb = (b as Record<string,number>)[sortCol] ?? 0;
-    const cmp = typeof va === "string" ? (va as string).localeCompare(vb as string) : va - vb;
+    const va = (a as unknown as Record<string,string|number>)[sortCol] ?? 0;
+    const vb = (b as unknown as Record<string,string|number>)[sortCol] ?? 0;
+    const cmp = typeof va === "string" ? va.localeCompare(vb as string) : va - (vb as number);
     return sortDir === "asc" ? cmp : -cmp;
   });
 
@@ -703,8 +704,8 @@ function PLMonthlyReport({ data, visible, onDrillDown }: {
     profit: rows.reduce((s,r)=>s+r.profit,0),
   })).map(m => ({...m, margin: m.revenue>0?(m.profit/m.revenue)*100:0, avgSell:m.tons>0?m.revenue/m.tons:0}))
     .sort((a,b) => {
-      const va = (a as Record<string,string|number>)[sortCol] ?? 0;
-      const vb = (b as Record<string,string|number>)[sortCol] ?? 0;
+      const va = (a as unknown as Record<string,string|number>)[sortCol] ?? 0;
+      const vb = (b as unknown as Record<string,string|number>)[sortCol] ?? 0;
       const cmp = typeof va==="string" ? va.localeCompare(vb as string) : (va as number)-(vb as number);
       return sortDir==="asc"?cmp:-cmp;
     });
@@ -829,8 +830,8 @@ function PLEntityReport({ data, isClient, visible, onDrillDown }: {
       unpaidInv: unpaid.length,
     };
   }).sort((a,b) => {
-    const va = (a as Record<string,string|number>)[sortCol]??0;
-    const vb = (b as Record<string,string|number>)[sortCol]??0;
+    const va = (a as unknown as Record<string,string|number>)[sortCol]??0;
+    const vb = (b as unknown as Record<string,string|number>)[sortCol]??0;
     const cmp = typeof va==="string"?va.localeCompare(vb as string):(va as number)-(vb as number);
     return sortDir==="asc"?cmp:-cmp;
   });
@@ -1072,9 +1073,9 @@ export function FinancialReports({ data }: { data: InvoiceRow[] }) {
           {/* Date range */}
           <div className="flex items-center gap-1.5 text-xs">
             <span className="text-stone-500">From</span>
-            <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} className="border border-stone-200 rounded px-2 py-1.5 text-xs bg-white"/>
+            <span className="w-32"><DateField value={dateFrom} onChange={setDateFrom} className="border border-stone-200 rounded px-2 py-1.5 text-xs bg-white w-full"/></span>
             <span className="text-stone-500">To</span>
-            <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} className="border border-stone-200 rounded px-2 py-1.5 text-xs bg-white"/>
+            <span className="w-32"><DateField value={dateTo} onChange={setDateTo} className="border border-stone-200 rounded px-2 py-1.5 text-xs bg-white w-full"/></span>
             {(dateFrom||dateTo) && <button onClick={()=>{setDateFrom("");setDateTo("");}} className="text-stone-400 hover:text-stone-600">✕</button>}
           </div>
 

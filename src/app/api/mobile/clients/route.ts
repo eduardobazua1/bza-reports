@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     return {
       id: c.id,
       name: c.name,
-      email: c.email,
+      email: c.contactEmail,
       phone: c.phone,
       city: c.city,
       country: c.country,

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Fragment } from "react";
 import { createPortal } from "react-dom";
 import { formatNumber, formatCurrency } from "@/lib/utils";
+import { DateField } from "@/components/date-field";
 import { Trash2 } from "lucide-react";
 
 function PaperclipIcon({ className }: { className?: string }) {
@@ -15,6 +16,7 @@ function PaperclipIcon({ className }: { className?: string }) {
 
 type OrderLine = { destination: string; tons: string; notes: string };
 
+type SendRecord = { sentAt: string; sentTo: string; note: string | null };
 type SupplierOrder = {
   id: number;
   purchaseOrderId: number;
@@ -26,6 +28,7 @@ type SupplierOrder = {
   lines: string | null;
   notes: string | null;
   createdAt: string;
+  sends?: SendRecord[];
 };
 
 type Product = { id: number; name: string };
@@ -69,7 +72,7 @@ export function SupplierOrdersSection({
   const [sendingId, setSendingId] = useState<number | null>(null);
   const [sendEmail, setSendEmail] = useState("");
   const [sendLoading, setSendLoading] = useState(false);
-  const [sentId, setSentId] = useState<number | null>(null);
+  // send state now tracked via order.sends (persisted)
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -189,14 +192,35 @@ export function SupplierOrdersSection({
 
   async function handleDelete(id: number) {
     if (!confirm("Delete this supplier order?")) return;
-    await fetch(`/api/supplier-orders/${id}`, { method: "DELETE" });
+    // Retry only on network-level failure (request never reached the server → safe).
+    let res: Response | null = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        res = await fetch(`/api/supplier-orders/${id}`, { method: "DELETE" });
+        break;
+      } catch {
+        if (attempt < 2) await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+      }
+    }
+    if (!res) {
+      alert("Couldn't reach the server to delete. Check that the app is running, then try again.");
+      return;
+    }
+    if (res.redirected || res.url.includes("/login")) {
+      alert("Your session expired. Reload the page and log in again, then delete.");
+      return;
+    }
+    if (!res.ok) {
+      alert(`Couldn't delete this order (error ${res.status}). Nothing was removed.`);
+      return;
+    }
+    // Only drop the row once the server confirms it's gone.
     setList((prev) => prev.filter((o) => o.id !== id));
   }
 
   function openSend(order: SupplierOrder) {
     setSendingId(order.id);
     setSendEmail(supplierEmail || "");
-    setSentId(null);
     setEditingId(null);
   }
 
@@ -209,7 +233,10 @@ export function SupplierOrdersSection({
       body: JSON.stringify({ poId: purchaseOrderId, soId: order.id, to: sendEmail, poNumber }),
     });
     if (res.ok) {
-      setSentId(order.id);
+      const data = await res.json().catch(() => ({}));
+      const rec: SendRecord = { sentAt: data.sentAt || new Date().toISOString(), sentTo: data.sentTo || sendEmail, note: null };
+      // prepend to this order's send history so the UI updates without a reload
+      setList(prev => prev.map(o => o.id === order.id ? { ...o, sends: [rec, ...(o.sends || [])] } : o));
       setSendingId(null);
     } else {
       const err = await res.json().catch(() => ({}));
@@ -222,6 +249,18 @@ export function SupplierOrdersSection({
     if (!d) return "—";
     const p = d.split("T")[0].split("-");
     return `${p[1].padStart(2,"0")}/${p[2].padStart(2,"0")}/${p[0]}`;
+  }
+
+  // Date + time in the VIEWER's local timezone (matches their own clock).
+  // Spans that render this use suppressHydrationWarning since server TZ may differ.
+  function fmtDateTime(d: string | null) {
+    if (!d) return "—";
+    const dt = new Date(d);
+    if (isNaN(dt.getTime())) return fmtDate(d);
+    return dt.toLocaleString("en-US", {
+      month: "short", day: "numeric", year: "numeric",
+      hour: "numeric", minute: "2-digit",
+    });
   }
 
   function parsedLines(order: SupplierOrder) {
@@ -314,13 +353,24 @@ export function SupplierOrdersSection({
                 const total = order.tons * price;
                 const isSending = sendingId === order.id;
                 const isEditing = editingId === order.id;
-                const wasSent = sentId === order.id;
+                const sendCount = order.sends?.length || 0;
+                const lastSend = order.sends?.[0];
                 const ol = parsedLines(order);
 
                 return (
-                  <>
-                    <tr key={order.id} className={`hover:bg-stone-50 align-top ${isEditing ? "bg-[#0d3d3b]/40" : ""}`}>
-                      <td className="px-4 py-3 border-t border-stone-100">{fmtDate(order.orderDate)}</td>
+                  <Fragment key={order.id}>
+                    <tr className={`hover:bg-stone-50 align-top ${isEditing ? "bg-[#0d3d3b]/40" : ""}`}>
+                      <td className="px-4 py-3 border-t border-stone-100">
+                        {fmtDate(order.orderDate)}
+                        {sendCount > 0 && lastSend && (
+                          <span className="mt-1 flex flex-col gap-0.5" title={`Sent to ${lastSend.sentTo}${sendCount > 1 ? ` · ${sendCount} times` : ""}`}>
+                            <span className="inline-flex w-fit items-center gap-1 rounded-full bg-[#0d3d3b]/10 text-[#0d3d3b] px-2 py-0.5 text-[10px] font-medium">
+                              ✓ Sent{sendCount > 1 ? ` · ${sendCount}×` : ""}
+                            </span>
+                            <span className="text-[10px] text-stone-400" suppressHydrationWarning>{fmtDateTime(lastSend.sentAt)}</span>
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 border-t border-stone-100 text-stone-600">{order.item || "—"}</td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right font-medium">{formatNumber(order.tons, 1)}</td>
                       <td className="px-4 py-3 border-t border-stone-100 text-right">{formatCurrency(price)}</td>
@@ -371,23 +421,23 @@ export function SupplierOrdersSection({
                       <tr key={`send-${order.id}`}>
                         <td colSpan={8} className="p-0">
                           <div className="bg-[#0d3d3b] border-t border-stone-200 px-4 py-3 flex items-center gap-3">
-                            <span className="text-xs text-[#0d3d3b] font-medium whitespace-nowrap">Send to:</span>
+                            <span className="text-xs text-white font-medium whitespace-nowrap">Send to:</span>
                             <input
                               type="email"
-                              className="border border-stone-200 rounded px-2 py-1 text-sm flex-1 max-w-xs"
+                              className="border border-stone-200 rounded px-2 py-1 text-sm flex-1 max-w-xs bg-white text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-1 focus:ring-white"
                               placeholder={supplierEmail || "supplier@example.com"}
                               value={sendEmail}
                               onChange={(e) => setSendEmail(e.target.value)}
                             />
-                            <button onClick={() => handleSend(order)} disabled={sendLoading || !sendEmail} className="text-xs bg-[#0d3d3b] text-white px-3 py-1.5 rounded hover:bg-[#0d3d3b] disabled:opacity-50 font-medium">
+                            <button onClick={() => handleSend(order)} disabled={sendLoading || !sendEmail} className="text-xs bg-white text-[#0d3d3b] px-3 py-1.5 rounded hover:bg-stone-100 disabled:opacity-50 font-semibold">
                               {sendLoading ? "Sending..." : "Send PDF"}
                             </button>
-                            <button onClick={() => setSendingId(null)} className="text-xs text-stone-400 hover:text-stone-600">Cancel</button>
+                            <button onClick={() => setSendingId(null)} className="text-xs text-white/70 hover:text-white">Cancel</button>
                           </div>
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>
@@ -403,7 +453,7 @@ export function SupplierOrdersSection({
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div>
               <label className="block text-xs text-[#0d3d3b] mb-1">Date</label>
-              <input type="date" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={orderDate} onChange={(e) => setOrderDate(e.target.value)} />
+              <DateField value={orderDate} onChange={setOrderDate} />
             </div>
             <ProductSelect value={addItem} onChange={setAddItem} />
             <div>
@@ -480,17 +530,28 @@ export function SupplierOrdersSection({
       {openDropdownId !== null && dropdownPos && (() => {
         const order = list.find(o => o.id === openDropdownId);
         if (!order) return null;
-        const wasSent = sentId === order.id;
         const isEditing = editingId === order.id;
         return createPortal(
           <div ref={dropdownRef} style={{ position: "fixed", top: dropdownPos.top, right: dropdownPos.right, zIndex: 9999 }} className="bg-white border border-stone-200 rounded-md shadow-lg min-w-[150px] py-1 text-left">
             <button onClick={() => { setOpenDropdownId(null); isEditing ? cancelEdit() : openEdit(order); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">View/Edit</button>
             <a href={`/api/supplier-po-pdf?poId=${purchaseOrderId}&soId=${order.id}`} target="_blank" rel="noopener noreferrer" className="block w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50" onClick={() => setOpenDropdownId(null)}>Print</a>
-            {wasSent ? (
-              <span className="block px-4 py-2 text-sm text-[#0d3d3b] font-medium">Sent ✓</span>
-            ) : (
-              <button onClick={() => { setOpenDropdownId(null); openSend(order); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">Send</button>
-            )}
+            {(() => {
+              const sends = order.sends || [];
+              const last = sends[0];
+              return (
+                <>
+                  <button onClick={() => { setOpenDropdownId(null); openSend(order); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">
+                    {sends.length > 0 ? "Re-send" : "Send"}
+                  </button>
+                  {last && (
+                    <div className="px-4 py-1.5 text-[10px] text-stone-400 leading-tight border-t border-stone-100">
+                      Sent {fmtDateTime(last.sentAt)}{sends.length > 1 ? ` · ${sends.length} times` : ""}
+                      <br />to {last.sentTo}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
             <div className="border-t border-stone-100 my-1" />
             <button onClick={() => { setOpenDropdownId(null); handleDelete(order.id); }} className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"><Trash2 className="w-3.5 h-3.5" />Delete</button>
           </div>,
@@ -513,7 +574,7 @@ export function SupplierOrdersSection({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
                   <label className="block text-xs text-[#0d3d3b] mb-1">Date</label>
-                  <input type="date" className="w-full border border-stone-200 rounded px-2 py-1.5 text-sm" value={editDate} onChange={(e) => setEditDate(e.target.value)} />
+                  <DateField value={editDate} onChange={setEditDate} />
                 </div>
                 <ProductSelect value={editItem} onChange={setEditItem} />
                 <div>

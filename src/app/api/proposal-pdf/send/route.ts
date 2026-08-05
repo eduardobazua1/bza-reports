@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendEmail, isEmailConfigured } from "@/lib/email";
-import { buildProposalPdf } from "../route";
+import { buildProposalPdf } from "@/lib/proposal-pdf-builder";
 import { getProposal } from "@/server/queries";
 import { updateProposalStatus } from "@/server/actions";
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { supplierOrders } from "@/db/schema";
+import { supplierOrders, supplierOrderSends } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function PATCH(
@@ -30,6 +30,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  await db.delete(supplierOrders).where(eq(supplierOrders.id, Number(id)));
+  const soId = Number(id);
+  // Remove dependent send-history rows first — they FK-reference the order,
+  // otherwise the delete fails and the order reappears on reload.
+  await db.delete(supplierOrderSends).where(eq(supplierOrderSends.supplierOrderId, soId));
+  await db.delete(supplierOrders).where(eq(supplierOrders.id, soId));
   return NextResponse.json({ ok: true });
 }

@@ -5,6 +5,7 @@ import { clients, suppliers, purchaseOrders, invoices, shipmentUpdates, supplier
 import { eq, and, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { v4 as uuidv4 } from "uuid";
+import { logActivity, diffRecords } from "./activity";
 
 // ---- Clients ----
 export async function createClient(data: {
@@ -18,10 +19,11 @@ export async function createClient(data: {
   city?: string;
   country?: string;
 }) {
-  await db.insert(clients).values({
+  const [row] = await db.insert(clients).values({
     ...data,
     accessToken: uuidv4(),
-  });
+  }).returning({ id: clients.id });
+  await logActivity({ action: "create", entity: "client", entityId: row?.id, entityLabel: data.name, changes: diffRecords(null, data) });
   revalidatePath("/clients");
 }
 
@@ -44,12 +46,16 @@ export async function updateClient(id: number, data: {
   fscOutputClaim?: string | null;
   pefc?: string | null;
 }) {
+  const before = await db.query.clients.findFirst({ where: eq(clients.id, id) });
   await db.update(clients).set({ ...data, updatedAt: new Date().toISOString() }).where(eq(clients.id, id));
+  await logActivity({ action: "update", entity: "client", entityId: id, entityLabel: data.name ?? before?.name, changes: diffRecords(before, data) });
   revalidatePath("/clients");
 }
 
 export async function deleteClient(id: number) {
+  const before = await db.query.clients.findFirst({ where: eq(clients.id, id) });
   await db.delete(clients).where(eq(clients.id, id));
+  await logActivity({ action: "delete", entity: "client", entityId: id, entityLabel: before?.name });
   revalidatePath("/clients");
 }
 
@@ -81,18 +87,23 @@ type SupplierData = {
 };
 
 export async function createSupplier(data: SupplierData) {
-  await db.insert(suppliers).values(data);
+  const [row] = await db.insert(suppliers).values(data).returning({ id: suppliers.id });
+  await logActivity({ action: "create", entity: "supplier", entityId: row?.id, entityLabel: data.name, changes: diffRecords(null, data) });
   revalidatePath("/suppliers");
 }
 
 export async function updateSupplier(id: number, data: SupplierData) {
+  const before = await db.query.suppliers.findFirst({ where: eq(suppliers.id, id) });
   await db.update(suppliers).set({ ...data, updatedAt: new Date().toISOString() }).where(eq(suppliers.id, id));
+  await logActivity({ action: "update", entity: "supplier", entityId: id, entityLabel: data.name ?? before?.name, changes: diffRecords(before, data) });
   revalidatePath("/suppliers");
   revalidatePath(`/suppliers/${id}`);
 }
 
 export async function deleteSupplier(id: number) {
+  const before = await db.query.suppliers.findFirst({ where: eq(suppliers.id, id) });
   await db.delete(suppliers).where(eq(suppliers.id, id));
+  await logActivity({ action: "delete", entity: "supplier", entityId: id, entityLabel: before?.name });
   revalidatePath("/suppliers");
 }
 
@@ -119,6 +130,7 @@ export async function createPurchaseOrder(data: {
   notes?: string;
 }) {
   const result = await db.insert(purchaseOrders).values(data).returning();
+  await logActivity({ action: "create", entity: "purchase_order", entityId: result[0]?.id, entityLabel: data.poNumber, changes: diffRecords(null, data) });
   revalidatePath("/purchase-orders");
   return result[0];
 }
@@ -145,11 +157,14 @@ export async function updatePurchaseOrder(id: number, data: Partial<{
   status: "active" | "completed" | "cancelled";
   notes: string;
 }>) {
+  const before = await db.query.purchaseOrders.findFirst({ where: eq(purchaseOrders.id, id) });
   await db.update(purchaseOrders).set({ ...data, updatedAt: new Date().toISOString() }).where(eq(purchaseOrders.id, id));
+  await logActivity({ action: "update", entity: "purchase_order", entityId: id, entityLabel: data.poNumber ?? before?.poNumber, changes: diffRecords(before, data) });
   revalidatePath("/purchase-orders");
 }
 
 export async function deletePurchaseOrder(id: number) {
+  const before = await db.query.purchaseOrders.findFirst({ where: eq(purchaseOrders.id, id) });
   // Delete shipment updates for all invoices of this PO
   const invs = await db.select({ id: invoices.id }).from(invoices).where(eq(invoices.purchaseOrderId, id));
   for (const inv of invs) {
@@ -158,6 +173,7 @@ export async function deletePurchaseOrder(id: number) {
   await db.delete(invoices).where(eq(invoices.purchaseOrderId, id));
   await db.delete(supplierPayments).where(eq(supplierPayments.purchaseOrderId, id));
   await db.delete(purchaseOrders).where(eq(purchaseOrders.id, id));
+  await logActivity({ action: "delete", entity: "purchase_order", entityId: id, entityLabel: before?.poNumber, meta: { deletedInvoices: invs.length } });
   revalidatePath("/purchase-orders");
 }
 
@@ -208,6 +224,7 @@ export async function createInvoice(data: {
   // Auto-calculate due date from client payment terms
   const dueDateCalc = await calcDueDate(data.purchaseOrderId, data.shipmentDate);
   const result = await db.insert(invoices).values({ ...data, ...dueDateCalc }).returning();
+  await logActivity({ action: "create", entity: "invoice", entityId: result[0]?.id, entityLabel: data.invoiceNumber, changes: diffRecords(null, data) });
   revalidatePath("/invoices");
   revalidatePath("/purchase-orders");
   return result[0];
@@ -241,6 +258,7 @@ export async function updateInvoice(id: number, data: Partial<{
   salesDocument: string | null;
   billingDocument: string | null;
 }>) {
+  const beforeInv = await db.query.invoices.findFirst({ where: eq(invoices.id, id) });
   // If shipment status changed, create a shipment update
   if (data.shipmentStatus) {
     const current = await db.query.invoices.findFirst({ where: eq(invoices.id, id) });
@@ -272,6 +290,7 @@ export async function updateInvoice(id: number, data: Partial<{
   }
 
   await db.update(invoices).set(updates).where(eq(invoices.id, id));
+  await logActivity({ action: "update", entity: "invoice", entityId: id, entityLabel: data.invoiceNumber ?? beforeInv?.invoiceNumber, changes: diffRecords(beforeInv, data) });
 
   // Auto-complete PO if all invoices for this PO are now delivered
   if (data.shipmentStatus === "entregado") {
@@ -335,20 +354,30 @@ export async function markInvoicesPaid(
       .where(eq(invoices.id, inv.id));
   }
 
+  const paid = invoiceAmounts.filter((i) => ids.includes(i.id));
+  await logActivity({
+    action: "pay", entity: "customer_payment", entityId: payment.id,
+    entityLabel: `${paid.length} invoice${paid.length > 1 ? "s" : ""} · ${paid.map((i) => i.invoiceNumber).join(", ")}`,
+    meta: { paidDate, paymentMethod, referenceNo, amount: paid.reduce((s, i) => s + i.amount, 0), invoices: paid.map((i) => i.invoiceNumber) },
+  });
   revalidatePath("/invoices");
   revalidatePath("/purchase-orders");
 }
 
 export async function markInvoiceUnpaid(id: number) {
+  const before = await db.query.invoices.findFirst({ where: eq(invoices.id, id) });
   await db.update(invoices).set({ customerPaymentStatus: "unpaid" }).where(eq(invoices.id, id));
+  await logActivity({ action: "update", entity: "invoice", entityId: id, entityLabel: before?.invoiceNumber, changes: [{ field: "customerPaymentStatus", before: before?.customerPaymentStatus ?? null, after: "unpaid" }] });
   revalidatePath("/invoices");
   revalidatePath("/purchase-orders");
   revalidatePath("/reports/financial");
 }
 
 export async function deleteInvoice(id: number) {
+  const before = await db.query.invoices.findFirst({ where: eq(invoices.id, id) });
   await db.delete(shipmentUpdates).where(eq(shipmentUpdates.invoiceId, id));
   await db.delete(invoices).where(eq(invoices.id, id));
+  await logActivity({ action: "delete", entity: "invoice", entityId: id, entityLabel: before?.invoiceNumber });
   revalidatePath("/invoices");
   revalidatePath("/purchase-orders");
 }
@@ -357,7 +386,7 @@ export async function duplicateInvoice(id: number) {
   const [orig] = await db.select().from(invoices).where(eq(invoices.id, id));
   if (!orig) return;
   const newNumber = `PEND-COPY-${Date.now().toString().slice(-6)}`;
-  await db.insert(invoices).values({
+  const [dup] = await db.insert(invoices).values({
     invoiceNumber: newNumber,
     purchaseOrderId: orig.purchaseOrderId,
     quantityTons: orig.quantityTons,
@@ -379,7 +408,8 @@ export async function duplicateInvoice(id: number) {
     currentLocation: orig.currentLocation,
     balesCount: orig.balesCount,
     unitsPerBale: orig.unitsPerBale,
-  });
+  }).returning({ id: invoices.id });
+  await logActivity({ action: "create", entity: "invoice", entityId: dup?.id, entityLabel: newNumber, meta: { duplicatedFrom: orig.invoiceNumber } });
   revalidatePath("/invoices");
   revalidatePath("/purchase-orders");
 }

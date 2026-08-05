@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiMutate } from "@/lib/api-mutate";
 import { BellOff, BellRing, Loader2 } from "lucide-react";
 
 type State = "idle" | "loading" | "subscribed" | "denied" | "unsupported";
@@ -40,11 +41,11 @@ export function PushSubscribeButton() {
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(
           process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!
-        ),
+        ) as BufferSource,
       });
 
       const json = sub.toJSON();
-      await fetch("/api/push/subscribe", {
+      await apiMutate("/api/push/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ endpoint: sub.endpoint, keys: json.keys }),
@@ -63,7 +64,7 @@ export function PushSubscribeButton() {
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
       if (sub) {
-        await fetch("/api/push/subscribe", {
+        await apiMutate("/api/push/subscribe", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ endpoint: sub.endpoint }),

@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
       vehicleId:          invoices.vehicleId,
       blNumber:           invoices.blNumber,
       billingDocument:    invoices.billingDocument,
+      destination:        invoices.destination,
       terms:              purchaseOrders.terms,
       transportType:      purchaseOrders.transportType,
       licenseFsc:         purchaseOrders.licenseFsc,

@@ -27,3 +27,15 @@ next-env.d.ts
 *.db-shm
 *.db-wal
 .vercel
+
+# --- scratch / backups / secrets (never commit) ---
+# Anchored to repo root so legit files elsewhere (e.g. drizzle _journal.json) are unaffected.
+.env*.bak
+/_*.mjs
+/_*.out
+/_*.json
+/_*.js
+/check-*.mjs
+/check-*.js
+/*.out
+/Cascade_payments_ledger.csv

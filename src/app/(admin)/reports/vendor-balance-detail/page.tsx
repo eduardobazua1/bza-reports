@@ -9,13 +9,13 @@ export const dynamic = "force-dynamic";
 export default async function VendorBalanceDetailPage({
   searchParams,
 }: {
-  searchParams: { supplier?: string };
+  searchParams: Promise<{ supplier?: string }>;
 }) {
   const payments = await getSupplierPaymentsWithInfo();
   const today = new Date();
   const asOf = today.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 
-  const filterSupplier = searchParams.supplier;
+  const filterSupplier = (await searchParams).supplier;
 
   // Group by supplier
   type Payment = {
