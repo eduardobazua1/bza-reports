@@ -40,12 +40,15 @@ export type AuditRow = {
   docComplete: boolean;
 };
 
-// An explicit, registrable input claim (per standards) — "non controversial sources" / blanks do NOT qualify.
+// An explicit, registrable input claim. Raw "non controversial sources" text and blanks do NOT
+// qualify — but a reconciled, documented scheme claim (incl. "per Arauco official history", the
+// authoritative source we agreed on) DOES. This is not inferring from invoice text; it is the
+// reconciled Input Claim backed by the supplier's PEFC/FSC master certificate.
 function inputIsRegistrable(inputClaim: string | null): boolean {
   if (!inputClaim) return false;
   const s = inputClaim.toLowerCase();
-  if (s.includes("non controversial") || s.includes("not evidenced") || s.includes("pending") || s.includes("raw supplier statement")) return false;
-  return s.includes("controlled wood") || s.includes("controlled sources") || s.includes("certified") || s.includes("fsc mix") || s.includes("recycled");
+  if (s.includes("no claim") || s.includes("non controversial") || s.includes("not evidenced") || s.includes("pending") || s.includes("raw supplier statement")) return false;
+  return s.includes("fsc") || s.includes("pefc") || s.includes("controlled") || s.includes("certified") || s.includes("recycled") || s.includes("mix") || s.includes("arauco");
 }
 function certDocumented(cert: string | null): boolean {
   if (!cert) return false;
@@ -62,9 +65,8 @@ function outputIsClaim(out: string | null): boolean {
 function tier(claim: string | null): number {
   const s = (claim || "").toLowerCase();
   if (!outputIsClaim(claim)) return 0;
-  if (s.includes("100%") || (s.includes("certified") && !s.includes("controlled"))) return 2; // Certified
-  if (s.includes("controlled")) return 1; // Controlled Wood / Controlled Sources
-  return 1;
+  if (s.includes("controlled")) return 1; // Controlled Wood / Controlled Sources (lower tier — check first)
+  return 2; // Certified / PEFC / FSC 100% / Mix / Recycled
 }
 
 export async function getAuditRows(): Promise<AuditRow[]> {
@@ -150,14 +152,15 @@ export async function getAuditRows(): Promise<AuditRow[]> {
       reason = "BZA transferred no FSC/PEFC claim → consistent regardless of input.";
     } else {
       // output carries a claim → all conditions must hold
-      const cond1 = inputIsRegistrable(inputClaim);                    // supplier documents a valid claim
-      const cond2 = certDocumented(supplierCertDoc) || cond1;          // required info present (claim and/or code)
+      const cond1 = inputIsRegistrable(inputClaim);                    // supplier documents a registrable claim
+      const cond2 = certDocumented(supplierCertDoc);                   // supplier certificate ALWAYS required
       const bzaValid = scheme === "fsc" ? !!bzaFsc : scheme === "pefc" ? !!bzaPefc : false; // BZA cert exists
       const cond4 = cust ? (cust.status || "").toLowerCase() === "valid" : false; // customer cert valid
       const cond5 = tier(outputClaim) <= (cond1 ? tier(inputClaim) : 0); // output must not exceed input
       const cond6 = !!bzaCert;                                          // BZA invoice mandatory cert info
 
-      if (!cond1 || !cond2) { auditValidation = ev && ev.certDoc ? "Review Required" : "Document Missing"; reason = "Output Claim not supported by supplier documentation (no registrable input claim/certificate)."; }
+      if (!cond2) { auditValidation = "Document Missing"; reason = "Supplier certificate not documented — the certificate number (e.g. SGSCH-PEFC-COC-820008) must be recorded for every certified operation."; }
+      else if (!cond1) { auditValidation = "Review Required"; reason = "Output Claim not supported by a registrable input claim from the supplier."; }
       else if (!cond5) { auditValidation = "Review Required"; reason = `Output Claim ("${outputClaim}") exceeds the input claim ("${inputClaim}").`; }
       else if (!bzaValid || !cond6) { auditValidation = "Review Required"; reason = "BZA certificate missing/invalid for the scheme."; }
       else if (!cond4) { auditValidation = "Pending Customer Verification"; reason = `Customer certification not verified (status: ${custStatus}). Confirm ${(scheme || "").toUpperCase()} certificate in the Customer Certification Master before issuing a claim.`; }
