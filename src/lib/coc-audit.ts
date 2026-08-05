@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import {
-  invoices, purchaseOrders, clients, suppliers, supplierInvoices, certificates, customerCertificates,
+  invoices, purchaseOrders, clients, suppliers, supplierInvoices, certificates, customerCertificates, documents,
 } from "@/db/schema";
 import { eq, sql, and } from "drizzle-orm";
 
@@ -33,6 +33,11 @@ export type AuditRow = {
   quantity: number;
   auditValidation: string;
   exceptionReason: string;
+  // documental completeness (audit readiness)
+  hasBL: boolean;
+  hasPL: boolean;
+  hasSupplierInvoice: boolean;
+  docComplete: boolean;
 };
 
 // An explicit, registrable input claim (per standards) — "non controversial sources" / blanks do NOT qualify.
@@ -63,7 +68,7 @@ function tier(claim: string | null): number {
 }
 
 export async function getAuditRows(): Promise<AuditRow[]> {
-  const [bzaCerts, rows, supEvidence, custCerts] = await Promise.all([
+  const [bzaCerts, rows, supEvidence, custCerts, docFlags] = await Promise.all([
     db.select().from(certificates),
     db
       .select({
@@ -102,7 +107,17 @@ export async function getAuditRows(): Promise<AuditRow[]> {
       })
       .from(supplierInvoices),
     db.select().from(customerCertificates),
+    // Index-only scan (idx_documents_inv_type) — never reads the base64 file blobs.
+    db.select({ invoiceId: documents.invoiceId, type: documents.type }).from(documents),
   ]);
+
+  const docsByInvoice = new Map<number, { bl: boolean; pl: boolean }>();
+  for (const d of docFlags) {
+    const cur = docsByInvoice.get(d.invoiceId) ?? { bl: false, pl: false };
+    if (d.type === "bl") cur.bl = true;
+    if (d.type === "pl") cur.pl = true;
+    docsByInvoice.set(d.invoiceId, cur);
+  }
 
   const bzaFsc = bzaCerts.find((c) => c.certType === "fsc");
   const bzaPefc = bzaCerts.find((c) => c.certType === "pefc");
@@ -149,6 +164,9 @@ export async function getAuditRows(): Promise<AuditRow[]> {
       else { auditValidation = "Verified"; reason = ""; }
     }
 
+    const dflag = docsByInvoice.get(r.invoiceId) ?? { bl: false, pl: false };
+    const hasSupplierInvoice = !!ev;
+
     out.push({
       year, po: r.poNumber || "", poDate: r.poDate ? r.poDate.substring(0, 10) : "",
       bzaInvoice: r.bzaInvoice, supplierInvoice: ev?.number || "",
@@ -158,6 +176,8 @@ export async function getAuditRows(): Promise<AuditRow[]> {
       evidenceSource, scheme: scheme ? scheme.toUpperCase() : "No Claim",
       product: r.poProduct || r.item || "", quantity: Number((r.quantityTons || 0).toFixed(3)),
       auditValidation, exceptionReason: reason,
+      hasBL: dflag.bl, hasPL: dflag.pl, hasSupplierInvoice,
+      docComplete: dflag.bl && dflag.pl && hasSupplierInvoice,
     });
   }
   return out;
@@ -218,4 +238,21 @@ export async function getValidationSummary(): Promise<Record<string, number>> {
   const cnt: Record<string, number> = {};
   for (const r of rows) cnt[r.auditValidation] = (cnt[r.auditValidation] || 0) + 1;
   return cnt;
+}
+
+// ── Audit readiness (documental completeness semaphore) ─────────────────────
+export type ReadinessRow = {
+  bzaInvoice: string; po: string; customer: string; scheme: string; quantity: number;
+  hasBL: boolean; hasPL: boolean; hasSupplierInvoice: boolean; docComplete: boolean;
+  auditValidation: string; outputClaim: string;
+};
+
+/** Slim per-operation readiness rows for the semaphore UI (no blobs, no raw statements). */
+export async function getReadinessRows(): Promise<ReadinessRow[]> {
+  const rows = await getAuditRows();
+  return rows.map((r) => ({
+    bzaInvoice: r.bzaInvoice, po: r.po, customer: r.customer, scheme: r.scheme, quantity: r.quantity,
+    hasBL: r.hasBL, hasPL: r.hasPL, hasSupplierInvoice: r.hasSupplierInvoice, docComplete: r.docComplete,
+    auditValidation: r.auditValidation, outputClaim: r.outputClaim,
+  }));
 }

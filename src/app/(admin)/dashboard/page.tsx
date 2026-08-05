@@ -5,7 +5,9 @@ import { db } from "@/db";
 import { scheduledReports, purchaseOrders, invoices, supplierPayments } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { getCreditInsuranceData } from "@/server/credit-insurance";
+import { getAlerts } from "@/lib/alerts";
 import { DashboardApp, type Row } from "@/components/dashboard-app";
+import { AlertsBanner } from "@/components/alerts-banner";
 
 function parseDestination(terms: string | null | undefined): string {
   const t = terms || "";
@@ -22,10 +24,11 @@ function parseTransport(t: string | null | undefined): Row["transport"] {
 }
 
 export default async function DashboardPage() {
-  const [kpis, allInvoices, creditInsurance] = await Promise.all([
+  const [kpis, allInvoices, creditInsurance, alerts] = await Promise.all([
     getDashboardKPIs(),
     getInvoices(),
     getCreditInsuranceData(),
+    getAlerts(),
   ]);
 
   // Accounts payable: everything shipped (invoiced cost) vs everything paid, per supplier.
@@ -76,13 +79,16 @@ export default async function DashboardPage() {
   }));
 
   return (
-    <DashboardApp
-      rows={rows}
-      supplierBalance={supplierBalance}
-      supplierBalanceNet={supplierBalanceNet}
-      activePOs={kpis.activePOs}
-      creditInsurance={creditInsurance}
-      overdueReportsCount={overdueReportsCount}
-    />
+    <div className="space-y-4">
+      <AlertsBanner groups={alerts.groups} total={alerts.total} />
+      <DashboardApp
+        rows={rows}
+        supplierBalance={supplierBalance}
+        supplierBalanceNet={supplierBalanceNet}
+        activePOs={kpis.activePOs}
+        creditInsurance={creditInsurance}
+        overdueReportsCount={overdueReportsCount}
+      />
+    </div>
   );
 }
