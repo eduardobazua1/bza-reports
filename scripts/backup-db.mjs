@@ -15,15 +15,17 @@ import { createCipheriv, randomBytes, createHash } from "node:crypto";
 const RETENTION = Number(process.env.BACKUP_RETENTION || 14);
 const PREFIX = "backups/";
 
-// Retry a Turso query a few times — backups shouldn't die on a transient network blip.
-async function exec(c, stmt, tries = 4) {
+// Retry a Turso query — backups shouldn't die on a transient network blip or a
+// momentary Turso 5xx/400. Up to 8 tries with growing backoff (~1+2+…+8 ≈ 36s).
+async function exec(c, stmt, tries = 8) {
   let lastErr;
   for (let i = 0; i < tries; i++) {
     try {
       return await c.execute(stmt);
     } catch (e) {
       lastErr = e;
-      await new Promise((r) => setTimeout(r, 1000 * (i + 1)));
+      console.log(`  query retry ${i + 1}/${tries}: ${e.message}`);
+      await new Promise((r) => setTimeout(r, 1500 * (i + 1)));
     }
   }
   throw lastErr;
@@ -58,7 +60,7 @@ async function buildDump() {
     // Read in small batches: Turso's HTTP API rejects a single response that is too
     // large (400), and these tables store base64 PDF blobs (tens of MB each).
     // Keyset pagination by rowid — O(n), avoids the O(n²) rescan that OFFSET causes on blob tables.
-    const BATCH = 25;
+    const BATCH = 10; // ~2.6MB/response at ~430KB rows — fast and well under Turso's limit
     let lastRid = 0, cols = null, dataCols = null;
     for (;;) {
       const res = await exec(c, {
