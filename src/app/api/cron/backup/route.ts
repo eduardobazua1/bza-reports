@@ -107,7 +107,7 @@ async function uploadBackup(filename: string, body: Buffer) {
   // Encrypted payload → a public blob URL is safe (contents are unreadable without the key).
   const token = process.env.BLOB_READ_WRITE_TOKEN; // provided automatically on Vercel when Blob is connected
   const res = await put(PREFIX + filename, body, {
-    access: "public",
+    access: "private",
     addRandomSuffix: false,
     contentType: "application/octet-stream",
     token,

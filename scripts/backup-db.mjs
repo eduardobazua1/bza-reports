@@ -107,7 +107,7 @@ async function main() {
   if (!token) throw new Error("BLOB_READ_WRITE_TOKEN is not set.");
 
   const res = await put(filename, enc, {
-    access: "public", // encrypted payload → safe
+    access: "private", // the Blob store is private; payload is also AES-256 encrypted (defense in depth)
     addRandomSuffix: false,
     contentType: "application/octet-stream",
     token,
