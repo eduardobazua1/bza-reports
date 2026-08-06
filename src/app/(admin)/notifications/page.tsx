@@ -11,6 +11,8 @@ import {
   Clock,
   Send,
   CreditCard,
+  Calendar,
+  Award,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -39,6 +41,8 @@ const TYPE_CONFIG: Record<string, { label: string; Icon: React.ElementType }> = 
   stale_shipment:    { label: "Stale Shipment",      Icon: Truck },
   pending_report:    { label: "Pending Report",      Icon: Send },
   proposal_expiring: { label: "Proposal Expiring",   Icon: FileText },
+  key_date:          { label: "Key Date",            Icon: Calendar },
+  cert_expiry:       { label: "Certificate Expiry",  Icon: Award },
 };
 
 function NotificationCard({ n }: { n: AppNotification }) {

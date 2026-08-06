@@ -16,6 +16,8 @@ import {
   Truck,
   Send,
   FileText,
+  Calendar,
+  Award,
 } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -25,7 +27,9 @@ type NotificationType =
   | "due_soon"
   | "stale_shipment"
   | "pending_report"
-  | "proposal_expiring";
+  | "proposal_expiring"
+  | "key_date"
+  | "cert_expiry";
 
 type AppNotification = {
   id: string;
@@ -90,6 +94,8 @@ const TYPE_CONFIG: Record<NotificationType, { label: string; Icon: React.Element
   stale_shipment:    { label: "Stale Shipment",    Icon: Truck },
   pending_report:    { label: "Pending Report",    Icon: Send },
   proposal_expiring: { label: "Proposal Expiring", Icon: FileText },
+  key_date:          { label: "Key Date",          Icon: Calendar },
+  cert_expiry:       { label: "Certificate",       Icon: Award },
 };
 
 // ── Individual card ───────────────────────────────────────────────────────────
@@ -103,7 +109,7 @@ function NotifCard({
   onClosePanel: () => void;
 }) {
   const s = SEVERITY_CONFIG[n.severity];
-  const t = TYPE_CONFIG[n.type];
+  const t = TYPE_CONFIG[n.type] ?? { label: n.type, Icon: Info };
   const TypeIcon = t.Icon;
 
   return (

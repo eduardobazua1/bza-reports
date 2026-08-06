@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { invoices, purchaseOrders, clients, scheduledReports, reportTemplates, proposals } from "@/db/schema";
+import { invoices, purchaseOrders, clients, scheduledReports, reportTemplates, proposals, certificates, customerCertificates } from "@/db/schema";
 import { and, eq, lt, lte, gte, ne, or, isNull, isNotNull } from "drizzle-orm";
 
 export type NotificationSeverity = "critical" | "warning" | "info";
@@ -8,7 +8,14 @@ export type NotificationType =
   | "due_soon"
   | "stale_shipment"
   | "pending_report"
-  | "proposal_expiring";
+  | "proposal_expiring"
+  | "key_date"
+  | "cert_expiry";
+
+// Important fixed deadlines to surface as they approach. Add dates here as they come up.
+const KEY_DATES: { id: string; label: string; date: string; link: string; note?: string }[] = [
+  { id: "cu-audit-2026", label: "Control Union FSC/PEFC audit", date: "2026-10-31", link: "/reports/audit-export", note: "On-site audit — have the audit package ready" },
+];
 
 export type AppNotification = {
   id: string;
@@ -234,6 +241,62 @@ export async function getNotifications(): Promise<AppNotification[]> {
   } catch {
     // table may not exist in this environment — skip silently
   }
+
+  // ── 6. Important upcoming dates (audit, etc.) ─────────────────────────────
+  for (const kd of KEY_DATES) {
+    const days = Math.ceil((new Date(kd.date + "T00:00:00").getTime() - Date.now()) / 86400000);
+    if (days < 0 || days > 120) continue; // surface within ~4 months
+    results.push({
+      id: `keydate-${kd.id}`,
+      type: "key_date",
+      severity: days <= 7 ? "critical" : days <= 30 ? "warning" : "info",
+      title: `${kd.label} in ${days} day${days !== 1 ? "s" : ""}`,
+      description: `${kd.note ? kd.note + " · " : ""}${kd.date}`,
+      link: kd.link,
+      date: kd.date,
+    });
+  }
+
+  // ── 7. Certificate expiries within 90 days ────────────────────────────────
+  const in90Days = new Date(Date.now() + 90 * 86400000).toISOString().split("T")[0];
+  try {
+    const certRows = await db
+      .select({ id: certificates.id, name: certificates.name, code: certificates.certCode, validUntil: certificates.validUntil })
+      .from(certificates)
+      .where(and(isNotNull(certificates.validUntil), gte(certificates.validUntil, today), lte(certificates.validUntil, in90Days)));
+    for (const r of certRows) {
+      const days = Math.ceil((new Date(r.validUntil!).getTime() - Date.now()) / 86400000);
+      results.push({
+        id: `cert-${r.id}`,
+        type: "cert_expiry",
+        severity: days <= 30 ? "critical" : "warning",
+        title: `Certificate expiring: ${r.name ?? r.code ?? "Certificate"}`,
+        description: `${r.code ?? ""} — expires in ${days} day${days !== 1 ? "s" : ""} (${r.validUntil})`,
+        link: "/certificates",
+        date: r.validUntil,
+      });
+    }
+  } catch { /* skip silently */ }
+
+  try {
+    const custCertRows = await db
+      .select({ id: customerCertificates.id, scheme: customerCertificates.scheme, number: customerCertificates.certificateNumber, expiry: customerCertificates.expiryDate, clientName: clients.name })
+      .from(customerCertificates)
+      .leftJoin(clients, eq(customerCertificates.clientId, clients.id))
+      .where(and(isNotNull(customerCertificates.expiryDate), gte(customerCertificates.expiryDate, today), lte(customerCertificates.expiryDate, in90Days)));
+    for (const r of custCertRows) {
+      const days = Math.ceil((new Date(r.expiry!).getTime() - Date.now()) / 86400000);
+      results.push({
+        id: `custcert-${r.id}`,
+        type: "cert_expiry",
+        severity: days <= 30 ? "critical" : "warning",
+        title: `Customer cert expiring: ${r.clientName ?? "Customer"}`,
+        description: `${(r.scheme ?? "").toUpperCase()} ${r.number ?? ""} — expires in ${days} day${days !== 1 ? "s" : ""}`,
+        link: "/reports/audit-export",
+        date: r.expiry,
+      });
+    }
+  } catch { /* skip silently */ }
 
   return results;
 }
