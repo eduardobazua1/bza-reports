@@ -238,7 +238,7 @@ export function POSupplierPayments({
 
       {/* Payments Table */}
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-xs">
           <thead className="bg-stone-50">
             <tr>
               <th className="text-left px-4 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">Date</th>

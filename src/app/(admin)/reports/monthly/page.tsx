@@ -47,7 +47,7 @@ export default async function MonthlyBreakdownPage() {
           <h2 className="text-base font-semibold text-stone-800">Monthly Summary</h2>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-xs">
             <thead className="bg-stone-50">
               <tr>
                 <th className="text-left px-5 py-2.5 text-[10px] font-semibold text-stone-400 uppercase tracking-wide">Month</th>

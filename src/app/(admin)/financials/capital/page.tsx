@@ -45,7 +45,7 @@ export default function CapitalPage() {
         {subs.length === 0 ? (
           <p className="px-5 py-4 text-stone-400 text-sm">None in this period.</p>
         ) : (
-          <table className="w-full text-sm">
+          <table className="w-full text-xs">
             <thead className="bg-stone-50 text-stone-500 text-left">
               <tr>
                 <th className="px-5 py-2 font-medium">Detail</th>

@@ -65,7 +65,7 @@ export function ContractsList({ contracts, clients, suppliers, nextContractNumbe
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-xs">
               <thead className="bg-stone-50 border-b border-stone-100">
                 <tr>
                   <th className="text-left px-4 py-3 text-xs font-medium text-stone-400 uppercase tracking-wide whitespace-nowrap">Contract #</th>

@@ -720,7 +720,7 @@ export function APOverview({
 
       <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-xs">
             <thead className="bg-stone-50">
               <tr className="text-left">
                 <th className="p-3 w-8"></th>

@@ -15,7 +15,7 @@ const STATUS_ORDER: Status[] = ["programado", "en_transito", "en_aduana", "entre
 function ShipmentsTable({ rows }: { rows: InvoiceRow[] }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="w-full text-xs">
         <thead className="bg-muted">
           <tr>
             <th className="text-left px-2 py-2 text-xs font-medium text-stone-400 uppercase tracking-wide whitespace-nowrap">Status</th>

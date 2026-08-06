@@ -61,7 +61,7 @@ export default function ExpensesPage() {
             <span className="font-semibold text-stone-800">Total Operating Expenses</span>
             <span className="font-bold text-stone-700">{usd(opex.total)}</span>
           </div>
-          <table className="w-full text-sm">
+          <table className="w-full text-xs">
             <thead className="bg-stone-50 text-stone-500 text-left">
               <tr>
                 <th className="px-5 py-2 font-medium">Category</th>

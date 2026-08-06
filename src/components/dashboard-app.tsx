@@ -252,7 +252,7 @@ function LatestPriceCard({ items }: { items: PriceRow[] }) {
         <span className="text-[11px] font-bold uppercase tracking-wider text-stone-400">Most recent shipment · $/TN</span>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm min-w-[540px]">
+        <table className="w-full text-xs min-w-[540px]">
           <thead>
             <tr className="text-[11px] uppercase tracking-wide text-stone-400 border-b border-stone-100">
               <th className="py-2 font-medium text-left">Product</th>

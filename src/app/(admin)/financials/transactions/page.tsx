@@ -97,7 +97,7 @@ function TransactionsInner() {
         <p className="text-stone-500">Loading…</p>
       ) : (
         <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
-          <table className="w-full text-sm">
+          <table className="w-full text-xs">
             <thead className="bg-stone-50 text-stone-500 text-left">
               <tr>
                 <th className="px-3 py-2 font-medium">Date</th>

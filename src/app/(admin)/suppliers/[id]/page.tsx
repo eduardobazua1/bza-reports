@@ -481,7 +481,7 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
           <h3 className="text-sm font-semibold text-stone-800">Purchase Orders ({pos.length})</h3>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-xs">
             <thead className="bg-stone-50">
               <tr>
                 <th className="text-left px-4 py-2 text-xs font-medium text-stone-500">PO #</th>
@@ -528,7 +528,7 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
           <p className="text-xs text-stone-400 mt-0.5">{payments.length} payment{payments.length !== 1 ? "s" : ""} · {formatCurrency(totalPaid)} paid</p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-xs">
             <thead className="bg-stone-50">
               <tr>
                 <th className="text-left px-4 py-2 text-xs font-medium text-stone-500">Date</th>

@@ -86,7 +86,7 @@ export function APDetailDrawer({ apRows, invoicesByPo, paymentsByPo, supplierNam
           </p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-xs">
             <thead className="bg-stone-50">
               <tr>
                 <th className="text-left px-4 py-2 text-xs font-medium text-stone-500">PO #</th>

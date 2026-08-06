@@ -597,7 +597,7 @@ export function ReportWrapper({
 
           {/* Table */}
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-stone-200">
                   {visibleCols.map((col) => (

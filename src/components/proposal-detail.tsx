@@ -257,7 +257,7 @@ export function ProposalDetail({ proposal }: { proposal: ProposalData }) {
             <h2 className="text-sm font-semibold text-stone-700">Line Items</h2>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[640px]">
+            <table className="w-full text-xs min-w-[640px]">
               <thead>
                 <tr className="bg-[#0d3d3b] text-white text-xs uppercase tracking-wide">
                   <th className="px-4 py-2.5 text-center w-8">#</th>

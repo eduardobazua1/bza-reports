@@ -93,7 +93,7 @@ export default async function AccountsPayablePage() {
           <h2 className="text-sm font-semibold text-stone-800">Breakdown by supplier</h2>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[640px]">
+          <table className="w-full text-xs min-w-[640px]">
             <thead>
               <tr className="text-[10px] uppercase tracking-wider text-stone-400">
                 <th className="text-left font-semibold px-4 py-2.5">Supplier</th>

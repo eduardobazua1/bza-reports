@@ -110,7 +110,7 @@ export function ProposalsList({ proposals }: { proposals: Proposal[] }) {
             )}
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <table className="w-full text-xs">
             <thead className="bg-muted">
               <tr className="text-left">
                 <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Number</th>

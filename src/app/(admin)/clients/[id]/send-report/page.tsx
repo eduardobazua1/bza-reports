@@ -317,7 +317,7 @@ export default function SendReportPage() {
             <button onClick={() => setPreview(null)} className="text-xs text-muted-foreground hover:text-foreground">Close</button>
           </div>
           <div className="overflow-x-auto max-h-96">
-            <table className="w-full text-sm">
+            <table className="w-full text-xs">
               <thead className="bg-muted sticky top-0">
                 <tr>
                   {preview.headers.map((h, i) => (

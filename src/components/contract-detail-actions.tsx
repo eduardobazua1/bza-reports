@@ -244,7 +244,7 @@ export function ContractDetailActions({ contract, clients, suppliers, eligiblePo
             )}
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <table className="w-full text-xs">
             <thead className="bg-stone-50">
               <tr>
                 <th className="text-left px-5 py-2.5 text-xs font-medium text-stone-400 uppercase tracking-wide">PO #</th>

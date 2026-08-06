@@ -353,7 +353,7 @@ function DrillDownModal({
 
         {/* Table */}
         <div className="overflow-auto flex-1">
-          <table className="w-full text-sm">
+          <table className="w-full text-xs">
             <thead className="bg-white sticky top-0 border-b-2 border-gray-200">
               <tr>
                 {v("invoiceNumber") && <th className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 whitespace-nowrap">Invoice #</th>}
@@ -617,7 +617,7 @@ function ARAgingReport({ data, visible, onDrillDown }: {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-xs">
           <thead>
             <tr className="border-b-2 border-gray-200">
               <SortTH label="Customer" col="name" />
@@ -733,7 +733,7 @@ function PLMonthlyReport({ data, visible, onDrillDown }: {
         <p className="text-[11px] text-gray-400 mt-0.5">{period}</p>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-xs">
           <thead>
             <tr className="border-b-2 border-gray-200">
               <SortTH label="Month" col="key" />
@@ -856,7 +856,7 @@ function PLEntityReport({ data, isClient, visible, onDrillDown }: {
         <p className="text-[11px] text-gray-400 mt-0.5">All time</p>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-xs">
           <thead>
             <tr className="border-b-2 border-gray-200">
               <SortTH label={isClient?"Customer":"Supplier"} col="name" />

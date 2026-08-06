@@ -58,7 +58,7 @@ export default async function BalanceSheetPage() {
             <div className="px-6 py-3 bg-stone-50">
               <span className="text-xs font-bold text-stone-500 uppercase tracking-widest">Assets</span>
             </div>
-            <table className="w-full text-sm">
+            <table className="w-full text-xs">
               <tbody>
                 <tr className="hover:bg-stone-50">
                   <td className="px-6 py-3 text-xs text-[#0d3d3b]">Accounts Receivable</td>
@@ -77,7 +77,7 @@ export default async function BalanceSheetPage() {
             <div className="px-6 py-3 bg-stone-50">
               <span className="text-xs font-bold text-stone-500 uppercase tracking-widest">Liabilities</span>
             </div>
-            <table className="w-full text-sm">
+            <table className="w-full text-xs">
               <tbody>
                 <tr className="hover:bg-stone-50">
                   <td className="px-6 py-3 text-xs text-[#0d3d3b]">Accounts Payable</td>
@@ -96,7 +96,7 @@ export default async function BalanceSheetPage() {
             <div className="px-6 py-3 bg-stone-50">
               <span className="text-xs font-bold text-stone-500 uppercase tracking-widest">Equity</span>
             </div>
-            <table className="w-full text-sm">
+            <table className="w-full text-xs">
               <tbody>
                 <tr className="hover:bg-stone-50">
                   <td className="px-6 py-3 text-xs text-[#0d3d3b]">Retained Earnings (Gross Profit)</td>
@@ -112,7 +112,7 @@ export default async function BalanceSheetPage() {
 
           {/* SUMMARY ROW */}
           <div className="bg-[#0d3d3b]/5">
-            <table className="w-full text-sm">
+            <table className="w-full text-xs">
               <tbody>
                 <tr>
                   <td className="px-6 py-4 font-bold text-stone-900 text-base">Total Liabilities + Equity</td>

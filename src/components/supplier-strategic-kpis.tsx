@@ -107,7 +107,7 @@ export function SupplierStrategicKpis({ kpi, supplierName }: { kpi: StrategicKpi
           <div className="px-4 py-2.5 border-b border-stone-100 bg-stone-50">
             <p className="text-xs font-semibold text-stone-700">Margin by Year</p>
           </div>
-          <table className="w-full text-sm">
+          <table className="w-full text-xs">
             <thead className="bg-white">
               <tr className="text-[10px] text-stone-400 uppercase">
                 <th className="text-left px-4 py-2 font-medium">Year</th>

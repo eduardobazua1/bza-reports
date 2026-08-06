@@ -318,7 +318,7 @@ export function ARAgingSummaryClient({ rows, totals, asOf, timestamp }: {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-stone-200 bg-stone-50">
                   <th className="text-left px-6 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide w-48">Client</th>

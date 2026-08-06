@@ -859,7 +859,7 @@ export function PaymentsPanel({
             {unpaidInvoices.length === 0 ? (
               <div className="p-8 text-center text-sm text-stone-400">All invoices are paid. 🎉</div>
             ) : (
-              <table className="w-full text-sm">
+              <table className="w-full text-xs">
                 <thead className="bg-muted">
                   <tr className="text-left">
                     <th className="p-3 w-8">
@@ -931,7 +931,7 @@ export function PaymentsPanel({
       {subTab === "history" && (
         <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-xs">
               <thead className="bg-muted">
                 <tr className="text-left">
                   <th className="p-3 text-xs font-medium text-stone-400 uppercase tracking-wide">Date</th>
