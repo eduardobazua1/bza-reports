@@ -26,15 +26,31 @@ function daysToDue(dueDate: string | null): number | null {
 
 export function FactoringCalculator({ rows }: { rows: FactoringRow[] }) {
   const [sofr, setSofr] = useState(4.3);
+  const [sofrInfo, setSofrInfo] = useState<{ date: string | null; source: "live" | "manual" | "saved" }>({ date: null, source: "saved" });
 
-  // Persist the SOFR rate locally so it survives reloads (no DB change for the MVP).
+  // Pull the live SOFR from the NY Fed on load; fall back to the last saved value if unreachable.
   useEffect(() => {
-    const saved = localStorage.getItem("bza-sofr");
-    if (saved) setSofr(Number(saved));
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch("/api/sofr");
+        if (r.ok) {
+          const d = await r.json();
+          if (!cancelled && typeof d.rate === "number") { setSofr(d.rate); setSofrInfo({ date: d.date ?? null, source: "live" }); return; }
+        }
+      } catch { /* offline — use saved */ }
+      if (!cancelled) {
+        const saved = localStorage.getItem("bza-sofr");
+        if (saved) { setSofr(Number(saved)); setSofrInfo({ date: null, source: "saved" }); }
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
-  useEffect(() => {
-    localStorage.setItem("bza-sofr", String(sofr));
-  }, [sofr]);
+
+  // Persist the active rate so it's a fallback if the NY Fed is unreachable next time.
+  useEffect(() => { localStorage.setItem("bza-sofr", String(sofr)); }, [sofr]);
+
+  function onSofrChange(v: number) { setSofr(v); setSofrInfo((i) => ({ ...i, source: "manual" })); }
 
   const rate = (sofr + SPREAD) / 100; // effective annual discount rate
 
@@ -73,12 +89,17 @@ export function FactoringCalculator({ rows }: { rows: FactoringRow[] }) {
               type="number"
               step="0.01"
               value={sofr}
-              onChange={(e) => setSofr(Number(e.target.value))}
+              onChange={(e) => onSofrChange(Number(e.target.value))}
               className="w-20 text-2xl font-extrabold text-[#0d3d3b] border-b border-stone-200 focus:outline-none focus:border-[#0d3d3b] tabular-nums"
             />
             <span className="text-sm text-stone-500 font-semibold">% SOFR</span>
           </div>
           <p className="text-xs text-stone-400 mt-1">+ {SPREAD}% spread = <span className="font-bold text-stone-700">{(sofr + SPREAD).toFixed(2)}%</span> annual</p>
+          <p className="text-[10px] text-stone-400 mt-0.5">
+            {sofrInfo.source === "live" && sofrInfo.date ? <>Live · NY Fed as of {formatDate(sofrInfo.date)}</>
+              : sofrInfo.source === "manual" ? "Manual override (simulation)"
+              : "Saved rate — couldn't reach NY Fed"}
+          </p>
         </div>
         <SummaryTile label="Open KC receivable" value={formatCurrency(totals.face)} sub={`${rows.length} invoices`} />
         <SummaryTile label="Total discount cost" value={formatCurrency(totals.cost)} sub={totals.face > 0 ? `${((totals.cost / totals.eligible) * 100 || 0).toFixed(2)}% of eligible` : ""} />
