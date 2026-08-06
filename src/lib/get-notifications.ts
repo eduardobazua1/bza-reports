@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { invoices, purchaseOrders, clients, scheduledReports, reportTemplates, proposals, certificates, customerCertificates } from "@/db/schema";
-import { and, eq, lt, lte, gte, ne, or, isNull, isNotNull } from "drizzle-orm";
+import { invoices, purchaseOrders, clients, scheduledReports, reportTemplates, proposals, certificates, customerCertificates, activityLog } from "@/db/schema";
+import { and, eq, lt, lte, gte, ne, or, isNull, isNotNull, desc } from "drizzle-orm";
 
 export type NotificationSeverity = "critical" | "warning" | "info";
 export type NotificationType =
@@ -10,7 +10,8 @@ export type NotificationType =
   | "pending_report"
   | "proposal_expiring"
   | "key_date"
-  | "cert_expiry";
+  | "cert_expiry"
+  | "portal_login";
 
 // Important fixed deadlines to surface as they approach. Add dates here as they come up.
 const KEY_DATES: { id: string; label: string; date: string; link: string; note?: string }[] = [
@@ -294,6 +295,28 @@ export async function getNotifications(): Promise<AppNotification[]> {
         description: `${(r.scheme ?? "").toUpperCase()} ${r.number ?? ""} — expires in ${days} day${days !== 1 ? "s" : ""}`,
         link: "/reports/audit-export",
         date: r.expiry,
+      });
+    }
+  } catch { /* skip silently */ }
+
+  // ── 8. Recent client-portal logins (last 3 days) ──────────────────────────
+  try {
+    const ago3Days = new Date(Date.now() - 3 * 86400000).toISOString();
+    const logins = await db
+      .select({ id: activityLog.id, userName: activityLog.userName, label: activityLog.entityLabel, at: activityLog.createdAt })
+      .from(activityLog)
+      .where(and(eq(activityLog.action, "login"), eq(activityLog.entity, "portal"), gte(activityLog.createdAt, ago3Days)))
+      .orderBy(desc(activityLog.createdAt))
+      .limit(15);
+    for (const l of logins) {
+      results.push({
+        id: `portal-login-${l.id}`,
+        type: "portal_login",
+        severity: "info",
+        title: `Portal access: ${l.userName ?? "Someone"}`,
+        description: `${l.label ?? "Client"} signed in to their portal`,
+        link: "/activity",
+        date: l.at ? l.at.split("T")[0] : null,
       });
     }
   } catch { /* skip silently */ }

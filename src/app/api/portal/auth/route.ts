@@ -3,6 +3,7 @@ import { portalUsers, portalCodes, clients } from "@/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+import { logActivity } from "@/server/activity";
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -104,6 +105,31 @@ export async function POST(req: NextRequest) {
 
     // Update last login
     await db.update(portalUsers).set({ lastLogin: new Date().toISOString() }).where(eq(portalUsers.id, portalUser.id));
+
+    // Notify BZA that a client just accessed the portal — in the TMS (activity log → notifications) + by email.
+    try {
+      await logActivity({
+        action: "login",
+        entity: "portal",
+        entityId: client.id,
+        entityLabel: client.name,
+        meta: { portalUser: portalUser.name, email: portalUser.email },
+        actor: { userId: null, userName: portalUser.name, userEmail: portalUser.email },
+      });
+    } catch { /* never block login on logging */ }
+    try {
+      const notifyTo = (process.env.PORTAL_NOTIFY_TO || "ebazua@bza-is.com, operations@bza-is.com")
+        .split(",").map((s) => s.trim()).filter(Boolean);
+      await transporter.sendMail({
+        from: `"BZA TMS" <${process.env.SMTP_FROM}>`,
+        to: notifyTo,
+        subject: `Portal access: ${portalUser.name} — ${client.name}`,
+        html: `<div style="font-family:system-ui,sans-serif;font-size:14px;color:#1c1917;line-height:1.5">
+          <p><strong>${portalUser.name}</strong> (${portalUser.email}) just signed in to the <strong>${client.name}</strong> client portal.</p>
+          <p style="color:#78716c;font-size:12px">${new Date().toLocaleString("en-US", { timeZone: "America/Mexico_City" })} (CT)</p>
+        </div>`,
+      });
+    } catch (e) { console.error("Portal login notify email failed:", e); }
 
     // Return session data — the client stores this in a cookie
     const sessionData = {

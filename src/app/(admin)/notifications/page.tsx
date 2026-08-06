@@ -13,6 +13,7 @@ import {
   CreditCard,
   Calendar,
   Award,
+  LogIn,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -43,6 +44,7 @@ const TYPE_CONFIG: Record<string, { label: string; Icon: React.ElementType }> = 
   proposal_expiring: { label: "Proposal Expiring",   Icon: FileText },
   key_date:          { label: "Key Date",            Icon: Calendar },
   cert_expiry:       { label: "Certificate Expiry",  Icon: Award },
+  portal_login:      { label: "Portal Access",       Icon: LogIn },
 };
 
 function NotificationCard({ n }: { n: AppNotification }) {

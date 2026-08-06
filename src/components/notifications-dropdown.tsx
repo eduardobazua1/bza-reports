@@ -18,6 +18,7 @@ import {
   FileText,
   Calendar,
   Award,
+  LogIn,
 } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -29,7 +30,8 @@ type NotificationType =
   | "pending_report"
   | "proposal_expiring"
   | "key_date"
-  | "cert_expiry";
+  | "cert_expiry"
+  | "portal_login";
 
 type AppNotification = {
   id: string;
@@ -96,6 +98,7 @@ const TYPE_CONFIG: Record<NotificationType, { label: string; Icon: React.Element
   proposal_expiring: { label: "Proposal Expiring", Icon: FileText },
   key_date:          { label: "Key Date",          Icon: Calendar },
   cert_expiry:       { label: "Certificate",       Icon: Award },
+  portal_login:      { label: "Portal Access",     Icon: LogIn },
 };
 
 // ── Individual card ───────────────────────────────────────────────────────────
