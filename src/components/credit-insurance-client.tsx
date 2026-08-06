@@ -96,12 +96,12 @@ function InvoiceTable({ c }: { c: CIClient }) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm min-w-[600px]">
           <thead>
-            <tr className="text-[10px] uppercase tracking-wider text-stone-400">
-              <th className="text-left font-semibold px-4 py-2.5">Invoice</th>
-              <th className="text-left font-semibold px-4 py-2.5">Due date</th>
-              <th className="text-right font-semibold px-4 py-2.5">Amount</th>
-              <th className="text-right font-semibold px-4 py-2.5">Days late</th>
-              <th className="text-left font-semibold px-4 py-2.5">Status</th>
+            <tr className="text-[10px] uppercase tracking-wide text-stone-400">
+              <th className="text-left font-medium px-3 py-2">Invoice</th>
+              <th className="text-left font-medium px-3 py-2">Due date</th>
+              <th className="text-right font-medium px-3 py-2">Amount</th>
+              <th className="text-right font-medium px-3 py-2">Days late</th>
+              <th className="text-left font-medium px-3 py-2">Status</th>
             </tr>
           </thead>
           <tbody>
@@ -112,11 +112,11 @@ function InvoiceTable({ c }: { c: CIClient }) {
               return (
                 <Fragment key={inv.invoiceNumber}>
                   <tr className="border-t border-stone-100 hover:bg-stone-50/60">
-                    <td className="px-4 py-2.5 font-mono text-stone-700">{inv.invoiceNumber}</td>
-                    <td className="px-4 py-2.5 text-stone-500">{shortDate(inv.dueDate)}</td>
-                    <td className="px-4 py-2.5 text-right tabular-nums text-stone-700">{usd(inv.amount)}</td>
-                    <td className={`px-4 py-2.5 text-right tabular-nums font-semibold ${sev.text}`}>{inv.status.daysLate ?? "—"}</td>
-                    <td className="px-4 py-2.5">
+                    <td className="px-3 py-1.5 text-xs text-[#0d3d3b] whitespace-nowrap">{inv.invoiceNumber}</td>
+                    <td className="px-3 py-1.5 text-xs text-[#0d3d3b] whitespace-nowrap">{shortDate(inv.dueDate)}</td>
+                    <td className="px-3 py-1.5 text-xs text-right font-semibold text-[#0d3d3b] tabular-nums">{usd(inv.amount)}</td>
+                    <td className={`px-3 py-1.5 text-xs text-right tabular-nums font-semibold ${sev.text}`}>{inv.status.daysLate ?? "—"}</td>
+                    <td className="px-3 py-1.5 text-xs">
                       <button
                         onClick={() => setOpen(isOpen ? null : inv.invoiceNumber)}
                         className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md border ${sev.chip}`}
