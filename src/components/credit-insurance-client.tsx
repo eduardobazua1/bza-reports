@@ -3,10 +3,12 @@
 import { useState, Fragment } from "react";
 import type { CreditInsuranceData, CIClient, CIInvoice } from "@/server/credit-insurance";
 import { POLICY } from "@/lib/credit-insurance";
+import { formatCurrency } from "@/lib/utils";
 import { AlertTriangle, ChevronDown, ShieldCheck, Clock, TrendingUp } from "lucide-react";
 
 // ── formatters ────────────────────────────────────────────────────────────────
-const usd = (n: number) => "$" + Math.round(n).toLocaleString("en-US");
+// Currency uses the TMS-wide formatter (2 decimals) for consistency across the app.
+const usd = (n: number) => formatCurrency(n);
 const compact = (n: number) =>
   n >= 1_000_000 ? "$" + (n / 1_000_000).toFixed(2) + "M" : n >= 1000 ? "$" + Math.round(n / 1000) + "K" : "$" + n;
 const fmtDate = (iso: string | null) =>
@@ -25,13 +27,18 @@ const SEV = {
 
 // ── count chip (uniform BZA teal, subtle) ─────────────────────────────────────
 // KPI card — consistent with the audit / dashboard KPIs (BZA palette).
-function CiKpi({ icon: Icon, label, value, active, tone }: { icon: typeof AlertTriangle; label: string; value: number; active?: boolean; tone?: "stone" }) {
-  const cls = tone === "stone" ? "bg-stone-100 text-stone-600" : active ? "bg-[#0d3d3b] text-white" : "bg-[#e6f1ee] text-[#0d3d3b]";
+// Teal intensity: light (all clear) → mid (heads-up) → dark filled (needs action).
+function CiKpi({ icon: Icon, label, value, active, tone, onClick, selected }: { icon: typeof AlertTriangle; label: string; value: number; active?: boolean; tone?: "mid"; onClick?: () => void; selected?: boolean }) {
+  const cls = active
+    ? "bg-[#0d3d3b] text-white border-[#0d3d3b]"
+    : tone === "mid"
+      ? "bg-[#c2e0da] text-[#0d3d3b] border-[#0d3d3b]/20"
+      : "bg-[#e6f1ee] text-[#0d3d3b] border-[#0d3d3b]/15";
   return (
-    <div className={`rounded-lg p-3 ${cls}`}>
+    <button onClick={onClick} className={`w-full text-left rounded-lg p-3 border ${cls} ${selected ? "ring-2 ring-[#0d3d3b]/40" : ""} hover:opacity-90 transition`}>
       <div className="flex items-center gap-1.5 text-[11px] font-semibold"><Icon className="w-3.5 h-3.5" /> {label}</div>
       <div className="text-2xl font-bold mt-1 tabular-nums">{value}</div>
-    </div>
+    </button>
   );
 }
 
@@ -240,6 +247,17 @@ export function CreditInsuranceClient({ data }: { data: CreditInsuranceData }) {
   const withInvoices = data.clients.filter((c) => c.invoices.length > 0);
   const { counts } = data;
   const [tab, setTab] = useState<"status" | "policy">("status");
+  const [drill, setDrill] = useState<"toReport" | "approaching" | "overdue" | "overLimit" | null>(null);
+
+  // Invoices flattened with their client, for the KPI drill-downs.
+  const invAll = data.clients.flatMap((c) => c.invoices.map((i) => ({ ...i, client: c.name })));
+  const drillInvoices =
+    drill === "toReport" ? invAll.filter((i) => i.status.key === "in_default")
+    : drill === "approaching" ? invAll.filter((i) => i.status.key === "crossing")
+    : drill === "overdue" ? invAll.filter((i) => i.status.key === "overdue")
+    : [];
+  const overLimitClients = data.clients.filter((c) => c.uninsured > 0);
+  const toggle = (k: typeof drill) => setDrill((d) => (d === k ? null : k));
 
   return (
     <div className="space-y-6">
@@ -266,13 +284,54 @@ export function CreditInsuranceClient({ data }: { data: CreditInsuranceData }) {
         <PolicySummary clients={data.clients} />
       ) : (
       <div className="space-y-8">
-      {/* KPIs */}
+      {/* KPIs — click to drill down */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-        <CiKpi icon={AlertTriangle} label="To report" value={counts.toReport} active={counts.toReport > 0} />
-        <CiKpi icon={Clock} label="Approaching 60d" value={counts.approaching} tone="stone" />
-        <CiKpi icon={AlertTriangle} label="Overdue" value={counts.overdue} active={counts.overdue > 0} />
-        <CiKpi icon={TrendingUp} label="Buyers over limit" value={counts.buyersOverLimit} active={counts.buyersOverLimit > 0} />
+        <CiKpi icon={AlertTriangle} label="To report" value={counts.toReport} active={counts.toReport > 0} onClick={() => toggle("toReport")} selected={drill === "toReport"} />
+        <CiKpi icon={Clock} label="Approaching 60d" value={counts.approaching} tone="mid" onClick={() => toggle("approaching")} selected={drill === "approaching"} />
+        <CiKpi icon={AlertTriangle} label="Overdue" value={counts.overdue} active={counts.overdue > 0} onClick={() => toggle("overdue")} selected={drill === "overdue"} />
+        <CiKpi icon={TrendingUp} label="Buyers over limit" value={counts.buyersOverLimit} active={counts.buyersOverLimit > 0} onClick={() => toggle("overLimit")} selected={drill === "overLimit"} />
       </div>
+
+      {/* KPI drill-down */}
+      {drill && (
+        <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-semibold text-stone-700">
+              {drill === "toReport" ? "To report to Allianz" : drill === "approaching" ? "Approaching 60 days" : drill === "overdue" ? "Overdue invoices" : "Buyers over limit"}
+            </p>
+            <button onClick={() => setDrill(null)} className="text-xs text-stone-400 hover:text-stone-700">Close ✕</button>
+          </div>
+          {drill === "overLimit" ? (
+            overLimitClients.length === 0 ? <p className="text-xs text-stone-400 py-3 text-center">No buyers over their limit.</p> : (
+              <div className="divide-y divide-stone-50">
+                {overLimitClients.map((c) => (
+                  <div key={c.name} className="flex items-center gap-3 py-2 text-sm">
+                    <div className="min-w-0">
+                      <p className="font-medium text-stone-700 truncate">{c.name}</p>
+                      <p className="text-[11px] text-stone-400">limit {usd(c.limit)} · outstanding {usd(c.outstanding)}</p>
+                    </div>
+                    <span className="ml-auto text-xs font-bold text-[#0d3d3b] tabular-nums shrink-0">{usd(c.uninsured)} <span className="font-normal text-stone-400">uninsured</span></span>
+                  </div>
+                ))}
+              </div>
+            )
+          ) : drillInvoices.length === 0 ? (
+            <p className="text-xs text-stone-400 py-3 text-center">Nothing in this bucket.</p>
+          ) : (
+            <div className="divide-y divide-stone-50">
+              {drillInvoices.sort((a, b) => b.amount - a.amount).map((i) => (
+                <div key={i.invoiceNumber} className="flex items-center gap-3 py-2 text-sm">
+                  <div className="min-w-0">
+                    <p className="font-medium text-stone-700 truncate">{i.invoiceNumber}</p>
+                    <p className="text-[11px] text-stone-400 truncate">{i.client}{i.status.daysLate != null ? ` · ${i.status.daysLate}d late` : ""}{i.dueDate ? ` · due ${fmtDate(i.dueDate)}` : ""}</p>
+                  </div>
+                  <span className="ml-auto text-xs font-bold text-stone-700 tabular-nums shrink-0">{usd(i.amount)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* To-do list */}
       <div>
