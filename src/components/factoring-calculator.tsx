@@ -67,7 +67,7 @@ export function FactoringCalculator({ rows }: { rows: FactoringRow[] }) {
       {/* Rate controls + summary */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
         <div className="bg-white rounded-xl shadow-sm border border-stone-100 p-4">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-stone-400">Discount rate</p>
+          <p className="text-[10px] font-medium uppercase tracking-wide text-stone-400">Discount rate</p>
           <div className="flex items-baseline gap-1 mt-2">
             <input
               type="number"
@@ -92,38 +92,38 @@ export function FactoringCalculator({ rows }: { rows: FactoringRow[] }) {
       {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-stone-100 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-xs">
             <thead>
-              <tr className="text-left text-[11px] font-bold uppercase tracking-wider text-stone-400 border-b border-stone-100">
-                <th className="px-4 py-2.5">Invoice</th>
-                <th className="px-4 py-2.5">PO</th>
-                <th className="px-4 py-2.5 text-right">Amount</th>
-                <th className="px-4 py-2.5">Due date</th>
-                <th className="px-4 py-2.5 text-right">Days left</th>
-                <th className="px-4 py-2.5 text-right">Discount cost</th>
-                <th className="px-4 py-2.5 text-right">Net today</th>
+              <tr className="text-left text-[10px] font-medium uppercase tracking-wide text-stone-400 border-b border-stone-100">
+                <th className="px-3 py-2">Invoice</th>
+                <th className="px-3 py-2">PO</th>
+                <th className="px-3 py-2 text-right">Amount</th>
+                <th className="px-3 py-2">Due date</th>
+                <th className="px-3 py-2 text-right">Days left</th>
+                <th className="px-3 py-2 text-right">Discount cost</th>
+                <th className="px-3 py-2 text-right">Net today</th>
               </tr>
             </thead>
             <tbody>
               {computed.map((r) => (
                 <tr key={r.id} className="border-b border-stone-50 hover:bg-stone-50">
-                  <td className="px-4 py-2 font-medium text-stone-800 whitespace-nowrap">{r.invoiceNumber}</td>
-                  <td className="px-4 py-2 text-stone-500">{r.poNumber ?? "—"}</td>
-                  <td className="px-4 py-2 text-right tabular-nums text-stone-700">{formatCurrency(r.amount)}</td>
-                  <td className="px-4 py-2 text-stone-500 whitespace-nowrap">{r.dueDate ? formatDate(r.dueDate) : <span className="text-stone-400">no date</span>}</td>
-                  <td className="px-4 py-2 text-right tabular-nums">
+                  <td className="px-3 py-1.5 font-medium text-stone-800 whitespace-nowrap">{r.invoiceNumber}</td>
+                  <td className="px-3 py-1.5 text-stone-500">{r.poNumber ?? "—"}</td>
+                  <td className="px-3 py-1.5 text-right tabular-nums text-stone-700">{formatCurrency(r.amount)}</td>
+                  <td className="px-3 py-1.5 text-stone-500 whitespace-nowrap">{r.dueDate ? formatDate(r.dueDate) : <span className="text-stone-400">no date</span>}</td>
+                  <td className="px-3 py-1.5 text-right tabular-nums">
                     {r.days === null ? "—" : r.days === 0
                       ? <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-500">at due</span>
                       : <span className="text-stone-700">{r.days}</span>}
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums">
+                  <td className="px-3 py-1.5 text-right tabular-nums">
                     {r.cost === null ? "—" : (
                       <span className="text-stone-600">
                         {formatCurrency(r.cost)}<span className="text-[10px] text-stone-400"> · {(r.costPct ?? 0).toFixed(2)}%</span>
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums font-semibold text-[#0d3d3b]">{r.net === null ? "—" : formatCurrency(r.net)}</td>
+                  <td className="px-3 py-1.5 text-right tabular-nums font-semibold text-[#0d3d3b]">{r.net === null ? "—" : formatCurrency(r.net)}</td>
                 </tr>
               ))}
               {computed.length === 0 && (
@@ -133,11 +133,11 @@ export function FactoringCalculator({ rows }: { rows: FactoringRow[] }) {
             {computed.length > 0 && (
               <tfoot>
                 <tr className="border-t-2 border-stone-200 font-bold text-stone-800">
-                  <td className="px-4 py-2.5" colSpan={2}>Total ({rows.length})</td>
-                  <td className="px-4 py-2.5 text-right tabular-nums">{formatCurrency(totals.face)}</td>
+                  <td className="px-3 py-2" colSpan={2}>Total ({rows.length})</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{formatCurrency(totals.face)}</td>
                   <td colSpan={2}></td>
-                  <td className="px-4 py-2.5 text-right tabular-nums text-stone-600">{formatCurrency(totals.cost)}</td>
-                  <td className="px-4 py-2.5 text-right tabular-nums text-[#0d3d3b]">{formatCurrency(totals.net)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums text-stone-600">{formatCurrency(totals.cost)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums text-[#0d3d3b]">{formatCurrency(totals.net)}</td>
                 </tr>
               </tfoot>
             )}
@@ -151,7 +151,7 @@ export function FactoringCalculator({ rows }: { rows: FactoringRow[] }) {
 function SummaryTile({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: boolean }) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-stone-100 p-4">
-      <p className="text-[11px] font-bold uppercase tracking-wider text-stone-400">{label}</p>
+      <p className="text-[10px] font-medium uppercase tracking-wide text-stone-400">{label}</p>
       <p className={`text-2xl font-extrabold mt-1.5 tabular-nums ${accent ? "text-[#1c6b66]" : "text-stone-800"}`}>{value}</p>
       {sub && <p className="text-xs text-stone-400 mt-1">{sub}</p>}
     </div>

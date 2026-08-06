@@ -285,7 +285,7 @@ export function CertificatesClient({ initialCerts }: { initialCerts: Cert[] }) {
                 {cert.certCode && (
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-stone-400 w-24 shrink-0">Code</span>
-                    <span className="text-xs font-mono font-semibold text-stone-700 bg-stone-50 px-2 py-0.5 rounded">{cert.certCode}</span>
+                    <span className="text-xs font-semibold text-stone-700 bg-stone-50 px-2 py-0.5 rounded">{cert.certCode}</span>
                   </div>
                 )}
                 {cert.issuedBy && (

@@ -203,22 +203,22 @@ function PolicySummary({ clients }: { clients: CIClient[] }) {
         <div className="bg-white rounded-lg shadow-sm border border-stone-200 overflow-x-auto">
           <table className="w-full text-sm min-w-[480px]">
             <thead>
-              <tr className="text-[10px] uppercase tracking-wider text-stone-400">
-                <th className="text-left font-semibold px-4 py-2.5">Buyer</th>
-                <th className="text-left font-semibold px-4 py-2.5">EHID</th>
-                <th className="text-center font-semibold px-4 py-2.5">Grade</th>
-                <th className="text-left font-semibold px-4 py-2.5">Cover</th>
-                <th className="text-right font-semibold px-4 py-2.5">Limit</th>
+              <tr className="text-[10px] uppercase tracking-wide text-stone-400">
+                <th className="text-left font-medium px-3 py-2">Buyer</th>
+                <th className="text-left font-medium px-3 py-2">EHID</th>
+                <th className="text-center font-medium px-3 py-2">Grade</th>
+                <th className="text-left font-medium px-3 py-2">Cover</th>
+                <th className="text-right font-medium px-3 py-2">Limit</th>
               </tr>
             </thead>
             <tbody>
               {clients.map((c) => (
-                <tr key={c.ehid} className="border-t border-stone-100">
-                  <td className="px-4 py-2.5 text-stone-800 font-medium">{c.name}</td>
-                  <td className="px-4 py-2.5 font-mono text-stone-500">{c.ehid}</td>
-                  <td className="px-4 py-2.5 text-center tabular-nums text-stone-600">{c.grade}</td>
-                  <td className="px-4 py-2.5 text-stone-600 capitalize">{c.cover}</td>
-                  <td className="px-4 py-2.5 text-right tabular-nums text-stone-800 font-semibold">{usd(c.limit)}</td>
+                <tr key={c.ehid} className="border-t border-stone-100 hover:bg-stone-50/60">
+                  <td className="px-3 py-1.5 text-xs text-[#0d3d3b] font-medium">{c.name}</td>
+                  <td className="px-3 py-1.5 text-xs text-[#0d3d3b]">{c.ehid}</td>
+                  <td className="px-3 py-1.5 text-xs text-center tabular-nums text-[#0d3d3b]">{c.grade}</td>
+                  <td className="px-3 py-1.5 text-xs text-[#0d3d3b] capitalize">{c.cover}</td>
+                  <td className="px-3 py-1.5 text-xs text-right tabular-nums text-[#0d3d3b] font-semibold">{usd(c.limit)}</td>
                 </tr>
               ))}
             </tbody>
