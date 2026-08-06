@@ -51,8 +51,8 @@ function fmtNum(n: number) {
 const STATUS_STYLES: Record<string, string> = {
   draft:    "bg-stone-100 text-stone-600",
   sent:     "bg-[#0d3d3b]/5 text-[#0d3d3b]",
-  accepted: "bg-emerald-50 text-emerald-700",
-  declined: "bg-red-50 text-red-600",
+  accepted: "bg-[#e6f1ee] text-[#0d3d3b]",
+  declined: "bg-stone-50 text-stone-600",
 };
 
 // ── Send Modal ─────────────────────────────────────────────────────────────────
@@ -98,15 +98,15 @@ function SendModal({ proposal, onClose }: { proposal: ProposalData; onClose: () 
 
         {done ? (
           <div className="px-6 py-10 flex flex-col items-center gap-2 text-center">
-            <div className="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center mb-2">
-              <Check className="w-6 h-6 text-emerald-600" />
+            <div className="w-12 h-12 bg-[#e6f1ee] rounded-full flex items-center justify-center mb-2">
+              <Check className="w-6 h-6 text-[#0d3d3b]" />
             </div>
             <p className="font-semibold text-stone-800">Proposal sent!</p>
             <p className="text-sm text-stone-400">Status updated to <em>Sent</em>.</p>
           </div>
         ) : (
           <div className="px-6 py-4 space-y-4">
-            {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-sm text-red-700">{error}</div>}
+            {error && <div className="bg-stone-50 border border-stone-200 rounded-lg px-4 py-2 text-sm text-stone-700">{error}</div>}
             <div>
               <label className="block text-xs font-medium text-stone-600 mb-1">To *</label>
               <input type="email" value={to} onChange={e => setTo(e.target.value)}
@@ -322,16 +322,16 @@ export function ProposalDetail({ proposal }: { proposal: ProposalData }) {
         <div className="flex items-center gap-3">
           {delConfirm ? (
             <>
-              <span className="text-sm text-red-500">Are you sure?</span>
+              <span className="text-sm text-stone-500">Are you sure?</span>
               <button onClick={handleDelete} disabled={pending}
-                className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50">
+                className="px-4 py-1.5 bg-stone-600 hover:bg-stone-700 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50">
                 {pending ? "Deleting…" : "Yes, delete"}
               </button>
               <button onClick={() => setDelConfirm(false)} className="text-xs text-stone-400 hover:text-stone-600">Cancel</button>
             </>
           ) : (
             <button onClick={() => setDelConfirm(true)}
-              className="flex items-center gap-2 px-4 py-2 border border-red-200 text-red-600 hover:bg-red-50 text-xs font-medium rounded-lg transition-colors">
+              className="flex items-center gap-2 px-4 py-2 border border-stone-200 text-stone-600 hover:bg-stone-50 text-xs font-medium rounded-lg transition-colors">
               <Trash2 className="w-3.5 h-3.5" />
               Delete
             </button>

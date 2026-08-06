@@ -78,7 +78,7 @@ export function SupplierDetailEdit({ supplier }: { supplier: Supplier }) {
         <button
           onClick={handleDelete}
           disabled={isPending}
-          className="flex items-center gap-1.5 border border-red-200 text-red-600 px-3 py-1.5 rounded text-sm font-medium hover:bg-red-50 disabled:opacity-50"
+          className="flex items-center gap-1.5 border border-stone-200 text-stone-600 px-3 py-1.5 rounded text-sm font-medium hover:bg-stone-50 disabled:opacity-50"
         >
           <Trash2 className="w-3.5 h-3.5" />
           Delete

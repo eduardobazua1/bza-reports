@@ -59,11 +59,11 @@ export default async function AccountsPayablePage() {
       <h1 className="text-2xl font-bold">Accounts Payable</h1>
 
       {/* Headline */}
-      <div className={`bg-white rounded-lg shadow-sm border-l-[5px] ${totalBalance > 0 ? "border-l-red-500" : "border-l-[#0d3d3b]"} p-5`}>
+      <div className={`bg-white rounded-lg shadow-sm border-l-[5px] ${totalBalance > 0 ? "border-l-stone-500" : "border-l-[#0d3d3b]"} p-5`}>
         <div className="flex items-end justify-between flex-wrap gap-4">
           <div>
             <p className="text-[10px] uppercase tracking-wide text-stone-400 mb-1">Total outstanding</p>
-            <p className={`text-4xl font-bold tracking-tight tabular-nums ${totalBalance > 0 ? "text-red-600" : "text-[#0d3d3b]"}`}>
+            <p className={`text-4xl font-bold tracking-tight tabular-nums ${totalBalance > 0 ? "text-stone-600" : "text-[#0d3d3b]"}`}>
               {formatCurrency(Math.abs(totalBalance))}
             </p>
             <p className="text-xs text-stone-400 mt-1">
@@ -116,17 +116,17 @@ export default async function AccountsPayablePage() {
                   </td>
                   <td className="px-4 py-2.5 text-right tabular-nums text-stone-700">{formatCurrency(r.cost)}</td>
                   <td className="px-4 py-2.5 text-right tabular-nums text-stone-700">{formatCurrency(r.paid)}</td>
-                  <td className={`px-4 py-2.5 text-right tabular-nums font-semibold ${r.balance > 0 ? "text-red-600" : "text-[#0d3d3b]"}`}>
+                  <td className={`px-4 py-2.5 text-right tabular-nums font-semibold ${r.balance > 0 ? "text-stone-600" : "text-[#0d3d3b]"}`}>
                     {formatCurrency(Math.abs(r.balance))}
                   </td>
                   <td className="px-4 py-2.5">
                     <span
                       className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${
                         r.balance > 0
-                          ? "bg-red-50 text-red-700"
+                          ? "bg-stone-50 text-stone-700"
                           : r.balance < 0
-                          ? "bg-amber-50 text-amber-700"
-                          : "bg-emerald-50 text-emerald-700"
+                          ? "bg-stone-50 text-stone-700"
+                          : "bg-[#e6f1ee] text-[#0d3d3b]"
                       }`}
                     >
                       {r.balance > 0 ? "⚠ Pending" : r.balance < 0 ? "↑ Credit" : "✓ Settled"}
@@ -138,7 +138,7 @@ export default async function AccountsPayablePage() {
                 <td className="px-4 py-2.5 text-stone-800">Total</td>
                 <td className="px-4 py-2.5 text-right tabular-nums text-stone-800">{formatCurrency(totalCost)}</td>
                 <td className="px-4 py-2.5 text-right tabular-nums text-stone-800">{formatCurrency(totalPaid)}</td>
-                <td className={`px-4 py-2.5 text-right tabular-nums ${totalBalance > 0 ? "text-red-600" : "text-[#0d3d3b]"}`}>
+                <td className={`px-4 py-2.5 text-right tabular-nums ${totalBalance > 0 ? "text-stone-600" : "text-[#0d3d3b]"}`}>
                   {formatCurrency(Math.abs(totalBalance))}
                 </td>
                 <td className="px-4 py-2.5" />

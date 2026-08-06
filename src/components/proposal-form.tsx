@@ -236,7 +236,7 @@ export function ProposalForm({ mode, proposalId, proposalNumber, clients, produc
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">{error}</div>
+        <div className="bg-stone-50 border border-stone-200 rounded-lg px-4 py-3 text-sm text-stone-700">{error}</div>
       )}
 
       {/* Header fields */}
@@ -433,7 +433,7 @@ export function ProposalForm({ mode, proposalId, proposalNumber, clients, produc
                   </span>
                   <button type="button" onClick={() => removeLine(item.id)}
                     disabled={items.length === 1}
-                    className="text-stone-300 hover:text-red-400 transition-colors disabled:opacity-0 disabled:pointer-events-none" title="Remove line">
+                    className="text-stone-300 hover:text-stone-400 transition-colors disabled:opacity-0 disabled:pointer-events-none" title="Remove line">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>

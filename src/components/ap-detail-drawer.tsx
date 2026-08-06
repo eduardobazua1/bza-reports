@@ -46,7 +46,7 @@ function StatusBadge({ balance }: { balance: number }) {
     );
   if (balance < 0)
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700">
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#e6f1ee] text-[#0d3d3b]">
         Credit
       </span>
     );
@@ -107,7 +107,7 @@ export function APDetailDrawer({ apRows, invoicesByPo, paymentsByPo, supplierNam
               {apRows.map((r) => {
                 const balAmt = r.balance;
                 const balColor =
-                  balAmt > 0 ? "text-red-600" : balAmt < 0 ? "text-emerald-600" : "text-stone-400";
+                  balAmt > 0 ? "text-stone-600" : balAmt < 0 ? "text-[#0d3d3b]" : "text-stone-400";
                 const isSelected = selectedPoId === r.po.id;
                 return (
                   <tr
@@ -146,9 +146,9 @@ export function APDetailDrawer({ apRows, invoicesByPo, paymentsByPo, supplierNam
                   <td
                     className={`px-4 py-2.5 text-right font-semibold ${
                       apTotalBalance > 0
-                        ? "text-red-600"
+                        ? "text-stone-600"
                         : apTotalBalance < 0
-                        ? "text-emerald-600"
+                        ? "text-[#0d3d3b]"
                         : "text-stone-400"
                     }`}
                   >
@@ -207,16 +207,16 @@ export function APDetailDrawer({ apRows, invoicesByPo, paymentsByPo, supplierNam
                 <p className="text-[10px] text-stone-400 uppercase tracking-wide mb-0.5">Invoiced</p>
                 <p className="text-sm font-bold text-stone-800">{formatCurrency(selectedRow.invoiced)}</p>
               </div>
-              <div className="flex-1 bg-emerald-50 rounded-md px-3 py-2 text-center">
+              <div className="flex-1 bg-[#e6f1ee] rounded-md px-3 py-2 text-center">
                 <p className="text-[10px] text-stone-400 uppercase tracking-wide mb-0.5">Paid</p>
-                <p className="text-sm font-bold text-emerald-700">{formatCurrency(selectedRow.paid)}</p>
+                <p className="text-sm font-bold text-[#0d3d3b]">{formatCurrency(selectedRow.paid)}</p>
               </div>
               <div
                 className={`flex-1 rounded-md px-3 py-2 text-center ${
                   selectedRow.balance > 0
-                    ? "bg-red-50"
+                    ? "bg-stone-50"
                     : selectedRow.balance < 0
-                    ? "bg-emerald-50"
+                    ? "bg-[#e6f1ee]"
                     : "bg-stone-50"
                 }`}
               >
@@ -224,9 +224,9 @@ export function APDetailDrawer({ apRows, invoicesByPo, paymentsByPo, supplierNam
                 <p
                   className={`text-sm font-bold ${
                     selectedRow.balance > 0
-                      ? "text-red-600"
+                      ? "text-stone-600"
                       : selectedRow.balance < 0
-                      ? "text-emerald-600"
+                      ? "text-[#0d3d3b]"
                       : "text-stone-400"
                   }`}
                 >
@@ -262,10 +262,10 @@ export function APDetailDrawer({ apRows, invoicesByPo, paymentsByPo, supplierNam
                       {drawerInvoices.map((inv) => {
                         const statusColor =
                           inv.paymentStatus === "paid"
-                            ? "bg-emerald-100 text-emerald-700"
+                            ? "bg-[#e6f1ee] text-[#0d3d3b]"
                             : inv.paymentStatus === "partial"
                             ? "bg-[#0d3d3b]/10 text-[#0d3d3b]"
-                            : "bg-red-100 text-red-700";
+                            : "bg-stone-100 text-stone-700";
                         return (
                           <tr key={inv.id} className="border-t border-stone-100">
                             <td className="px-5 py-2 font-medium text-[#0d3d3b]">
@@ -340,7 +340,7 @@ export function APDetailDrawer({ apRows, invoicesByPo, paymentsByPo, supplierNam
                           <td className="px-5 py-2 text-stone-600 whitespace-nowrap">
                             {formatDate(pmt.paymentDate)}
                           </td>
-                          <td className="px-3 py-2 text-right font-semibold text-emerald-700">
+                          <td className="px-3 py-2 text-right font-semibold text-[#0d3d3b]">
                             {formatCurrency(pmt.amountUsd)}
                           </td>
                           <td className="px-3 py-2 text-stone-600">
@@ -352,7 +352,7 @@ export function APDetailDrawer({ apRows, invoicesByPo, paymentsByPo, supplierNam
                     <tfoot>
                       <tr className="bg-stone-50 border-t-2 border-stone-200 font-semibold">
                         <td className="px-5 py-2">Total</td>
-                        <td className="px-3 py-2 text-right text-emerald-700">
+                        <td className="px-3 py-2 text-right text-[#0d3d3b]">
                           {formatCurrency(drawerPaymentTotal)}
                         </td>
                         <td />

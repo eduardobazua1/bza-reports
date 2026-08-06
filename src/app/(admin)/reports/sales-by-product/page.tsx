@@ -26,9 +26,9 @@ export default async function SalesByProductPage() {
   const maxRevenue = sorted[0]?.totalRevenue ?? 1;
 
   function marginColor(margin: number) {
-    if (margin >= 20) return "text-emerald-600 font-semibold";
-    if (margin >= 10) return "text-amber-600 font-semibold";
-    return "text-red-600 font-semibold";
+    if (margin >= 20) return "text-[#0d3d3b] font-semibold";
+    if (margin >= 10) return "text-stone-600 font-semibold";
+    return "text-stone-600 font-semibold";
   }
 
   return (

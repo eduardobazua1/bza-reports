@@ -369,7 +369,7 @@ export function ClientPOsSection({
   const statusColors: Record<string, string> = {
     pending: "bg-stone-100 text-stone-500",
     partial: "bg-[#0d3d3b]/10 text-[#0d3d3b]",
-    complete: "bg-emerald-100 text-emerald-700",
+    complete: "bg-[#e6f1ee] text-[#0d3d3b]",
   };
   const statusLabels: Record<string, string> = {
     pending: "Pending",
@@ -761,7 +761,7 @@ export function ClientPOsSection({
               <button onClick={() => { setOpenDropdownId(null); openConvert(cpo); }} className="w-full text-left px-4 py-2 text-sm text-[#0d3d3b] hover:bg-stone-50 font-medium">Convert →</button>
             )}
             <div className="border-t border-stone-100 my-1" />
-            <button onClick={() => { setOpenDropdownId(null); handleDelete(cpo.id); }} className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"><Trash2 className="w-3.5 h-3.5" />Delete</button>
+            <button onClick={() => { setOpenDropdownId(null); handleDelete(cpo.id); }} className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-stone-600 hover:bg-stone-50"><Trash2 className="w-3.5 h-3.5" />Delete</button>
           </div>,
           document.body
         );

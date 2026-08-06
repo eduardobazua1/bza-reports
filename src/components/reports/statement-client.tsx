@@ -77,7 +77,7 @@ function EmailModal({ onClose, onSend, isSending, defaultSubject }: {
         </div>
         <form onSubmit={e => { e.preventDefault(); onSend(to.trim(), subject, message); }} className="p-5 space-y-4">
           <div>
-            <label className="block text-xs font-medium text-stone-600 mb-1">To <span className="text-red-500">*</span></label>
+            <label className="block text-xs font-medium text-stone-600 mb-1">To <span className="text-stone-500">*</span></label>
             <input type="email" value={to} onChange={e => setTo(e.target.value)} required placeholder="recipient@example.com"
               className="w-full px-3 py-2 text-sm border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-400" />
           </div>
@@ -216,7 +216,7 @@ function StatementView({
         <div className="w-px bg-stone-200" />
         <div className="text-center">
           <p className="text-xs text-[#0d3d3b] uppercase tracking-wide font-medium">Balance Due</p>
-          <p className={`text-base font-bold mt-0.5 ${balanceDue > 0 ? "text-red-600" : "text-stone-800"}`}>
+          <p className={`text-base font-bold mt-0.5 ${balanceDue > 0 ? "text-stone-600" : "text-stone-800"}`}>
             {formatCurrency(Math.abs(balanceDue))}
             {balanceDue < 0 && <span className="text-xs font-normal ml-1">(credit)</span>}
           </p>
@@ -247,7 +247,7 @@ function StatementView({
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ring-1 ${
                       tx.type === "Invoice" ? "bg-[#0d3d3b]/5 text-[#0d3d3b] ring-[#0d3d3b]/20"
                       : tx.type === "Payment" ? "bg-[#0d3d3b]/5 text-[#0d3d3b] ring-[#0d3d3b]/20"
-                      : "bg-amber-50 text-amber-700 ring-amber-200"
+                      : "bg-stone-50 text-stone-700 ring-stone-200"
                     }`}>
                       {tx.type}
                     </span>
@@ -271,7 +271,7 @@ function StatementView({
                 <td colSpan={3} className="px-6 py-3 text-sm font-bold text-stone-800 uppercase tracking-wide">Balance Due</td>
                 <td className="px-4 py-3 text-right font-bold text-[#0d3d3b]">{formatCurrency(totalCharges)}</td>
                 <td className="px-4 py-3 text-right font-bold text-[#0d3d3b]">{formatCurrency(totalCredits)}</td>
-                <td className={`px-6 py-3 text-right text-base font-bold ${balanceDue > 0 ? "text-red-600" : "text-[#0d3d3b]"}`}>
+                <td className={`px-6 py-3 text-right text-base font-bold ${balanceDue > 0 ? "text-stone-600" : "text-[#0d3d3b]"}`}>
                   {formatCurrency(Math.abs(balanceDue))}
                   {balanceDue < 0 && <span className="text-xs font-normal ml-1">CR</span>}
                 </td>
@@ -506,7 +506,7 @@ export function StatementClient({
 
       {/* Toast */}
       {toast && (
-        <div className={`fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-sm font-medium ${toast.type === "success" ? "bg-stone-800 text-white" : "bg-red-700 text-white"}`}>
+        <div className={`fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-sm font-medium ${toast.type === "success" ? "bg-stone-800 text-white" : "bg-stone-700 text-white"}`}>
           {toast.type === "success" ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
           {toast.message}
         </div>

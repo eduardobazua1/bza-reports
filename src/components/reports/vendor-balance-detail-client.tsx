@@ -38,8 +38,8 @@ export function VendorBalanceDetailClient({
 
   function fmtAdjustment(amount: number | null) {
     if (amount === null || amount === 0) return <span className="text-stone-400">—</span>;
-    if (amount > 0) return <span className="text-amber-600 font-medium">+{formatCurrency(amount)}</span>;
-    return <span className="text-red-600 font-medium">-{formatCurrency(Math.abs(amount))}</span>;
+    if (amount > 0) return <span className="text-stone-600 font-medium">+{formatCurrency(amount)}</span>;
+    return <span className="text-stone-600 font-medium">-{formatCurrency(Math.abs(amount))}</span>;
   }
 
   return (

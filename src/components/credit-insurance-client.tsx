@@ -3,7 +3,7 @@
 import { useState, Fragment } from "react";
 import type { CreditInsuranceData, CIClient, CIInvoice } from "@/server/credit-insurance";
 import { POLICY } from "@/lib/credit-insurance";
-import { AlertTriangle, ChevronDown, ShieldCheck } from "lucide-react";
+import { AlertTriangle, ChevronDown, ShieldCheck, Clock, TrendingUp } from "lucide-react";
 
 // ── formatters ────────────────────────────────────────────────────────────────
 const usd = (n: number) => "$" + Math.round(n).toLocaleString("en-US");
@@ -14,24 +14,23 @@ const fmtDate = (iso: string | null) =>
 const shortDate = (iso: string | null) =>
   iso ? new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { day: "2-digit", month: "short", timeZone: "UTC" }) : "—";
 
+// BZA palette only — severity encoded by teal intensity (dark → light) + stone.
 const SEV = {
-  critical: { text: "text-red-700", chip: "bg-red-50 text-red-700 border-red-200", dot: "bg-red-500" },
-  warning: { text: "text-amber-700", chip: "bg-amber-50 text-amber-700 border-amber-200", dot: "bg-amber-500" },
-  caution: { text: "text-yellow-700", chip: "bg-yellow-50 text-yellow-700 border-yellow-200", dot: "bg-yellow-500" },
-  ok: { text: "text-emerald-700", chip: "bg-emerald-50 text-emerald-700 border-emerald-200", dot: "bg-emerald-500" },
+  critical: { text: "text-[#0d3d3b]", chip: "bg-[#0d3d3b] text-white border-[#0d3d3b]", dot: "bg-[#0d3d3b]" },
+  warning: { text: "text-[#0d3d3b]", chip: "bg-[#c2e0da] text-[#0d3d3b] border-[#0d3d3b]/20", dot: "bg-[#2f8a80]" },
+  caution: { text: "text-stone-600", chip: "bg-stone-100 text-stone-600 border-stone-200", dot: "bg-stone-400" },
+  ok: { text: "text-[#0d3d3b]", chip: "bg-[#e6f1ee] text-[#0d3d3b] border-[#0d3d3b]/20", dot: "bg-[#0d3d3b]" },
   neutral: { text: "text-stone-600", chip: "bg-stone-100 text-stone-600 border-stone-200", dot: "bg-stone-300" },
 } as const;
 
 // ── count chip (uniform BZA teal, subtle) ─────────────────────────────────────
-function Chip({ n, label }: { n: number; label: string }) {
-  const cls =
-    n === 0
-      ? "bg-stone-100 text-stone-400 border-stone-200"
-      : "bg-[#0d3d3b]/10 text-[#0d3d3b] border-[#0d3d3b]/25";
+// KPI card — consistent with the audit / dashboard KPIs (BZA palette).
+function CiKpi({ icon: Icon, label, value, active, tone }: { icon: typeof AlertTriangle; label: string; value: number; active?: boolean; tone?: "stone" }) {
+  const cls = tone === "stone" ? "bg-stone-100 text-stone-600" : active ? "bg-[#0d3d3b] text-white" : "bg-[#e6f1ee] text-[#0d3d3b]";
   return (
-    <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 ${cls}`}>
-      <span className="text-base font-bold tabular-nums leading-none">{n}</span>
-      <span className="text-xs font-medium">{label}</span>
+    <div className={`rounded-lg p-3 ${cls}`}>
+      <div className="flex items-center gap-1.5 text-[11px] font-semibold"><Icon className="w-3.5 h-3.5" /> {label}</div>
+      <div className="text-2xl font-bold mt-1 tabular-nums">{value}</div>
     </div>
   );
 }
@@ -48,7 +47,7 @@ function ClientRow({ c }: { c: CIClient }) {
     : { cls: SEV.ok, label: "Covered", icon: false };
 
   return (
-    <div className={`bg-white rounded-md shadow-sm border ${needsAction ? "border-red-200" : "border-stone-200"} p-3 flex items-center gap-3`}>
+    <div className={`bg-white rounded-md shadow-sm border ${needsAction ? "border-stone-200" : "border-stone-200"} p-3 flex items-center gap-3`}>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-stone-900 truncate">{c.name}</p>
         <p className="text-[11px] text-stone-400 mt-0.5">Grade {c.grade} · {c.cover} cover · limit {usd(c.limit)}</p>
@@ -84,8 +83,8 @@ function InvoiceTable({ c }: { c: CIClient }) {
     <div className="bg-white rounded-lg shadow-sm border border-stone-200 overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-3 bg-stone-50 border-b border-stone-200 flex-wrap">
         <span className="text-sm font-semibold text-stone-800">{c.name}</span>
-        {c.inDefaultCount > 0 && <span className="text-xs font-semibold text-red-700">{c.inDefaultCount} in default</span>}
-        <span className="text-xs text-stone-500">· <b className="font-semibold text-stone-700 tabular-nums">{usd(c.outstanding)}</b> owed{c.uninsured > 0 ? <> · <b className="font-semibold text-red-700 tabular-nums">{compact(c.uninsured)}</b> uninsured</> : ""}</span>
+        {c.inDefaultCount > 0 && <span className="text-xs font-semibold text-stone-700">{c.inDefaultCount} in default</span>}
+        <span className="text-xs text-stone-500">· <b className="font-semibold text-stone-700 tabular-nums">{usd(c.outstanding)}</b> owed{c.uninsured > 0 ? <> · <b className="font-semibold text-stone-700 tabular-nums">{compact(c.uninsured)}</b> uninsured</> : ""}</span>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm min-w-[600px]">
@@ -123,7 +122,7 @@ function InvoiceTable({ c }: { c: CIClient }) {
                   {isOpen && (
                     <tr className="bg-stone-50/80">
                       <td colSpan={5} className="px-4 py-3">
-                        <p className={`text-sm font-semibold flex items-center gap-2 ${d.critical ? "text-red-700" : "text-stone-800"}`}>
+                        <p className={`text-sm font-semibold flex items-center gap-2 ${d.critical ? "text-stone-700" : "text-stone-800"}`}>
                           {d.critical && <AlertTriangle className="w-4 h-4" />}{d.title}
                         </p>
                         <p className="text-sm text-stone-500 mt-1 max-w-2xl">{d.body}</p>
@@ -267,20 +266,20 @@ export function CreditInsuranceClient({ data }: { data: CreditInsuranceData }) {
         <PolicySummary clients={data.clients} />
       ) : (
       <div className="space-y-8">
-      {/* count chips */}
-      <div className="flex flex-wrap gap-2.5">
-        <Chip n={counts.toReport} label="to report" />
-        <Chip n={counts.approaching} label="approaching 60d" />
-        <Chip n={counts.overdue} label="overdue" />
-        <Chip n={counts.buyersOverLimit} label="buyers over limit" />
+      {/* KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <CiKpi icon={AlertTriangle} label="To report" value={counts.toReport} active={counts.toReport > 0} />
+        <CiKpi icon={Clock} label="Approaching 60d" value={counts.approaching} tone="stone" />
+        <CiKpi icon={AlertTriangle} label="Overdue" value={counts.overdue} active={counts.overdue > 0} />
+        <CiKpi icon={TrendingUp} label="Buyers over limit" value={counts.buyersOverLimit} active={counts.buyersOverLimit > 0} />
       </div>
 
       {/* To-do list */}
       <div>
         <p className="text-xs font-bold uppercase tracking-widest text-stone-400 mb-3">To do</p>
         {data.actions.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm border border-emerald-200 p-4 flex items-center gap-3">
-            <ShieldCheck className="w-5 h-5 text-emerald-600" />
+          <div className="bg-white rounded-lg shadow-sm border border-[#0d3d3b]/20 p-4 flex items-center gap-3">
+            <ShieldCheck className="w-5 h-5 text-[#0d3d3b]" />
             <p className="text-sm text-stone-600">Nothing pending — no invoices in default and all exposure within limits.</p>
           </div>
         ) : (
@@ -298,7 +297,7 @@ export function CreditInsuranceClient({ data }: { data: CreditInsuranceData }) {
                   <span className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${tone.dot}`} />
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-stone-900">{a.title}</p>
-                    {meta && <p className={`text-xs mt-0.5 ${a.priority === "critical" ? "text-red-600 font-medium" : "text-stone-400"}`}>{meta}</p>}
+                    {meta && <p className={`text-xs mt-0.5 ${a.priority === "critical" ? "text-stone-600 font-medium" : "text-stone-400"}`}>{meta}</p>}
                   </div>
                 </div>
               );

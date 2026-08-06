@@ -83,7 +83,7 @@ export function ARAgingDetailClient({ buckets, total, filterBucket, filterClient
                   <td className="px-4 py-2.5 text-stone-600">{fmt(row.dueDate)}</td>
                   <td className="px-4 py-2.5 text-right text-[#0d3d3b]">{formatCurrency(row.amount)}</td>
                   <td className="px-4 py-2.5 text-right font-semibold text-[#0d3d3b]">{formatCurrency(row.amount)}</td>
-                  <td className={`px-6 py-2.5 text-right font-medium ${row.pastDue > 90 ? "text-red-600" : row.pastDue > 60 ? "text-amber-600" : row.pastDue > 0 ? "text-stone-600" : "text-stone-400"}`}>
+                  <td className={`px-6 py-2.5 text-right font-medium ${row.pastDue > 90 ? "text-stone-600" : row.pastDue > 60 ? "text-stone-600" : row.pastDue > 0 ? "text-stone-600" : "text-stone-400"}`}>
                     {row.pastDue === 0 ? "—" : row.pastDue > 0 ? row.pastDue : row.pastDue}
                   </td>
                 </tr>

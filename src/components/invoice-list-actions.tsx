@@ -251,7 +251,7 @@ export function InvoiceListActions({
                   <div className="text-right shrink-0">
                     {(log.openCount ?? 0) > 0 ? (
                       <div className="space-y-0.5">
-                        <span className="inline-block bg-emerald-100 text-emerald-700 font-semibold px-2 py-0.5 rounded-full text-[10px]">
+                        <span className="inline-block bg-[#e6f1ee] text-[#0d3d3b] font-semibold px-2 py-0.5 rounded-full text-[10px]">
                           Opened {log.openCount}×
                         </span>
                         <p className="text-[10px] text-stone-400">First: {fmtDateTime(log.firstOpenedAt)}</p>
@@ -283,7 +283,7 @@ export function InvoiceListActions({
         </a>
         {!invoice.invoiceNumber.startsWith("PEND-") && (
           sent ? (
-            <span className="text-xs text-emerald-600 font-medium">Sent ✓</span>
+            <span className="text-xs text-[#0d3d3b] font-medium">Sent ✓</span>
           ) : (
             <button onClick={openSendPanel} className="text-xs text-[#0d3d3b] hover:underline font-medium">
               Send

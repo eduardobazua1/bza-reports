@@ -43,7 +43,7 @@ export function SupplierStrategicKpis({ kpi, supplierName }: { kpi: StrategicKpi
   const arrow = (cur: number, prev: number | null) => {
     if (prev == null) return null;
     if (cur > prev + 0.3) return <span className="text-[#0d3d3b]">▲</span>;
-    if (cur < prev - 0.3) return <span className="text-red-500">▼</span>;
+    if (cur < prev - 0.3) return <span className="text-stone-500">▼</span>;
     return <span className="text-stone-300">▬</span>;
   };
 

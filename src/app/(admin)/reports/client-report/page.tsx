@@ -35,9 +35,9 @@ const DEFAULT_COLS = ALL_COLS.filter(c => c.default).map(c => c.key);
 type PreviewRow = Record<string, string | number | null>;
 
 const STATUS_COLORS: Record<string, string> = {
-  "delivered":  "bg-emerald-100 text-emerald-700",
+  "delivered":  "bg-[#e6f1ee] text-[#0d3d3b]",
   "in transit": "bg-blue-100 text-blue-700",
-  "customs":    "bg-amber-100 text-amber-700",
+  "customs":    "bg-stone-100 text-stone-700",
   "scheduled":  "bg-stone-100 text-stone-500",
 };
 
@@ -364,7 +364,7 @@ export default function ClientReportPage() {
                 </span>
               )}
               {status === "err" && (
-                <span className="flex items-center gap-1.5 text-xs text-red-500">
+                <span className="flex items-center gap-1.5 text-xs text-stone-500">
                   <AlertCircle className="w-4 h-4" /> {errMsg}
                 </span>
               )}

@@ -21,8 +21,8 @@ type Proposal = {
 const STATUS_STYLES: Record<string, string> = {
   draft:    "bg-stone-100 text-stone-500",
   sent:     "bg-[#0d3d3b]/5 text-[#0d3d3b]",
-  accepted: "bg-emerald-50 text-emerald-700",
-  declined: "bg-red-50 text-red-600",
+  accepted: "bg-[#e6f1ee] text-[#0d3d3b]",
+  declined: "bg-stone-50 text-stone-600",
 };
 
 function fmtDate(s: string | null) {

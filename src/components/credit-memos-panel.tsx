@@ -37,7 +37,7 @@ function StatusBadge({ status }: { status: CreditMemo["status"] }) {
   const map = {
     open:    "bg-[#0d3d3b]/5 text-[#0d3d3b] ring-[#0d3d3b]/20",
     applied: "bg-stone-100 text-stone-600 ring-stone-200",
-    void:    "bg-red-50 text-red-500 ring-red-200",
+    void:    "bg-stone-50 text-stone-500 ring-stone-200",
   };
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ring-1 ${map[status]}`}>
@@ -108,7 +108,7 @@ function MemoForm({
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Client */}
           <div>
-            <label className="block text-xs font-medium text-stone-600 mb-1">Client <span className="text-red-500">*</span></label>
+            <label className="block text-xs font-medium text-stone-600 mb-1">Client <span className="text-stone-500">*</span></label>
             <select
               required
               value={clientId}
@@ -149,7 +149,7 @@ function MemoForm({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-stone-600 mb-1">Date <span className="text-red-500">*</span></label>
+              <label className="block text-xs font-medium text-stone-600 mb-1">Date <span className="text-stone-500">*</span></label>
               <DateField
                 value={memoDate}
                 onChange={setMemoDate}
@@ -160,7 +160,7 @@ function MemoForm({
 
           {/* Amount */}
           <div>
-            <label className="block text-xs font-medium text-stone-600 mb-1">Amount (USD) <span className="text-red-500">*</span></label>
+            <label className="block text-xs font-medium text-stone-600 mb-1">Amount (USD) <span className="text-stone-500">*</span></label>
             <input
               required
               type="number"
@@ -342,7 +342,7 @@ export function CreditMemosPanel({
                               title="Void"
                               onClick={() => doAction(() => voidCreditMemo(m.id))}
                               disabled={isPending}
-                              className="p-1.5 rounded-md text-amber-500 hover:text-amber-700 hover:bg-amber-50 transition-colors"
+                              className="p-1.5 rounded-md text-stone-500 hover:text-stone-700 hover:bg-stone-50 transition-colors"
                             >
                               <Ban className="w-3.5 h-3.5" />
                             </button>
@@ -356,7 +356,7 @@ export function CreditMemosPanel({
                             }
                           }}
                           disabled={isPending}
-                          className="p-1.5 rounded-md text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          className="p-1.5 rounded-md text-stone-400 hover:text-stone-600 hover:bg-stone-50 transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>

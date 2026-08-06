@@ -98,8 +98,8 @@ export default function ReportsHubPage() {
       {/* Favorites */}
       {favoriteReports.length > 0 && (
         <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-[#0d3d3b] overflow-hidden">
-          <div className="px-5 py-3 bg-amber-50 border-b border-amber-100 flex items-center gap-2">
-            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+          <div className="px-5 py-3 bg-stone-50 border-b border-stone-100 flex items-center gap-2">
+            <Star className="w-4 h-4 fill-stone-400 text-stone-400" />
             <span className="text-sm font-semibold text-stone-700">Favorites</span>
           </div>
           <div className="divide-y divide-stone-50">
@@ -169,8 +169,8 @@ function ReportRow({
           <span className="text-[10px] text-stone-300 italic shrink-0">coming soon</span>
         )}
       </div>
-      <button onClick={onToggleFav} className="ml-3 shrink-0 text-stone-300 hover:text-amber-400 transition-colors">
-        <Star className={`w-4 h-4 ${isFav ? "fill-amber-400 text-amber-400" : ""}`} />
+      <button onClick={onToggleFav} className="ml-3 shrink-0 text-stone-300 hover:text-stone-400 transition-colors">
+        <Star className={`w-4 h-4 ${isFav ? "fill-stone-400 text-stone-400" : ""}`} />
       </button>
     </div>
   );

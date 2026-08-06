@@ -154,7 +154,7 @@ export function SettingsPanel({ initial, users, isAdmin }: {
           {["company","invoice"].includes(active) && (
             <div className="flex items-center gap-3">
               {saved && (
-                <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+                <span className="text-xs text-[#0d3d3b] font-medium flex items-center gap-1">
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
@@ -565,7 +565,7 @@ function SectionUsers({ users, isAdmin }: { users: UserRow[]; isAdmin: boolean }
                 ) : (
                   <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${u.role === "admin" ? "bg-[#0d3d3b]/10 text-[#0d3d3b]" : "bg-stone-100 text-stone-500"}`}>{u.role}</span>
                 )}
-                <span className={`text-[11px] px-2 py-0.5 rounded-full ${u.isActive ? "bg-emerald-50 text-emerald-600" : "bg-stone-200 text-stone-500"}`}>{u.isActive ? "Active" : "Inactive"}</span>
+                <span className={`text-[11px] px-2 py-0.5 rounded-full ${u.isActive ? "bg-[#e6f1ee] text-[#0d3d3b]" : "bg-stone-200 text-stone-500"}`}>{u.isActive ? "Active" : "Inactive"}</span>
                 {isAdmin && (
                   <>
                     <button
@@ -620,7 +620,7 @@ function SectionUsers({ users, isAdmin }: { users: UserRow[]; isAdmin: boolean }
             )}
           </div>
         )}
-        {err && <p className="text-xs text-red-600 mt-2">{err}</p>}
+        {err && <p className="text-xs text-stone-600 mt-2">{err}</p>}
         {!isAdmin && <p className="text-xs text-stone-400 mt-2">Only admins can add or edit team members.</p>}
       </Card>
     </>

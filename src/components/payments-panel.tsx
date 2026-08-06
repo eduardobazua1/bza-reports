@@ -836,7 +836,7 @@ export function PaymentsPanel({
                 {formatCurrency(selectedAmount)}
               </span>
               {!canMarkPaid && (
-                <span className="text-xs text-red-500">Select invoices from one client only</span>
+                <span className="text-xs text-stone-500">Select invoices from one client only</span>
               )}
               {canMarkPaid && (
                 <button
@@ -913,7 +913,7 @@ export function PaymentsPanel({
                         <td className="p-3 text-xs text-[#0d3d3b]">{formatDate(inv.shipmentDate)}</td>
                         <td className="p-3 text-xs text-[#0d3d3b]">
                           {overdue
-                            ? <span className="text-red-600 font-medium">+{daysOverdue}d overdue</span>
+                            ? <span className="text-stone-600 font-medium">+{daysOverdue}d overdue</span>
                             : <span>{formatDate(inv.dueDate)}</span>
                           }
                         </td>

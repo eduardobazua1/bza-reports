@@ -97,7 +97,7 @@ export function PODetailActions({
           <button
             onClick={handleDelete}
             disabled={isDeleting}
-            className="flex items-center gap-1.5 border border-red-200 text-red-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-50 ml-auto"
+            className="flex items-center gap-1.5 border border-stone-200 text-stone-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-stone-50 transition-colors disabled:opacity-50 ml-auto"
           >
             <Trash2 className="w-3.5 h-3.5" />
             {isDeleting ? "Deleting..." : "Delete"}

@@ -70,13 +70,13 @@ const METHOD_LABELS: Record<string, string> = {
 function BalanceBadge({ balance }: { balance: number }) {
   if (balance > 0.01)
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-700">
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-stone-100 text-stone-700">
         Owe
       </span>
     );
   if (balance < -0.01)
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700">
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#e6f1ee] text-[#0d3d3b]">
         Credit
       </span>
     );
@@ -96,7 +96,7 @@ function POStatusBadge({ balance }: { balance: number }) {
     );
   if (balance < -0.01)
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-[#e6f1ee] text-[#0d3d3b] border border-[#0d3d3b]/20">
         Credit
       </span>
     );
@@ -109,9 +109,9 @@ function POStatusBadge({ balance }: { balance: number }) {
 
 function InvoiceStatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
-    paid: "bg-emerald-100 text-emerald-700",
+    paid: "bg-[#e6f1ee] text-[#0d3d3b]",
     partial: "bg-[#0d3d3b]/10 text-[#0d3d3b]",
-    unpaid: "bg-red-100 text-red-700",
+    unpaid: "bg-stone-100 text-stone-700",
   };
   return (
     <span
@@ -193,16 +193,16 @@ function PODrawer({
             <p className="text-[10px] text-stone-400 uppercase tracking-wide mb-0.5">Invoiced</p>
             <p className="text-sm font-bold text-stone-800">{formatCurrency(po.invoiced)}</p>
           </div>
-          <div className="flex-1 bg-emerald-50 rounded-md px-3 py-2 text-center">
+          <div className="flex-1 bg-[#e6f1ee] rounded-md px-3 py-2 text-center">
             <p className="text-[10px] text-stone-400 uppercase tracking-wide mb-0.5">Paid</p>
-            <p className="text-sm font-bold text-emerald-700">{formatCurrency(po.paid)}</p>
+            <p className="text-sm font-bold text-[#0d3d3b]">{formatCurrency(po.paid)}</p>
           </div>
           <div
             className={`flex-1 rounded-md px-3 py-2 text-center ${
               po.balance > 0.01
-                ? "bg-red-50"
+                ? "bg-stone-50"
                 : po.balance < -0.01
-                ? "bg-emerald-50"
+                ? "bg-[#e6f1ee]"
                 : "bg-stone-50"
             }`}
           >
@@ -210,9 +210,9 @@ function PODrawer({
             <p
               className={`text-sm font-bold ${
                 po.balance > 0.01
-                  ? "text-red-600"
+                  ? "text-stone-600"
                   : po.balance < -0.01
-                  ? "text-emerald-700"
+                  ? "text-[#0d3d3b]"
                   : "text-stone-500"
               }`}
             >
@@ -314,7 +314,7 @@ function PODrawer({
                       <td className="px-5 py-2 text-stone-600 whitespace-nowrap">
                         {formatDate(pmt.paymentDate)}
                       </td>
-                      <td className="px-3 py-2 text-right font-semibold text-emerald-700">
+                      <td className="px-3 py-2 text-right font-semibold text-[#0d3d3b]">
                         {formatCurrency(pmt.amountUsd)}
                       </td>
                       <td className="px-3 py-2 text-stone-600">
@@ -326,7 +326,7 @@ function PODrawer({
                 <tfoot>
                   <tr className="bg-stone-50 border-t-2 border-stone-200 font-semibold">
                     <td className="px-5 py-2">Total</td>
-                    <td className="px-3 py-2 text-right text-emerald-700">
+                    <td className="px-3 py-2 text-right text-[#0d3d3b]">
                       {formatCurrency(po.payments.reduce((s, p) => s + p.amountUsd, 0))}
                     </td>
                     <td />
@@ -465,7 +465,7 @@ export function APOverview({
   return (
     <div className="space-y-6">
       {/* ── Level 1: Hero banner ─────────────────────────────────────────────── */}
-      <div className={`bg-white rounded-lg shadow-sm border-l-[5px] overflow-hidden ${totalBalance > 0.01 ? "border-l-red-500" : "border-l-[#0d3d3b]"}`}>
+      <div className={`bg-white rounded-lg shadow-sm border-l-[5px] overflow-hidden ${totalBalance > 0.01 ? "border-l-stone-500" : "border-l-[#0d3d3b]"}`}>
         <div className="px-5 py-4">
           <div className="flex items-start justify-between gap-4">
             {/* Left: title + balance */}
@@ -473,7 +473,7 @@ export function APOverview({
               <p className="text-[10px] text-stone-400 uppercase tracking-widest font-medium mb-1">
                 Accounts Payable
               </p>
-              <p className={`text-4xl font-bold tracking-tight ${totalBalance > 0.01 ? "text-red-600" : "text-[#0d3d3b]"}`}>
+              <p className={`text-4xl font-bold tracking-tight ${totalBalance > 0.01 ? "text-stone-600" : "text-[#0d3d3b]"}`}>
                 {Math.abs(totalBalance) < 0.01 ? "—" : formatCurrency(Math.abs(totalBalance))}
               </p>
               <p className="text-sm text-stone-500 mt-1.5">
@@ -487,7 +487,7 @@ export function APOverview({
 
             {/* Right: badge + totals */}
             <div className="text-right">
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${totalBalance > 0.01 ? "bg-red-100 text-red-700" : "bg-[#0d3d3b]/10 text-[#0d3d3b]"}`}>
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${totalBalance > 0.01 ? "bg-stone-100 text-stone-700" : "bg-[#0d3d3b]/10 text-[#0d3d3b]"}`}>
                 {totalBalance > 0.01 ? "⚠ Pending" : totalBalance < -0.01 ? "↑ Credit" : "✓ Settled"}
               </span>
               <div className="mt-2 space-y-0.5 text-xs text-stone-400">
@@ -569,9 +569,9 @@ export function APOverview({
           const isExpanded = expandedSuppliers.has(group.supplierId);
           const balColor =
             group.balance > 0.01
-              ? "text-red-600"
+              ? "text-stone-600"
               : group.balance < -0.01
-              ? "text-emerald-700"
+              ? "text-[#0d3d3b]"
               : "text-stone-500";
 
           return (
@@ -657,9 +657,9 @@ export function APOverview({
                       {group.pos.map((po) => {
                         const poBalColor =
                           po.balance > 0.01
-                            ? "text-red-600"
+                            ? "text-stone-600"
                             : po.balance < -0.01
-                            ? "text-emerald-700"
+                            ? "text-[#0d3d3b]"
                             : "text-stone-500";
                         return (
                           <tr
@@ -673,7 +673,7 @@ export function APOverview({
                             <td className="px-4 py-2.5 text-right text-stone-700">
                               {formatCurrency(po.invoiced)}
                             </td>
-                            <td className="px-4 py-2.5 text-right text-emerald-700">
+                            <td className="px-4 py-2.5 text-right text-[#0d3d3b]">
                               {formatCurrency(po.paid)}
                             </td>
                             <td className={`px-4 py-2.5 text-right font-semibold ${poBalColor}`}>
@@ -691,7 +691,7 @@ export function APOverview({
                         <tr className="bg-stone-50 font-semibold border-t-2 border-stone-200">
                           <td className="px-4 py-2 text-xs text-stone-500">TOTAL</td>
                           <td className="px-4 py-2 text-right text-xs text-stone-700">{formatCurrency(group.invoiced)}</td>
-                          <td className="px-4 py-2 text-right text-xs text-emerald-700">{formatCurrency(group.paid)}</td>
+                          <td className="px-4 py-2 text-right text-xs text-[#0d3d3b]">{formatCurrency(group.paid)}</td>
                           <td className={`px-4 py-2 text-right text-xs font-bold ${balColor}`}>
                             {formatCurrency(Math.abs(group.balance))}
                           </td>

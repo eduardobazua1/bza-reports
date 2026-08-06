@@ -87,7 +87,7 @@ function Toast({ toast, onClose }: { toast: ToastState; onClose: () => void }) {
       className={`fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-sm font-medium transition-all ${
         toast.type === "success"
           ? "bg-stone-800 text-white"
-          : "bg-red-700 text-white"
+          : "bg-stone-700 text-white"
       }`}
     >
       {toast.type === "success" ? (
@@ -138,7 +138,7 @@ function EmailModal({
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
             <label className="block text-xs font-medium text-stone-600 mb-1">
-              To <span className="text-red-500">*</span>
+              To <span className="text-stone-500">*</span>
             </label>
             <input
               type="email"

@@ -121,7 +121,7 @@ export function InvoiceTemplateEditor({ initial }: { initial?: Partial<InvoiceSe
           <p className="text-xs text-stone-400 mt-0.5">Customize company info, colors, and sections shown on all PDFs</p>
         </div>
         <div className="flex items-center gap-3">
-          {saved && <span className="text-xs text-emerald-600 font-medium">Saved ✓</span>}
+          {saved && <span className="text-xs text-[#0d3d3b] font-medium">Saved ✓</span>}
           <a
             href="/api/invoice-pdf?invoice=OC-001-001"
             target="_blank"

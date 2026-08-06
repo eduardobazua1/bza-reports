@@ -80,7 +80,7 @@ export function APAgingDetailClient({ buckets, total, filterBucket, filterSuppli
                   <td className="px-4 py-2.5 text-stone-700">{row.supplier}</td>
                   <td className="px-4 py-2.5 text-right text-[#0d3d3b]">{formatCurrency(row.amount)}</td>
                   <td className="px-4 py-2.5 text-right font-semibold text-[#0d3d3b]">{formatCurrency(row.amount)}</td>
-                  <td className={`px-6 py-2.5 text-right font-medium ${row.daysSince > 90 ? "text-red-600" : row.daysSince > 60 ? "text-amber-600" : row.daysSince > 30 ? "text-stone-600" : "text-stone-400"}`}>
+                  <td className={`px-6 py-2.5 text-right font-medium ${row.daysSince > 90 ? "text-stone-600" : row.daysSince > 60 ? "text-stone-600" : row.daysSince > 30 ? "text-stone-600" : "text-stone-400"}`}>
                     {row.daysSince <= 0 ? "—" : row.daysSince}
                   </td>
                 </tr>

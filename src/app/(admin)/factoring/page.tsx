@@ -26,12 +26,7 @@ export default async function FactoringPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold text-stone-900">Factoring — JP Morgan</h1>
-        <p className="text-sm text-stone-500 mt-1">
-          Supply Chain Finance · Kimberly-Clark program. See what each open KC invoice costs to discount early, and how much cash you get today.
-        </p>
-      </div>
+      <h1 className="text-2xl font-bold text-stone-900">Factoring — JP Morgan</h1>
       <FactoringCalculator rows={rows} />
     </div>
   );

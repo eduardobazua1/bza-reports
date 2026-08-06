@@ -24,7 +24,7 @@ const typeLabels: Record<string, string> = {
 
 const typeColors: Record<string, string> = {
   invoice: "bg-[#ccfbf1] text-[#0d3d3b]",
-  supplier_invoice: "bg-amber-100 text-amber-700",
+  supplier_invoice: "bg-stone-100 text-stone-700",
   bl: "bg-[#ccfbf1] text-[#0d3d3b]",
   pl: "bg-[#ccfbf1] text-[#0d3d3b]",
   other: "bg-stone-100 text-stone-500",

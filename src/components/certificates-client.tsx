@@ -21,8 +21,8 @@ type Cert = {
 };
 
 const TYPE_COLORS: Record<string, { bg: string; text: string; label: string }> = {
-  fsc:   { bg: "bg-green-100",  text: "text-green-700",  label: "FSC" },
-  pefc:  { bg: "bg-emerald-100",text: "text-emerald-700",label: "PEFC" },
+  fsc:   { bg: "bg-[#e6f1ee]",  text: "text-[#0d3d3b]",  label: "FSC" },
+  pefc:  { bg: "bg-[#e6f1ee]",text: "text-[#0d3d3b]",label: "PEFC" },
   other: { bg: "bg-stone-100",  text: "text-stone-600",  label: "Other" },
 };
 
@@ -37,9 +37,9 @@ function certStatus(validUntil: string | null): "valid" | "expiring" | "expired"
 }
 
 const STATUS_CONFIG = {
-  valid:    { icon: CheckCircle,  color: "text-green-600",  bg: "bg-green-50",   label: "Valid" },
-  expiring: { icon: Clock,        color: "text-amber-600",  bg: "bg-amber-50",   label: "Expiring soon" },
-  expired:  { icon: AlertCircle,  color: "text-red-600",    bg: "bg-red-50",     label: "Expired" },
+  valid:    { icon: CheckCircle,  color: "text-[#0d3d3b]",  bg: "bg-[#e6f1ee]",   label: "Valid" },
+  expiring: { icon: Clock,        color: "text-stone-600",  bg: "bg-stone-50",   label: "Expiring soon" },
+  expired:  { icon: AlertCircle,  color: "text-stone-600",    bg: "bg-stone-50",     label: "Expired" },
   unknown:  { icon: FileText,     color: "text-stone-400",  bg: "bg-stone-50",   label: "No expiry set" },
 };
 
@@ -224,7 +224,7 @@ export function CertificatesClient({ initialCerts }: { initialCerts: Cert[] }) {
                 </div>
               </div>
 
-              {error && <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
+              {error && <p className="text-xs text-stone-600 bg-stone-50 px-3 py-2 rounded-lg">{error}</p>}
 
               <div className="flex justify-end gap-2 pt-2">
                 <button type="button" onClick={() => { setShowForm(false); setError(null); }}
@@ -346,7 +346,7 @@ export function CertificatesClient({ initialCerts }: { initialCerts: Cert[] }) {
                   <button
                     onClick={() => handleDelete(cert.id)}
                     disabled={deleting === cert.id}
-                    className="flex items-center gap-1 text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
+                    className="flex items-center gap-1 text-xs text-stone-400 hover:text-stone-600 px-2 py-1 rounded hover:bg-stone-50 transition-colors disabled:opacity-50"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     {deleting === cert.id ? "…" : "Delete"}

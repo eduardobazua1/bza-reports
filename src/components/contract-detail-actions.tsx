@@ -141,7 +141,7 @@ export function ContractDetailActions({ contract, clients, suppliers, eligiblePo
         </button>
         <button
           onClick={() => setShowDelete(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-red-100 rounded-lg hover:bg-red-50 text-red-500"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-stone-100 rounded-lg hover:bg-stone-50 text-stone-500"
         >
           <Trash2 className="w-3.5 h-3.5" /> Delete
         </button>
@@ -212,7 +212,7 @@ export function ContractDetailActions({ contract, clients, suppliers, eligiblePo
           </div>
           <div className="h-3 bg-stone-100 rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all ${volPct != null && volPct >= 100 ? "bg-emerald-500" : "bg-[#0d3d3b]"}`}
+              className={`h-full rounded-full transition-all ${volPct != null && volPct >= 100 ? "bg-[#0d3d3b]" : "bg-[#0d3d3b]"}`}
               style={{ width: `${volPct ?? 0}%` }}
             />
           </div>
@@ -270,7 +270,7 @@ export function ContractDetailActions({ contract, clients, suppliers, eligiblePo
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
                       po.status === "active"    ? "bg-[#ccfbf1] text-[#0d3d3b]" :
                       po.status === "completed" ? "bg-stone-100 text-stone-500"  :
-                      "bg-red-50 text-red-500"
+                      "bg-stone-50 text-stone-500"
                     }`}>
                       {po.status}
                     </span>
@@ -280,7 +280,7 @@ export function ContractDetailActions({ contract, clients, suppliers, eligiblePo
                       onClick={() => handleUnlink(po.id)}
                       disabled={isPending}
                       title="Unlink from contract"
-                      className="text-stone-300 hover:text-red-400 transition-colors"
+                      className="text-stone-300 hover:text-stone-400 transition-colors"
                     >
                       <Unlink className="w-3.5 h-3.5" />
                     </button>
@@ -332,7 +332,7 @@ export function ContractDetailActions({ contract, clients, suppliers, eligiblePo
             <p className="text-sm text-stone-500 mb-5">This will unlink all associated POs. This action cannot be undone.</p>
             <div className="flex gap-3 justify-end">
               <button onClick={() => setShowDelete(false)} className="px-4 py-2 text-sm border border-stone-200 rounded-lg hover:bg-stone-50">Cancel</button>
-              <button onClick={handleDelete} disabled={isPending} className="px-4 py-2 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50">
+              <button onClick={handleDelete} disabled={isPending} className="px-4 py-2 text-sm bg-stone-500 text-white rounded-lg hover:bg-stone-600 disabled:opacity-50">
                 {isPending ? "Deleting..." : "Delete"}
               </button>
             </div>

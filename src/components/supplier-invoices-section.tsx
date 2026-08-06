@@ -189,7 +189,7 @@ export function SupplierInvoicesSection({
           {invoices.length > 0 && (
             <p className="text-xs text-stone-400 mt-0.5">
               {formatNumber(totalTons, 3)} TN · {formatCurrency(totalAmount)}
-              {unpaidCount > 0 && <span className="ml-2 text-amber-600 font-medium">{unpaidCount} unpaid</span>}
+              {unpaidCount > 0 && <span className="ml-2 text-stone-600 font-medium">{unpaidCount} unpaid</span>}
             </p>
           )}
         </div>
@@ -320,14 +320,14 @@ export function SupplierInvoicesSection({
                   <button type="button" onClick={() => { setFile(null); setFileError(null); }} className="text-xs text-stone-400 hover:text-stone-600 text-lg leading-none">×</button>
                 )}
                 {fileError && (
-                  <span className="text-xs text-red-600 font-medium">{fileError}</span>
+                  <span className="text-xs text-stone-600 font-medium">{fileError}</span>
                 )}
               </div>
             </div>
           </div>
 
           {saveError && (
-            <p className="text-xs text-red-500 font-medium bg-red-50 border border-red-200 rounded-lg px-3 py-2">{saveError}</p>
+            <p className="text-xs text-stone-500 font-medium bg-stone-50 border border-stone-200 rounded-lg px-3 py-2">{saveError}</p>
           )}
           <div className="flex gap-2 pt-1">
             <button
@@ -413,8 +413,8 @@ export function SupplierInvoicesSection({
                       onClick={() => togglePaid(inv)}
                       className={`px-2 py-0.5 rounded text-[10px] font-medium cursor-pointer transition-colors ${
                         inv.paymentStatus === "paid"
-                          ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                          : "bg-amber-50 text-amber-700 hover:bg-amber-100"
+                          ? "bg-[#e6f1ee] text-[#0d3d3b] hover:bg-[#e6f1ee]"
+                          : "bg-stone-50 text-stone-700 hover:bg-stone-100"
                       }`}
                     >
                       {inv.paymentStatus === "paid" ? "Paid" : "Unpaid"}
@@ -424,7 +424,7 @@ export function SupplierInvoicesSection({
                     <button
                       onClick={() => handleDelete(inv.id)}
                       disabled={deletingId === inv.id}
-                      className="p-1 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded disabled:opacity-50"
+                      className="p-1 text-stone-300 hover:text-stone-500 hover:bg-stone-50 rounded disabled:opacity-50"
                     >
                       {deletingId === inv.id ? "…" : <Trash2 className="w-3.5 h-3.5" />}
                     </button>

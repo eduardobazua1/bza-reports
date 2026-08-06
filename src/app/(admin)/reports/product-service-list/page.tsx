@@ -60,7 +60,7 @@ export default async function ProductServiceListPage() {
                         : "—"}
                     </td>
                     <td className="px-6 py-3 text-right">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${isActive ? "bg-emerald-100 text-emerald-700" : "bg-stone-100 text-stone-500"}`}>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${isActive ? "bg-[#e6f1ee] text-[#0d3d3b]" : "bg-stone-100 text-stone-500"}`}>
                         {isActive ? "Active" : "Inactive"}
                       </span>
                     </td>

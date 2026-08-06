@@ -38,7 +38,7 @@ export default function CapitalPage() {
       <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3 bg-stone-50 border-b border-stone-100">
           <span className="font-semibold text-stone-800">{title}</span>
-          <span className={`font-bold ${(agg?.total ?? 0) >= 0 ? "text-emerald-700" : "text-purple-700"}`}>
+          <span className={`font-bold ${(agg?.total ?? 0) >= 0 ? "text-[#0d3d3b]" : "text-purple-700"}`}>
             {usd(agg?.total ?? 0)}
           </span>
         </div>
@@ -60,7 +60,7 @@ export default function CapitalPage() {
                   <td className="px-5 py-2 text-stone-700">{name}</td>
                   <td className="px-5 py-2 text-stone-500">{s.vendor || "—"}</td>
                   <td className="px-5 py-2 text-right text-stone-500">{s.count}</td>
-                  <td className={`px-5 py-2 text-right font-medium ${s.total >= 0 ? "text-emerald-700" : "text-purple-700"}`}>
+                  <td className={`px-5 py-2 text-right font-medium ${s.total >= 0 ? "text-[#0d3d3b]" : "text-purple-700"}`}>
                     {usd(s.total)}
                   </td>
                 </tr>

@@ -90,7 +90,7 @@ export default function FinancialsPage() {
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-emerald-700 text-white rounded-lg text-sm font-medium hover:bg-emerald-800"
+          className="px-4 py-2 bg-[#0d3d3b] text-white rounded-lg text-sm font-medium hover:bg-[#0d3d3b]"
         >
           {showForm ? "Cancel" : "+ Add Account"}
         </button>
@@ -134,7 +134,7 @@ export default function FinancialsPage() {
               className="mt-1 w-full border border-stone-300 rounded-lg px-3 py-2" />
           </label>
           <div className="col-span-2">
-            <button type="submit" className="px-4 py-2 bg-emerald-700 text-white rounded-lg text-sm font-medium hover:bg-emerald-800">
+            <button type="submit" className="px-4 py-2 bg-[#0d3d3b] text-white rounded-lg text-sm font-medium hover:bg-[#0d3d3b]">
               Create Account
             </button>
           </div>
@@ -158,7 +158,7 @@ export default function FinancialsPage() {
               </div>
               <div className="flex items-center gap-3">
                 <Link href={`/financials/transactions?accountId=${a.id}`}
-                  className="text-sm text-emerald-700 hover:underline">View transactions →</Link>
+                  className="text-sm text-[#0d3d3b] hover:underline">View transactions →</Link>
                 <label className="px-3 py-2 bg-stone-100 hover:bg-stone-200 rounded-lg text-sm font-medium cursor-pointer">
                   Import CSV
                   <input type="file" accept=".csv" className="hidden" onChange={(e) => handleImport(e, a.id)} />
@@ -172,12 +172,12 @@ export default function FinancialsPage() {
       {importing && <p className="text-stone-500">Importing & categorizing…</p>}
 
       {importResult && (
-        <div className="bg-white rounded-xl border border-emerald-200 p-5">
+        <div className="bg-white rounded-xl border border-[#0d3d3b]/20 p-5">
           <h3 className="font-semibold text-stone-800 mb-2">Import Result {selectedAccount && `(account #${selectedAccount})`}</h3>
           <div className="grid grid-cols-3 gap-4 text-sm">
             <div><span className="text-stone-500">Imported:</span> <b>{importResult.imported}</b></div>
             <div><span className="text-stone-500">Skipped (dupes):</span> <b>{importResult.skippedDuplicates}</b></div>
-            <div><span className="text-stone-500">Uncategorized:</span> <b className={importResult.uncategorized > 0 ? "text-amber-600" : ""}>{importResult.uncategorized}</b></div>
+            <div><span className="text-stone-500">Uncategorized:</span> <b className={importResult.uncategorized > 0 ? "text-stone-600" : ""}>{importResult.uncategorized}</b></div>
           </div>
           <div className="mt-3 text-sm">
             <span className="text-stone-500">By category:</span>{" "}
@@ -186,7 +186,7 @@ export default function FinancialsPage() {
             ))}
           </div>
           {importResult.uncategorized > 0 && (
-            <p className="mt-3 text-sm text-amber-700">
+            <p className="mt-3 text-sm text-stone-700">
               {importResult.uncategorized} transactions need manual categorization.{" "}
               <Link href={`/financials/transactions?accountId=${selectedAccount}&category=Uncategorized`} className="underline">Review them →</Link>
             </p>

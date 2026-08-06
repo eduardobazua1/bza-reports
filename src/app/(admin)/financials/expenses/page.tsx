@@ -57,9 +57,9 @@ export default function ExpensesPage() {
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3 bg-amber-50 border-b border-amber-100">
+          <div className="flex items-center justify-between px-5 py-3 bg-stone-50 border-b border-stone-100">
             <span className="font-semibold text-stone-800">Total Operating Expenses</span>
-            <span className="font-bold text-rose-700">{usd(opex.total)}</span>
+            <span className="font-bold text-stone-700">{usd(opex.total)}</span>
           </div>
           <table className="w-full text-sm">
             <thead className="bg-stone-50 text-stone-500 text-left">
@@ -77,7 +77,7 @@ export default function ExpensesPage() {
                   <td className="px-5 py-2 text-stone-700">{name}</td>
                   <td className="px-5 py-2 text-stone-500">{s.vendor || "—"}</td>
                   <td className="px-5 py-2 text-right text-stone-500">{s.count}</td>
-                  <td className="px-5 py-2 text-right font-medium text-rose-700">{usd(s.total)}</td>
+                  <td className="px-5 py-2 text-right font-medium text-stone-700">{usd(s.total)}</td>
                   <td className="px-5 py-2 text-right text-stone-500">
                     {opex.total !== 0 ? ((s.total / opex.total) * 100).toFixed(1) : "0"}%
                   </td>

@@ -109,7 +109,7 @@ function EmailReportPanel({ onBack }: { onBack: () => void }) {
       <div className="flex-1 overflow-auto p-4">
         {result === "success" ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-8">
-            <CheckCircle2 className="w-12 h-12 text-emerald-500" />
+            <CheckCircle2 className="w-12 h-12 text-[#0d3d3b]" />
             <p className="font-semibold text-stone-800">Report sent!</p>
             <p className="text-xs text-[#0d3d3b] max-w-[200px]">
               Check <span className="font-medium">{form.email}</span> for the attachment.
@@ -187,7 +187,7 @@ function EmailReportPanel({ onBack }: { onBack: () => void }) {
 
             {/* Error */}
             {result === "error" && (
-              <div className="flex items-start gap-2 text-red-700 text-xs bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              <div className="flex items-start gap-2 text-stone-700 text-xs bg-stone-50 border border-stone-200 rounded-lg px-3 py-2">
                 <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                 <span>{errMsg}</span>
               </div>

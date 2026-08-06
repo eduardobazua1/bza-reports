@@ -25,14 +25,14 @@ const usd = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 });
 
 const catColor: Record<string, string> = {
-  Revenue: "bg-emerald-100 text-emerald-800",
-  COGS: "bg-rose-100 text-rose-800",
-  OpEx: "bg-amber-100 text-amber-800",
+  Revenue: "bg-[#e6f1ee] text-[#0d3d3b]",
+  COGS: "bg-stone-100 text-stone-700",
+  OpEx: "bg-stone-100 text-stone-700",
   Capital: "bg-blue-100 text-blue-800",
   Distribution: "bg-purple-100 text-purple-800",
   "Other Income": "bg-teal-100 text-teal-800",
   "Internal Transfer": "bg-stone-100 text-stone-600",
-  Uncategorized: "bg-red-100 text-red-700",
+  Uncategorized: "bg-stone-100 text-stone-700",
 };
 
 function TransactionsInner() {
@@ -89,8 +89,8 @@ function TransactionsInner() {
           {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
         <span className="text-sm text-stone-500">{txs.length} transactions</span>
-        <span className="text-sm text-emerald-700">In: {usd(totalIn)}</span>
-        <span className="text-sm text-rose-700">Out: {usd(totalOut)}</span>
+        <span className="text-sm text-[#0d3d3b]">In: {usd(totalIn)}</span>
+        <span className="text-sm text-stone-700">Out: {usd(totalOut)}</span>
       </div>
 
       {loading ? (
@@ -115,7 +115,7 @@ function TransactionsInner() {
                   <td className="px-3 py-2 text-stone-700 max-w-md truncate" title={t.descriptionRaw}>
                     {t.descriptionRaw}
                   </td>
-                  <td className={`px-3 py-2 text-right whitespace-nowrap font-medium ${t.amount < 0 ? "text-rose-700" : "text-emerald-700"}`}>
+                  <td className={`px-3 py-2 text-right whitespace-nowrap font-medium ${t.amount < 0 ? "text-stone-700" : "text-[#0d3d3b]"}`}>
                     {usd(t.amount)}
                   </td>
                   {editing === t.id ? (
@@ -131,7 +131,7 @@ function TransactionsInner() {
                           placeholder="subcategory" className="border border-stone-300 rounded px-2 py-1 text-xs w-32" />
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap">
-                        <button onClick={() => saveCategory(t.id)} className="text-emerald-700 text-xs font-medium mr-2">Save</button>
+                        <button onClick={() => saveCategory(t.id)} className="text-[#0d3d3b] text-xs font-medium mr-2">Save</button>
                         <button onClick={() => setEditing(null)} className="text-stone-400 text-xs">Cancel</button>
                       </td>
                     </>
@@ -147,7 +147,7 @@ function TransactionsInner() {
                       <td className="px-3 py-2">
                         <button
                           onClick={() => { setEditing(t.id); setEditCat(t.category); setEditSub(t.subcategory || ""); }}
-                          className="text-stone-400 hover:text-emerald-700 text-xs">Edit</button>
+                          className="text-stone-400 hover:text-[#0d3d3b] text-xs">Edit</button>
                       </td>
                     </>
                   )}

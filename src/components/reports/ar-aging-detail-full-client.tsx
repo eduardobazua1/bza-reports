@@ -36,7 +36,7 @@ function fmtDate(date: string | null) {
 function daysDisplay(row: { dueDate: string | null; pastDue: number }): { text: string; cls: string } {
   if (!row.dueDate) return { text: "—", cls: "text-stone-400" };
   if (row.pastDue > 0)   return { text: `+${row.pastDue}`, cls: "text-[#0d3d3b]" };
-  if (row.pastDue === 0) return { text: "0", cls: "text-amber-500 font-bold" };
+  if (row.pastDue === 0) return { text: "0", cls: "text-stone-500 font-bold" };
   return { text: `${row.pastDue}`, cls: "text-stone-400" };
 }
 
@@ -50,7 +50,7 @@ function EmailModal({ onClose, onSend, isSending }: { onClose: () => void; onSen
           <button onClick={onClose} className="text-stone-400 hover:text-stone-600"><X className="w-4 h-4" /></button>
         </div>
         <form onSubmit={e => { e.preventDefault(); onSend(to.trim(), subject, message); }} className="p-5 space-y-4">
-          <div><label className="block text-xs font-medium text-stone-600 mb-1">To <span className="text-red-500">*</span></label>
+          <div><label className="block text-xs font-medium text-stone-600 mb-1">To <span className="text-stone-500">*</span></label>
             <input type="email" value={to} onChange={e => setTo(e.target.value)} required placeholder="recipient@example.com" className="w-full px-3 py-2 text-sm border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-400" /></div>
           <div><label className="block text-xs font-medium text-stone-600 mb-1">Subject</label>
             <input type="text" value={subject} onChange={e => setSubject(e.target.value)} className="w-full px-3 py-2 text-sm border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-400" /></div>
@@ -223,7 +223,7 @@ export function ARAgingDetailFullClient({ buckets, total, filterBucket, filterCl
     <>
       {showEmail && <EmailModal onClose={() => setShowEmail(false)} onSend={handleSendEmail} isSending={isEmailPending} />}
       {toast && (
-        <div className={`fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-sm font-medium ${toast.type === "success" ? "bg-stone-800 text-white" : "bg-red-700 text-white"}`}>
+        <div className={`fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-sm font-medium ${toast.type === "success" ? "bg-stone-800 text-white" : "bg-stone-700 text-white"}`}>
           {toast.type === "success" ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
           {toast.message}
         </div>
@@ -373,7 +373,7 @@ export function ARAgingDetailFullClient({ buckets, total, filterBucket, filterCl
                           {visibleCols.amount      && <td className="px-4 py-2.5 text-right text-[#0d3d3b]">{formatCurrency(row.amount)}</td>}
                           {visibleCols.openBalance && <td className="px-4 py-2.5 text-right font-semibold text-[#0d3d3b]">{formatCurrency(row.amount)}</td>}
                           {visibleCols.pastDue     && (
-                            <td className={`px-6 py-2.5 text-right font-medium ${row.pastDue > 90 ? "text-red-600" : row.pastDue > 60 ? "text-amber-600" : row.pastDue > 0 ? "text-stone-600" : "text-stone-400"}`}>
+                            <td className={`px-6 py-2.5 text-right font-medium ${row.pastDue > 90 ? "text-stone-600" : row.pastDue > 60 ? "text-stone-600" : row.pastDue > 0 ? "text-stone-600" : "text-stone-400"}`}>
                               {row.pastDue <= 0 ? "—" : row.pastDue}
                             </td>
                           )}

@@ -666,7 +666,7 @@ export function InvoicesSection({
             })()}
             <button onClick={() => { setOpenDropdownId(null); startTransition(async () => { await duplicateInvoice(inv.id); router.refresh(); }); }} className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50">Duplicate</button>
             <div className="border-t border-stone-100 my-1" />
-            <button onClick={async () => { setOpenDropdownId(null); if (!confirm(`Delete invoice ${inv.invoiceNumber}?`)) return; try { await apiMutate(`/api/invoices/${inv.id}`, { method: "DELETE" }); router.refresh(); } catch (err) { alert(err instanceof Error ? err.message : "Couldn't delete this invoice."); } }} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</button>
+            <button onClick={async () => { setOpenDropdownId(null); if (!confirm(`Delete invoice ${inv.invoiceNumber}?`)) return; try { await apiMutate(`/api/invoices/${inv.id}`, { method: "DELETE" }); router.refresh(); } catch (err) { alert(err instanceof Error ? err.message : "Couldn't delete this invoice."); } }} className="w-full text-left px-4 py-2 text-sm text-stone-600 hover:bg-stone-50">Delete</button>
           </div>,
           document.body
         );

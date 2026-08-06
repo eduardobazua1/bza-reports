@@ -19,7 +19,7 @@ export default async function BalanceSheetPage() {
 
   function ValueCell({ value }: { value: number }) {
     return (
-      <td className={`px-6 py-3 text-right text-sm ${value < 0 ? "text-red-600" : "text-stone-700"}`}>
+      <td className={`px-6 py-3 text-right text-sm ${value < 0 ? "text-stone-600" : "text-stone-700"}`}>
         {formatCurrency(value)}
       </td>
     );
@@ -27,7 +27,7 @@ export default async function BalanceSheetPage() {
 
   function BoldValueCell({ value }: { value: number }) {
     return (
-      <td className={`px-6 py-3 text-right text-sm font-bold ${value < 0 ? "text-red-600" : "text-stone-900"}`}>
+      <td className={`px-6 py-3 text-right text-sm font-bold ${value < 0 ? "text-stone-600" : "text-stone-900"}`}>
         {formatCurrency(value)}
       </td>
     );
@@ -116,13 +116,13 @@ export default async function BalanceSheetPage() {
               <tbody>
                 <tr>
                   <td className="px-6 py-4 font-bold text-stone-900 text-base">Total Liabilities + Equity</td>
-                  <td className={`px-6 py-4 text-right font-bold text-base ${totalLiabilitiesEquity < 0 ? "text-red-600" : "text-stone-900"}`}>
+                  <td className={`px-6 py-4 text-right font-bold text-base ${totalLiabilitiesEquity < 0 ? "text-stone-600" : "text-stone-900"}`}>
                     {formatCurrency(totalLiabilitiesEquity)}
                   </td>
                 </tr>
                 <tr>
                   <td className="px-6 pb-4 text-sm text-stone-500">Total Assets</td>
-                  <td className={`px-6 pb-4 text-right text-sm ${totalAssets < 0 ? "text-red-500" : "text-stone-500"}`}>
+                  <td className={`px-6 pb-4 text-right text-sm ${totalAssets < 0 ? "text-stone-500" : "text-stone-500"}`}>
                     {formatCurrency(totalAssets)}
                   </td>
                 </tr>

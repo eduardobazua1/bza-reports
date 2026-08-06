@@ -40,7 +40,7 @@ function EmailModal({ onClose, onSend, isSending, defaultSubject }: {
         </div>
         <form onSubmit={e => { e.preventDefault(); onSend(to.trim(), subject, message); }} className="p-5 space-y-4">
           <div>
-            <label className="block text-xs font-medium text-stone-600 mb-1">To <span className="text-red-500">*</span></label>
+            <label className="block text-xs font-medium text-stone-600 mb-1">To <span className="text-stone-500">*</span></label>
             <input type="email" value={to} onChange={e => setTo(e.target.value)} required placeholder="recipient@example.com"
               className="w-full px-3 py-2 text-sm border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-400" />
           </div>
@@ -190,7 +190,7 @@ export function AgingDetailToolbar({
 
       {/* Toast */}
       {toast && (
-        <div className={`fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-sm font-medium ${toast.type === "success" ? "bg-stone-800 text-white" : "bg-red-700 text-white"}`}>
+        <div className={`fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-sm font-medium ${toast.type === "success" ? "bg-stone-800 text-white" : "bg-stone-700 text-white"}`}>
           {toast.type === "success" ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
           {toast.message}
         </div>

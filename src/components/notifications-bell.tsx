@@ -47,7 +47,7 @@ export function NotificationsBell() {
       <span className="relative shrink-0">
         <Bell className="w-4 h-4" strokeWidth={1.75} />
         {critical && (
-          <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none">
+          <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 bg-stone-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none">
             {count! > 99 ? "99+" : count}
           </span>
         )}

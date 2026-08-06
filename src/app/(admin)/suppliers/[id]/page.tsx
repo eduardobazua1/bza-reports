@@ -271,14 +271,14 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
       </div>
 
       {/* A/P Hero — Level 1: General position */}
-      <div className={`bg-white rounded-lg shadow-sm border-l-[5px] overflow-hidden ${balance > 0 ? "border-l-red-500" : "border-l-[#0d3d3b]"}`}>
+      <div className={`bg-white rounded-lg shadow-sm border-l-[5px] overflow-hidden ${balance > 0 ? "border-l-stone-500" : "border-l-[#0d3d3b]"}`}>
         <div className="px-5 py-4">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-[10px] text-stone-400 uppercase tracking-widest font-medium mb-1">
                 Accounts Payable
               </p>
-              <p className={`text-4xl font-bold tracking-tight ${balance > 0 ? "text-red-600" : "text-[#0d3d3b]"}`}>
+              <p className={`text-4xl font-bold tracking-tight ${balance > 0 ? "text-stone-600" : "text-[#0d3d3b]"}`}>
                 {balance === 0 ? "—" : formatCurrency(Math.abs(balance))}
               </p>
               <p className="text-sm text-stone-500 mt-1.5">
@@ -290,7 +290,7 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
               </p>
             </div>
             <div className="text-right">
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${balance > 0 ? "bg-red-100 text-red-700" : "bg-[#0d3d3b]/10 text-[#0d3d3b]"}`}>
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${balance > 0 ? "bg-stone-100 text-stone-700" : "bg-[#0d3d3b]/10 text-[#0d3d3b]"}`}>
                 {balance > 0 ? "⚠ Pending" : balance < 0 ? "↑ Credit" : "✓ Settled"}
               </span>
               <p className="text-xs text-stone-400 mt-2">
@@ -331,9 +331,9 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
           <p className="text-xl font-bold text-[#0d3d3b]">{formatCurrency(totalPaid)}</p>
           <p className="text-xs text-stone-400 mt-0.5">{payments.length} payment{payments.length !== 1 ? "s" : ""}</p>
         </div>
-        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-red-400 p-4">
+        <div className="bg-white rounded-md shadow-sm border-l-[3px] border-l-stone-400 p-4">
           <p className="text-[10px] text-stone-400 uppercase tracking-wide mb-1">POs Pending</p>
-          <p className="text-xl font-bold text-red-600">{apRows.filter(r => r.balance > 0).length}</p>
+          <p className="text-xl font-bold text-stone-600">{apRows.filter(r => r.balance > 0).length}</p>
           <p className="text-xs text-stone-400 mt-0.5">
             {formatCurrency(apRows.filter(r => r.balance > 0).reduce((s, r) => s + r.balance, 0))} owed
           </p>

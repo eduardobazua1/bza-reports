@@ -81,16 +81,13 @@ export function FactoringCalculator({ rows }: { rows: FactoringRow[] }) {
           <p className="text-xs text-stone-400 mt-1">+ {SPREAD}% spread = <span className="font-bold text-stone-700">{(sofr + SPREAD).toFixed(2)}%</span> annual</p>
         </div>
         <SummaryTile label="Open KC receivable" value={formatCurrency(totals.face)} sub={`${rows.length} invoices`} />
-        <SummaryTile label="Cash if discounted today" value={formatCurrency(totals.net)} sub={`on ${formatCurrency(totals.eligible)} eligible`} accent />
         <SummaryTile label="Total discount cost" value={formatCurrency(totals.cost)} sub={totals.face > 0 ? `${((totals.cost / totals.eligible) * 100 || 0).toFixed(2)}% of eligible` : ""} />
+        <SummaryTile label="Cash if discounted today" value={formatCurrency(totals.net)} sub={`on ${formatCurrency(totals.eligible)} eligible`} accent />
       </div>
 
-      {(totals.noDate > 0 || totals.atDue > 0) && (
-        <p className="text-xs text-stone-500">
-          {totals.atDue > 0 && <>⏱ <strong>{totals.atDue}</strong> invoice(s) at/past due → $0 cost (nothing left to discount, collect only). </>}
-          {totals.noDate > 0 && <>⚠ <strong>{totals.noDate}</strong> with no due date → can&apos;t be calculated (fill in `due_date`).</>}
-        </p>
-      )}
+      <p className="text-xs text-stone-400">
+        Cost = amount × ({(sofr + SPREAD).toFixed(2)}% ÷ 360) × days to due. The further the due date, the more it costs to advance; near the due date the cost approaches $0. JP Morgan Supply Chain Finance — Kimberly-Clark program only.
+      </p>
 
       {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-stone-100 overflow-hidden">
@@ -113,15 +110,15 @@ export function FactoringCalculator({ rows }: { rows: FactoringRow[] }) {
                   <td className="px-4 py-2 font-medium text-stone-800 whitespace-nowrap">{r.invoiceNumber}</td>
                   <td className="px-4 py-2 text-stone-500">{r.poNumber ?? "—"}</td>
                   <td className="px-4 py-2 text-right tabular-nums text-stone-700">{formatCurrency(r.amount)}</td>
-                  <td className="px-4 py-2 text-stone-500 whitespace-nowrap">{r.dueDate ? formatDate(r.dueDate) : <span className="text-amber-600">sin fecha</span>}</td>
+                  <td className="px-4 py-2 text-stone-500 whitespace-nowrap">{r.dueDate ? formatDate(r.dueDate) : <span className="text-stone-400">no date</span>}</td>
                   <td className="px-4 py-2 text-right tabular-nums">
                     {r.days === null ? "—" : r.days === 0
-                      ? <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-500">al venc.</span>
+                      ? <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-500">at due</span>
                       : <span className="text-stone-700">{r.days}</span>}
                   </td>
                   <td className="px-4 py-2 text-right tabular-nums">
                     {r.cost === null ? "—" : (
-                      <span style={{ color: `hsl(0 ${Math.min(70, (r.costPct ?? 0) * 60)}% 42%)` }}>
+                      <span className="text-stone-600">
                         {formatCurrency(r.cost)}<span className="text-[10px] text-stone-400"> · {(r.costPct ?? 0).toFixed(2)}%</span>
                       </span>
                     )}
@@ -139,7 +136,7 @@ export function FactoringCalculator({ rows }: { rows: FactoringRow[] }) {
                   <td className="px-4 py-2.5" colSpan={2}>Total ({rows.length})</td>
                   <td className="px-4 py-2.5 text-right tabular-nums">{formatCurrency(totals.face)}</td>
                   <td colSpan={2}></td>
-                  <td className="px-4 py-2.5 text-right tabular-nums text-red-700">{formatCurrency(totals.cost)}</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums text-stone-600">{formatCurrency(totals.cost)}</td>
                   <td className="px-4 py-2.5 text-right tabular-nums text-[#0d3d3b]">{formatCurrency(totals.net)}</td>
                 </tr>
               </tfoot>
@@ -147,11 +144,6 @@ export function FactoringCalculator({ rows }: { rows: FactoringRow[] }) {
           </table>
         </div>
       </div>
-
-      <p className="text-xs text-stone-400">
-        Cost = amount × ({(sofr + SPREAD).toFixed(2)}% ÷ 360) × days to due. The further the due date, the more it costs to advance;
-        near the due date the cost approaches $0. JP Morgan Supply Chain Finance — Kimberly-Clark program only.
-      </p>
     </div>
   );
 }

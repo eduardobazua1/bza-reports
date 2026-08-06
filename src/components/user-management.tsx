@@ -79,7 +79,7 @@ export function UserManagement({ users, isAdmin }: { users: User[]; isAdmin: boo
   return (
     <div className="space-y-4">
       {message && (
-        <div className={`rounded-lg p-3 text-sm ${message.ok ? "bg-[#0d3d3b]/5 text-[#0d3d3b] border border-[#0d3d3b]/20" : "bg-red-50 text-red-700 border border-red-200"}`}>
+        <div className={`rounded-lg p-3 text-sm ${message.ok ? "bg-[#0d3d3b]/5 text-[#0d3d3b] border border-[#0d3d3b]/20" : "bg-stone-50 text-stone-700 border border-stone-200"}`}>
           {message.text}
         </div>
       )}
