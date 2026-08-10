@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiMutate } from "@/lib/api-mutate";
+import { PlaidConnect } from "@/components/plaid-connect";
 
 interface BankAccount {
   id: number;
@@ -83,17 +84,20 @@ export default function FinancialsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-stone-800">Bank Accounts</h1>
-          <p className="text-sm text-stone-500">Import statements and manage financial accounts for monthly close.</p>
+          <p className="text-sm text-stone-500">Connect your bank to import transactions automatically, or add/import manually.</p>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-[#0d3d3b] text-white rounded-lg text-sm font-medium hover:bg-[#0d3d3b]"
-        >
-          {showForm ? "Cancel" : "+ Add Account"}
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <PlaidConnect />
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="px-3 py-2 border border-stone-200 text-stone-700 rounded-lg text-xs font-semibold hover:bg-stone-50"
+          >
+            {showForm ? "Cancel" : "+ Add manually"}
+          </button>
+        </div>
       </div>
 
       {showForm && (

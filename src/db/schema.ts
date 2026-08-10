@@ -531,13 +531,26 @@ export const bankAccounts = sqliteTable("bank_accounts", {
   openingDate: text("opening_date").notNull(),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   notes: text("notes"),
+  plaidItemId: integer("plaid_item_id"),                 // links to plaidItems when connected via Plaid
+  plaidAccountId: text("plaid_account_id"),              // Plaid's account_id for this account
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
-// Bank transactions — every line from bank statements (imported via CSV/PDF)
+// Plaid bank connections — one row per linked institution (holds the access token).
+export const plaidItems = sqliteTable("plaid_items", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  itemId: text("item_id").notNull().unique(),
+  accessToken: text("access_token").notNull(),
+  institution: text("institution"),
+  cursor: text("cursor"),                                 // transactions/sync cursor
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Bank transactions — every line from bank statements (imported via CSV/PDF or Plaid)
 export const bankTransactions = sqliteTable("bank_transactions", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   bankAccountId: integer("bank_account_id").notNull().references(() => bankAccounts.id),
+  plaidTransactionId: text("plaid_transaction_id"),        // Plaid's transaction_id (dedupe key)
   transactionDate: text("transaction_date").notNull(),     // YYYY-MM-DD
   amount: real("amount").notNull(),                        // signed: positive=credit, negative=debit
   balanceAfter: real("balance_after"),                     // running balance if available from statement
