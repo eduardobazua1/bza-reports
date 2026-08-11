@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { plaidClient, plaidConfigured } from "@/lib/plaid";
+import { plaidClient, plaidConfigured, decryptToken } from "@/lib/plaid";
 import { db } from "@/db";
 import { plaidItems, bankAccounts, bankTransactions } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -22,10 +22,11 @@ export async function POST() {
       const accts = await db.select().from(bankAccounts).where(eq(bankAccounts.plaidItemId, item.id));
       const acctMap = new Map(accts.map((a) => [a.plaidAccountId, a.id] as const));
 
+      const accessToken = decryptToken(item.accessToken);
       let cursor = item.cursor ?? undefined;
       let hasMore = true;
       while (hasMore) {
-        const r = await client.transactionsSync({ access_token: item.accessToken, cursor });
+        const r = await client.transactionsSync({ access_token: accessToken, cursor });
         for (const t of r.data.added) {
           const baId = acctMap.get(t.account_id);
           if (!baId) continue;

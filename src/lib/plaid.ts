@@ -1,4 +1,29 @@
 import { Configuration, PlaidApi, PlaidEnvironments } from "plaid";
+import { createCipheriv, createDecipheriv, randomBytes, createHash } from "node:crypto";
+
+// ── Encrypt Plaid access tokens at rest (AES-256-GCM) ────────────────────────
+// The access token grants access to bank data, so it is never stored in plaintext.
+// Reuses BACKUP_ENCRYPTION_KEY (already set), or a dedicated PLAID_ENCRYPTION_KEY.
+function tokenKey(): Buffer {
+  const secret = process.env.PLAID_ENCRYPTION_KEY || process.env.BACKUP_ENCRYPTION_KEY;
+  if (!secret) throw new Error("No encryption key set (PLAID_ENCRYPTION_KEY / BACKUP_ENCRYPTION_KEY) for Plaid tokens.");
+  return createHash("sha256").update(secret).digest();
+}
+
+export function encryptToken(plain: string): string {
+  const iv = randomBytes(16);
+  const cipher = createCipheriv("aes-256-gcm", tokenKey(), iv);
+  const ct = Buffer.concat([cipher.update(plain, "utf8"), cipher.final()]);
+  return Buffer.concat([iv, cipher.getAuthTag(), ct]).toString("base64"); // [iv|tag|ct]
+}
+
+export function decryptToken(enc: string): string {
+  const b = Buffer.from(enc, "base64");
+  const iv = b.subarray(0, 16), tag = b.subarray(16, 32), ct = b.subarray(32);
+  const decipher = createDecipheriv("aes-256-gcm", tokenKey(), iv);
+  decipher.setAuthTag(tag);
+  return Buffer.concat([decipher.update(ct), decipher.final()]).toString("utf8");
+}
 
 // Which Plaid environment: sandbox (fake banks, free) | production (real banks).
 const ENV = (process.env.PLAID_ENV || "sandbox") as keyof typeof PlaidEnvironments;

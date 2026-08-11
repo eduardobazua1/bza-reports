@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { plaidClient, mapAccountType } from "@/lib/plaid";
+import { plaidClient, mapAccountType, encryptToken } from "@/lib/plaid";
 import { db } from "@/db";
 import { plaidItems, bankAccounts } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     const itemId = ex.data.item_id;
 
     const [item] = await db.insert(plaidItems)
-      .values({ itemId, accessToken, institution: institution ?? null })
+      .values({ itemId, accessToken: encryptToken(accessToken), institution: institution ?? null })
       .returning();
 
     const acc = await client.accountsGet({ access_token: accessToken });
