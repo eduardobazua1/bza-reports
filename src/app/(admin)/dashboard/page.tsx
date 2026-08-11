@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { getDashboardKPIs, getInvoices } from "@/server/queries";
 import { db } from "@/db";
-import { scheduledReports, purchaseOrders, invoices, supplierPayments } from "@/db/schema";
+import { scheduledReports, purchaseOrders, invoices, supplierPayments, bankAccounts, bankTransactions } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { getCreditInsuranceData } from "@/server/credit-insurance";
 import { DashboardApp, type Row } from "@/components/dashboard-app";
@@ -55,6 +55,35 @@ export default async function DashboardPage() {
   const todayStr = new Date().toISOString().split("T")[0];
   const overdueReportsCount = pendingSchedules.filter((s) => s.sendDate <= todayStr).length;
 
+  // Bank cash: current balance per account = opening balance + net of its transactions.
+  const [bankRows, txnSums] = await Promise.all([
+    db.select({
+      id: bankAccounts.id,
+      name: bankAccounts.name,
+      bank: bankAccounts.bank,
+      accountNumberMasked: bankAccounts.accountNumberMasked,
+      accountType: bankAccounts.accountType,
+      openingBalance: bankAccounts.openingBalance,
+      isActive: bankAccounts.isActive,
+    }).from(bankAccounts),
+    db.select({
+      bankAccountId: bankTransactions.bankAccountId,
+      net: sql<number>`coalesce(sum(${bankTransactions.amount}), 0)`,
+    }).from(bankTransactions).groupBy(bankTransactions.bankAccountId),
+  ]);
+  const bankAccountsData = bankRows
+    .filter((a) => a.isActive)
+    .map((a) => ({
+      id: a.id,
+      name: a.name,
+      bank: a.bank,
+      accountNumberMasked: a.accountNumberMasked,
+      accountType: a.accountType,
+      currentBalance: Number(a.openingBalance) + Number(txnSums.find((t) => t.bankAccountId === a.id)?.net ?? 0),
+    }))
+    .sort((a, b) => b.currentBalance - a.currentBalance);
+  const totalCash = bankAccountsData.reduce((sum, a) => sum + a.currentBalance, 0);
+
   // Serializable per-invoice rows — same data, computed client-side per period.
   const rows: Row[] = allInvoices.map((r) => ({
     id: r.invoice.id,
@@ -83,6 +112,8 @@ export default async function DashboardPage() {
       activePOs={kpis.activePOs}
       creditInsurance={creditInsurance}
       overdueReportsCount={overdueReportsCount}
+      bankAccounts={bankAccountsData}
+      totalCash={totalCash}
     />
   );
 }

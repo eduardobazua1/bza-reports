@@ -44,6 +44,15 @@ export type Row = {
   dueDate: string | null;
 };
 
+export type BankAccount = {
+  id: number;
+  name: string;
+  bank: string;
+  accountNumberMasked: string;
+  accountType: string;
+  currentBalance: number;
+};
+
 type Props = {
   rows: Row[];
   supplierBalance: number;
@@ -51,6 +60,8 @@ type Props = {
   activePOs: number;
   creditInsurance: CreditInsuranceData;
   overdueReportsCount: number;
+  bankAccounts: BankAccount[];
+  totalCash: number;
 };
 
 type Period = "month" | "year" | "all";
@@ -60,6 +71,7 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 
 export function DashboardApp({
   rows, supplierBalance, supplierBalanceNet, activePOs, creditInsurance, overdueReportsCount,
+  bankAccounts, totalCash,
 }: Props) {
   const [tab, setTab] = useState<Tab>("exec");
   const [period, setPeriod] = useState<Period>("all");
@@ -134,9 +146,9 @@ export function DashboardApp({
         )}
       </div>
 
-      {tab === "exec" && <ExecTab s={s} periodLabel={periodLabel} activePOs={activePOs} supplierBalance={supplierBalance} supplierBalanceNet={supplierBalanceNet} creditInsurance={creditInsurance} latestPrices={latestPrices} onNav={setTab} />}
+      {tab === "exec" && <ExecTab s={s} periodLabel={periodLabel} activePOs={activePOs} supplierBalance={supplierBalance} supplierBalanceNet={supplierBalanceNet} creditInsurance={creditInsurance} latestPrices={latestPrices} totalCash={totalCash} onNav={setTab} />}
       {tab === "ops" && <OpsTab s={s} rows={scoped} period={period} periodLabel={periodLabel} />}
-      {tab === "fin" && <FinTab s={s} rows={scoped} periodLabel={periodLabel} supplierBalance={supplierBalance} supplierBalanceNet={supplierBalanceNet} onNav={setTab} />}
+      {tab === "fin" && <FinTab s={s} rows={scoped} periodLabel={periodLabel} supplierBalance={supplierBalance} supplierBalanceNet={supplierBalanceNet} bankAccounts={bankAccounts} totalCash={totalCash} onNav={setTab} />}
       {tab === "hist" && <HistTab hist={hist} />}
     </div>
   );
@@ -144,9 +156,9 @@ export function DashboardApp({
 
 // ============================ Executive ============================
 type PriceRow = { product: string; sold: number; bought: number; date: string | null; client: string };
-function ExecTab({ s, periodLabel, activePOs, supplierBalance, supplierBalanceNet, creditInsurance, latestPrices, onNav }: {
+function ExecTab({ s, periodLabel, activePOs, supplierBalance, supplierBalanceNet, creditInsurance, latestPrices, totalCash, onNav }: {
   s: Stats; periodLabel: string; activePOs: number; supplierBalance: number; supplierBalanceNet: number;
-  creditInsurance: Props["creditInsurance"]; latestPrices: PriceRow[]; onNav: (t: Tab) => void;
+  creditInsurance: Props["creditInsurance"]; latestPrices: PriceRow[]; totalCash: number; onNav: (t: Tab) => void;
 }) {
   return (
     <div className="space-y-4">
@@ -162,7 +174,8 @@ function ExecTab({ s, periodLabel, activePOs, supplierBalance, supplierBalanceNe
       </div>
 
       {/* Secondary strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <MiniKPI label="Cash on hand" value={compactUSD(totalCash)} valueColor={G.d2} href="/financials" />
         <MiniKPI label="Active POs" value={activePOs.toString()} href="/purchase-orders?status=active" />
         <MiniKPI label="Open Invoices" value={s.unpaidCount.toString()} sub="unpaid" href="/invoices?status=unpaid" />
         <MiniKPI label="Accounts Receivable" value={compactUSD(s.arTotal)} valueColor={G.d4} href="/invoices?status=unpaid" />
@@ -361,7 +374,7 @@ function OpsTab({ s, rows, period, periodLabel }: { s: Stats; rows: Row[]; perio
 }
 
 // ============================ Financial ============================
-function FinTab({ s, rows, periodLabel, supplierBalance, supplierBalanceNet, onNav }: { s: Stats; rows: Row[]; periodLabel: string; supplierBalance: number; supplierBalanceNet: number; onNav: (t: Tab) => void }) {
+function FinTab({ s, rows, periodLabel, supplierBalance, supplierBalanceNet, bankAccounts, totalCash, onNav }: { s: Stats; rows: Row[]; periodLabel: string; supplierBalance: number; supplierBalanceNet: number; bankAccounts: BankAccount[]; totalCash: number; onNav: (t: Tab) => void }) {
   const ar = s.arTotal;
   const ap = supplierBalance;
   const net = ar - ap;
@@ -382,6 +395,8 @@ function FinTab({ s, rows, periodLabel, supplierBalance, supplierBalanceNet, onN
   }), [clientShipments]);
 
   return (
+    <div className="space-y-4">
+    <CashBankCard accounts={bankAccounts} total={totalCash} />
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <Card className="lg:row-span-2">
         <div className="flex items-center justify-between">
@@ -471,6 +486,46 @@ function FinTab({ s, rows, periodLabel, supplierBalance, supplierBalanceNet, onN
         )}
       </Card>
     </div>
+    </div>
+  );
+}
+
+// Actual bank cash — current balance per account (opening + net of transactions).
+const ACCT_COLORS = [G.d2, G.m, G.d4, G.l1, G.d3, G.d1];
+function CashBankCard({ accounts, total }: { accounts: BankAccount[]; total: number }) {
+  return (
+    <Card>
+      <div className="flex items-start justify-between mb-1 gap-3">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-stone-700">Cash &amp; Bank</h3>
+          <Link href="/financials" className="text-[11px] text-[#0d3d3b] hover:underline">All accounts →</Link>
+        </div>
+        <div className="text-right">
+          <p className="text-2xl font-extrabold tabular-nums leading-none" style={{ color: G.d2 }}>{formatCurrency(total)}</p>
+          <p className="text-[11px] uppercase tracking-wider text-stone-400 mt-1">Total cash on hand</p>
+        </div>
+      </div>
+      {accounts.length === 0 ? (
+        <div className="text-center py-6">
+          <p className="text-xs text-stone-400">No bank accounts connected yet.</p>
+          <Link href="/financials" className="text-xs font-semibold text-[#0d3d3b] hover:underline">Connect your bank →</Link>
+        </div>
+      ) : (
+        <div className="grid sm:grid-cols-2 gap-2 mt-3">
+          {accounts.map((a, i) => (
+            <Link key={a.id} href={`/financials/transactions?accountId=${a.id}`}
+              className="flex items-center gap-3 rounded-lg border border-stone-100 p-3 hover:bg-stone-50 hover:shadow-sm transition">
+              <span className="w-2.5 h-2.5 rounded-full flex-none" style={{ background: ACCT_COLORS[i % ACCT_COLORS.length] }} />
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-stone-700 truncate">{a.name}</p>
+                <p className="text-[11px] text-stone-400 truncate">{a.bank} · {a.accountNumberMasked} · {a.accountType.replace("_", " ")}</p>
+              </div>
+              <p className="ml-auto text-sm font-extrabold tabular-nums" style={{ color: G.ink }}>{formatCurrency(a.currentBalance)}</p>
+            </Link>
+          ))}
+        </div>
+      )}
+    </Card>
   );
 }
 
