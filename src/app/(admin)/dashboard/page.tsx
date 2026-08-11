@@ -2,8 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { getDashboardKPIs, getInvoices } from "@/server/queries";
 import { db } from "@/db";
-import { scheduledReports, purchaseOrders, invoices, supplierPayments, bankAccounts, bankTransactions } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { scheduledReports, purchaseOrders, invoices, supplierPayments, customerPayments, bankAccounts, bankTransactions } from "@/db/schema";
+import { eq, and, lt, like, sql } from "drizzle-orm";
 import { getCreditInsuranceData } from "@/server/credit-insurance";
 import { DashboardApp, type Row } from "@/components/dashboard-app";
 
@@ -84,6 +84,24 @@ export default async function DashboardPage() {
     .sort((a, b) => b.currentBalance - a.currentBalance);
   const totalCash = bankAccountsData.reduce((sum, a) => sum + a.currentBalance, 0);
 
+  // Monthly accounting — real cash this month: collected, paid, and business expenses (OpEx).
+  const curMonthStr = new Date().toISOString().slice(0, 7); // YYYY-MM
+  const [collectedRow, paidRow, expenseRow] = await Promise.all([
+    db.select({ v: sql<number>`coalesce(sum(${customerPayments.amount}), 0)` })
+      .from(customerPayments).where(like(customerPayments.paymentDate, `${curMonthStr}%`)),
+    db.select({ v: sql<number>`coalesce(sum(${supplierPayments.amountUsd}), 0)` })
+      .from(supplierPayments).where(like(supplierPayments.paymentDate, `${curMonthStr}%`)),
+    db.select({ v: sql<number>`coalesce(sum(-${bankTransactions.amount}), 0)` })
+      .from(bankTransactions)
+      .where(and(eq(bankTransactions.category, "OpEx"), lt(bankTransactions.amount, 0), like(bankTransactions.transactionDate, `${curMonthStr}%`))),
+  ]);
+  const accounting = {
+    month: curMonthStr,
+    collected: Number(collectedRow[0]?.v ?? 0),
+    paid: Number(paidRow[0]?.v ?? 0),
+    expenses: Number(expenseRow[0]?.v ?? 0),
+  };
+
   // Serializable per-invoice rows — same data, computed client-side per period.
   const rows: Row[] = allInvoices.map((r) => ({
     id: r.invoice.id,
@@ -114,6 +132,7 @@ export default async function DashboardPage() {
       overdueReportsCount={overdueReportsCount}
       bankAccounts={bankAccountsData}
       totalCash={totalCash}
+      accounting={accounting}
     />
   );
 }

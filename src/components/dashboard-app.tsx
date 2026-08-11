@@ -53,6 +53,8 @@ export type BankAccount = {
   currentBalance: number;
 };
 
+export type Accounting = { month: string; collected: number; paid: number; expenses: number };
+
 type Props = {
   rows: Row[];
   supplierBalance: number;
@@ -62,6 +64,7 @@ type Props = {
   overdueReportsCount: number;
   bankAccounts: BankAccount[];
   totalCash: number;
+  accounting: Accounting;
 };
 
 type Period = "month" | "year" | "all";
@@ -71,7 +74,7 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 
 export function DashboardApp({
   rows, supplierBalance, supplierBalanceNet, activePOs, creditInsurance, overdueReportsCount,
-  bankAccounts, totalCash,
+  bankAccounts, totalCash, accounting,
 }: Props) {
   const [tab, setTab] = useState<Tab>("exec");
   const [period, setPeriod] = useState<Period>("all");
@@ -79,6 +82,27 @@ export function DashboardApp({
   const now = new Date();
   const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const curYear = String(now.getFullYear());
+
+  // Booked (accrual) for the current month + trailing-12-month figures for DSO/DPO.
+  const booked = useMemo(() => {
+    const m = rows.filter((r) => r.shipmentDate?.startsWith(curMonth));
+    return {
+      revenue: m.reduce((n, r) => n + r.tons * r.sellPrice, 0),
+      gp: m.reduce((n, r) => n + r.tons * (r.sellPrice - r.buyPrice), 0),
+    };
+  }, [rows, curMonth]);
+  const finance = useMemo(() => {
+    const cutoff = `${now.getFullYear() - 1}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    let ttmRevenue = 0, ttmPurchases = 0;
+    for (const r of rows) {
+      if (r.shipmentDate && r.shipmentDate.slice(0, 7) >= cutoff) {
+        ttmRevenue += r.tons * r.sellPrice;
+        ttmPurchases += r.tons * r.buyPrice;
+      }
+    }
+    const ar = rows.filter((r) => r.custUnpaid).reduce((n, r) => n + r.tons * r.sellPrice, 0);
+    return { ttmRevenue, ttmPurchases, ar };
+  }, [rows, now]);
 
   // Period filter (Histórico ignores it — it IS the time view)
   const scoped = useMemo(() => {
@@ -148,7 +172,7 @@ export function DashboardApp({
 
       {tab === "exec" && <ExecTab s={s} periodLabel={periodLabel} activePOs={activePOs} supplierBalance={supplierBalance} supplierBalanceNet={supplierBalanceNet} creditInsurance={creditInsurance} latestPrices={latestPrices} totalCash={totalCash} onNav={setTab} />}
       {tab === "ops" && <OpsTab s={s} rows={scoped} period={period} periodLabel={periodLabel} />}
-      {tab === "fin" && <FinTab s={s} rows={scoped} periodLabel={periodLabel} supplierBalance={supplierBalance} supplierBalanceNet={supplierBalanceNet} bankAccounts={bankAccounts} totalCash={totalCash} onNav={setTab} />}
+      {tab === "fin" && <FinTab s={s} rows={scoped} periodLabel={periodLabel} supplierBalance={supplierBalance} bankAccounts={bankAccounts} totalCash={totalCash} accounting={accounting} booked={booked} finance={finance} onNav={setTab} />}
       {tab === "hist" && <HistTab hist={hist} />}
     </div>
   );
@@ -374,33 +398,30 @@ function OpsTab({ s, rows, period, periodLabel }: { s: Stats; rows: Row[]; perio
 }
 
 // ============================ Financial ============================
-function FinTab({ s, rows, periodLabel, supplierBalance, supplierBalanceNet, bankAccounts, totalCash, onNav }: { s: Stats; rows: Row[]; periodLabel: string; supplierBalance: number; supplierBalanceNet: number; bankAccounts: BankAccount[]; totalCash: number; onNav: (t: Tab) => void }) {
-  const ar = s.arTotal;
-  const ap = supplierBalance;
-  const net = ar - ap;
-  const maxV = Math.max(ar, ap, 1);
-  const maxClient = Math.max(...s.topClients.map((c) => c.tons), 1);
-  const [selClient, setSelClient] = useState<string | null>(null);
-
-  const clientShipments = useMemo(() => {
-    if (!selClient) return [];
-    return rows
-      .filter((r) => (r.clientName || "—") === selClient)
-      .map((r) => ({ r, sales: r.tons * r.sellPrice }))
-      .sort((a, b) => b.sales - a.sales);
-  }, [selClient, rows]);
-  const clientTotals = useMemo(() => ({
-    tons: clientShipments.reduce((n, x) => n + x.r.tons, 0),
-    sales: clientShipments.reduce((n, x) => n + x.sales, 0),
-  }), [clientShipments]);
-
+function FinTab({ s, rows, periodLabel, supplierBalance, bankAccounts, totalCash, accounting, booked, finance, onNav }: {
+  s: Stats; rows: Row[]; periodLabel: string; supplierBalance: number; bankAccounts: BankAccount[]; totalCash: number;
+  accounting: Accounting; booked: { revenue: number; gp: number }; finance: { ttmRevenue: number; ttmPurchases: number; ar: number }; onNav: (t: Tab) => void;
+}) {
+  const marginPerTon = s.tons > 0 ? s.profit / s.tons : 0;
   return (
     <div className="space-y-4">
-    <CashBankCard accounts={bankAccounts} total={totalCash} />
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <Card className="lg:row-span-2">
+      <CashBankCard accounts={bankAccounts} total={totalCash} />
+      <MonthlyAccountingCard booked={booked} accounting={accounting} />
+
+      <div className="grid grid-cols-3 gap-3">
+        <MiniKPI label="Gross Profit" value={compactUSD(s.profit)} sub={periodLabel} valueColor={G.d2} />
+        <MiniKPI label="Gross Margin" value={formatPercent(s.margin)} sub="of revenue" valueColor={G.d4} />
+        <MiniKPI label="Margin / Ton" value={`$${formatNumber(marginPerTon, 0)}`} sub="per ton sold" valueColor={G.m} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <WorkingCapitalCard ar={finance.ar} ap={supplierBalance} ttmRevenue={finance.ttmRevenue} ttmPurchases={finance.ttmPurchases} />
+        <ConcentrationCard rows={rows} periodLabel={periodLabel} />
+      </div>
+
+      <Card>
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-stone-700">Margin & profit by year</h3>
+          <h3 className="text-sm font-semibold text-stone-700">Margin &amp; profit by year</h3>
           <button onClick={() => onNav("hist")} className="text-[11px] font-semibold text-[#0d3d3b] hover:underline">Full history →</button>
         </div>
         <div className="flex items-end gap-4 h-44 mt-5">
@@ -420,72 +441,144 @@ function FinTab({ s, rows, periodLabel, supplierBalance, supplierBalanceNet, ban
         </div>
         <p className="text-[11px] text-stone-400 mt-3 pt-3 border-t border-stone-100">Bar height = volume · label = profit &amp; margin · click a year for the full monthly history</p>
       </Card>
+    </div>
+  );
+}
 
-      <Card>
-        <h3 className="text-sm font-semibold text-stone-700">Cash position</h3>
-        <div className="flex items-center gap-2 mt-4">
-          <Link href="/invoices?status=unpaid" className="flex-1 rounded-lg hover:bg-stone-50 transition-colors" title="See unpaid customer invoices">
-            <CashSide label="Receivable" value={compactUSD(ar)} color={G.d3} pct={(ar / maxV) * 100} />
-          </Link>
-          <span className="text-stone-300 font-bold pb-4">−</span>
-          <Link href="/accounts-payable" className="flex-1 rounded-lg hover:bg-stone-50 transition-colors" title="See accounts payable">
-            <CashSide label="Payable" value={compactUSD(ap)} color={G.l1} pct={(ap / maxV) * 100} />
-          </Link>
-          <span className="text-stone-300 font-bold pb-4">=</span>
-          <div className="flex-1">
-            <CashSide label="Net" value={`${net >= 0 ? "+" : "−"}${compactUSD(Math.abs(net))}`} color={G.d1} pct={(Math.abs(net) / maxV) * 100} />
-          </div>
+// "En el aire" (booked/accrual) vs "real" (cash collected/paid) + business expenses, this month.
+function MonthlyAccountingCard({ booked, accounting }: { booked: { revenue: number; gp: number }; accounting: Accounting }) {
+  const netCash = accounting.collected - accounting.paid - accounting.expenses;
+  const mi = Number(accounting.month.slice(5, 7)) - 1;
+  const monthLabel = `${MONTHS[mi] ?? ""} ${accounting.month.slice(0, 4)}`;
+  return (
+    <Card>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-stone-700">Monthly accounting</h3>
+          <span className="text-[11px] text-stone-400">{monthLabel}</span>
         </div>
-        <p className="text-[11px] text-stone-400 mt-3">Click Receivable / Payable for the detail.</p>
-      </Card>
+        <Link href="/financials" className="text-[11px] text-[#0d3d3b] hover:underline">Details →</Link>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="rounded-lg border border-stone-100 p-3">
+          <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: G.d3 }}>On paper · booked</p>
+          <AcctRow label="Invoiced" value={compactUSD(booked.revenue)} />
+          <AcctRow label="Gross profit" value={compactUSD(booked.gp)} strong />
+        </div>
+        <div className="rounded-lg border border-stone-100 p-3">
+          <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: G.d1 }}>Real · cash</p>
+          <AcctRow label="Collected" value={`+${compactUSD(accounting.collected)}`} />
+          <AcctRow label="Paid" value={`−${compactUSD(accounting.paid)}`} />
+          <AcctRow label="Net cash" value={`${netCash >= 0 ? "+" : "−"}${compactUSD(Math.abs(netCash))}`} strong />
+        </div>
+        <div className="rounded-lg p-3" style={{ background: G.l4 }}>
+          <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: G.d2 }}>Expenses · OpEx</p>
+          <p className="text-xl font-extrabold tabular-nums mt-1" style={{ color: G.d1 }}>{compactUSD(accounting.expenses)}</p>
+          <p className="text-[10px] text-stone-500 mt-0.5">Business overhead this month</p>
+        </div>
+      </div>
+      <p className="text-[11px] text-stone-400 mt-3">Booked = what you invoiced. Cash = money actually in / out. Cash &amp; expenses fill in as your bank syncs.</p>
+    </Card>
+  );
+}
+function AcctRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+  return (
+    <div className="flex items-center justify-between mt-1.5">
+      <span className="text-[11px] text-stone-500">{label}</span>
+      <span className={`tabular-nums ${strong ? "text-sm font-extrabold" : "text-xs font-semibold"}`} style={{ color: strong ? G.d1 : G.ink }}>{value}</span>
+    </div>
+  );
+}
 
-      <Card>
-        {selClient ? (
-          <>
-            <div className="flex items-center justify-between mb-3">
-              <div className="min-w-0">
-                <button onClick={() => setSelClient(null)} className="text-[11px] text-[#0d3d3b] hover:underline">← Top clients</button>
-                <h3 className="text-sm font-semibold text-stone-700 truncate">{selClient}</h3>
-                <p className="text-[11px] text-stone-400">{periodLabel} · {clientShipments.length} shipments · {formatNumber(clientTotals.tons, 0)} TN · {compactUSD(clientTotals.sales)}</p>
+// Working capital (AR − AP) + how many days you finance each deal (DSO / DPO / CCC).
+function WorkingCapitalCard({ ar, ap, ttmRevenue, ttmPurchases }: { ar: number; ap: number; ttmRevenue: number; ttmPurchases: number }) {
+  const wc = ar - ap;
+  const maxV = Math.max(ar, ap, 1);
+  const dso = ttmRevenue > 0 ? Math.round((ar / ttmRevenue) * 365) : 0;
+  const dpo = ttmPurchases > 0 ? Math.round((ap / ttmPurchases) * 365) : 0;
+  const ccc = dso - dpo;
+  return (
+    <Card>
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-stone-700">Working capital</h3>
+        <span className="text-[11px] text-stone-400">current position</span>
+      </div>
+      <div className="flex items-center gap-2 mt-4">
+        <Link href="/invoices?status=unpaid" className="flex-1 rounded-lg hover:bg-stone-50 transition-colors">
+          <CashSide label="Receivable" value={compactUSD(ar)} color={G.d3} pct={(ar / maxV) * 100} />
+        </Link>
+        <span className="text-stone-300 font-bold pb-4">−</span>
+        <Link href="/accounts-payable" className="flex-1 rounded-lg hover:bg-stone-50 transition-colors">
+          <CashSide label="Payable" value={compactUSD(ap)} color={G.l1} pct={(ap / maxV) * 100} />
+        </Link>
+        <span className="text-stone-300 font-bold pb-4">=</span>
+        <div className="flex-1">
+          <CashSide label="Working cap." value={`${wc < 0 ? "−" : ""}${compactUSD(Math.abs(wc))}`} color={G.d1} pct={(Math.abs(wc) / maxV) * 100} />
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-stone-100">
+        <DayStat label="DSO" value={dso} hint="to collect" />
+        <DayStat label="DPO" value={dpo} hint="to pay" />
+        <DayStat label="CCC" value={ccc} hint="financed" />
+      </div>
+      <p className="text-[11px] text-stone-400 mt-3">CCC = DSO − DPO: days you finance each deal (annualized). Lower is better.</p>
+    </Card>
+  );
+}
+function DayStat({ label, value, hint }: { label: string; value: number; hint: string }) {
+  return (
+    <div className="text-center">
+      <p className="text-lg font-extrabold tabular-nums" style={{ color: G.d2 }}>{value}<span className="text-[11px] text-stone-400 font-semibold"> d</span></p>
+      <p className="text-[10px] font-bold uppercase tracking-wide text-stone-500">{label}</p>
+      <p className="text-[10px] text-stone-400">{hint}</p>
+    </div>
+  );
+}
+
+// Customer / supplier concentration — how much of the business rides on the biggest counterparty.
+function ConcentrationCard({ rows, periodLabel }: { rows: Row[]; periodLabel: string }) {
+  const custMap = new Map<string, number>();
+  const supMap = new Map<string, number>();
+  let totalSales = 0, totalPurch = 0;
+  for (const r of rows) {
+    const sales = r.tons * r.sellPrice, purch = r.tons * r.buyPrice;
+    const c = r.clientName || "—"; custMap.set(c, (custMap.get(c) ?? 0) + sales); totalSales += sales;
+    const su = r.supplierName || "—"; supMap.set(su, (supMap.get(su) ?? 0) + purch); totalPurch += purch;
+  }
+  const topC = [...custMap.entries()].map(([n, v]) => ({ n, pct: totalSales > 0 ? (v / totalSales) * 100 : 0 })).sort((a, b) => b.pct - a.pct).slice(0, 4);
+  const topS = [...supMap.entries()].map(([n, v]) => ({ n, pct: totalPurch > 0 ? (v / totalPurch) * 100 : 0 })).sort((a, b) => b.pct - a.pct).slice(0, 4);
+  return (
+    <Card>
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-stone-700">Concentration</h3>
+        <span className="text-[11px] text-stone-400">{periodLabel}</span>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
+        <ConcList title="Customers · % of sales" items={topC} empty="No sales in this period" />
+        <ConcList title="Suppliers · % of purchases" items={topS} empty="No purchases in this period" />
+      </div>
+      <p className="text-[11px] text-stone-400 mt-3">How much of your business depends on your biggest client / supplier.</p>
+    </Card>
+  );
+}
+function ConcList({ title, items, empty }: { title: string; items: { n: string; pct: number }[]; empty: string }) {
+  return (
+    <div>
+      <p className="text-[11px] font-bold uppercase tracking-wide text-stone-400 mb-2">{title}</p>
+      <div className="flex flex-col gap-2">
+        {items.length === 0 && <p className="text-xs text-stone-400">{empty}</p>}
+        {items.map((it, i) => (
+          <div key={it.n} className="grid grid-cols-[1fr_auto] items-center gap-2 text-xs">
+            <div className="min-w-0">
+              <p className="truncate text-stone-600">{it.n}</p>
+              <div className="h-1.5 bg-stone-100 rounded-full overflow-hidden mt-1">
+                <div className="h-full rounded-full" style={{ width: `${it.pct}%`, background: shade(i) }} />
               </div>
             </div>
-            <div className="space-y-1 max-h-72 overflow-y-auto">
-              {clientShipments.map(({ r, sales }) => (
-                <Link key={r.id} href={`/api/invoice-pdf?invoice=${encodeURIComponent(r.invoiceNumber)}`} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-3 py-1.5 px-2 rounded hover:bg-stone-50">
-                  <span className="w-2 h-2 rounded-full flex-none" style={{ background: destColor(r.destination) }} />
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-stone-700 truncate">{r.invoiceNumber}</p>
-                    <p className="text-[11px] text-stone-400 truncate">{r.shipmentDate ? formatDate(r.shipmentDate) : "—"} · {r.destination || "—"}</p>
-                  </div>
-                  <div className="ml-auto text-right shrink-0">
-                    <p className="text-xs font-extrabold tabular-nums">{compactUSD(sales)}</p>
-                    <p className="text-[11px] text-stone-400">{formatNumber(r.tons, 0)} TN</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </>
-        ) : (
-          <>
-            <h3 className="text-sm font-semibold text-stone-700">Top clients by volume</h3>
-            <p className="text-[11px] text-stone-400 mb-3">Click a client for their shipments.</p>
-            <div className="flex flex-col gap-2.5">
-              {s.topClients.map((c, i) => (
-                <button key={c.name} onClick={() => setSelClient(c.name)} className="grid grid-cols-[110px_1fr_auto] items-center gap-3 text-xs group text-left">
-                  <span className="text-stone-500 group-hover:text-[#0d3d3b] truncate">{c.name}</span>
-                  <div className="h-2.5 bg-stone-100 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full group-hover:opacity-80" style={{ width: `${(c.tons / maxClient) * 100}%`, background: shade(i) }} />
-                  </div>
-                  <span className="font-bold tabular-nums">{formatNumber(c.tons, 0)} TN</span>
-                </button>
-              ))}
-              {s.topClients.length === 0 && <p className="text-xs text-stone-400">No data in this period</p>}
-            </div>
-          </>
-        )}
-      </Card>
-    </div>
+            <span className="font-bold tabular-nums" style={{ color: G.ink }}>{it.pct.toFixed(0)}%</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
