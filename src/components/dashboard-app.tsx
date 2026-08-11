@@ -54,11 +54,12 @@ export type BankAccount = {
 };
 
 export type AcctItem = { label: string; sub: string; value: number };
-export type Accounting = {
-  month: string;
+export type AcctMonth = {
   collected: number; paid: number; expenses: number;
   collectedItems: AcctItem[]; paidItems: AcctItem[]; expenseItems: AcctItem[];
 };
+export type Accounting = { month: string; byMonth: Record<string, AcctMonth> };
+type BookedMonth = { revenue: number; gp: number; items: AcctItem[] };
 
 type Props = {
   rows: Row[];
@@ -88,17 +89,21 @@ export function DashboardApp({
   const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const curYear = String(now.getFullYear());
 
-  // Booked (accrual) for the current month + trailing-12-month figures for DSO/DPO.
-  const booked = useMemo(() => {
-    const m = rows.filter((r) => r.shipmentDate?.startsWith(curMonth));
-    return {
-      revenue: m.reduce((n, r) => n + r.tons * r.sellPrice, 0),
-      gp: m.reduce((n, r) => n + r.tons * (r.sellPrice - r.buyPrice), 0),
-      items: m
-        .map((r) => ({ label: r.invoiceNumber || "—", sub: `${r.clientName || "—"} · ${formatNumber(r.tons, 0)} TN`, value: r.tons * r.sellPrice }))
-        .sort((a, b) => b.value - a.value),
-    };
-  }, [rows, curMonth]);
+  // Booked (accrual) revenue/GP + invoice detail, grouped by month; trailing-12-mo for DSO/DPO.
+  const bookedByMonth = useMemo(() => {
+    const map: Record<string, BookedMonth> = {};
+    for (const r of rows) {
+      if (!r.shipmentDate) continue;
+      const m = r.shipmentDate.slice(0, 7);
+      const b = (map[m] ??= { revenue: 0, gp: 0, items: [] });
+      const sales = r.tons * r.sellPrice;
+      b.revenue += sales;
+      b.gp += r.tons * (r.sellPrice - r.buyPrice);
+      b.items.push({ label: r.invoiceNumber || "—", sub: `${r.clientName || "—"} · ${formatNumber(r.tons, 0)} TN`, value: sales });
+    }
+    for (const m of Object.keys(map)) map[m].items.sort((a, b) => b.value - a.value);
+    return map;
+  }, [rows]);
   const finance = useMemo(() => {
     const cutoff = `${now.getFullYear() - 1}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     let ttmRevenue = 0, ttmPurchases = 0;
@@ -180,7 +185,7 @@ export function DashboardApp({
 
       {tab === "exec" && <ExecTab s={s} periodLabel={periodLabel} activePOs={activePOs} supplierBalance={supplierBalance} supplierBalanceNet={supplierBalanceNet} creditInsurance={creditInsurance} latestPrices={latestPrices} totalCash={totalCash} onNav={setTab} />}
       {tab === "ops" && <OpsTab s={s} rows={scoped} period={period} periodLabel={periodLabel} />}
-      {tab === "fin" && <FinTab s={s} rows={scoped} periodLabel={periodLabel} supplierBalance={supplierBalance} bankAccounts={bankAccounts} totalCash={totalCash} accounting={accounting} booked={booked} finance={finance} onNav={setTab} />}
+      {tab === "fin" && <FinTab s={s} rows={scoped} periodLabel={periodLabel} supplierBalance={supplierBalance} bankAccounts={bankAccounts} totalCash={totalCash} accounting={accounting} bookedByMonth={bookedByMonth} finance={finance} onNav={setTab} />}
       {tab === "hist" && <HistTab hist={hist} />}
     </div>
   );
@@ -406,21 +411,23 @@ function OpsTab({ s, rows, period, periodLabel }: { s: Stats; rows: Row[]; perio
 }
 
 // ============================ Financial ============================
-function FinTab({ s, rows, periodLabel, supplierBalance, bankAccounts, totalCash, accounting, booked, finance, onNav }: {
+function FinTab({ s, rows, periodLabel, supplierBalance, bankAccounts, totalCash, accounting, bookedByMonth, finance, onNav }: {
   s: Stats; rows: Row[]; periodLabel: string; supplierBalance: number; bankAccounts: BankAccount[]; totalCash: number;
-  accounting: Accounting; booked: { revenue: number; gp: number; items: AcctItem[] }; finance: { ttmRevenue: number; ttmPurchases: number; ar: number }; onNav: (t: Tab) => void;
+  accounting: Accounting; bookedByMonth: Record<string, BookedMonth>; finance: { ttmRevenue: number; ttmPurchases: number; ar: number }; onNav: (t: Tab) => void;
 }) {
   const marginPerTon = s.tons > 0 ? s.profit / s.tons : 0;
   return (
     <div className="space-y-4">
       <CashBankCard accounts={bankAccounts} total={totalCash} />
-      <MonthlyAccountingCard booked={booked} accounting={accounting} />
+      <MonthlyAccountingCard bookedByMonth={bookedByMonth} accounting={accounting} />
 
       <div className="grid grid-cols-3 gap-3">
         <MiniKPI label="Gross Profit" value={compactUSD(s.profit)} sub={periodLabel} valueColor={G.d2} />
         <MiniKPI label="Gross Margin" value={formatPercent(s.margin)} sub="of revenue" valueColor={G.d4} />
         <MiniKPI label="Margin / Ton" value={`$${formatNumber(marginPerTon, 0)}`} sub="per ton sold" valueColor={G.m} />
       </div>
+
+      <ProductProfitCard rows={rows} periodLabel={periodLabel} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <WorkingCapitalCard ar={finance.ar} ap={supplierBalance} ttmRevenue={finance.ttmRevenue} ttmPurchases={finance.ttmPurchases} />
@@ -447,73 +454,109 @@ function FinTab({ s, rows, periodLabel, supplierBalance, bankAccounts, totalCash
             );
           })}
         </div>
-        <p className="text-[11px] text-stone-400 mt-3 pt-3 border-t border-stone-100">Bar height = volume · label = profit &amp; margin · click a year for the full monthly history</p>
       </Card>
     </div>
   );
 }
 
-// "En el aire" (booked/accrual) vs "real" (cash collected/paid) + business expenses, this month.
-// Each panel expands to show the line-item detail behind the number.
-function MonthlyAccountingCard({ booked, accounting }: { booked: { revenue: number; gp: number; items: AcctItem[] }; accounting: Accounting }) {
+// "En el aire" (booked/accrual) vs "real" (cash collected/paid) + business expenses.
+// Navigable month by month (‹ ›), with ▲▼ deltas vs the previous month, and per-box line-item detail.
+type Delta = { pct: number; up: boolean } | null;
+function pctDelta(cur: number, prev: number | null | undefined): Delta {
+  if (prev === null || prev === undefined) return null;
+  if (prev === 0) return cur === 0 ? null : { pct: 100, up: cur > 0 };
+  const change = ((cur - prev) / Math.abs(prev)) * 100;
+  return { pct: Math.abs(change), up: change >= 0 };
+}
+function DeltaChip({ d }: { d: Delta }) {
+  if (!d) return null;
+  return <span className="text-[10px] font-bold tabular-nums" style={{ color: d.up ? G.d4 : "#a8a29e" }}>{d.up ? "▲" : "▼"}{d.pct.toFixed(0)}%</span>;
+}
+const EMPTY_BOOKED: BookedMonth = { revenue: 0, gp: 0, items: [] };
+const EMPTY_CASH: AcctMonth = { collected: 0, paid: 0, expenses: 0, collectedItems: [], paidItems: [], expenseItems: [] };
+
+function MonthlyAccountingCard({ bookedByMonth, accounting }: { bookedByMonth: Record<string, BookedMonth>; accounting: Accounting }) {
+  const months = useMemo(() => {
+    const set = new Set<string>([accounting.month, ...Object.keys(bookedByMonth), ...Object.keys(accounting.byMonth)]);
+    return [...set].filter((m) => m <= accounting.month).sort();
+  }, [bookedByMonth, accounting]);
+  const [sel, setSel] = useState(accounting.month);
   const [open, setOpen] = useState<null | "booked" | "cash" | "expenses">(null);
-  const netCash = accounting.collected - accounting.paid - accounting.expenses;
-  const mi = Number(accounting.month.slice(5, 7)) - 1;
-  const monthLabel = `${MONTHS[mi] ?? ""} ${accounting.month.slice(0, 4)}`;
+
+  const idx = months.indexOf(sel);
+  const prevMonth = idx > 0 ? months[idx - 1] : null;
+  const bk = bookedByMonth[sel] ?? EMPTY_BOOKED;
+  const cash = accounting.byMonth[sel] ?? EMPTY_CASH;
+  const pbk = prevMonth ? bookedByMonth[prevMonth] ?? EMPTY_BOOKED : null;
+  const pcash = prevMonth ? accounting.byMonth[prevMonth] ?? EMPTY_CASH : null;
+  const netCash = cash.collected - cash.paid - cash.expenses;
+  const pNetCash = pcash ? pcash.collected - pcash.paid - pcash.expenses : null;
+
+  const mi = Number(sel.slice(5, 7)) - 1;
+  const monthLabel = `${MONTHS[mi] ?? ""} ${sel.slice(0, 4)}`;
   const toggle = (k: "booked" | "cash" | "expenses") => setOpen((o) => (o === k ? null : k));
+  const go = (n: number) => { const j = idx + n; if (j >= 0 && j < months.length) { setSel(months[j]); setOpen(null); } };
   const panelCls = (k: string) =>
     `text-left rounded-lg border p-3 transition-shadow hover:shadow-sm ${open === k ? "border-[#0d3d3b] ring-1 ring-[#0d3d3b]/30" : "border-stone-100"}`;
+
   return (
     <Card>
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold text-stone-700">Monthly accounting</h3>
-          <span className="text-[11px] text-stone-400">{monthLabel}</span>
+        <h3 className="text-sm font-semibold text-stone-700">Monthly accounting</h3>
+        <div className="flex items-center gap-1">
+          <button type="button" onClick={() => go(-1)} disabled={idx <= 0} aria-label="Previous month"
+            className="w-6 h-6 rounded-md border border-stone-200 text-stone-500 hover:bg-stone-50 disabled:opacity-30">‹</button>
+          <span className="text-xs font-semibold text-stone-600 w-24 text-center tabular-nums">{monthLabel}</span>
+          <button type="button" onClick={() => go(1)} disabled={idx >= months.length - 1} aria-label="Next month"
+            className="w-6 h-6 rounded-md border border-stone-200 text-stone-500 hover:bg-stone-50 disabled:opacity-30">›</button>
         </div>
-        <span className="text-[11px] text-stone-400">Click a box for the detail</span>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <button type="button" onClick={() => toggle("booked")} className={panelCls("booked")}>
           <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: G.d3 }}>On paper · booked</p>
-          <AcctRow label="Invoiced" value={compactUSD(booked.revenue)} />
-          <AcctRow label="Gross profit" value={compactUSD(booked.gp)} strong />
+          <AcctRow label="Invoiced" value={compactUSD(bk.revenue)} delta={pctDelta(bk.revenue, pbk?.revenue)} />
+          <AcctRow label="Gross profit" value={compactUSD(bk.gp)} delta={pctDelta(bk.gp, pbk?.gp)} strong />
         </button>
         <button type="button" onClick={() => toggle("cash")} className={panelCls("cash")}>
           <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: G.d1 }}>Real · cash</p>
-          <AcctRow label="Collected" value={`+${compactUSD(accounting.collected)}`} />
-          <AcctRow label="Paid" value={`−${compactUSD(accounting.paid)}`} />
-          <AcctRow label="Net cash" value={`${netCash >= 0 ? "+" : "−"}${compactUSD(Math.abs(netCash))}`} strong />
+          <AcctRow label="Collected" value={`+${compactUSD(cash.collected)}`} delta={pctDelta(cash.collected, pcash?.collected)} />
+          <AcctRow label="Paid" value={`−${compactUSD(cash.paid)}`} delta={pctDelta(cash.paid, pcash?.paid)} />
+          <AcctRow label="Net cash" value={`${netCash >= 0 ? "+" : "−"}${compactUSD(Math.abs(netCash))}`} delta={pctDelta(netCash, pNetCash)} strong />
         </button>
         <button type="button" onClick={() => toggle("expenses")} className={`text-left rounded-lg p-3 transition-shadow hover:shadow-sm ${open === "expenses" ? "ring-2 ring-[#0d3d3b]/40" : ""}`} style={{ background: G.l4 }}>
           <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: G.d2 }}>Expenses · OpEx</p>
-          <p className="text-xl font-extrabold tabular-nums mt-1" style={{ color: G.d1 }}>{compactUSD(accounting.expenses)}</p>
+          <div className="flex items-baseline gap-2 mt-1">
+            <p className="text-xl font-extrabold tabular-nums" style={{ color: G.d1 }}>{compactUSD(cash.expenses)}</p>
+            <DeltaChip d={pctDelta(cash.expenses, pcash?.expenses)} />
+          </div>
           <p className="text-[10px] text-stone-500 mt-0.5">Business overhead this month</p>
         </button>
       </div>
 
       {open === "booked" && (
-        <DetailList title={`Invoiced this month · ${booked.items.length}`} items={booked.items} sign="" empty="No invoices booked this month." />
+        <DetailList title={`Invoiced · ${monthLabel} · ${bk.items.length}`} items={bk.items} sign="" empty="No invoices booked this month." />
       )}
       {open === "cash" && (
         <div className="mt-3 border-t border-stone-100 pt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <DetailList title={`Collected · ${accounting.collectedItems.length}`} items={accounting.collectedItems} sign="+" empty="No customer payments recorded this month." bare />
-          <DetailList title={`Paid · ${accounting.paidItems.length}`} items={accounting.paidItems} sign="−" empty="No supplier payments recorded this month." bare />
+          <DetailList title={`Collected · ${cash.collectedItems.length}`} items={cash.collectedItems} sign="+" empty="No customer payments this month." bare />
+          <DetailList title={`Paid · ${cash.paidItems.length}`} items={cash.paidItems} sign="−" empty="No supplier payments this month." bare />
         </div>
       )}
       {open === "expenses" && (
-        <DetailList title={`Business expenses (OpEx) · ${accounting.expenseItems.length}`} items={accounting.expenseItems} sign="−"
+        <DetailList title={`Business expenses (OpEx) · ${cash.expenseItems.length}`} items={cash.expenseItems} sign="−"
           empty="No expenses categorized yet — these fill in as your bank syncs and transactions are tagged OpEx." />
       )}
-
-      <p className="text-[11px] text-stone-400 mt-3">Booked = what you invoiced. Cash = money actually in / out. Cash &amp; expenses fill in as your bank syncs.</p>
     </Card>
   );
 }
-function AcctRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+function AcctRow({ label, value, strong, delta }: { label: string; value: string; strong?: boolean; delta?: Delta }) {
   return (
-    <div className="flex items-center justify-between mt-1.5">
+    <div className="flex items-center justify-between mt-1.5 gap-2">
       <span className="text-[11px] text-stone-500">{label}</span>
-      <span className={`tabular-nums ${strong ? "text-sm font-extrabold" : "text-xs font-semibold"}`} style={{ color: strong ? G.d1 : G.ink }}>{value}</span>
+      <span className="flex items-center gap-1.5">
+        <DeltaChip d={delta ?? null} />
+        <span className={`tabular-nums ${strong ? "text-sm font-extrabold" : "text-xs font-semibold"}`} style={{ color: strong ? G.d1 : G.ink }}>{value}</span>
+      </span>
     </div>
   );
 }
@@ -571,7 +614,6 @@ function WorkingCapitalCard({ ar, ap, ttmRevenue, ttmPurchases }: { ar: number; 
         <DayStat label="DPO" value={dpo} hint="to pay" />
         <DayStat label="CCC" value={ccc} hint="financed" />
       </div>
-      <p className="text-[11px] text-stone-400 mt-3">CCC = DSO − DPO: days you finance each deal (annualized). Lower is better.</p>
     </Card>
   );
 }
@@ -607,7 +649,6 @@ function ConcentrationCard({ rows, periodLabel }: { rows: Row[]; periodLabel: st
         <ConcList title="Customers · % of sales" items={topC} empty="No sales in this period" />
         <ConcList title="Suppliers · % of purchases" items={topS} empty="No purchases in this period" />
       </div>
-      <p className="text-[11px] text-stone-400 mt-3">How much of your business depends on your biggest client / supplier.</p>
     </Card>
   );
 }
@@ -697,6 +738,58 @@ function CashBankCard({ accounts, total }: { accounts: BankAccount[]; total: num
           </div>
         </>
       )}
+    </Card>
+  );
+}
+
+// Margin per ton by product — what actually earns the most per tonne (period-aware).
+function ProductProfitCard({ rows, periodLabel }: { rows: Row[]; periodLabel: string }) {
+  const map = new Map<string, { tons: number; sales: number; cost: number }>();
+  for (const r of rows) {
+    if (!r.product) continue;
+    const cur = map.get(r.product) ?? { tons: 0, sales: 0, cost: 0 };
+    cur.tons += r.tons; cur.sales += r.tons * r.sellPrice; cur.cost += r.tons * r.buyPrice;
+    map.set(r.product, cur);
+  }
+  const totalGP = [...map.values()].reduce((n, v) => n + (v.sales - v.cost), 0);
+  const items = [...map.entries()].map(([product, v]) => {
+    const gp = v.sales - v.cost;
+    return { product, tons: v.tons, marginPerTon: v.tons > 0 ? gp / v.tons : 0, gp, pct: totalGP > 0 ? (gp / totalGP) * 100 : 0 };
+  }).sort((a, b) => b.gp - a.gp);
+  return (
+    <Card>
+      <div className="flex items-center justify-between mb-1">
+        <h3 className="text-sm font-semibold text-stone-700">Profitability by product</h3>
+        <span className="text-[11px] text-stone-400">{periodLabel} · sorted by gross profit</span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs min-w-[520px]">
+          <thead>
+            <tr className="text-[11px] uppercase tracking-wide text-stone-400 border-b border-stone-100">
+              <th className="py-2 font-medium text-left">Product</th>
+              <th className="py-2 font-medium text-right">Volume</th>
+              <th className="py-2 font-medium text-right">Margin / Ton</th>
+              <th className="py-2 font-medium text-right">Gross Profit</th>
+              <th className="py-2 font-medium text-right">% of GP</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.length === 0 && (
+              <tr><td colSpan={5} className="py-4 text-center text-stone-400">No sales in this period</td></tr>
+            )}
+            {items.map((it) => (
+              <tr key={it.product} className="border-b border-stone-50 last:border-0">
+                <td className="py-2 pr-3 font-medium" style={{ color: G.ink }}>{it.product}</td>
+                <td className="py-2 text-right tabular-nums text-stone-600">{formatNumber(it.tons, 0)} TN</td>
+                <td className="py-2 text-right tabular-nums font-extrabold" style={{ color: it.marginPerTon >= 0 ? G.d2 : "#b23b57" }}>${formatNumber(it.marginPerTon, 0)}</td>
+                <td className="py-2 text-right tabular-nums font-semibold" style={{ color: G.d4 }}>{compactUSD(it.gp)}</td>
+                <td className="py-2 text-right tabular-nums text-stone-500">{it.pct.toFixed(0)}%</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-[11px] text-stone-400 mt-2">Margin / Ton = gross profit per tonne — your real commercial profitability by product.</p>
     </Card>
   );
 }
