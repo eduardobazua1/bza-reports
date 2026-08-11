@@ -14,6 +14,7 @@ export function middleware(req: NextRequest) {
     pathname.startsWith("/api/invoice-pdf") ||
     pathname.startsWith("/login") ||
     pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/login") ||
     pathname.startsWith("/privacy") ||
     pathname.startsWith("/security") ||
     pathname.startsWith("/_next") ||

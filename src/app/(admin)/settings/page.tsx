@@ -3,6 +3,7 @@ import { users, appSettings } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { eq } from "drizzle-orm";
 import { SettingsPanel } from "@/components/settings-panel";
+import { MfaCard } from "@/components/mfa-card";
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -28,6 +29,7 @@ export default async function SettingsPage() {
         <h1 className="text-2xl font-bold text-stone-800">Settings</h1>
         <p className="text-sm text-stone-400 mt-0.5">Manage company info, document templates, and system configuration</p>
       </div>
+      <MfaCard />
       <SettingsPanel
         initial={invoiceSettings}
         users={allUsers}
