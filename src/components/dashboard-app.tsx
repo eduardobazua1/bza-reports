@@ -53,7 +53,12 @@ export type BankAccount = {
   currentBalance: number;
 };
 
-export type Accounting = { month: string; collected: number; paid: number; expenses: number };
+export type AcctItem = { label: string; sub: string; value: number };
+export type Accounting = {
+  month: string;
+  collected: number; paid: number; expenses: number;
+  collectedItems: AcctItem[]; paidItems: AcctItem[]; expenseItems: AcctItem[];
+};
 
 type Props = {
   rows: Row[];
@@ -89,6 +94,9 @@ export function DashboardApp({
     return {
       revenue: m.reduce((n, r) => n + r.tons * r.sellPrice, 0),
       gp: m.reduce((n, r) => n + r.tons * (r.sellPrice - r.buyPrice), 0),
+      items: m
+        .map((r) => ({ label: r.invoiceNumber || "—", sub: `${r.clientName || "—"} · ${formatNumber(r.tons, 0)} TN`, value: r.tons * r.sellPrice }))
+        .sort((a, b) => b.value - a.value),
     };
   }, [rows, curMonth]);
   const finance = useMemo(() => {
@@ -400,7 +408,7 @@ function OpsTab({ s, rows, period, periodLabel }: { s: Stats; rows: Row[]; perio
 // ============================ Financial ============================
 function FinTab({ s, rows, periodLabel, supplierBalance, bankAccounts, totalCash, accounting, booked, finance, onNav }: {
   s: Stats; rows: Row[]; periodLabel: string; supplierBalance: number; bankAccounts: BankAccount[]; totalCash: number;
-  accounting: Accounting; booked: { revenue: number; gp: number }; finance: { ttmRevenue: number; ttmPurchases: number; ar: number }; onNav: (t: Tab) => void;
+  accounting: Accounting; booked: { revenue: number; gp: number; items: AcctItem[] }; finance: { ttmRevenue: number; ttmPurchases: number; ar: number }; onNav: (t: Tab) => void;
 }) {
   const marginPerTon = s.tons > 0 ? s.profit / s.tons : 0;
   return (
@@ -446,10 +454,15 @@ function FinTab({ s, rows, periodLabel, supplierBalance, bankAccounts, totalCash
 }
 
 // "En el aire" (booked/accrual) vs "real" (cash collected/paid) + business expenses, this month.
-function MonthlyAccountingCard({ booked, accounting }: { booked: { revenue: number; gp: number }; accounting: Accounting }) {
+// Each panel expands to show the line-item detail behind the number.
+function MonthlyAccountingCard({ booked, accounting }: { booked: { revenue: number; gp: number; items: AcctItem[] }; accounting: Accounting }) {
+  const [open, setOpen] = useState<null | "booked" | "cash" | "expenses">(null);
   const netCash = accounting.collected - accounting.paid - accounting.expenses;
   const mi = Number(accounting.month.slice(5, 7)) - 1;
   const monthLabel = `${MONTHS[mi] ?? ""} ${accounting.month.slice(0, 4)}`;
+  const toggle = (k: "booked" | "cash" | "expenses") => setOpen((o) => (o === k ? null : k));
+  const panelCls = (k: string) =>
+    `text-left rounded-lg border p-3 transition-shadow hover:shadow-sm ${open === k ? "border-[#0d3d3b] ring-1 ring-[#0d3d3b]/30" : "border-stone-100"}`;
   return (
     <Card>
       <div className="flex items-center justify-between mb-3">
@@ -457,26 +470,41 @@ function MonthlyAccountingCard({ booked, accounting }: { booked: { revenue: numb
           <h3 className="text-sm font-semibold text-stone-700">Monthly accounting</h3>
           <span className="text-[11px] text-stone-400">{monthLabel}</span>
         </div>
-        <Link href="/financials" className="text-[11px] text-[#0d3d3b] hover:underline">Details →</Link>
+        <span className="text-[11px] text-stone-400">Click a box for the detail</span>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="rounded-lg border border-stone-100 p-3">
+        <button type="button" onClick={() => toggle("booked")} className={panelCls("booked")}>
           <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: G.d3 }}>On paper · booked</p>
           <AcctRow label="Invoiced" value={compactUSD(booked.revenue)} />
           <AcctRow label="Gross profit" value={compactUSD(booked.gp)} strong />
-        </div>
-        <div className="rounded-lg border border-stone-100 p-3">
+        </button>
+        <button type="button" onClick={() => toggle("cash")} className={panelCls("cash")}>
           <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: G.d1 }}>Real · cash</p>
           <AcctRow label="Collected" value={`+${compactUSD(accounting.collected)}`} />
           <AcctRow label="Paid" value={`−${compactUSD(accounting.paid)}`} />
           <AcctRow label="Net cash" value={`${netCash >= 0 ? "+" : "−"}${compactUSD(Math.abs(netCash))}`} strong />
-        </div>
-        <div className="rounded-lg p-3" style={{ background: G.l4 }}>
+        </button>
+        <button type="button" onClick={() => toggle("expenses")} className={`text-left rounded-lg p-3 transition-shadow hover:shadow-sm ${open === "expenses" ? "ring-2 ring-[#0d3d3b]/40" : ""}`} style={{ background: G.l4 }}>
           <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: G.d2 }}>Expenses · OpEx</p>
           <p className="text-xl font-extrabold tabular-nums mt-1" style={{ color: G.d1 }}>{compactUSD(accounting.expenses)}</p>
           <p className="text-[10px] text-stone-500 mt-0.5">Business overhead this month</p>
-        </div>
+        </button>
       </div>
+
+      {open === "booked" && (
+        <DetailList title={`Invoiced this month · ${booked.items.length}`} items={booked.items} sign="" empty="No invoices booked this month." />
+      )}
+      {open === "cash" && (
+        <div className="mt-3 border-t border-stone-100 pt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <DetailList title={`Collected · ${accounting.collectedItems.length}`} items={accounting.collectedItems} sign="+" empty="No customer payments recorded this month." bare />
+          <DetailList title={`Paid · ${accounting.paidItems.length}`} items={accounting.paidItems} sign="−" empty="No supplier payments recorded this month." bare />
+        </div>
+      )}
+      {open === "expenses" && (
+        <DetailList title={`Business expenses (OpEx) · ${accounting.expenseItems.length}`} items={accounting.expenseItems} sign="−"
+          empty="No expenses categorized yet — these fill in as your bank syncs and transactions are tagged OpEx." />
+      )}
+
       <p className="text-[11px] text-stone-400 mt-3">Booked = what you invoiced. Cash = money actually in / out. Cash &amp; expenses fill in as your bank syncs.</p>
     </Card>
   );
@@ -486,6 +514,28 @@ function AcctRow({ label, value, strong }: { label: string; value: string; stron
     <div className="flex items-center justify-between mt-1.5">
       <span className="text-[11px] text-stone-500">{label}</span>
       <span className={`tabular-nums ${strong ? "text-sm font-extrabold" : "text-xs font-semibold"}`} style={{ color: strong ? G.d1 : G.ink }}>{value}</span>
+    </div>
+  );
+}
+function DetailList({ title, items, sign, empty, bare }: { title: string; items: AcctItem[]; sign: "+" | "−" | ""; empty: string; bare?: boolean }) {
+  return (
+    <div className={bare ? "" : "mt-3 border-t border-stone-100 pt-3"}>
+      <p className="text-[11px] font-bold uppercase tracking-wide text-stone-400 mb-2">{title}</p>
+      {items.length === 0 ? (
+        <p className="text-xs text-stone-400">{empty}</p>
+      ) : (
+        <div className="space-y-0.5 max-h-64 overflow-y-auto pr-1">
+          {items.map((it, i) => (
+            <div key={i} className="flex items-center gap-3 text-xs py-1 border-b border-stone-50 last:border-0">
+              <div className="min-w-0">
+                <p className="font-semibold text-stone-700 truncate">{it.label}</p>
+                <p className="text-[10px] text-stone-400 truncate">{it.sub}</p>
+              </div>
+              <span className="ml-auto tabular-nums font-bold" style={{ color: G.ink }}>{sign}{compactUSD(it.value)}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

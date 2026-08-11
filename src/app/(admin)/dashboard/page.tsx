@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { getDashboardKPIs, getInvoices } from "@/server/queries";
 import { db } from "@/db";
-import { scheduledReports, purchaseOrders, invoices, supplierPayments, customerPayments, bankAccounts, bankTransactions } from "@/db/schema";
+import { scheduledReports, purchaseOrders, invoices, supplierPayments, customerPayments, clients, suppliers, bankAccounts, bankTransactions } from "@/db/schema";
 import { eq, and, lt, like, sql } from "drizzle-orm";
 import { getCreditInsuranceData } from "@/server/credit-insurance";
 import { DashboardApp, type Row } from "@/components/dashboard-app";
@@ -84,22 +84,36 @@ export default async function DashboardPage() {
     .sort((a, b) => b.currentBalance - a.currentBalance);
   const totalCash = bankAccountsData.reduce((sum, a) => sum + a.currentBalance, 0);
 
-  // Monthly accounting — real cash this month: collected, paid, and business expenses (OpEx).
+  // Monthly accounting — real cash this month: itemized collected, paid, and expenses (OpEx).
   const curMonthStr = new Date().toISOString().slice(0, 7); // YYYY-MM
-  const [collectedRow, paidRow, expenseRow] = await Promise.all([
-    db.select({ v: sql<number>`coalesce(sum(${customerPayments.amount}), 0)` })
-      .from(customerPayments).where(like(customerPayments.paymentDate, `${curMonthStr}%`)),
-    db.select({ v: sql<number>`coalesce(sum(${supplierPayments.amountUsd}), 0)` })
-      .from(supplierPayments).where(like(supplierPayments.paymentDate, `${curMonthStr}%`)),
-    db.select({ v: sql<number>`coalesce(sum(-${bankTransactions.amount}), 0)` })
+  const [collectedItems, paidItems, expenseItems] = await Promise.all([
+    db.select({ name: clients.name, date: customerPayments.paymentDate, method: customerPayments.paymentMethod, amount: customerPayments.amount })
+      .from(customerPayments).leftJoin(clients, eq(customerPayments.clientId, clients.id))
+      .where(like(customerPayments.paymentDate, `${curMonthStr}%`)),
+    db.select({ name: suppliers.name, date: supplierPayments.paymentDate, amount: supplierPayments.amountUsd })
+      .from(supplierPayments).leftJoin(suppliers, eq(supplierPayments.supplierId, suppliers.id))
+      .where(like(supplierPayments.paymentDate, `${curMonthStr}%`)),
+    db.select({ vendor: bankTransactions.vendorName, sub: bankTransactions.subcategory, date: bankTransactions.transactionDate, amount: bankTransactions.amount })
       .from(bankTransactions)
       .where(and(eq(bankTransactions.category, "OpEx"), lt(bankTransactions.amount, 0), like(bankTransactions.transactionDate, `${curMonthStr}%`))),
   ]);
+  const collectedList = collectedItems
+    .map((r) => ({ label: r.name ?? "Customer", sub: `${r.date}${r.method ? ` · ${r.method.replace(/_/g, " ")}` : ""}`, value: Number(r.amount) }))
+    .sort((a, b) => b.value - a.value);
+  const paidList = paidItems
+    .map((r) => ({ label: r.name ?? "Supplier", sub: r.date, value: Number(r.amount ?? 0) }))
+    .sort((a, b) => b.value - a.value);
+  const expenseList = expenseItems
+    .map((r) => ({ label: r.vendor ?? r.sub ?? "Expense", sub: r.date, value: Math.abs(Number(r.amount)) }))
+    .sort((a, b) => b.value - a.value);
   const accounting = {
     month: curMonthStr,
-    collected: Number(collectedRow[0]?.v ?? 0),
-    paid: Number(paidRow[0]?.v ?? 0),
-    expenses: Number(expenseRow[0]?.v ?? 0),
+    collected: collectedList.reduce((n, x) => n + x.value, 0),
+    paid: paidList.reduce((n, x) => n + x.value, 0),
+    expenses: expenseList.reduce((n, x) => n + x.value, 0),
+    collectedItems: collectedList,
+    paidItems: paidList,
+    expenseItems: expenseList,
   };
 
   // Serializable per-invoice rows — same data, computed client-side per period.
