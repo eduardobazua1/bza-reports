@@ -789,7 +789,6 @@ function ProductProfitCard({ rows, periodLabel }: { rows: Row[]; periodLabel: st
           </tbody>
         </table>
       </div>
-      <p className="text-[11px] text-stone-400 mt-2">Margin / Ton = gross profit per tonne — your real commercial profitability by product.</p>
     </Card>
   );
 }
