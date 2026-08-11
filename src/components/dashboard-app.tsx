@@ -492,10 +492,16 @@ function FinTab({ s, rows, periodLabel, supplierBalance, supplierBalanceNet, ban
 
 // Actual bank cash — current balance per account (opening + net of transactions).
 const ACCT_COLORS = [G.d2, G.m, G.d4, G.l1, G.d3, G.d1];
+// Operating = daily cash flow (checking); Reserve = money parked to earn interest.
+function acctIsReserve(type: string): boolean {
+  return type === "money_market" || type === "savings";
+}
 function CashBankCard({ accounts, total }: { accounts: BankAccount[]; total: number }) {
+  const reserve = accounts.filter((a) => acctIsReserve(a.accountType)).reduce((s, a) => s + a.currentBalance, 0);
+  const operating = total - reserve;
   return (
     <Card>
-      <div className="flex items-start justify-between mb-1 gap-3">
+      <div className="flex items-start justify-between mb-3 gap-3">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-semibold text-stone-700">Cash &amp; Bank</h3>
           <Link href="/financials" className="text-[11px] text-[#0d3d3b] hover:underline">All accounts →</Link>
@@ -511,19 +517,42 @@ function CashBankCard({ accounts, total }: { accounts: BankAccount[]; total: num
           <Link href="/financials" className="text-xs font-semibold text-[#0d3d3b] hover:underline">Connect your bank →</Link>
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 gap-2 mt-3">
-          {accounts.map((a, i) => (
-            <Link key={a.id} href={`/financials/transactions?accountId=${a.id}`}
-              className="flex items-center gap-3 rounded-lg border border-stone-100 p-3 hover:bg-stone-50 hover:shadow-sm transition">
-              <span className="w-2.5 h-2.5 rounded-full flex-none" style={{ background: ACCT_COLORS[i % ACCT_COLORS.length] }} />
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-stone-700 truncate">{a.name}</p>
-                <p className="text-[11px] text-stone-400 truncate">{a.bank} · {a.accountNumberMasked} · {a.accountType.replace("_", " ")}</p>
-              </div>
-              <p className="ml-auto text-sm font-extrabold tabular-nums" style={{ color: G.ink }}>{formatCurrency(a.currentBalance)}</p>
-            </Link>
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <div className="rounded-lg p-2.5" style={{ background: G.l4 }}>
+              <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: G.d2 }}>Operating</p>
+              <p className="text-base font-extrabold tabular-nums" style={{ color: G.d1 }}>{formatCurrency(operating)}</p>
+              <p className="text-[10px] text-stone-500 mt-0.5">Available for payments</p>
+            </div>
+            <div className="rounded-lg p-2.5" style={{ background: G.l3 }}>
+              <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: G.d1 }}>Reserve</p>
+              <p className="text-base font-extrabold tabular-nums" style={{ color: G.d1 }}>{formatCurrency(reserve)}</p>
+              <p className="text-[10px]" style={{ color: G.d3 }}>On hold · earns interest</p>
+            </div>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-2">
+            {accounts.map((a, i) => {
+              const isReserve = acctIsReserve(a.accountType);
+              return (
+                <Link key={a.id} href={`/financials/transactions?accountId=${a.id}`}
+                  className="flex items-center gap-3 rounded-lg border border-stone-100 p-3 hover:bg-stone-50 hover:shadow-sm transition">
+                  <span className="w-2.5 h-2.5 rounded-full flex-none" style={{ background: ACCT_COLORS[i % ACCT_COLORS.length] }} />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-xs font-bold text-stone-700 truncate">{a.name}</p>
+                      <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full flex-none"
+                        style={{ background: isReserve ? G.l3 : G.l4, color: isReserve ? G.d1 : G.d2 }}>
+                        {isReserve ? "Reserve" : "Operating"}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-stone-400 truncate">{a.bank} · {a.accountNumberMasked} · {a.accountType.replace("_", " ")}</p>
+                  </div>
+                  <p className="ml-auto text-sm font-extrabold tabular-nums" style={{ color: G.ink }}>{formatCurrency(a.currentBalance)}</p>
+                </Link>
+              );
+            })}
+          </div>
+        </>
       )}
     </Card>
   );
