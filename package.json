@@ -32,7 +32,7 @@
     "leaflet": "^1.9.4",
     "lucide-react": "^1.7.0",
     "next": "^15.5.14",
-    "next-auth": "^5.0.0-beta.30",
+    "next-auth": "^5.0.0-beta.32",
     "nodemailer": "^7.0.13",
     "openai": "^6.32.0",
     "pdf-lib": "^1.17.1",
