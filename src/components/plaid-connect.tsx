@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { usePlaidLink, type PlaidLinkOnSuccess } from "react-plaid-link";
+import { usePlaidLink, type PlaidLinkOnSuccess, type PlaidLinkOnExit } from "react-plaid-link";
 import { Landmark, RefreshCw, Loader2 } from "lucide-react";
 
 // "Connect bank" (Plaid Link) + "Sync now" for the Financials page.
@@ -25,10 +25,17 @@ export function PlaidConnect() {
       setMsg(`Connected ${d.accounts} account(s) · imported ${sd.added ?? 0} transactions.`);
       setTimeout(() => location.reload(), 1600);
     } catch (e) { setMsg((e as Error).message); }
-    finally { setBusy(false); }
+    finally { setBusy(false); setLinkToken(null); }
   }, []);
 
-  const { open, ready } = usePlaidLink({ token: linkToken, onSuccess });
+  // If the user closes Link or the bank flow errors, don't leave the button spinning.
+  const onExit = useCallback<PlaidLinkOnExit>((err) => {
+    setBusy(false);
+    setLinkToken(null);
+    setMsg(err ? (err.display_message || err.error_message || "Bank connection didn't complete — try again.") : null);
+  }, []);
+
+  const { open, ready } = usePlaidLink({ token: linkToken, onSuccess, onExit });
 
   // Launch the widget once we have a token and Link is ready.
   useEffect(() => { if (linkToken && ready) open(); }, [linkToken, ready, open]);
