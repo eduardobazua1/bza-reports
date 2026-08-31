@@ -58,7 +58,11 @@ export async function POST() {
     }
     return NextResponse.json({ ok: true, added, removed, items: items.length });
   } catch (e) {
-    const err = e as { response?: { data?: unknown }; message?: string };
-    return NextResponse.json({ error: err.response?.data ?? err.message ?? "sync failed" }, { status: 500 });
+    const err = e as { response?: { data?: { error_code?: string; error_message?: string; display_message?: string } }; message?: string };
+    const d = err.response?.data;
+    const msg = d
+      ? [d.error_code, d.display_message || d.error_message].filter(Boolean).join(": ") || JSON.stringify(d)
+      : (err.message ?? "sync failed");
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
