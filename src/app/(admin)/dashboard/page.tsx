@@ -113,6 +113,20 @@ export default async function DashboardPage() {
   }
   const accounting = { month: curMonthStr, byMonth };
 
+  // Exit / valuation: real OpEx and owner add-backs (Distribution) from the bank,
+  // plus the bank-data date span so the client can annualize a partial period.
+  const [opexRow, addBackRow, spanRow] = await Promise.all([
+    db.select({ v: sql<number>`coalesce(sum(${bankTransactions.amount}), 0)` }).from(bankTransactions).where(eq(bankTransactions.category, "OpEx")),
+    db.select({ v: sql<number>`coalesce(sum(${bankTransactions.amount}), 0)` }).from(bankTransactions).where(eq(bankTransactions.category, "Distribution")),
+    db.select({ mn: sql<string | null>`min(${bankTransactions.transactionDate})`, mx: sql<string | null>`max(${bankTransactions.transactionDate})` }).from(bankTransactions),
+  ]);
+  const exitData = {
+    opex: Math.abs(Number(opexRow[0]?.v ?? 0)),
+    addBacks: Math.abs(Number(addBackRow[0]?.v ?? 0)),
+    fromDate: spanRow[0]?.mn ?? null,
+    toDate: spanRow[0]?.mx ?? null,
+  };
+
   // Serializable per-invoice rows — same data, computed client-side per period.
   const rows: Row[] = allInvoices.map((r) => ({
     id: r.invoice.id,
@@ -144,6 +158,7 @@ export default async function DashboardPage() {
       bankAccounts={bankAccountsData}
       totalCash={totalCash}
       accounting={accounting}
+      exitData={exitData}
     />
   );
 }

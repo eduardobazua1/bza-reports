@@ -60,6 +60,7 @@ export type AcctMonth = {
 };
 export type Accounting = { month: string; byMonth: Record<string, AcctMonth> };
 type BookedMonth = { revenue: number; gp: number; items: AcctItem[] };
+export type ExitData = { opex: number; addBacks: number; fromDate: string | null; toDate: string | null };
 
 type Props = {
   rows: Row[];
@@ -71,16 +72,17 @@ type Props = {
   bankAccounts: BankAccount[];
   totalCash: number;
   accounting: Accounting;
+  exitData: ExitData;
 };
 
 type Period = "month" | "year" | "all";
-type Tab = "exec" | "ops" | "fin" | "hist";
+type Tab = "exec" | "ops" | "fin" | "hist" | "exit";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export function DashboardApp({
   rows, supplierBalance, supplierBalanceNet, activePOs, creditInsurance, overdueReportsCount,
-  bankAccounts, totalCash, accounting,
+  bankAccounts, totalCash, accounting, exitData,
 }: Props) {
   const [tab, setTab] = useState<Tab>("exec");
   const [period, setPeriod] = useState<Period>("all");
@@ -158,7 +160,7 @@ export function DashboardApp({
       {/* Tabs + period selector */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="inline-flex rounded-xl bg-stone-100 p-1 gap-0.5">
-          {([["exec", "Executive"], ["ops", "Operations"], ["fin", "Financial"], ["hist", "Historical"]] as [Tab, string][]).map(([k, label]) => (
+          {([["exec", "Executive"], ["ops", "Operations"], ["fin", "Financial"], ["hist", "Historical"], ["exit", "Investor / Exit"]] as [Tab, string][]).map(([k, label]) => (
             <button
               key={k}
               onClick={() => setTab(k)}
@@ -187,6 +189,7 @@ export function DashboardApp({
       {tab === "ops" && <OpsTab s={s} rows={scoped} period={period} periodLabel={periodLabel} />}
       {tab === "fin" && <FinTab s={s} rows={scoped} periodLabel={periodLabel} supplierBalance={supplierBalance} bankAccounts={bankAccounts} totalCash={totalCash} accounting={accounting} bookedByMonth={bookedByMonth} finance={finance} onNav={setTab} />}
       {tab === "hist" && <HistTab hist={hist} />}
+      {tab === "exit" && <ExitTab rows={rows} finance={finance} ap={supplierBalance} totalCash={totalCash} exitData={exitData} now={now} />}
     </div>
   );
 }
@@ -790,6 +793,155 @@ function ProductProfitCard({ rows, periodLabel }: { rows: Row[]; periodLabel: st
         </table>
       </div>
     </Card>
+  );
+}
+
+// ============================ Investor / Exit ============================
+function monthsBetween(from: string | null, to: string | null): number {
+  if (!from || !to) return 1;
+  const [fy, fm] = from.split("-").map(Number);
+  const [ty, tm] = to.split("-").map(Number);
+  return Math.max(1, (ty - fy) * 12 + (tm - fm) + 1);
+}
+function ExitTab({ rows, finance, ap, totalCash, exitData, now }: {
+  rows: Row[]; finance: { ttmRevenue: number; ttmPurchases: number; ar: number }; ap: number; totalCash: number; exitData: ExitData; now: Date;
+}) {
+  // Trailing-12-month revenue / gross profit (accrual, from invoices).
+  const cutoff = `${now.getFullYear() - 1}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  let revTTM = 0, gpTTM = 0, gpAll = 0;
+  const yearGP: Record<string, number> = {};
+  const custSales = new Map<string, number>(), supPurch = new Map<string, number>();
+  let totalSales = 0, totalPurch = 0;
+  for (const r of rows) {
+    const gp = r.tons * (r.sellPrice - r.buyPrice);
+    gpAll += gp;
+    if (r.shipmentDate) {
+      yearGP[r.shipmentDate.slice(0, 4)] = (yearGP[r.shipmentDate.slice(0, 4)] ?? 0) + gp;
+      if (r.shipmentDate.slice(0, 7) >= cutoff) { revTTM += r.tons * r.sellPrice; gpTTM += gp; }
+    }
+    const sales = r.tons * r.sellPrice, purch = r.tons * r.buyPrice;
+    custSales.set(r.clientName || "—", (custSales.get(r.clientName || "—") ?? 0) + sales); totalSales += sales;
+    supPurch.set(r.supplierName || "—", (supPurch.get(r.supplierName || "—") ?? 0) + purch); totalPurch += purch;
+  }
+  const topCustPct = totalSales > 0 ? (Math.max(...custSales.values()) / totalSales) * 100 : 0;
+  const topSupPct = totalPurch > 0 ? (Math.max(...supPurch.values()) / totalPurch) * 100 : 0;
+
+  // Annualize the partial-period bank OpEx / add-backs.
+  const months = monthsBetween(exitData.fromDate, exitData.toDate);
+  const annualize = 12 / months;
+  const opexAnnual = exitData.opex * annualize;
+  const addBacksAnnual = exitData.addBacks * annualize;
+  const ebitda = gpTTM - opexAnnual;
+  const ebitdaMargin = revTTM > 0 ? (ebitda / revTTM) * 100 : 0;
+  const evLow = Math.max(0, ebitda * 3), evHigh = Math.max(0, ebitda * 6);
+
+  // Revenue CAGR between the first year and the last complete year.
+  const yrs = Object.keys(yearGP).sort();
+  const lastComplete = String(now.getFullYear() - 1);
+  const endYr = yrs.includes(lastComplete) ? lastComplete : yrs[yrs.length - 1];
+  const startYr = yrs[0];
+  const span = Number(endYr) - Number(startYr);
+  const cagr = span > 0 && yearGP[startYr] > 0 ? (Math.pow(yearGP[endYr] / yearGP[startYr], 1 / span) - 1) * 100 : 0;
+
+  const dso = finance.ttmRevenue > 0 ? Math.round((finance.ar / finance.ttmRevenue) * 365) : 0;
+  const dpo = finance.ttmPurchases > 0 ? Math.round((ap / finance.ttmPurchases) * 365) : 0;
+  const ccc = dso - dpo;
+  const grossMargin = revTTM > 0 ? (gpTTM / revTTM) * 100 : 0;
+
+  return (
+    <div className="space-y-4">
+      {/* Valuation snapshot */}
+      <Card>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-stone-700">Valuation snapshot</h3>
+          <span className="text-[11px] text-stone-400">directional model · not a formal valuation</span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="rounded-lg p-4" style={{ background: G.d2 }}>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-white/60">Est. enterprise value</p>
+            <p className="text-2xl font-extrabold text-white mt-1 tabular-nums">{compactUSD(evLow)} – {compactUSD(evHigh)}</p>
+            <p className="text-[11px] text-white/70 mt-1">3–6× normalized EBITDA</p>
+          </div>
+          <div className="rounded-lg border border-stone-100 p-4">
+            <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: G.d3 }}>Normalized EBITDA (TTM)</p>
+            <p className="text-2xl font-extrabold tabular-nums mt-1" style={{ color: G.d1 }}>{compactUSD(ebitda)}</p>
+            <p className="text-[11px] text-stone-500 mt-1">{formatPercent(ebitdaMargin)} of revenue</p>
+          </div>
+          <div className="rounded-lg border border-stone-100 p-4">
+            <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: G.d3 }}>Owner add-backs (annualized)</p>
+            <p className="text-2xl font-extrabold tabular-nums mt-1" style={{ color: G.d4 }}>{compactUSD(addBacksAnnual)}</p>
+            <p className="text-[11px] text-stone-500 mt-1">personal expenses excluded from EBITDA</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3 text-xs">
+          <ExitStat label="Gross Profit (TTM)" value={compactUSD(gpTTM)} />
+          <ExitStat label="OpEx (annualized)" value={compactUSD(opexAnnual)} />
+          <ExitStat label="Cash on hand" value={compactUSD(totalCash)} />
+          <ExitStat label="Bank data" value={`${months} mo`} />
+        </div>
+        <p className="text-[11px] text-stone-400 mt-3">EBITDA = trailing-12-mo gross profit (from invoices) − annualized operating expenses (from categorized bank data). OpEx is annualized from {months} month(s) of bank history — connect more history for a firmer number. Multiples are industry-typical ranges for small distribution/trading businesses; a real valuation needs an M&A advisor and CPA.</p>
+      </Card>
+
+      {/* Value drivers */}
+      <div>
+        <h3 className="text-sm font-semibold text-stone-700 mb-2">Value drivers · what moves the multiple</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <DriverCard label="Revenue growth (CAGR)" value={formatPercent(cagr)} target="Higher is better" ok={cagr >= 10} hint={`${startYr}→${endYr}`} />
+          <DriverCard label="Gross margin" value={formatPercent(grossMargin)} target="Stable / rising" ok={grossMargin >= 12} />
+          <DriverCard label="EBITDA margin" value={formatPercent(ebitdaMargin)} target="Higher = better multiple" ok={ebitdaMargin >= 8} />
+          <DriverCard label="Customer concentration" value={`${topCustPct.toFixed(0)}%`} target="Target < 30%" ok={topCustPct < 30} hint="top customer share of sales" />
+          <DriverCard label="Supplier concentration" value={`${topSupPct.toFixed(0)}%`} target="Target < 50%" ok={topSupPct < 50} hint="top supplier share of purchases" />
+          <DriverCard label="Cash conversion cycle" value={`${ccc} d`} target="Lower = less capital" ok={ccc < 60} hint={`DSO ${dso} − DPO ${dpo}`} />
+        </div>
+      </div>
+
+      {/* Readiness checklist */}
+      <Card>
+        <h3 className="text-sm font-semibold text-stone-700 mb-3">Deal readiness · due-diligence data room</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
+          <ChecklistRow done label="Bank-reconciled financials (connected + categorized)" />
+          <ChecklistRow done label="3+ years of financial history" />
+          <ChecklistRow done label="FSC / PEFC chain-of-custody certifications" />
+          <ChecklistRow done label="Trade credit insurance (Allianz Trade)" />
+          <ChecklistRow done label="Operating system of record (this TMS)" />
+          <ChecklistRow done label="Owner add-backs identified & documented" />
+          <ChecklistRow label="Diversify customer & supplier concentration" />
+          <ChecklistRow label="Formalize customer / supplier contracts" />
+          <ChecklistRow label="Document processes (reduce owner dependence)" />
+          <ChecklistRow label="Assemble the data room (legal, tax, cap table)" />
+        </div>
+      </Card>
+    </div>
+  );
+}
+function ExitStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg bg-stone-50 p-2.5">
+      <p className="text-sm font-extrabold tabular-nums" style={{ color: G.ink }}>{value}</p>
+      <p className="text-[10px] text-stone-500 mt-0.5">{label}</p>
+    </div>
+  );
+}
+function DriverCard({ label, value, target, ok, hint }: { label: string; value: string; target: string; ok: boolean; hint?: string }) {
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-stone-100 p-4">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-stone-500">{label}</p>
+        <span className="text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
+          style={{ background: ok ? G.l4 : "#f5f5f4", color: ok ? G.d2 : "#78716c" }}>{ok ? "On track" : "Watch"}</span>
+      </div>
+      <p className="text-2xl font-extrabold tabular-nums mt-1" style={{ color: G.d2 }}>{value}</p>
+      <p className="text-[11px] text-stone-400 mt-0.5">{target}{hint ? ` · ${hint}` : ""}</p>
+    </div>
+  );
+}
+function ChecklistRow({ label, done }: { label: string; done?: boolean }) {
+  return (
+    <div className="flex items-center gap-2 py-1.5">
+      <span className="w-4 h-4 rounded-full flex items-center justify-center flex-none text-[10px] font-bold"
+        style={{ background: done ? G.d2 : "#f5f5f4", color: done ? "#fff" : "#a8a29e" }}>{done ? "✓" : ""}</span>
+      <span className="text-xs" style={{ color: done ? G.ink : "#78716c" }}>{label}</span>
+    </div>
   );
 }
 
