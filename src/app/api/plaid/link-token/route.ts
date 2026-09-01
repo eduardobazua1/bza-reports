@@ -15,6 +15,7 @@ export async function POST() {
       user: { client_user_id: "bza-tms" },
       client_name: "BZA International Services",
       products: [Products.Transactions],
+      transactions: { days_requested: 730 }, // pull up to 24 months of history (Plaid max)
       country_codes: [CountryCode.Us],
       language: "en",
     });
