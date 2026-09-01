@@ -6,10 +6,11 @@ import { eq } from "drizzle-orm";
 
 // Categorize a bank transaction description with the saved rules (case-insensitive
 // "contains", highest priority wins). Falls back to Uncategorized.
+type Category = "Revenue" | "COGS" | "OpEx" | "Capital" | "Distribution" | "Other Income" | "Internal Transfer" | "Uncategorized";
 type Rule = { pattern: string; category: string; subcategory: string | null; priority: number };
-function categorize(desc: string, rules: Rule[]): { category: string; subcategory: string | null } {
+function categorize(desc: string, rules: Rule[]): { category: Category; subcategory: string | null } {
   const d = (desc || "").toLowerCase();
-  for (const r of rules) if (r.pattern && d.includes(r.pattern.toLowerCase())) return { category: r.category, subcategory: r.subcategory };
+  for (const r of rules) if (r.pattern && d.includes(r.pattern.toLowerCase())) return { category: r.category as Category, subcategory: r.subcategory };
   return { category: "Uncategorized", subcategory: null };
 }
 
