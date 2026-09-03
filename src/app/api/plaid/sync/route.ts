@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { plaidClient, plaidConfigured, decryptToken } from "@/lib/plaid";
 import { db } from "@/db";
 import { plaidItems, bankAccounts, bankTransactions, transactionCategoryRules } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 
 // Categorize a bank transaction description with the saved rules (case-insensitive
 // "contains", highest priority wins). Falls back to Uncategorized.
@@ -43,15 +43,21 @@ export async function POST() {
         for (const t of r.data.added) {
           const baId = acctMap.get(t.account_id);
           if (!baId) continue;
+          const amt = -1 * t.amount; // Plaid: +out/-in → TMS signed: +credit/-debit
           const exists = await db.select({ id: bankTransactions.id }).from(bankTransactions).where(eq(bankTransactions.plaidTransactionId, t.transaction_id)).limit(1);
           if (exists.length) continue;
+          // Also skip if the same transaction was already imported from a statement/CSV
+          // (same account, date, and amount) — avoids duplicating the manual bank history.
+          const dupe = await db.select({ id: bankTransactions.id }).from(bankTransactions)
+            .where(and(eq(bankTransactions.bankAccountId, baId), eq(bankTransactions.transactionDate, t.date), sql`abs(${bankTransactions.amount} - ${amt}) < 0.005`)).limit(1);
+          if (dupe.length) continue;
           const plaidCat = t.personal_finance_category?.primary ?? null;
           const { category, subcategory } = categorize(t.name, rules);
           await db.insert(bankTransactions).values({
             bankAccountId: baId,
             plaidTransactionId: t.transaction_id,
             transactionDate: t.date,
-            amount: -1 * t.amount, // Plaid: +out/-in → TMS signed: +credit/-debit
+            amount: amt,
             descriptionRaw: t.name,
             vendorName: t.merchant_name ?? null,
             category,
