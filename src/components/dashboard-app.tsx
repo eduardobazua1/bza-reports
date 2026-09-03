@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, useRef, type ReactNode } from "react";
 import Link from "next/link";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend as RLegend,
@@ -419,6 +419,9 @@ function FinTab({ s, rows, allRows, periodLabel, supplierBalance, bankAccounts, 
   accounting: Accounting; bookedByMonth: Record<string, BookedMonth>; finance: { ttmRevenue: number; ttmPurchases: number; ar: number }; onNav: (t: Tab) => void;
 }) {
   const marginPerTon = s.tons > 0 ? s.profit / s.tons : 0;
+  const [selProduct, setSelProduct] = useState<string | null>(null);
+  const priceRef = useRef<HTMLDivElement>(null);
+  const pickProduct = (p: string) => { setSelProduct(p); requestAnimationFrame(() => priceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })); };
   return (
     <div className="space-y-4">
       <CashBankCard accounts={bankAccounts} total={totalCash} />
@@ -430,9 +433,11 @@ function FinTab({ s, rows, allRows, periodLabel, supplierBalance, bankAccounts, 
         <MiniKPI label="Margin / Ton" value={`$${formatNumber(marginPerTon, 0)}`} sub="per ton sold" valueColor={G.m} />
       </div>
 
-      <ProductProfitCard rows={rows} periodLabel={periodLabel} />
+      <ProductProfitCard rows={rows} periodLabel={periodLabel} onPick={pickProduct} />
 
-      <PriceHistoryCard rows={allRows} />
+      <div ref={priceRef}>
+        <PriceHistoryCard rows={allRows} selected={selProduct} onSelect={setSelProduct} />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <WorkingCapitalCard ar={finance.ar} ap={supplierBalance} ttmRevenue={finance.ttmRevenue} ttmPurchases={finance.ttmPurchases} />
@@ -748,7 +753,7 @@ function CashBankCard({ accounts, total }: { accounts: BankAccount[]; total: num
 }
 
 // Margin per ton by product — what actually earns the most per tonne (period-aware).
-function ProductProfitCard({ rows, periodLabel }: { rows: Row[]; periodLabel: string }) {
+function ProductProfitCard({ rows, periodLabel, onPick }: { rows: Row[]; periodLabel: string; onPick: (p: string) => void }) {
   const map = new Map<string, { tons: number; sales: number; cost: number }>();
   for (const r of rows) {
     if (!r.product) continue;
@@ -783,8 +788,8 @@ function ProductProfitCard({ rows, periodLabel }: { rows: Row[]; periodLabel: st
               <tr><td colSpan={5} className="py-4 text-center text-stone-400">No sales in this period</td></tr>
             )}
             {items.map((it) => (
-              <tr key={it.product} className="border-b border-stone-50 last:border-0">
-                <td className="py-2 pr-3 font-medium" style={{ color: G.ink }}>{it.product}</td>
+              <tr key={it.product} onClick={() => onPick(it.product)} className="border-b border-stone-50 last:border-0 cursor-pointer hover:bg-stone-50 group">
+                <td className="py-2 pr-3 font-medium" style={{ color: G.ink }}>{it.product}<span className="text-[#0d3d3b] opacity-0 group-hover:opacity-100 transition-opacity"> · price history →</span></td>
                 <td className="py-2 text-right tabular-nums text-stone-600">{formatNumber(it.tons, 0)} TN</td>
                 <td className="py-2 text-right tabular-nums font-extrabold" style={{ color: it.marginPerTon >= 0 ? G.d2 : "#b23b57" }}>${formatNumber(it.marginPerTon, 0)}</td>
                 <td className="py-2 text-right tabular-nums font-semibold" style={{ color: G.d4 }}>{compactUSD(it.gp)}</td>
@@ -799,7 +804,7 @@ function ProductProfitCard({ rows, periodLabel }: { rows: Row[]; periodLabel: st
 }
 
 // Price history by product — tons-weighted avg sell / buy $/ton per month (from invoices).
-function PriceHistoryCard({ rows }: { rows: Row[] }) {
+function PriceHistoryCard({ rows, selected, onSelect }: { rows: Row[]; selected: string | null; onSelect: (p: string) => void }) {
   const { products, seriesByProduct } = useMemo(() => {
     const agg = new Map<string, Map<string, { sv: number; bv: number; t: number }>>();
     const tons = new Map<string, number>();
@@ -822,8 +827,7 @@ function PriceHistoryCard({ rows }: { rows: Row[] }) {
     return { products, seriesByProduct };
   }, [rows]);
 
-  const [sel, setSel] = useState<string>(products[0] ?? "");
-  const active = products.includes(sel) ? sel : (products[0] ?? "");
+  const active = (selected && products.includes(selected)) ? selected : (products[0] ?? "");
   const series = seriesByProduct[active] ?? [];
   const first = series[0], last = series[series.length - 1];
   const sellChg = first && last && first.sell > 0 ? ((last.sell - first.sell) / first.sell) * 100 : 0;
@@ -836,7 +840,7 @@ function PriceHistoryCard({ rows }: { rows: Row[] }) {
         <h3 className="text-sm font-semibold text-stone-700">Price history by product</h3>
         <div className="flex flex-wrap gap-1">
           {products.map((p) => (
-            <button key={p} onClick={() => setSel(p)}
+            <button key={p} onClick={() => onSelect(p)}
               className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-colors ${active === p ? "text-white" : "text-stone-500 hover:bg-stone-100"}`}
               style={active === p ? { background: G.d2 } : undefined}>{p}</button>
           ))}
