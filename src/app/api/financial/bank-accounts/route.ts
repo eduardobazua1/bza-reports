@@ -1,11 +1,19 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { bankAccounts } from "@/db/schema";
-import { desc } from "drizzle-orm";
+import { bankAccounts, bankTransactions } from "@/db/schema";
+import { desc, sql } from "drizzle-orm";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   const accounts = await db.select().from(bankAccounts).orderBy(desc(bankAccounts.isActive));
-  return NextResponse.json(accounts);
+  const sums = await db
+    .select({ bankAccountId: bankTransactions.bankAccountId, net: sql<number>`coalesce(sum(${bankTransactions.amount}), 0)` })
+    .from(bankTransactions)
+    .groupBy(bankTransactions.bankAccountId);
+  const netById = new Map(sums.map((s) => [s.bankAccountId, Number(s.net)]));
+  const withBalance = accounts.map((a) => ({ ...a, currentBalance: Number(a.openingBalance) + (netById.get(a.id) ?? 0) }));
+  return NextResponse.json(withBalance);
 }
 
 export async function POST(req: Request) {

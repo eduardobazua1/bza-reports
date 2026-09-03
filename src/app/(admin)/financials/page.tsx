@@ -15,6 +15,7 @@ interface BankAccount {
   openingBalance: number;
   openingDate: string;
   isActive: boolean;
+  currentBalance: number;
 }
 
 interface ImportResult {
@@ -158,7 +159,8 @@ export default function FinancialsPage() {
               <div>
                 <div className="font-semibold text-stone-800">{a.name} <span className="text-stone-400 font-normal">· {a.accountNumberMasked}</span></div>
                 <div className="text-sm text-stone-500">{a.bank} · {a.accountType.replace("_", " ")} · opened {a.openingDate}</div>
-                <div className="text-xs text-stone-400 mt-1">Opening balance: {usd(a.openingBalance)}</div>
+                <div className="mt-1.5 text-2xl font-extrabold tabular-nums text-[#0d3d3b]">{usd(a.currentBalance)}</div>
+                <div className="text-[11px] text-stone-400">current balance · opening {usd(a.openingBalance)}</div>
               </div>
               <div className="flex items-center gap-3">
                 <Link href={`/financials/transactions?accountId=${a.id}`}
