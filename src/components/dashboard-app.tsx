@@ -3,7 +3,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
-  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend as RLegend,
 } from "recharts";
 import { formatCurrency, formatNumber, formatPercent, formatDate, shipmentStatusLabels } from "@/lib/utils";
 import { ShipmentMap } from "@/components/shipment-map";
@@ -187,7 +187,7 @@ export function DashboardApp({
 
       {tab === "exec" && <ExecTab s={s} periodLabel={periodLabel} activePOs={activePOs} supplierBalance={supplierBalance} supplierBalanceNet={supplierBalanceNet} creditInsurance={creditInsurance} latestPrices={latestPrices} totalCash={totalCash} onNav={setTab} />}
       {tab === "ops" && <OpsTab s={s} rows={scoped} period={period} periodLabel={periodLabel} />}
-      {tab === "fin" && <FinTab s={s} rows={scoped} periodLabel={periodLabel} supplierBalance={supplierBalance} bankAccounts={bankAccounts} totalCash={totalCash} accounting={accounting} bookedByMonth={bookedByMonth} finance={finance} onNav={setTab} />}
+      {tab === "fin" && <FinTab s={s} rows={scoped} allRows={rows} periodLabel={periodLabel} supplierBalance={supplierBalance} bankAccounts={bankAccounts} totalCash={totalCash} accounting={accounting} bookedByMonth={bookedByMonth} finance={finance} onNav={setTab} />}
       {tab === "hist" && <HistTab hist={hist} />}
       {tab === "exit" && <ExitTab rows={rows} finance={finance} ap={supplierBalance} totalCash={totalCash} exitData={exitData} now={now} />}
     </div>
@@ -414,8 +414,8 @@ function OpsTab({ s, rows, period, periodLabel }: { s: Stats; rows: Row[]; perio
 }
 
 // ============================ Financial ============================
-function FinTab({ s, rows, periodLabel, supplierBalance, bankAccounts, totalCash, accounting, bookedByMonth, finance, onNav }: {
-  s: Stats; rows: Row[]; periodLabel: string; supplierBalance: number; bankAccounts: BankAccount[]; totalCash: number;
+function FinTab({ s, rows, allRows, periodLabel, supplierBalance, bankAccounts, totalCash, accounting, bookedByMonth, finance, onNav }: {
+  s: Stats; rows: Row[]; allRows: Row[]; periodLabel: string; supplierBalance: number; bankAccounts: BankAccount[]; totalCash: number;
   accounting: Accounting; bookedByMonth: Record<string, BookedMonth>; finance: { ttmRevenue: number; ttmPurchases: number; ar: number }; onNav: (t: Tab) => void;
 }) {
   const marginPerTon = s.tons > 0 ? s.profit / s.tons : 0;
@@ -431,6 +431,8 @@ function FinTab({ s, rows, periodLabel, supplierBalance, bankAccounts, totalCash
       </div>
 
       <ProductProfitCard rows={rows} periodLabel={periodLabel} />
+
+      <PriceHistoryCard rows={allRows} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <WorkingCapitalCard ar={finance.ar} ap={supplierBalance} ttmRevenue={finance.ttmRevenue} ttmPurchases={finance.ttmPurchases} />
@@ -792,6 +794,76 @@ function ProductProfitCard({ rows, periodLabel }: { rows: Row[]; periodLabel: st
           </tbody>
         </table>
       </div>
+    </Card>
+  );
+}
+
+// Price history by product — tons-weighted avg sell / buy $/ton per month (from invoices).
+function PriceHistoryCard({ rows }: { rows: Row[] }) {
+  const { products, seriesByProduct } = useMemo(() => {
+    const agg = new Map<string, Map<string, { sv: number; bv: number; t: number }>>();
+    const tons = new Map<string, number>();
+    for (const r of rows) {
+      if (!r.product || !r.shipmentDate || !(r.sellPrice > 0) || !(r.tons > 0)) continue;
+      const m = r.shipmentDate.slice(0, 7);
+      if (!agg.has(r.product)) agg.set(r.product, new Map());
+      const mm = agg.get(r.product)!;
+      const cur = mm.get(m) ?? { sv: 0, bv: 0, t: 0 };
+      cur.sv += r.sellPrice * r.tons; cur.bv += r.buyPrice * r.tons; cur.t += r.tons;
+      mm.set(m, cur);
+      tons.set(r.product, (tons.get(r.product) ?? 0) + r.tons);
+    }
+    const products = [...tons.entries()].sort((a, b) => b[1] - a[1]).map(([p]) => p);
+    const seriesByProduct: Record<string, { month: string; sell: number; buy: number }[]> = {};
+    for (const [p, mm] of agg) {
+      seriesByProduct[p] = [...mm.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([month, v]) => ({ month, sell: Math.round(v.sv / v.t), buy: Math.round(v.bv / v.t) }));
+    }
+    return { products, seriesByProduct };
+  }, [rows]);
+
+  const [sel, setSel] = useState<string>(products[0] ?? "");
+  const active = products.includes(sel) ? sel : (products[0] ?? "");
+  const series = seriesByProduct[active] ?? [];
+  const first = series[0], last = series[series.length - 1];
+  const sellChg = first && last && first.sell > 0 ? ((last.sell - first.sell) / first.sell) * 100 : 0;
+  const fmtMonth = (m: string) => `${MONTHS[Number(m.slice(5, 7)) - 1] ?? ""} ${m.slice(2, 4)}`;
+
+  if (products.length === 0) return null;
+  return (
+    <Card>
+      <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+        <h3 className="text-sm font-semibold text-stone-700">Price history by product</h3>
+        <div className="flex flex-wrap gap-1">
+          {products.map((p) => (
+            <button key={p} onClick={() => setSel(p)}
+              className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-colors ${active === p ? "text-white" : "text-stone-500 hover:bg-stone-100"}`}
+              style={active === p ? { background: G.d2 } : undefined}>{p}</button>
+          ))}
+        </div>
+      </div>
+      {last && (
+        <div className="flex items-baseline gap-4 mb-2 flex-wrap">
+          <div><span className="text-2xl font-extrabold tabular-nums" style={{ color: G.d2 }}>${last.sell}</span><span className="text-[11px] text-stone-400"> /TN sell</span></div>
+          <div><span className="text-lg font-bold tabular-nums text-stone-500">${last.buy}</span><span className="text-[11px] text-stone-400"> /TN buy</span></div>
+          <div><span className="text-sm font-bold tabular-nums" style={{ color: G.d4 }}>${last.sell - last.buy}</span><span className="text-[11px] text-stone-400"> /TN margin</span></div>
+          {series.length > 1 && <span className="text-[11px] font-bold tabular-nums" style={{ color: sellChg >= 0 ? G.d4 : "#a8a29e" }}>{sellChg >= 0 ? "▲" : "▼"}{Math.abs(sellChg).toFixed(0)}% sell vs {fmtMonth(first.month)}</span>}
+        </div>
+      )}
+      <div className="h-56">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={series} margin={{ top: 4, right: 8, left: -8, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+            <XAxis dataKey="month" tickFormatter={fmtMonth} fontSize={10} tick={{ fill: "#a8a29e" }} axisLine={false} tickLine={false} />
+            <YAxis fontSize={10} tick={{ fill: "#a8a29e" }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} domain={["dataMin - 20", "dataMax + 20"]} />
+            <Tooltip formatter={(v, n) => [`$${v}/TN`, String(n)]} labelFormatter={(l) => fmtMonth(String(l))} contentStyle={{ background: "#fff", border: "1px solid #e7e5e4", borderRadius: 6, fontSize: 11 }} />
+            <RLegend wrapperStyle={{ fontSize: 11 }} />
+            <Line type="monotone" dataKey="sell" name="Sell" stroke={G.d2} strokeWidth={2.5} dot={{ r: 2 }} />
+            <Line type="monotone" dataKey="buy" name="Buy" stroke="#a8a29e" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 2 }} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <p className="text-[11px] text-stone-400 mt-2">Tons-weighted average $/ton per month, from your shipments.</p>
     </Card>
   );
 }
