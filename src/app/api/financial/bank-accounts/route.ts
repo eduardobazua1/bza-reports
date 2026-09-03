@@ -1,15 +1,19 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { bankAccounts, bankTransactions } from "@/db/schema";
-import { desc, sql } from "drizzle-orm";
+import { desc, sql, lte } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+// Optional ?asOf=YYYY-MM-DD returns the balance as of that date (opening + net of
+// transactions up to and including that day). No param = today / latest.
+export async function GET(req: Request) {
+  const asOf = new URL(req.url).searchParams.get("asOf");
   const accounts = await db.select().from(bankAccounts).orderBy(desc(bankAccounts.isActive));
   const sums = await db
     .select({ bankAccountId: bankTransactions.bankAccountId, net: sql<number>`coalesce(sum(${bankTransactions.amount}), 0)` })
     .from(bankTransactions)
+    .where(asOf ? lte(bankTransactions.transactionDate, asOf) : undefined)
     .groupBy(bankTransactions.bankAccountId);
   const netById = new Map(sums.map((s) => [s.bankAccountId, Number(s.net)]));
   const withBalance = accounts.map((a) => ({ ...a, currentBalance: Number(a.openingBalance) + (netById.get(a.id) ?? 0) }));

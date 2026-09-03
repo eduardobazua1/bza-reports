@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiMutate } from "@/lib/api-mutate";
 import { PlaidConnect } from "@/components/plaid-connect";
+import { Receipt, Upload } from "lucide-react";
 
 interface BankAccount {
   id: number;
@@ -27,8 +28,10 @@ interface ImportResult {
   accountNumbersInFile: string[];
 }
 
-const usd = (n: number) =>
-  n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+const usdc = (n: number) =>
+  n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 });
+const today = () => new Date().toISOString().slice(0, 10);
+const isReserve = (t: string) => t === "money_market" || t === "savings";
 
 export default function FinancialsPage() {
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
@@ -37,19 +40,23 @@ export default function FinancialsPage() {
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<number | null>(null);
+  const [asOf, setAsOf] = useState<string>(today());
 
   const [form, setForm] = useState({
     name: "", bank: "Vantage Bank Texas", accountNumberMasked: "",
     accountType: "checking", openingBalance: "0", openingDate: "",
   });
 
-  async function load() {
+  async function load(date = asOf) {
     setLoading(true);
-    const res = await fetch("/api/financial/bank-accounts");
+    const res = await fetch(`/api/financial/bank-accounts?asOf=${date}`);
     setAccounts(await res.json());
     setLoading(false);
   }
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(asOf); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [asOf]);
+
+  const totalCash = accounts.reduce((s, a) => s + (a.currentBalance ?? 0), 0);
+  const isToday = asOf === today();
 
   async function createAccount(e: React.FormEvent) {
     e.preventDefault();
@@ -88,7 +95,6 @@ export default function FinancialsPage() {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-stone-800">Bank Accounts</h1>
-          <p className="text-sm text-stone-500">Connect your bank to import transactions automatically, or add/import manually.</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <PlaidConnect />
@@ -100,6 +106,24 @@ export default function FinancialsPage() {
           </button>
         </div>
       </div>
+
+      {!loading && accounts.length > 0 && (
+        <div className="rounded-2xl p-5 text-white shadow-sm" style={{ background: "linear-gradient(155deg, #12514e, #082826)" }}>
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-white/60">Total cash {isToday ? "on hand" : `as of ${asOf}`}</p>
+              <p className="text-4xl font-extrabold tracking-tight tabular-nums mt-1">{usdc(totalCash)}</p>
+              <p className="text-xs text-white/70 mt-1">{accounts.length} account{accounts.length > 1 ? "s" : ""} · {accounts[0]?.bank}</p>
+            </div>
+            <label className="text-[11px] text-white/70">
+              <span className="block mb-1 font-semibold uppercase tracking-wider">Balance as of</span>
+              <input type="date" value={asOf} max={today()} onChange={(e) => setAsOf(e.target.value || today())}
+                className="bg-white/10 border border-white/25 rounded-lg px-3 py-1.5 text-sm text-white [color-scheme:dark]" />
+              {!isToday && <button onClick={() => setAsOf(today())} className="block mt-1 text-white/80 underline">← back to today</button>}
+            </label>
+          </div>
+        </div>
+      )}
 
       {showForm && (
         <form onSubmit={createAccount} className="bg-white rounded-xl border border-stone-200 p-5 grid grid-cols-2 gap-4">
@@ -153,25 +177,37 @@ export default function FinancialsPage() {
           No bank accounts yet. Add your Vantage Checking (#XXX45161) and Money Market (#XXX45069) to get started.
         </div>
       ) : (
-        <div className="grid gap-4">
-          {accounts.map((a) => (
-            <div key={a.id} className="bg-white rounded-xl border border-stone-200 p-5 flex items-center justify-between">
-              <div>
-                <div className="font-semibold text-stone-800">{a.name} <span className="text-stone-400 font-normal">· {a.accountNumberMasked}</span></div>
-                <div className="text-sm text-stone-500">{a.bank} · {a.accountType.replace("_", " ")} · opened {a.openingDate}</div>
-                <div className="mt-1.5 text-2xl font-extrabold tabular-nums text-[#0d3d3b]">{usd(a.currentBalance)}</div>
-                <div className="text-[11px] text-stone-400">current balance · opening {usd(a.openingBalance)}</div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {[...accounts].sort((x, y) => (isReserve(x.accountType) ? 1 : 0) - (isReserve(y.accountType) ? 1 : 0)).map((a) => {
+            const reserve = isReserve(a.accountType);
+            return (
+              <div key={a.id} className="relative bg-white rounded-2xl border border-stone-200 shadow-sm p-5 overflow-hidden">
+                <span className="absolute left-0 top-0 bottom-0 w-1.5" style={{ background: reserve ? "#2f8a80" : "#0d3d3b" }} />
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="font-semibold text-stone-800 truncate">{a.name}</div>
+                    <div className="text-xs text-stone-400">{a.bank} · {a.accountNumberMasked}</div>
+                  </div>
+                  <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full"
+                    style={{ background: reserve ? "#c2e0da" : "#e6f1ee", color: reserve ? "#082826" : "#0d3d3b" }}>
+                    {reserve ? "Reserve" : "Operating"}
+                  </span>
+                </div>
+                <div className="mt-3 text-3xl font-extrabold tabular-nums text-[#0d3d3b]">{usdc(a.currentBalance)}</div>
+                <div className="text-[11px] text-stone-400 mt-0.5">{isToday ? "current balance" : `balance as of ${asOf}`} · {a.accountType.replace("_", " ")} · opened {a.openingDate}</div>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <Link href={`/financials/transactions?accountId=${a.id}`}
+                    className="flex items-center justify-center gap-1.5 text-sm font-semibold text-[#0d3d3b] border border-stone-200 rounded-lg px-3 py-2 hover:bg-stone-50 transition-colors">
+                    <Receipt className="w-4 h-4" /> Transactions
+                  </Link>
+                  <label className="flex items-center justify-center gap-1.5 text-sm font-semibold text-[#0d3d3b] border border-stone-200 rounded-lg px-3 py-2 hover:bg-stone-50 cursor-pointer transition-colors">
+                    <Upload className="w-4 h-4" /> Import CSV
+                    <input type="file" accept=".csv" className="hidden" onChange={(e) => handleImport(e, a.id)} />
+                  </label>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <Link href={`/financials/transactions?accountId=${a.id}`}
-                  className="text-sm text-[#0d3d3b] hover:underline">View transactions →</Link>
-                <label className="px-3 py-2 bg-stone-100 hover:bg-stone-200 rounded-lg text-sm font-medium cursor-pointer">
-                  Import CSV
-                  <input type="file" accept=".csv" className="hidden" onChange={(e) => handleImport(e, a.id)} />
-                </label>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
