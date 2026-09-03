@@ -97,14 +97,31 @@ function encrypt(buf) {
 
 async function main() {
   const started = Date.now();
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  if (!token) throw new Error("BLOB_READ_WRITE_TOKEN is not set.");
+
+  // Prune FIRST, before uploading. This frees space so a near-full Blob store
+  // (the DB is blob-heavy) doesn't fail the upload and stall in a full-store loop.
+  // Keep the newest (RETENTION - 1) so there is room for the backup we are adding.
+  let prunedBefore = 0;
+  try {
+    const { blobs } = await list({ prefix: PREFIX, token });
+    const stale = blobs
+      .filter((b) => b.pathname.endsWith(".sql.gz.enc"))
+      .sort((a, b) => b.pathname.localeCompare(a.pathname))
+      .slice(Math.max(0, RETENTION - 1));
+    for (const b of stale) await del(b.url, { token });
+    prunedBefore = stale.length;
+  } catch (e) {
+    console.warn("Prune step warning (continuing):", e?.message ?? e);
+  }
+
   const { sql, tables, rows } = await buildDump();
   const gz = gzipSync(Buffer.from(sql, "utf8"), { level: 6 });
   const enc = encrypt(gz);
 
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   const filename = `${PREFIX}bza-${stamp}.sql.gz.enc`;
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
-  if (!token) throw new Error("BLOB_READ_WRITE_TOKEN is not set.");
 
   const res = await put(filename, enc, {
     access: "private", // the Blob store is private; payload is also AES-256 encrypted (defense in depth)
@@ -113,18 +130,10 @@ async function main() {
     token,
   });
 
-  // Retention: keep the newest RETENTION, delete older.
-  const { blobs } = await list({ prefix: PREFIX, token });
-  const stale = blobs
-    .filter((b) => b.pathname.endsWith(".sql.gz.enc"))
-    .sort((a, b) => b.pathname.localeCompare(a.pathname))
-    .slice(RETENTION);
-  for (const b of stale) await del(b.url, { token });
-
   console.log(JSON.stringify({
     ok: true, filename, url: res.url, tables, rows,
     rawBytes: Buffer.byteLength(sql), storedBytes: enc.length,
-    retained: RETENTION, pruned: stale.length, ms: Date.now() - started,
+    retained: RETENTION, prunedBefore, ms: Date.now() - started,
   }, null, 2));
 }
 
