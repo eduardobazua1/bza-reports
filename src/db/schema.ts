@@ -700,3 +700,34 @@ export const auditDocuments = sqliteTable("audit_documents", {
   fileSize: integer("file_size"),
   uploadedAt: text("uploaded_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
+
+// --- BZA Intelligence (AI assistant) memory & conversation history ---
+
+// Durable business facts/rules the assistant learns and applies automatically
+// (e.g. "Desarrollos Tecnológicos = Biopappel commission agent → OpEx").
+export const aiMemory = sqliteTable("ai_memory", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  fact: text("fact").notNull(),
+  topic: text("topic"),                       // e.g. commissions, entities, categorization, clients
+  source: text("source", { enum: ["user", "ai"] }).notNull().default("ai"),
+  active: integer("active", { mode: "boolean" }).notNull().default(true),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Saved chat threads so past conversations can be reopened and searched.
+export const aiConversations = sqliteTable("ai_conversations", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title").notNull().default("New conversation"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+export const aiMessages = sqliteTable("ai_messages", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  conversationId: integer("conversation_id").notNull(),
+  role: text("role", { enum: ["user", "assistant"] }).notNull(),
+  content: text("content").notNull(),
+  imageUrls: text("image_urls"),              // JSON array of data URLs (optional)
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { db } from "@/db";
 import { createClient } from "@libsql/client";
-import { invoices, purchaseOrders, clients, suppliers, supplierPayments, scheduledReports, reportTemplates, shipmentUpdates, marketPrices, customerPayments, proposals, proposalItems, creditMemos, products, documents, supplierInvoices, clientPurchaseOrders } from "@/db/schema";
+import { invoices, purchaseOrders, clients, suppliers, supplierPayments, scheduledReports, reportTemplates, shipmentUpdates, marketPrices, customerPayments, proposals, proposalItems, creditMemos, products, documents, supplierInvoices, clientPurchaseOrders, aiMemory } from "@/db/schema";
 import { sendEmail, isEmailConfigured } from "@/lib/email";
 import * as XLSX from "xlsx";
 import { eq, sql, count, like, desc, and } from "drizzle-orm";
@@ -69,6 +69,8 @@ const anthropicTools: any[] = [
   { name: "attach_document", description: "Attach an uploaded PDF (from UPLOADED PDF TEMP PATHS) to an invoice as a BOL or Packing List. Renames to 'BOL {invoiceNumber}.pdf' or 'PL {invoiceNumber}.pdf', stores it on the invoice, and saves a copy to the iCloud BOLS CASCADE folder.", input_schema: { type: "object", properties: { invoiceNumber: { type: "string", description: "BZA invoice number to attach to, e.g. IX0046-1" }, type: { type: "string", enum: ["bl", "pl"], description: "bl = Bill of Lading / Delivery Note, pl = Packing List" }, tempFilePath: { type: "string", description: "Temp path of the uploaded PDF from UPLOADED PDF TEMP PATHS" } }, required: ["invoiceNumber", "type", "tempFilePath"] } },
   { name: "create_supplier_invoice", description: "Create a supplier invoice (factura del proveedor / 'SI') for a PO from an uploaded PDF. Uses ONLY page 1 of the PDF, names it 'SI {invoiceNumber}.pdf', and links it to a BZA invoice.", input_schema: { type: "object", properties: { poNumber: { type: "string", description: "BZA PO number, e.g. X0046" }, invoiceNumber: { type: "string", description: "Supplier's invoice number, e.g. 500572" }, linkedInvoiceNumber: { type: "string", description: "BZA invoice it belongs to, e.g. IX0046-1" }, amountUsd: { type: "number" }, invoiceDate: { type: "string", description: "YYYY-MM-DD (use the Load Date)" }, estimatedTons: { type: "number", description: "ADMT from the invoice" }, tempFilePath: { type: "string", description: "Temp path of the uploaded supplier invoice PDF" } }, required: ["poNumber", "invoiceNumber", "tempFilePath"] } },
   { name: "create_client_po", description: "Create a Client Order (client purchase order) on a PO and optionally link invoices to it by destination. planned_tons = what the client ordered (e.g. 90 per railcar). item = the CLIENT product (clientProductId), incoterm from the PO terms.", input_schema: { type: "object", properties: { poNumber: { type: "string", description: "BZA PO number, e.g. X0046" }, clientPoNumber: { type: "string", description: "Client's PO number, e.g. X195603" }, destination: { type: "string", description: "Destination city, e.g. Bajio" }, plannedTons: { type: "number", description: "Tons the client ordered (90 x #railcars)" }, item: { type: "string", description: "Client product name (defaults to PO's client product)" }, incoterm: { type: "string", description: "Defaults to PO terms" }, linkInvoicesByDestination: { type: "boolean", description: "If true, link all invoices of this PO with this destination to the new Client PO" } }, required: ["poNumber", "clientPoNumber", "destination", "plannedTons"] } },
+  { name: "remember_fact", description: "Save a durable business fact or rule to long-term memory so you apply it automatically in ALL future conversations. Use when the user teaches you something reusable — how to categorize a vendor/agent, what an entity is, a client/commission rule, a preference. Do NOT use for one-off values or things already in the database. Keep the fact self-contained and specific.", input_schema: { type: "object", properties: { fact: { type: "string", description: "The fact/rule, self-contained (e.g. 'Vendor X = commission agent for client Y -> OpEx, subcategory Commission - Y')." }, topic: { type: "string", description: "Short topic tag: commissions, entities, categorization, clients, accounts, preferences" } }, required: ["fact"] } },
+  { name: "update_memory", description: "Correct or deactivate an existing memory. Pass the memory id (shown in the BUSINESS MEMORY block). Set active=false to forget it, or provide a new fact to replace it.", input_schema: { type: "object", properties: { id: { type: "number" }, fact: { type: "string", description: "New corrected text (optional)" }, active: { type: "boolean", description: "false to forget/deactivate this memory" } }, required: ["id"] } },
 ];
 
 // Alias map for fuzzy client/supplier matching
@@ -112,6 +114,22 @@ async function findSupplier(input: string) {
 
 async function exec(name: string, args: Record<string, unknown>): Promise<string> {
   try {
+    if (name === "remember_fact") {
+      const fact = (args.fact as string || "").trim();
+      if (!fact) return "No fact provided.";
+      const now = new Date().toISOString();
+      const [row] = await db.insert(aiMemory).values({ fact, topic: (args.topic as string) || null, source: "user", active: true, createdAt: now, updatedAt: now }).returning();
+      return `Got it — I'll remember this from now on (memory #${row.id}): "${fact}"`;
+    }
+    if (name === "update_memory") {
+      const id = Number(args.id);
+      if (!id) return "No memory id provided.";
+      const patch: Record<string, unknown> = { updatedAt: new Date().toISOString() };
+      if (typeof args.fact === "string" && args.fact.trim()) patch.fact = args.fact.trim();
+      if (typeof args.active === "boolean") patch.active = args.active;
+      await db.update(aiMemory).set(patch).where(eq(aiMemory.id, id));
+      return args.active === false ? `Forgotten memory #${id}.` : `Updated memory #${id}.`;
+    }
     if (name === "query_data") {
       const qt = args.query_type as string;
       if (qt === "summary") {
@@ -765,7 +783,19 @@ export async function POST(req: NextRequest) {
     return { role: m.role, content: m.content };
   });
 
-  const systemPrompt = `${preContext ? `[SYSTEM PRE-FETCH]${preContext}\n\nThe above data was automatically pulled from the database for records mentioned in this conversation. Use it directly — do not query for these records again.\n\n` : ""}You are the AI assistant for BZA International Services (cellulose/pulp trading, McAllen TX). IMPORTANT: Always respond in English. Never switch to Spanish or any other language, regardless of how the user writes their message.
+  // Long-term BUSINESS MEMORY — durable facts/rules the assistant has learned.
+  let memoryBlock = "";
+  try {
+    const mem = await db.select({ id: aiMemory.id, fact: aiMemory.fact, topic: aiMemory.topic })
+      .from(aiMemory).where(eq(aiMemory.active, true)).orderBy(aiMemory.topic).limit(200);
+    if (mem.length) {
+      memoryBlock = `[BUSINESS MEMORY — durable facts you have learned. Apply these automatically. To change one, use update_memory with its #id.]\n`
+        + mem.map((m) => `#${m.id} (${m.topic || "general"}): ${m.fact}`).join("\n") + "\n\n";
+    }
+  } catch { /* memory table optional */ }
+
+  const systemPrompt = `${memoryBlock}${preContext ? `[SYSTEM PRE-FETCH]${preContext}\n\nThe above data was automatically pulled from the database for records mentioned in this conversation. Use it directly — do not query for these records again.\n\n` : ""}You are the AI assistant for BZA International Services (cellulose/pulp trading, McAllen TX). IMPORTANT: Always respond in English. Never switch to Spanish or any other language, regardless of how the user writes their message.
+When the user teaches you a durable business rule (how to categorize a vendor, what an entity is, a commission/client rule, a preference), call remember_fact so you apply it in every future conversation.
 
 ## ABSOLUTE RULE — CONFIRM BEFORE ACTING
 Before calling ANY tool that writes, creates, updates, or deletes data, you MUST:
@@ -1112,7 +1142,7 @@ When user asks for analysis or proposals, ALWAYS start by querying market prices
       response = await anthropic.messages.create({
         model: AI_MODEL,
         max_tokens: AI_MAX_TOKENS,
-        system: "You are the BZA Intelligence assistant for BZA International Services. Always respond in English.",
+        system: `${memoryBlock}You are the BZA Intelligence assistant for BZA International Services. Always respond in English.`,
         tools: anthropicTools,
         messages: allMsgs,
       });
