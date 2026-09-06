@@ -166,6 +166,7 @@ const mainEntries: RootEntry[] = [
       { href: "/financials/expenses",         label: "Operating Expenses" },
       { href: "/financials/commissions",      label: "Commissions" },
       { href: "/financials/capital",          label: "Capital & Distributions" },
+      { href: "/financials/budget",           label: "Budget & Forecast" },
       { href: "/financials/income-statement", label: "Income Statement" },
       { href: "/financials/balance-sheet",    label: "Balance Sheet" },
     ],

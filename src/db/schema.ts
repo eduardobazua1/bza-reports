@@ -731,3 +731,26 @@ export const aiMessages = sqliteTable("ai_messages", {
   imageUrls: text("image_urls"),              // JSON array of data URLs (optional)
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
+
+// --- Budget / rolling forecast ---
+// A scenario is one budget version: a full-year annual budget (cutoffMonth 0)
+// or a rolling forecast (actuals through cutoffMonth + forecast for the rest,
+// e.g. "8+4" made after August). growthTarget seeds forecast months.
+export const budgetScenarios = sqliteTable("budget_scenarios", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  year: integer("year").notNull(),
+  cutoffMonth: integer("cutoff_month").notNull().default(0), // 0 = pure annual budget; N = actuals through month N
+  growthTarget: real("growth_target").notNull().default(1),  // 1 = flat, 2 = double, 1.2 = +20%
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// One editable driver value per (scenario, line, month). GP and EBITDA are derived.
+export const budgetLines = sqliteTable("budget_lines", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  scenarioId: integer("scenario_id").notNull(),
+  line: text("line", { enum: ["revenue", "cogs", "commissions", "opex_other"] }).notNull(),
+  month: integer("month").notNull(),          // 1-12
+  amount: real("amount").notNull().default(0),
+});
