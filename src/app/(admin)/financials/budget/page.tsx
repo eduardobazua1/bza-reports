@@ -24,6 +24,7 @@ export default function BudgetPage() {
   const [grid, setGrid] = useState<Record<Line, number[]>>();
   const [saving, setSaving] = useState(false);
   const [showNew, setShowNew] = useState(false);
+  const [view, setView] = useState<"plan" | "actual">("plan");
   const now = new Date();
   const [form, setForm] = useState({ name: "", year: now.getFullYear(), cutoffMonth: now.getMonth(), growthTarget: 2 });
 
@@ -83,6 +84,21 @@ export default function BudgetPage() {
   const gpTotal = grid ? rowTotal(grid.revenue) - rowTotal(grid.cogs) : 0;
   const ebitdaTotal = grid ? gpTotal - rowTotal(grid.commissions) - rowTotal(grid.opex_other) : 0;
   const revTotal = grid ? rowTotal(grid.revenue) : 0;
+
+  // --- Budget vs Actual ---
+  const A = detail?.actuals;
+  const throughIdx = A ? (() => { let last = -1; for (let i = 0; i < 12; i++) if (A.revenue[i] > 0 || A.opex_other[i] > 0) last = i; return last; })() : -1;
+  const sumTo = (arr: number[], idx: number) => arr.slice(0, idx + 1).reduce((a, b) => a + b, 0);
+  type CmpRow = { label: string; good: "up" | "down"; bMonth: number[]; aMonth: number[] };
+  const cmpRows: CmpRow[] = grid && A ? [
+    { label: "Revenue", good: "up", bMonth: grid.revenue, aMonth: A.revenue },
+    { label: "COGS", good: "down", bMonth: grid.cogs, aMonth: A.cogs },
+    { label: "Gross Profit", good: "up", bMonth: grid.revenue.map((r, i) => r - grid.cogs[i]), aMonth: A.revenue.map((r, i) => r - A.cogs[i]) },
+    { label: "Commissions", good: "down", bMonth: grid.commissions, aMonth: A.commissions },
+    { label: "Other OpEx", good: "down", bMonth: grid.opex_other, aMonth: A.opex_other },
+    { label: "EBITDA", good: "up", bMonth: grid.revenue.map((r, i) => r - grid.cogs[i] - grid.commissions[i] - grid.opex_other[i]), aMonth: A.revenue.map((r, i) => r - A.cogs[i] - A.commissions[i] - A.opex_other[i]) },
+  ] : [];
+  const throughLabel = throughIdx >= 0 ? MONTHS[throughIdx] : "—";
 
   return (
     <div className="space-y-5">
@@ -161,6 +177,13 @@ export default function BudgetPage() {
             </div>
           </div>
 
+          {/* View toggle */}
+          <div className="flex items-center gap-1 bg-stone-100 rounded-lg p-1 w-fit">
+            <button onClick={() => setView("plan")} className={`px-3 py-1.5 rounded-md text-xs font-semibold ${view === "plan" ? "bg-white shadow-sm text-[#0d3d3b]" : "text-stone-500"}`}>Plan (edit)</button>
+            <button onClick={() => setView("actual")} className={`px-3 py-1.5 rounded-md text-xs font-semibold ${view === "actual" ? "bg-white shadow-sm text-[#0d3d3b]" : "text-stone-500"}`}>Budget vs Actual</button>
+          </div>
+
+          {view === "plan" && (<>
           <div className="flex items-center justify-between">
             <p className="text-xs text-stone-500 flex items-center gap-1"><Lock className="w-3 h-3" /> Months 1–{cutoff || 0} are actuals (locked). Edit the forecast months, then save.</p>
             <button onClick={save} disabled={saving} className="flex items-center gap-1.5 bg-[#0d3d3b] text-white rounded-lg px-4 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50">
@@ -216,6 +239,63 @@ export default function BudgetPage() {
             </table>
           </div>
           <p className="text-[11px] text-stone-400">* forecast month. Revenue/COGS = accrual (invoices by shipment date); Commissions/Other OpEx = cash (bank). Gross Profit and EBITDA are computed.</p>
+          </>)}
+
+          {view === "actual" && (
+            <div className="space-y-4">
+              <p className="text-xs text-stone-500">Budget vs actual results through <b>{throughLabel} {detail.scenario.year}</b> (year-to-date), plus the full-year budget.</p>
+              <div className="bg-white rounded-xl border border-stone-200 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-stone-50 text-stone-500 text-left">
+                    <tr>
+                      <th className="px-4 py-2 font-medium">Line</th>
+                      <th className="px-4 py-2 font-medium text-right">Budget (YTD)</th>
+                      <th className="px-4 py-2 font-medium text-right">Actual (YTD)</th>
+                      <th className="px-4 py-2 font-medium text-right">Variance</th>
+                      <th className="px-4 py-2 font-medium text-right">Attainment</th>
+                      <th className="px-4 py-2 font-medium text-right">Budget (FY)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cmpRows.map((r) => {
+                      const bY = sumTo(r.bMonth, throughIdx), aY = sumTo(r.aMonth, throughIdx), bFY = r.bMonth.reduce((a, b) => a + b, 0);
+                      const varr = aY - bY;
+                      const favorable = r.good === "up" ? varr >= 0 : varr <= 0;
+                      const att = bY !== 0 ? (aY / bY) * 100 : 0;
+                      const strong = r.label === "Revenue" || r.label === "Gross Profit" || r.label === "EBITDA";
+                      return (
+                        <tr key={r.label} className={`border-t border-stone-100 ${strong ? "bg-[#f3f8f6]" : ""}`}>
+                          <td className={`px-4 py-2 ${strong ? "font-bold text-[#0d3d3b]" : "text-stone-700"}`}>{r.label}</td>
+                          <td className="px-4 py-2 text-right tabular-nums text-stone-500">{usd(bY)}</td>
+                          <td className="px-4 py-2 text-right tabular-nums font-medium text-stone-800">{usd(aY)}</td>
+                          <td className={`px-4 py-2 text-right tabular-nums font-medium ${favorable ? "text-[#2f8a80]" : "text-red-600"}`}>{varr >= 0 ? "+" : ""}{usd(varr)}</td>
+                          <td className={`px-4 py-2 text-right tabular-nums ${favorable ? "text-[#2f8a80]" : "text-red-600"}`}>{att.toFixed(0)}%</td>
+                          <td className="px-4 py-2 text-right tabular-nums text-stone-500">{usd(bFY)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Monthly Revenue & EBITDA: budget vs actual */}
+              <div className="bg-white rounded-xl border border-stone-200 overflow-x-auto">
+                <table className="w-full text-xs whitespace-nowrap">
+                  <thead className="bg-stone-50 text-stone-500">
+                    <tr>
+                      <th className="px-3 py-2 text-left font-medium sticky left-0 bg-stone-50">Revenue</th>
+                      {MONTHS.map((m) => <th key={m} className="px-2 py-2 text-right font-medium">{m}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-t border-stone-100"><td className="px-3 py-1.5 text-stone-500 sticky left-0 bg-white">Budget</td>{grid.revenue.map((v, i) => <td key={i} className="px-2 py-1.5 text-right tabular-nums text-stone-400">{usd(v)}</td>)}</tr>
+                    <tr className="border-t border-stone-100"><td className="px-3 py-1.5 text-stone-700 font-medium sticky left-0 bg-white">Actual</td>{(A ? A.revenue : []).map((v, i) => <td key={i} className={`px-2 py-1.5 text-right tabular-nums ${v > 0 ? "text-stone-800 font-medium" : "text-stone-300"}`}>{v > 0 ? usd(v) : "—"}</td>)}</tr>
+                    <tr className="border-t border-stone-100"><td className="px-3 py-1.5 text-stone-500 sticky left-0 bg-white">Var</td>{grid.revenue.map((b, i) => { const a = A ? A.revenue[i] : 0; const d = a > 0 ? a - b : 0; return <td key={i} className={`px-2 py-1.5 text-right tabular-nums ${a > 0 ? (d >= 0 ? "text-[#2f8a80]" : "text-red-600") : "text-stone-300"}`}>{a > 0 ? (d >= 0 ? "+" : "") + usd(d) : "—"}</td>; })}</tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
