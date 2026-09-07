@@ -9,7 +9,8 @@ interface Opp {
   product: string | null; incoterm: string | null; estimatedTons: number; pricePerTon: number; stage: Stage;
   probability: number; proposalId: number | null; expectedCloseDate: string | null; notes: string | null; lostReason: string | null;
 }
-interface ClientOpt { id: number; name: string }
+interface ClientOpt { id: number; name: string; contactEmail?: string | null }
+interface QuoteInfo { proposalId: number; proposalNumber?: string; status?: string }
 
 const STAGES: { key: Stage; label: string; color: string }[] = [
   { key: "prospecto", label: "Prospect", color: "#c2e0da" },
@@ -25,7 +26,7 @@ const INCOTERMS = ["EXW", "FCA", "FAS", "FOB", "CFR", "CIF", "CPT", "CIP", "DAP"
 const usd = (n: number) => "$" + Math.round(n).toLocaleString("en-US");
 const val = (o: Opp) => o.estimatedTons * o.pricePerTon;
 
-const emptyForm = { id: 0, title: "", clientId: "", clientName: "", product: "", incoterm: "", estimatedTons: "", pricePerTon: "", stage: "prospecto" as Stage, probability: "", expectedCloseDate: "", notes: "", lostReason: "", proposalId: 0 };
+const emptyForm = { id: 0, title: "", clientId: "", clientName: "", product: "", incoterm: "", estimatedTons: "", pricePerTon: "", stage: "prospecto" as Stage, probability: "", expectedCloseDate: "", notes: "", lostReason: "", proposalId: 0, paymentTerms: "", validUntil: "" };
 
 export default function PipelinePage() {
   const [opps, setOpps] = useState<Opp[]>([]);
@@ -34,6 +35,8 @@ export default function PipelinePage() {
   const [dragId, setDragId] = useState<number | null>(null);
   const [overStage, setOverStage] = useState<Stage | null>(null);
   const [modal, setModal] = useState<null | typeof emptyForm>(null);
+  const [quote, setQuote] = useState<QuoteInfo | null>(null);
+  const [quoteBusy, setQuoteBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -50,8 +53,9 @@ export default function PipelinePage() {
     load();
   }
 
-  async function saveForm() {
-    if (!modal) return;
+  // Persist the deal (create or update) and return its id — without closing the modal.
+  async function persistDeal(): Promise<number | null> {
+    if (!modal) return null;
     const clientDisplay = modal.clientId ? (clients.find((c) => String(c.id) === modal.clientId)?.name ?? "") : modal.clientName;
     const title = modal.title.trim() || [clientDisplay, modal.product].filter(Boolean).join(" — ") || "New opportunity";
     const payload = {
@@ -61,29 +65,62 @@ export default function PipelinePage() {
       ...(modal.probability !== "" ? { probability: Number(modal.probability) } : {}),
       ...(modal.stage === "perdido" ? { lostReason: modal.lostReason } : {}),
     };
-    if (modal.id) await fetch(`/api/pipeline/${modal.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-    else await fetch("/api/pipeline", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-    setModal(null); load();
+    if (modal.id) { await fetch(`/api/pipeline/${modal.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }); return modal.id; }
+    const r = await fetch("/api/pipeline", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    const d = await r.json(); return d.id ?? null;
   }
+  async function saveForm() { await persistDeal(); setModal(null); load(); }
+
   async function del(id: number) {
     if (!confirm("Delete this opportunity?")) return;
     await fetch(`/api/pipeline/${id}`, { method: "DELETE" });
     setModal(null); load();
   }
-  async function createQuote() {
-    if (!modal?.id) return;
-    if (!modal.clientId) { alert("Pick an existing client on this deal first — a quote/proposal requires a real client."); return; }
-    // save current edits, then generate the linked proposal
-    await saveForm();
-    const res = await fetch(`/api/pipeline/${modal.id}/quote`, { method: "POST" });
+
+  // Save the quote to Proposals inline (creates the linked proposal or updates its terms).
+  async function saveQuote() {
+    if (!modal) return;
+    if (!modal.clientId) { alert("Pick an existing client on this deal first — a quote requires a real client."); return; }
+    setQuoteBusy(true);
+    const id = await persistDeal();
+    if (!id) { setQuoteBusy(false); alert("Could not save the deal."); return; }
+    setModal((m) => (m ? { ...m, id } : m));
+    const res = await fetch(`/api/pipeline/${id}/quote`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentTerms: modal.paymentTerms, validUntil: modal.validUntil }) });
     const d = await res.json();
-    if (!res.ok) { alert(d.error || "Could not create the quote."); return; }
-    window.open(`/proposals/${d.proposalId}`, "_blank");
+    setQuoteBusy(false);
+    if (!res.ok) { alert(d.error || "Could not save the quote."); return; }
+    setQuote({ proposalId: d.proposalId, proposalNumber: d.proposalNumber, status: quote?.status || "draft" });
+    load();
   }
-  function openEdit(o: Opp) {
+  async function sendQuote() {
+    if (!quote) return;
+    const client = clients.find((c) => String(c.id) === modal?.clientId);
+    const to = prompt("Send quote to email:", client?.contactEmail || "");
+    if (!to) return;
+    setQuoteBusy(true);
+    const res = await fetch("/api/proposal-pdf/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ proposalId: quote.proposalId, to }) });
+    const d = await res.json();
+    setQuoteBusy(false);
+    if (!res.ok) { alert(d.error || "Could not send the quote."); return; }
+    alert(`Quote sent to ${to}`);
+    setQuote((q) => (q ? { ...q, status: "sent" } : q));
+  }
+
+  async function openEdit(o: Opp) {
     setModal({ id: o.id, title: o.title, clientId: o.clientId ? String(o.clientId) : "", clientName: o.clientName || "",
       product: o.product || "", incoterm: o.incoterm || "", estimatedTons: String(o.estimatedTons || ""), pricePerTon: String(o.pricePerTon || ""),
-      stage: o.stage, probability: String(o.probability), expectedCloseDate: o.expectedCloseDate || "", notes: o.notes || "", lostReason: o.lostReason || "", proposalId: o.proposalId || 0 });
+      stage: o.stage, probability: String(o.probability), expectedCloseDate: o.expectedCloseDate || "", notes: o.notes || "", lostReason: o.lostReason || "", proposalId: o.proposalId || 0, paymentTerms: "", validUntil: "" });
+    setQuote(null);
+    if (o.proposalId) {
+      try {
+        const r = await fetch(`/api/pipeline/${o.id}/quote`);
+        const d = await r.json();
+        if (d.linked) {
+          setQuote({ proposalId: d.proposalId, proposalNumber: d.proposalNumber, status: d.status });
+          setModal((m) => (m ? { ...m, paymentTerms: d.paymentTerms || "", validUntil: d.validUntil || "" } : m));
+        }
+      } catch { /* ignore */ }
+    }
   }
 
   const open = opps.filter((o) => OPEN.includes(o.stage));
@@ -249,20 +286,41 @@ export default function PipelinePage() {
             )}
             <textarea value={modal.notes} onChange={(e) => setModal({ ...modal, notes: e.target.value })} placeholder="Notes" rows={2}
               className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm resize-none" />
-            <div className="flex items-center justify-between pt-1 gap-2 flex-wrap">
-              {modal.id ? <button onClick={() => del(modal.id)} className="flex items-center gap-1.5 text-red-600 text-sm hover:underline"><Trash2 className="w-4 h-4" /> Delete</button> : <span />}
-              <div className="flex items-center gap-2">
-                {modal.id > 0 && (modal.proposalId ? (
-                  <a href={`/proposals/${modal.proposalId}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 border border-[#0d3d3b] text-[#0d3d3b] rounded-lg px-4 py-2 text-sm font-medium hover:bg-[#e6f1ee]">
-                    <FileText className="w-4 h-4" /> View quote
-                  </a>
-                ) : modal.clientId ? (
-                  <button onClick={createQuote} className="flex items-center gap-1.5 border border-[#0d3d3b] text-[#0d3d3b] rounded-lg px-4 py-2 text-sm font-medium hover:bg-[#e6f1ee]">
-                    <FileText className="w-4 h-4" /> Create quote
+            {/* Quote panel — save straight to Proposals, no page hop */}
+            {modal.clientId ? (
+              <div className="rounded-xl border border-stone-200 bg-stone-50 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-stone-700 flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> Quote</span>
+                  {quote?.proposalNumber && <span className="text-[11px] text-stone-500">{quote.proposalNumber} · {quote.status}</span>}
+                </div>
+                <div className="text-xs text-stone-500">
+                  {modal.product || "—"} · {(Number(modal.estimatedTons) || 0).toLocaleString()} t × ${modal.pricePerTon || 0} = <b className="text-[#0d3d3b]">{usd((Number(modal.estimatedTons) || 0) * (Number(modal.pricePerTon) || 0))}</b>{modal.incoterm ? ` · ${modal.incoterm}` : ""}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input value={modal.paymentTerms} onChange={(e) => setModal({ ...modal, paymentTerms: e.target.value })} placeholder="Payment terms (e.g. Net 60)"
+                    className="border border-stone-300 rounded-lg px-2 py-1.5 text-sm" />
+                  <label className="text-[11px] text-stone-500 flex items-center gap-1">Valid until
+                    <input type="date" value={modal.validUntil} onChange={(e) => setModal({ ...modal, validUntil: e.target.value })}
+                      className="flex-1 border border-stone-300 rounded-lg px-2 py-1.5 text-sm" />
+                  </label>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button onClick={saveQuote} disabled={quoteBusy} className="bg-[#0d3d3b] text-white rounded-lg px-3 py-1.5 text-xs font-medium hover:opacity-90 disabled:opacity-50">
+                    {quoteBusy ? "Saving…" : quote ? "Update quote" : "Save to Proposals"}
                   </button>
-                ) : null)}
-                <button onClick={saveForm} disabled={!modal.clientId && !modal.clientName.trim() && !modal.title.trim()} className="bg-[#0d3d3b] text-white rounded-lg px-5 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50">Save</button>
+                  {quote && (<>
+                    <a href={`/proposals/${quote.proposalId}`} target="_blank" rel="noreferrer" className="border border-stone-300 text-stone-700 rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-white">Open / edit PDF</a>
+                    <button onClick={sendQuote} disabled={quoteBusy} className="border border-[#0d3d3b] text-[#0d3d3b] rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-[#e6f1ee] disabled:opacity-50">Send by email</button>
+                  </>)}
+                </div>
               </div>
+            ) : (
+              <p className="text-[11px] text-stone-400">Pick an existing client to create and send a quote from here.</p>
+            )}
+
+            <div className="flex items-center justify-between pt-1">
+              {modal.id ? <button onClick={() => del(modal.id)} className="flex items-center gap-1.5 text-red-600 text-sm hover:underline"><Trash2 className="w-4 h-4" /> Delete</button> : <span />}
+              <button onClick={saveForm} disabled={!modal.clientId && !modal.clientName.trim() && !modal.title.trim()} className="bg-[#0d3d3b] text-white rounded-lg px-5 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50">Save</button>
             </div>
           </div>
         </div>
