@@ -51,8 +51,10 @@ export default function PipelinePage() {
 
   async function saveForm() {
     if (!modal) return;
+    const clientDisplay = modal.clientId ? (clients.find((c) => String(c.id) === modal.clientId)?.name ?? "") : modal.clientName;
+    const title = modal.title.trim() || [clientDisplay, modal.product].filter(Boolean).join(" — ") || "Nueva oportunidad";
     const payload = {
-      title: modal.title, clientId: modal.clientId || null, clientName: modal.clientId ? null : modal.clientName,
+      title, clientId: modal.clientId || null, clientName: modal.clientId ? null : modal.clientName,
       product: modal.product, estimatedTons: Number(modal.estimatedTons) || 0, pricePerTon: Number(modal.pricePerTon) || 0,
       stage: modal.stage, expectedCloseDate: modal.expectedCloseDate || null, notes: modal.notes,
       ...(modal.probability !== "" ? { probability: Number(modal.probability) } : {}),
@@ -170,12 +172,12 @@ export default function PipelinePage() {
       {/* Modal */}
       {modal && (
         <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4" onClick={() => setModal(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-5 space-y-3" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-5 space-y-3 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-stone-800">{modal.id ? "Edit opportunity" : "New opportunity"}</h2>
               <button onClick={() => setModal(null)} className="text-stone-400 hover:text-stone-700"><X className="w-5 h-5" /></button>
             </div>
-            <input value={modal.title} onChange={(e) => setModal({ ...modal, title: e.target.value })} placeholder="Deal title (e.g. KC Bajío Q4 softwood)"
+            <input value={modal.title} onChange={(e) => setModal({ ...modal, title: e.target.value })} placeholder="Deal title (optional — auto from client + product)"
               className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm" />
             <div className="grid grid-cols-2 gap-3">
               <label className="text-xs text-stone-600">Client
@@ -231,7 +233,7 @@ export default function PipelinePage() {
               className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm resize-none" />
             <div className="flex items-center justify-between pt-1">
               {modal.id ? <button onClick={() => del(modal.id)} className="flex items-center gap-1.5 text-red-600 text-sm hover:underline"><Trash2 className="w-4 h-4" /> Delete</button> : <span />}
-              <button onClick={saveForm} disabled={!modal.title} className="bg-[#0d3d3b] text-white rounded-lg px-5 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50">Save</button>
+              <button onClick={saveForm} disabled={!modal.clientId && !modal.clientName.trim() && !modal.title.trim()} className="bg-[#0d3d3b] text-white rounded-lg px-5 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50">Save</button>
             </div>
           </div>
         </div>
