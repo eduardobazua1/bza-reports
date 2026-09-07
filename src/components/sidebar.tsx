@@ -29,6 +29,7 @@ import {
   FileMinus,
   Landmark,
   Award,
+  Target,
   type LucideIcon,
 } from "lucide-react";
 
@@ -129,6 +130,7 @@ function QuickCreateDropdown({
 // ── Nav structure ────────────────────────────────────────────────────────────
 const mainEntries: RootEntry[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/pipeline", label: "Pipeline", icon: Target },
   {
     label: "Customer Hub", icon: Users,
     children: [

@@ -754,3 +754,24 @@ export const budgetLines = sqliteTable("budget_lines", {
   month: integer("month").notNull(),          // 1-12
   amount: real("amount").notNull().default(0),
 });
+
+// --- Sales pipeline (Salesforce-style) ---
+// A deal = a sales opportunity: client + product + estimated tons × price.
+export const opportunities = sqliteTable("opportunities", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title").notNull(),
+  clientId: integer("client_id"),                 // existing client, or null for a prospect
+  clientName: text("client_name"),                // free text (prospect not yet a client)
+  product: text("product"),
+  estimatedTons: real("estimated_tons").notNull().default(0),
+  pricePerTon: real("price_per_ton").notNull().default(0),
+  stage: text("stage", { enum: ["prospecto", "cotizacion", "muestra", "negociacion", "ganado", "perdido"] }).notNull().default("prospecto"),
+  probability: integer("probability").notNull().default(10), // %
+  expectedCloseDate: text("expected_close_date"),
+  notes: text("notes"),
+  lostReason: text("lost_reason"),
+  position: real("position").notNull().default(0),  // manual order within a column
+  closedAt: text("closed_at"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
