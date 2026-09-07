@@ -768,6 +768,7 @@ export const opportunities = sqliteTable("opportunities", {
   pricePerTon: real("price_per_ton").notNull().default(0),
   stage: text("stage", { enum: ["prospecto", "cotizacion", "muestra", "negociacion", "ganado", "perdido"] }).notNull().default("prospecto"),
   probability: integer("probability").notNull().default(10), // %
+  proposalId: integer("proposal_id"),             // linked quote/proposal
   expectedCloseDate: text("expected_close_date"),
   notes: text("notes"),
   lostReason: text("lost_reason"),

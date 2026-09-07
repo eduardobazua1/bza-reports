@@ -18,6 +18,7 @@ export async function GET() {
       incoterm: opportunities.incoterm,
       estimatedTons: opportunities.estimatedTons, pricePerTon: opportunities.pricePerTon,
       stage: opportunities.stage, probability: opportunities.probability,
+      proposalId: opportunities.proposalId,
       expectedCloseDate: opportunities.expectedCloseDate, notes: opportunities.notes,
       lostReason: opportunities.lostReason, position: opportunities.position,
       closedAt: opportunities.closedAt, updatedAt: opportunities.updatedAt,

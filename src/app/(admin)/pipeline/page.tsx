@@ -1,23 +1,23 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Plus, X, Trash2, GripVertical } from "lucide-react";
+import { Plus, X, Trash2, GripVertical, FileText } from "lucide-react";
 
 type Stage = "prospecto" | "cotizacion" | "muestra" | "negociacion" | "ganado" | "perdido";
 interface Opp {
   id: number; title: string; clientId: number | null; clientName: string | null;
   product: string | null; incoterm: string | null; estimatedTons: number; pricePerTon: number; stage: Stage;
-  probability: number; expectedCloseDate: string | null; notes: string | null; lostReason: string | null;
+  probability: number; proposalId: number | null; expectedCloseDate: string | null; notes: string | null; lostReason: string | null;
 }
 interface ClientOpt { id: number; name: string }
 
 const STAGES: { key: Stage; label: string; color: string }[] = [
-  { key: "prospecto", label: "Prospecto", color: "#c2e0da" },
-  { key: "cotizacion", label: "Cotización", color: "#7bb3aa" },
-  { key: "muestra", label: "Muestra/Aprob.", color: "#4a9d92" },
-  { key: "negociacion", label: "Negociación", color: "#2f8a80" },
-  { key: "ganado", label: "Ganado", color: "#0d3d3b" },
-  { key: "perdido", label: "Perdido", color: "#a8a29e" },
+  { key: "prospecto", label: "Prospect", color: "#c2e0da" },
+  { key: "cotizacion", label: "Quote", color: "#7bb3aa" },
+  { key: "muestra", label: "Sample/Approval", color: "#4a9d92" },
+  { key: "negociacion", label: "Negotiation", color: "#2f8a80" },
+  { key: "ganado", label: "Won", color: "#0d3d3b" },
+  { key: "perdido", label: "Lost", color: "#a8a29e" },
 ];
 const OPEN: Stage[] = ["prospecto", "cotizacion", "muestra", "negociacion"];
 const INCOTERMS = ["EXW", "FCA", "FAS", "FOB", "CFR", "CIF", "CPT", "CIP", "DAP", "DPU", "DDP"];
@@ -25,7 +25,7 @@ const INCOTERMS = ["EXW", "FCA", "FAS", "FOB", "CFR", "CIF", "CPT", "CIP", "DAP"
 const usd = (n: number) => "$" + Math.round(n).toLocaleString("en-US");
 const val = (o: Opp) => o.estimatedTons * o.pricePerTon;
 
-const emptyForm = { id: 0, title: "", clientId: "", clientName: "", product: "", incoterm: "", estimatedTons: "", pricePerTon: "", stage: "prospecto" as Stage, probability: "", expectedCloseDate: "", notes: "", lostReason: "" };
+const emptyForm = { id: 0, title: "", clientId: "", clientName: "", product: "", incoterm: "", estimatedTons: "", pricePerTon: "", stage: "prospecto" as Stage, probability: "", expectedCloseDate: "", notes: "", lostReason: "", proposalId: 0 };
 
 export default function PipelinePage() {
   const [opps, setOpps] = useState<Opp[]>([]);
@@ -53,7 +53,7 @@ export default function PipelinePage() {
   async function saveForm() {
     if (!modal) return;
     const clientDisplay = modal.clientId ? (clients.find((c) => String(c.id) === modal.clientId)?.name ?? "") : modal.clientName;
-    const title = modal.title.trim() || [clientDisplay, modal.product].filter(Boolean).join(" — ") || "Nueva oportunidad";
+    const title = modal.title.trim() || [clientDisplay, modal.product].filter(Boolean).join(" — ") || "New opportunity";
     const payload = {
       title, clientId: modal.clientId || null, clientName: modal.clientId ? null : modal.clientName,
       product: modal.product, incoterm: modal.incoterm, estimatedTons: Number(modal.estimatedTons) || 0, pricePerTon: Number(modal.pricePerTon) || 0,
@@ -70,10 +70,20 @@ export default function PipelinePage() {
     await fetch(`/api/pipeline/${id}`, { method: "DELETE" });
     setModal(null); load();
   }
+  async function createQuote() {
+    if (!modal?.id) return;
+    if (!modal.clientId) { alert("Pick an existing client on this deal first — a quote/proposal requires a real client."); return; }
+    // save current edits, then generate the linked proposal
+    await saveForm();
+    const res = await fetch(`/api/pipeline/${modal.id}/quote`, { method: "POST" });
+    const d = await res.json();
+    if (!res.ok) { alert(d.error || "Could not create the quote."); return; }
+    window.open(`/proposals/${d.proposalId}`, "_blank");
+  }
   function openEdit(o: Opp) {
     setModal({ id: o.id, title: o.title, clientId: o.clientId ? String(o.clientId) : "", clientName: o.clientName || "",
       product: o.product || "", incoterm: o.incoterm || "", estimatedTons: String(o.estimatedTons || ""), pricePerTon: String(o.pricePerTon || ""),
-      stage: o.stage, probability: String(o.probability), expectedCloseDate: o.expectedCloseDate || "", notes: o.notes || "", lostReason: o.lostReason || "" });
+      stage: o.stage, probability: String(o.probability), expectedCloseDate: o.expectedCloseDate || "", notes: o.notes || "", lostReason: o.lostReason || "", proposalId: o.proposalId || 0 });
   }
 
   const open = opps.filter((o) => OPEN.includes(o.stage));
@@ -155,7 +165,7 @@ export default function PipelinePage() {
                             )}
                           </div>
                           <div className="mt-1 flex items-center justify-between text-[10px] text-stone-400">
-                            <span>{o.estimatedTons ? `${o.estimatedTons.toLocaleString()} t × $${o.pricePerTon}` : ""}</span>
+                            <span className="flex items-center gap-1">{o.estimatedTons ? `${o.estimatedTons.toLocaleString()} t × $${o.pricePerTon}` : ""}{o.proposalId ? <FileText className="w-3 h-3 text-[#0d3d3b]" /> : null}</span>
                             {o.expectedCloseDate && <span>{o.expectedCloseDate}</span>}
                           </div>
                         </div>
@@ -239,9 +249,20 @@ export default function PipelinePage() {
             )}
             <textarea value={modal.notes} onChange={(e) => setModal({ ...modal, notes: e.target.value })} placeholder="Notes" rows={2}
               className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm resize-none" />
-            <div className="flex items-center justify-between pt-1">
+            <div className="flex items-center justify-between pt-1 gap-2 flex-wrap">
               {modal.id ? <button onClick={() => del(modal.id)} className="flex items-center gap-1.5 text-red-600 text-sm hover:underline"><Trash2 className="w-4 h-4" /> Delete</button> : <span />}
-              <button onClick={saveForm} disabled={!modal.clientId && !modal.clientName.trim() && !modal.title.trim()} className="bg-[#0d3d3b] text-white rounded-lg px-5 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50">Save</button>
+              <div className="flex items-center gap-2">
+                {modal.id > 0 && (modal.proposalId ? (
+                  <a href={`/proposals/${modal.proposalId}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 border border-[#0d3d3b] text-[#0d3d3b] rounded-lg px-4 py-2 text-sm font-medium hover:bg-[#e6f1ee]">
+                    <FileText className="w-4 h-4" /> View quote
+                  </a>
+                ) : modal.clientId ? (
+                  <button onClick={createQuote} className="flex items-center gap-1.5 border border-[#0d3d3b] text-[#0d3d3b] rounded-lg px-4 py-2 text-sm font-medium hover:bg-[#e6f1ee]">
+                    <FileText className="w-4 h-4" /> Create quote
+                  </button>
+                ) : null)}
+                <button onClick={saveForm} disabled={!modal.clientId && !modal.clientName.trim() && !modal.title.trim()} className="bg-[#0d3d3b] text-white rounded-lg px-5 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50">Save</button>
+              </div>
             </div>
           </div>
         </div>
