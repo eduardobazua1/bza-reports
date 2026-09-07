@@ -15,6 +15,7 @@ export async function GET() {
     .select({
       id: opportunities.id, title: opportunities.title, clientId: opportunities.clientId,
       clientNameRaw: opportunities.clientName, clientName: clients.name, product: opportunities.product,
+      incoterm: opportunities.incoterm,
       estimatedTons: opportunities.estimatedTons, pricePerTon: opportunities.pricePerTon,
       stage: opportunities.stage, probability: opportunities.probability,
       expectedCloseDate: opportunities.expectedCloseDate, notes: opportunities.notes,
@@ -38,6 +39,7 @@ export async function POST(req: Request) {
     clientId: b.clientId ? Number(b.clientId) : null,
     clientName: (b.clientName as string) || null,
     product: (b.product as string) || null,
+    incoterm: (b.incoterm as string) || null,
     estimatedTons: Number(b.estimatedTons) || 0,
     pricePerTon: Number(b.pricePerTon) || 0,
     stage: stage as "prospecto" | "cotizacion" | "muestra" | "negociacion" | "ganado" | "perdido",

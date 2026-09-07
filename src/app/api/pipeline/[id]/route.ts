@@ -13,7 +13,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const { id } = await params;
   const b = await req.json();
   const patch: Record<string, unknown> = { updatedAt: new Date().toISOString() };
-  const fields = ["title", "clientId", "clientName", "product", "estimatedTons", "pricePerTon", "expectedCloseDate", "notes", "lostReason", "position", "probability"] as const;
+  const fields = ["title", "clientId", "clientName", "product", "incoterm", "estimatedTons", "pricePerTon", "expectedCloseDate", "notes", "lostReason", "position", "probability"] as const;
   for (const f of fields) if (b[f] !== undefined) patch[f] = b[f];
 
   if (b.stage !== undefined) {

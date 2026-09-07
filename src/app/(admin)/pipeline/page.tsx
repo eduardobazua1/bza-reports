@@ -6,7 +6,7 @@ import { Plus, X, Trash2, GripVertical } from "lucide-react";
 type Stage = "prospecto" | "cotizacion" | "muestra" | "negociacion" | "ganado" | "perdido";
 interface Opp {
   id: number; title: string; clientId: number | null; clientName: string | null;
-  product: string | null; estimatedTons: number; pricePerTon: number; stage: Stage;
+  product: string | null; incoterm: string | null; estimatedTons: number; pricePerTon: number; stage: Stage;
   probability: number; expectedCloseDate: string | null; notes: string | null; lostReason: string | null;
 }
 interface ClientOpt { id: number; name: string }
@@ -20,11 +20,12 @@ const STAGES: { key: Stage; label: string; color: string }[] = [
   { key: "perdido", label: "Perdido", color: "#a8a29e" },
 ];
 const OPEN: Stage[] = ["prospecto", "cotizacion", "muestra", "negociacion"];
+const INCOTERMS = ["EXW", "FCA", "FAS", "FOB", "CFR", "CIF", "CPT", "CIP", "DAP", "DPU", "DDP"];
 
 const usd = (n: number) => "$" + Math.round(n).toLocaleString("en-US");
 const val = (o: Opp) => o.estimatedTons * o.pricePerTon;
 
-const emptyForm = { id: 0, title: "", clientId: "", clientName: "", product: "", estimatedTons: "", pricePerTon: "", stage: "prospecto" as Stage, probability: "", expectedCloseDate: "", notes: "", lostReason: "" };
+const emptyForm = { id: 0, title: "", clientId: "", clientName: "", product: "", incoterm: "", estimatedTons: "", pricePerTon: "", stage: "prospecto" as Stage, probability: "", expectedCloseDate: "", notes: "", lostReason: "" };
 
 export default function PipelinePage() {
   const [opps, setOpps] = useState<Opp[]>([]);
@@ -55,7 +56,7 @@ export default function PipelinePage() {
     const title = modal.title.trim() || [clientDisplay, modal.product].filter(Boolean).join(" — ") || "Nueva oportunidad";
     const payload = {
       title, clientId: modal.clientId || null, clientName: modal.clientId ? null : modal.clientName,
-      product: modal.product, estimatedTons: Number(modal.estimatedTons) || 0, pricePerTon: Number(modal.pricePerTon) || 0,
+      product: modal.product, incoterm: modal.incoterm, estimatedTons: Number(modal.estimatedTons) || 0, pricePerTon: Number(modal.pricePerTon) || 0,
       stage: modal.stage, expectedCloseDate: modal.expectedCloseDate || null, notes: modal.notes,
       ...(modal.probability !== "" ? { probability: Number(modal.probability) } : {}),
       ...(modal.stage === "perdido" ? { lostReason: modal.lostReason } : {}),
@@ -71,7 +72,7 @@ export default function PipelinePage() {
   }
   function openEdit(o: Opp) {
     setModal({ id: o.id, title: o.title, clientId: o.clientId ? String(o.clientId) : "", clientName: o.clientName || "",
-      product: o.product || "", estimatedTons: String(o.estimatedTons || ""), pricePerTon: String(o.pricePerTon || ""),
+      product: o.product || "", incoterm: o.incoterm || "", estimatedTons: String(o.estimatedTons || ""), pricePerTon: String(o.pricePerTon || ""),
       stage: o.stage, probability: String(o.probability), expectedCloseDate: o.expectedCloseDate || "", notes: o.notes || "", lostReason: o.lostReason || "" });
   }
 
@@ -146,7 +147,7 @@ export default function PipelinePage() {
                         <GripVertical className="w-3.5 h-3.5 text-stone-300 mt-0.5 shrink-0" />
                         <div className="min-w-0 flex-1">
                           <div className="text-sm font-semibold text-stone-800 truncate">{o.title}</div>
-                          <div className="text-xs text-stone-500 truncate">{o.clientName || "—"}{o.product ? ` · ${o.product}` : ""}</div>
+                          <div className="text-xs text-stone-500 truncate">{o.clientName || "—"}{o.product ? ` · ${o.product}` : ""}{o.incoterm ? ` · ${o.incoterm}` : ""}</div>
                           <div className="mt-1.5 flex items-center justify-between">
                             <span className="text-sm font-bold text-[#0d3d3b] tabular-nums">{usd(val(o))}</span>
                             {!["ganado", "perdido"].includes(o.stage) && (
@@ -179,7 +180,7 @@ export default function PipelinePage() {
             </div>
             <input value={modal.title} onChange={(e) => setModal({ ...modal, title: e.target.value })} placeholder="Deal title (optional — auto from client + product)"
               className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm" />
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <label className="text-xs text-stone-600">Client
                 <select value={modal.clientId} onChange={(e) => setModal({ ...modal, clientId: e.target.value })}
                   className="mt-1 w-full border border-stone-300 rounded-lg px-2 py-2 text-sm">
@@ -190,6 +191,13 @@ export default function PipelinePage() {
               <label className="text-xs text-stone-600">Product
                 <input value={modal.product} onChange={(e) => setModal({ ...modal, product: e.target.value })}
                   className="mt-1 w-full border border-stone-300 rounded-lg px-2 py-2 text-sm" />
+              </label>
+              <label className="text-xs text-stone-600">Incoterm
+                <select value={modal.incoterm} onChange={(e) => setModal({ ...modal, incoterm: e.target.value })}
+                  className="mt-1 w-full border border-stone-300 rounded-lg px-2 py-2 text-sm">
+                  <option value="">—</option>
+                  {INCOTERMS.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
               </label>
             </div>
             {!modal.clientId && (

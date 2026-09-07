@@ -763,6 +763,7 @@ export const opportunities = sqliteTable("opportunities", {
   clientId: integer("client_id"),                 // existing client, or null for a prospect
   clientName: text("client_name"),                // free text (prospect not yet a client)
   product: text("product"),
+  incoterm: text("incoterm"),                      // EXW, FCA, FOB, CFR, CIF, CPT, CIP, DAP, DPU, DDP
   estimatedTons: real("estimated_tons").notNull().default(0),
   pricePerTon: real("price_per_ton").notNull().default(0),
   stage: text("stage", { enum: ["prospecto", "cotizacion", "muestra", "negociacion", "ganado", "perdido"] }).notNull().default("prospecto"),
