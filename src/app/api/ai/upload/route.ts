@@ -109,9 +109,10 @@ export async function POST(req: NextRequest) {
             : `Could not extract text or render images${renderError ? `: ${renderError}` : ""}.`);
 
       return NextResponse.json({
-        type: imageUrls.length > 0 ? "pdf" : "text",
+        type: "pdf",
         parsedContent: `PDF: ${file.name} (${numPages || imageUrls.length} page${(numPages || imageUrls.length) !== 1 ? "s" : ""})\n\n${textPart}`,
         imageUrls,
+        pdfBase64: buffer.toString("base64"), // native PDF for Claude (serverless-safe)
         fileName: file.name,
         fileSize: file.size,
         tempPath,

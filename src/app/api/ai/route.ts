@@ -713,7 +713,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Anthropic API key not configured. Add ANTHROPIC_API_KEY=sk-ant-... to .env.local" }, { status: 400 });
   }
 
-  const { messages: rawMessages, tempPaths, tempFiles } = await req.json();
+  const { messages: rawMessages, tempPaths, tempFiles, pdfDocs } = await req.json();
 
   // Hard intercept: if user wants to send/email a report but hasn't provided an email address
   const lastUserMsg0 = [...rawMessages].reverse().find((m: { role: string; content: string }) => m.role === "user");
@@ -760,6 +760,9 @@ export async function POST(req: NextRequest) {
   } else if (tempPaths?.length > 0) {
     preContext += `\n\n[UPLOADED PDF TEMP PATHS — pass the matching path to attach_document / create_supplier_invoice. Each PDF was also rendered to page images you can READ above]: ${tempPaths.join(", ")}`;
   }
+  if (Array.isArray(pdfDocs) && pdfDocs.length > 0) {
+    preContext += `\n\n[UPLOADED PDFs — attached to this message as documents you can READ directly: ${pdfDocs.map((d: { name?: string }) => d?.name || "document.pdf").join(", ")}. Read each one (invoice / delivery note / packing list) and extract the fields.]`;
+  }
 
   // Convert messages to Anthropic format (images use base64 source blocks instead of image_url)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -782,6 +785,26 @@ export async function POST(req: NextRequest) {
     }
     return { role: m.role, content: m.content };
   });
+
+  // Attach uploaded PDFs as NATIVE PDF document blocks on the last user message so
+  // Claude reads them directly (works on serverless — no python/image render needed).
+  if (Array.isArray(pdfDocs) && pdfDocs.length > 0) {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role !== "user") continue;
+      const base = typeof messages[i].content === "string"
+        ? [{ type: "text", text: messages[i].content }]
+        : messages[i].content;
+      const docBlocks = pdfDocs
+        .filter((d: { base64?: string }) => d?.base64)
+        .map((d: { name?: string; base64: string }) => ({
+          type: "document",
+          title: d.name || "document.pdf",
+          source: { type: "base64", media_type: "application/pdf", data: d.base64 },
+        }));
+      messages[i] = { role: "user", content: [...base, ...docBlocks] };
+      break;
+    }
+  }
 
   // Long-term BUSINESS MEMORY — durable facts/rules the assistant has learned.
   let memoryBlock = "";

@@ -164,6 +164,7 @@ export default function AssistantPage() {
     try {
       const allFileData: string[] = [];
       const allImageUrls: string[] = [];
+      const pdfDocs: { name: string; base64: string }[] = [];
 
       for (const file of filesToProcess) {
         const formData = new FormData();
@@ -176,6 +177,7 @@ export default function AssistantPage() {
           return;
         }
         if (uploadData.type === "image" && uploadData.imageUrl) allImageUrls.push(uploadData.imageUrl);
+        if (uploadData.pdfBase64) pdfDocs.push({ name: uploadData.fileName || file.name, base64: uploadData.pdfBase64 });
         if (uploadData.parsedContent) allFileData.push(`[${file.name}]:\n${uploadData.parsedContent}`);
       }
 
@@ -192,7 +194,7 @@ export default function AssistantPage() {
       const res = await fetch("/api/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: aiMessages }),
+        body: JSON.stringify({ messages: aiMessages, pdfDocs }),
       });
       const data = await res.json();
 
