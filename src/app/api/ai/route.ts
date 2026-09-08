@@ -962,12 +962,12 @@ When the user uploads a client invoice, billing document, or SAP output (factura
      - "Train Arrived" → en_transito
      - "Train Departed" → en_transito
      - "Released" → en_transito
-     - "Hold" → en_aduana
+     - "Hold" (customs) → en_aduana. Note: "Hold For Make Train" is an operational rail hold, NOT customs → keep en_transito.
      - "Actual Placed" → en_transito
-     - ONLY use "entregado" if the user explicitly says the shipment was received/delivered at destination
      - "Interchanged Delivered [date]" = ETA DATE, NOT delivered status — use as estimatedArrival, keep status as en_transito
+  3b. BORDER = DELIVERED (incoterm rule — VERY IMPORTANT). Delivery depends on how the PO was SOLD (its terms). For DAP Eagle Pass / DAP Laredo / border sales (most BZA rail POs), the shipment becomes **entregado** as soon as it CROSSES THE BORDER into Mexico — i.e. the current location is any MEXICAN place, even if the rail routing continues to a Mexican city. Mexican location cues: state codes CU (Coahuila — e.g. Rio Escondido / Piedras Negras), MH (Michoacán/Morelia), QA (Querétaro / San Juan del Río / "SANJUADEL"), EM (Estado de México / Ecatepec), NL (Nuevo León / Monterrey), JA, GJ, VE, PU. Locations still in the US (OR, CA, TX, OK) or Canada (BC) stay en_transito. Set estimatedArrival to the crossing/arrival date when marking entregado. If the PO was sold to a specific Mexican city (DAP <Mexican city>), mark entregado only when it reaches that city — check the PO terms; if unsure, ask.
   4. ETA: "Interchanged Delivered [date]" and "Actual Placed [date]" are ETAs → use as estimatedArrival in YYYY-MM-DD format
-  5. Report every ✅ success and ❌ not found to the user
+  5. Report every ✅ success and ❌ not found to the user, and say which ones flipped to entregado (crossed the border)
 
 ## ABSOLUTE RULES
 1. For ANY number, total, sum, count, or data question — you MUST use run_calculation with a SQL query. NEVER calculate yourself.
