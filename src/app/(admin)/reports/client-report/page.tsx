@@ -61,6 +61,7 @@ export default function ClientReportPage() {
   const [preview, setPreview] = useState<PreviewRow[]>([]);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [addressBook, setAddressBook] = useState<string[]>([]);
+  const [clientContacts, setClientContacts] = useState<string[]>([]);
   const [lastRecipients, setLastRecipients] = useState<{ to: string; cc: string | null } | null>(null);
 
   useEffect(() => {
@@ -76,13 +77,13 @@ export default function ClientReportPage() {
   }, []);
 
   useEffect(() => {
-    if (!clientId) { setEmail(""); setPreview([]); setLastRecipients(null); return; }
+    if (!clientId) { setEmail(""); setPreview([]); setLastRecipients(null); setClientContacts([]); return; }
     const c = clients.find(c => c.id === clientId);
     setEmail(c?.contactEmail ?? "");
-    // Last recipient used for this client, so "Use last" can fill it.
+    // Contacts + last recipient for THIS client only (avoids emailing the wrong client).
     fetch(`/api/email-recipients?clientId=${clientId}`)
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d) setLastRecipients(d.last || null); })
+      .then(d => { if (d) { setLastRecipients(d.last || null); setClientContacts(d.clientAddresses || []); } })
       .catch(() => {});
   }, [clientId, clients]);
 
@@ -206,9 +207,9 @@ export default function ClientReportPage() {
                 className="w-full text-sm border border-stone-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]/20 text-stone-700"
               />
               <datalist id="client-report-email-book">{addressBook.map(a => <option key={a} value={a} />)}</datalist>
-              {addressBook.length > 0 && (
+              {clientId && clientContacts.length > 0 && (
                 <div className="mt-1.5">
-                  <span className="text-[11px] text-stone-400">Previous contacts:</span>
+                  <span className="text-[11px] text-stone-400">Previous contacts for this client (click to add/remove):</span>
                   <div className="mt-1 flex flex-wrap gap-1.5">
                     {(() => {
                       const parts = email.split(/[,;]/).map(s => s.trim()).filter(Boolean);
@@ -217,7 +218,7 @@ export default function ClientReportPage() {
                         const next = has(a) ? parts.filter(p => p.toLowerCase() !== a.toLowerCase()) : [...parts, a];
                         setEmail(next.join(", "));
                       };
-                      return addressBook.slice(0, 12).map(a => (
+                      return clientContacts.slice(0, 20).map(a => (
                         <button
                           key={a}
                           type="button"
