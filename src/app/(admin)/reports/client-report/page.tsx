@@ -210,16 +210,24 @@ export default function ClientReportPage() {
                 <div className="mt-1.5">
                   <span className="text-[11px] text-stone-400">Previous contacts:</span>
                   <div className="mt-1 flex flex-wrap gap-1.5">
-                    {addressBook.slice(0, 12).map(a => (
-                      <button
-                        key={a}
-                        type="button"
-                        onClick={() => setEmail(a)}
-                        className={`text-[11px] px-2 py-1 rounded-full border transition-colors ${email === a ? "bg-[#0d3d3b] text-white border-[#0d3d3b]" : "border-stone-200 text-stone-600 hover:bg-stone-50"}`}
-                      >
-                        {a}
-                      </button>
-                    ))}
+                    {(() => {
+                      const parts = email.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+                      const has = (a: string) => parts.some(p => p.toLowerCase() === a.toLowerCase());
+                      const toggle = (a: string) => {
+                        const next = has(a) ? parts.filter(p => p.toLowerCase() !== a.toLowerCase()) : [...parts, a];
+                        setEmail(next.join(", "));
+                      };
+                      return addressBook.slice(0, 12).map(a => (
+                        <button
+                          key={a}
+                          type="button"
+                          onClick={() => toggle(a)}
+                          className={`text-[11px] px-2 py-1 rounded-full border transition-colors ${has(a) ? "bg-[#0d3d3b] text-white border-[#0d3d3b]" : "border-stone-200 text-stone-600 hover:bg-stone-50"}`}
+                        >
+                          {has(a) ? "✓ " : "+ "}{a}
+                        </button>
+                      ));
+                    })()}
                   </div>
                 </div>
               )}
