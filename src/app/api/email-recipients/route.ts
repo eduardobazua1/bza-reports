@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { invoiceEmailLogs, invoices, purchaseOrders, clients } from "@/db/schema";
+import { invoiceEmailLogs, invoices, purchaseOrders, clients, reportEmailLogs } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -39,6 +39,13 @@ export async function GET(req: NextRequest) {
   };
   for (const l of logs) { add(l.sentTo); add(l.sentCc); }
 
+  // Fold in client-report send history (has clientId directly).
+  const rlogs = await db
+    .select({ sentTo: reportEmailLogs.sentTo, sentCc: reportEmailLogs.sentCc, sentAt: reportEmailLogs.sentAt, clientId: reportEmailLogs.clientId })
+    .from(reportEmailLogs)
+    .orderBy(desc(reportEmailLogs.sentAt));
+  for (const l of rlogs) { add(l.sentTo); add(l.sentCc); }
+
   // Also fold in saved client contact emails so they autocomplete too.
   const clientRows = await db.select({ email: clients.contactEmail }).from(clients);
   for (const c of clientRows) add(c.email);
@@ -54,9 +61,15 @@ export async function GET(req: NextRequest) {
     }
   }
   if (clientId != null && !Number.isNaN(clientId)) {
-    // logs are already sorted newest-first; take the first one for this client
-    const match = logs.find((l) => l.clientId === clientId);
-    if (match) last = { to: match.sentTo, cc: match.sentCc };
+    // Most recent recipients for this client across BOTH invoice and report sends.
+    const invMatch = logs.find((l) => l.clientId === clientId);
+    const repMatch = rlogs.find((l) => l.clientId === clientId);
+    const cands = [
+      invMatch ? { to: invMatch.sentTo, cc: invMatch.sentCc, at: invMatch.sentAt } : null,
+      repMatch ? { to: repMatch.sentTo, cc: repMatch.sentCc, at: repMatch.sentAt } : null,
+    ].filter(Boolean) as { to: string; cc: string | null; at: string }[];
+    cands.sort((a, b) => (a.at < b.at ? 1 : -1));
+    if (cands[0]) last = { to: cands[0].to, cc: cands[0].cc };
   }
 
   return NextResponse.json({ addresses: Array.from(seen.values()).sort((a, b) => a.localeCompare(b)), last });

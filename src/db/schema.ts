@@ -755,6 +755,17 @@ export const budgetLines = sqliteTable("budget_lines", {
   amount: real("amount").notNull().default(0),
 });
 
+// Recipient history for client-report emails (feeds the "previous contacts"
+// address book alongside invoice email logs).
+export const reportEmailLogs = sqliteTable("report_email_logs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  clientId: integer("client_id"),
+  sentTo: text("sent_to").notNull(),
+  sentCc: text("sent_cc"),
+  format: text("format"),
+  sentAt: text("sent_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
 // --- Sales pipeline (Salesforce-style) ---
 // A deal = a sales opportunity: client + product + estimated tons × price.
 export const opportunities = sqliteTable("opportunities", {

@@ -206,6 +206,23 @@ export default function ClientReportPage() {
                 className="w-full text-sm border border-stone-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0d3d3b]/20 text-stone-700"
               />
               <datalist id="client-report-email-book">{addressBook.map(a => <option key={a} value={a} />)}</datalist>
+              {addressBook.length > 0 && (
+                <div className="mt-1.5">
+                  <span className="text-[11px] text-stone-400">Previous contacts:</span>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {addressBook.slice(0, 12).map(a => (
+                      <button
+                        key={a}
+                        type="button"
+                        onClick={() => setEmail(a)}
+                        className={`text-[11px] px-2 py-1 rounded-full border transition-colors ${email === a ? "bg-[#0d3d3b] text-white border-[#0d3d3b]" : "border-stone-200 text-stone-600 hover:bg-stone-50"}`}
+                      >
+                        {a}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { invoices, purchaseOrders, clients, suppliers } from "@/db/schema";
+import { invoices, purchaseOrders, clients, suppliers, reportEmailLogs } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { sendEmail, isEmailConfigured } from "@/lib/email";
 import * as XLSX from "xlsx";
@@ -141,6 +141,10 @@ export async function POST(req: NextRequest) {
       `,
       attachments,
     });
+    // Record the recipient so it shows up as a previous contact next time.
+    try {
+      await db.insert(reportEmailLogs).values({ clientId, sentTo: email, format, sentAt: new Date().toISOString() });
+    } catch { /* non-fatal */ }
     return NextResponse.json({ ok: true, method: format });
   } catch (emailErr) {
     const msg = emailErr instanceof Error ? emailErr.message : "Unknown email error";
